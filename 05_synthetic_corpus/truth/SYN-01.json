@@ -1,0 +1,230 @@
+{
+  "id": "SYN-01",
+  "header": {
+    "hospital_name": "Aravind Multispecialty Hospital",
+    "hospital_address": "14 MG Road, Pune 411001",
+    "hospital_gstin": "27AAACA1111Q1ZP",
+    "hospital_contact": "020-24001100",
+    "hospital_registration": "MH/HOSP/2018/4471",
+    "bill_number": "SYN01/2026/1007",
+    "bill_datetime": "01/06/2026 18:30",
+    "patient_name": "Rohan Deshpande",
+    "patient_age": "34",
+    "patient_gender": "M",
+    "patient_hospital_id": "IP2600041",
+    "patient_uhid": "12-3456-7890-1001",
+    "patient_address": "Rohan residence, Pune 411001",
+    "patient_signature": true,
+    "authorised_signature": true,
+    "admission_datetime": "31/05/2026 08:10",
+    "discharge_datetime": "01/06/2026 18:30",
+    "admission_type": "inpatient",
+    "procedure": "Laparoscopic appendectomy",
+    "room_class": "single",
+    "payment_mode": "cashless (insurance)",
+    "insurance_info": "Policy shown; TPA authorisation on file",
+    "gross_amount": 51868.5,
+    "discount_amount": 2593.43,
+    "tax_amount": 0.0,
+    "net_payable": 49275.07
+  },
+  "line_items": [
+    {
+      "item": "ADMISSION SERVICES",
+      "unit": "nos",
+      "quantity": 1.0,
+      "rate": 350.0,
+      "total": 350.0,
+      "section": "REGISTRATION"
+    },
+    {
+      "item": "SINGLE ROOM - AC",
+      "unit": "day",
+      "quantity": 2.0,
+      "rate": 6000.0,
+      "total": 12000.0,
+      "section": "ROOM CHARGES"
+    },
+    {
+      "item": "IP CONSULTATION - PHYSICIAN",
+      "unit": "visit",
+      "quantity": 1.0,
+      "rate": 900.0,
+      "total": 900.0,
+      "section": "CONSULTATION"
+    },
+    {
+      "item": "IP CONSULTATION - SURGEON",
+      "unit": "visit",
+      "quantity": 2.0,
+      "rate": 1200.0,
+      "total": 2400.0,
+      "section": "CONSULTATION"
+    },
+    {
+      "item": "COMPLETE BLOOD COUNT (CBC)",
+      "unit": "test",
+      "quantity": 2.0,
+      "rate": 380.0,
+      "total": 760.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "SERUM ELECTROLYTES",
+      "unit": "test",
+      "quantity": 1.0,
+      "rate": 520.0,
+      "total": 520.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "LIVER FUNCTION TEST",
+      "unit": "test",
+      "quantity": 1.0,
+      "rate": 780.0,
+      "total": 780.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "KIDNEY FUNCTION TEST",
+      "unit": "test",
+      "quantity": 2.0,
+      "rate": 720.0,
+      "total": 1440.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "OPERATION THEATRE CHARGES",
+      "unit": "hour",
+      "quantity": 2.0,
+      "rate": 4500.0,
+      "total": 9000.0,
+      "section": "OT / PROCEDURE"
+    },
+    {
+      "item": "SURGEON'S FEE",
+      "unit": "nos",
+      "quantity": 1.0,
+      "rate": 15000.0,
+      "total": 15000.0,
+      "section": "OT / PROCEDURE"
+    },
+    {
+      "item": "ANAESTHESIA CHARGES",
+      "unit": "nos",
+      "quantity": 1.0,
+      "rate": 6000.0,
+      "total": 6000.0,
+      "section": "OT / PROCEDURE"
+    },
+    {
+      "item": "ANAESTHESIA GASES & DRUGS",
+      "unit": "nos",
+      "quantity": 1.0,
+      "rate": 1800.0,
+      "total": 1800.0,
+      "section": "OT / PROCEDURE"
+    },
+    {
+      "item": "INJ CEFTRIAXONE 1GM",
+      "unit": "vial",
+      "quantity": 3.0,
+      "rate": 62.0,
+      "total": 186.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "INJ PANTOPRAZOLE 40MG",
+      "unit": "vial",
+      "quantity": 4.0,
+      "rate": 38.0,
+      "total": 152.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "INJ ONDANSETRON 2MG/ML",
+      "unit": "amp",
+      "quantity": 5.0,
+      "rate": 14.0,
+      "total": 70.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "INJ TRAMADOL 50MG",
+      "unit": "amp",
+      "quantity": 6.0,
+      "rate": 22.0,
+      "total": 132.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "TAB PARACETAMOL 650MG",
+      "unit": "tab",
+      "quantity": 3.0,
+      "rate": 3.5,
+      "total": 10.5,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "TAB PANTOPRAZOLE 40MG",
+      "unit": "tab",
+      "quantity": 4.0,
+      "rate": 6.0,
+      "total": 24.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "IV CANNULA 20G",
+      "unit": "nos",
+      "quantity": 2.0,
+      "rate": 55.0,
+      "total": 110.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "IV SET",
+      "unit": "nos",
+      "quantity": 3.0,
+      "rate": 38.0,
+      "total": 114.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "DISPOSABLE SYRINGE 5ML",
+      "unit": "nos",
+      "quantity": 4.0,
+      "rate": 6.0,
+      "total": 24.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "DISPOSABLE SYRINGE 10ML",
+      "unit": "nos",
+      "quantity": 2.0,
+      "rate": 9.0,
+      "total": 18.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "SURGICAL GLOVES STERILE 7.0",
+      "unit": "pair",
+      "quantity": 3.0,
+      "rate": 26.0,
+      "total": 78.0,
+      "section": "CONSUMABLES"
+    }
+  ],
+  "printed_subtotals": {
+    "REGISTRATION": 350.0,
+    "ROOM CHARGES": 12000.0,
+    "CONSULTATION": 3300.0,
+    "INVESTIGATIONS": 3500.0,
+    "OT / PROCEDURE": 31800.0,
+    "PHARMACY": 574.5,
+    "CONSUMABLES": 344.0
+  },
+  "printed_grand_total": 51868.5,
+  "line_count": 23,
+  "defects": [],
+  "is_clean": true
+}

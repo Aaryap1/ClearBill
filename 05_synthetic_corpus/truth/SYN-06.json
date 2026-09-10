@@ -1,0 +1,264 @@
+{
+  "id": "SYN-06",
+  "header": {
+    "hospital_name": "Sahyadri Speciality Hospital",
+    "hospital_address": "Karve Nagar, Pune 411052",
+    "hospital_gstin": null,
+    "hospital_contact": "020-40151000",
+    "hospital_registration": "MH/HOSP/2020/9910",
+    "bill_number": "SYN06/2026/1042",
+    "bill_datetime": "22/02/2026 17:00",
+    "patient_name": "Meena Kulkarni",
+    "patient_age": "52",
+    "patient_gender": "F",
+    "patient_hospital_id": "IP2600402",
+    "patient_uhid": "12-3456-7890-1006",
+    "patient_address": "Meena residence, Pune 411052",
+    "patient_signature": true,
+    "authorised_signature": true,
+    "admission_datetime": "21/02/2026 09:15",
+    "discharge_datetime": "22/02/2026 17:00",
+    "admission_type": "inpatient",
+    "procedure": "Chemotherapy cycle",
+    "room_class": "single",
+    "payment_mode": "cashless (insurance)",
+    "insurance_info": "Policy shown; TPA authorisation on file",
+    "gross_amount": 21756.5,
+    "discount_amount": 0.0,
+    "tax_amount": 0.0,
+    "net_payable": 21756.5
+  },
+  "line_items": [
+    {
+      "item": "ADMISSION SERVICES",
+      "unit": null,
+      "quantity": 1.0,
+      "rate": 350.0,
+      "total": 350.0,
+      "section": "REGISTRATION"
+    },
+    {
+      "item": "SINGLE ROOM - AC",
+      "unit": null,
+      "quantity": 2.0,
+      "rate": 6000.0,
+      "total": 12000.0,
+      "section": "ROOM CHARGES"
+    },
+    {
+      "item": "IP CONSULTATION - PHYSICIAN",
+      "unit": null,
+      "quantity": 1.0,
+      "rate": 900.0,
+      "total": 900.0,
+      "section": "CONSULTATION"
+    },
+    {
+      "item": "IP CONSULTATION - SURGEON",
+      "unit": null,
+      "quantity": 2.0,
+      "rate": 1200.0,
+      "total": 2400.0,
+      "section": "CONSULTATION"
+    },
+    {
+      "item": "COMPLETE BLOOD COUNT (CBC)",
+      "unit": null,
+      "quantity": 2.0,
+      "rate": 380.0,
+      "total": 760.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "SERUM ELECTROLYTES",
+      "unit": null,
+      "quantity": 1.0,
+      "rate": 520.0,
+      "total": 520.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "LIVER FUNCTION TEST",
+      "unit": null,
+      "quantity": 1.0,
+      "rate": 780.0,
+      "total": 780.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "KIDNEY FUNCTION TEST",
+      "unit": null,
+      "quantity": 2.0,
+      "rate": 720.0,
+      "total": 1440.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "RANDOM BLOOD SUGAR",
+      "unit": null,
+      "quantity": 1.0,
+      "rate": 120.0,
+      "total": 120.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "INJ CEFTRIAXONE 1GM",
+      "unit": null,
+      "quantity": 3.0,
+      "rate": 62.0,
+      "total": 186.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "INJ PANTOPRAZOLE 40MG",
+      "unit": null,
+      "quantity": 4.0,
+      "rate": 38.0,
+      "total": 152.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "INJ ONDANSETRON 2MG/ML",
+      "unit": null,
+      "quantity": 5.0,
+      "rate": 14.0,
+      "total": 70.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "INJ TRAMADOL 50MG",
+      "unit": null,
+      "quantity": 6.0,
+      "rate": 22.0,
+      "total": 132.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "TAB PARACETAMOL 650MG",
+      "unit": null,
+      "quantity": 3.0,
+      "rate": 3.5,
+      "total": 10.5,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "TAB PANTOPRAZOLE 40MG",
+      "unit": null,
+      "quantity": 4.0,
+      "rate": 6.0,
+      "total": 24.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "INJ AMIKACIN 500MG",
+      "unit": null,
+      "quantity": 5.0,
+      "rate": 48.0,
+      "total": 240.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "IV FLUID RL 500ML",
+      "unit": null,
+      "quantity": 6.0,
+      "rate": 45.0,
+      "total": 270.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "IV FLUID NS 500ML",
+      "unit": null,
+      "quantity": 3.0,
+      "rate": 42.0,
+      "total": 126.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "IV CANNULA 20G",
+      "unit": null,
+      "quantity": 2.0,
+      "rate": 55.0,
+      "total": 110.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "IV SET",
+      "unit": null,
+      "quantity": 3.0,
+      "rate": 38.0,
+      "total": 114.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "DISPOSABLE SYRINGE 5ML",
+      "unit": null,
+      "quantity": 4.0,
+      "rate": 6.0,
+      "total": 24.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "DISPOSABLE SYRINGE 10ML",
+      "unit": null,
+      "quantity": 2.0,
+      "rate": 9.0,
+      "total": 18.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "SURGICAL GLOVES STERILE 7.0",
+      "unit": null,
+      "quantity": 3.0,
+      "rate": 26.0,
+      "total": 78.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "EXAMINATION GLOVES (NITRILE)",
+      "unit": null,
+      "quantity": 4.0,
+      "rate": 8.0,
+      "total": 32.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "BIOMEDICAL WASTE CHARGES",
+      "unit": null,
+      "quantity": 2.0,
+      "rate": 150.0,
+      "total": 300.0,
+      "section": "MISCELLANEOUS"
+    },
+    {
+      "item": "DIET CHARGES",
+      "unit": null,
+      "quantity": 2.0,
+      "rate": 300.0,
+      "total": 600.0,
+      "section": "MISCELLANEOUS"
+    }
+  ],
+  "printed_subtotals": {
+    "REGISTRATION": 350.0,
+    "ROOM CHARGES": 12000.0,
+    "CONSULTATION": 3300.0,
+    "INVESTIGATIONS": 3620.0,
+    "PHARMACY": 1210.5,
+    "CONSUMABLES": 376.0,
+    "MISCELLANEOUS": 900.0
+  },
+  "printed_grand_total": 21756.5,
+  "line_count": 26,
+  "defects": [
+    {
+      "type": "missing_field",
+      "field": "hospital_gstin",
+      "note": "IS 19493 mandatory field 'hospital_gstin' is blank on this bill."
+    },
+    {
+      "type": "missing_unit_column",
+      "note": "The bill has no Unit column; IS 19493 requires one on every charge line."
+    }
+  ],
+  "is_clean": false
+}

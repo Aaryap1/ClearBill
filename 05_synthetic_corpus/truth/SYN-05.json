@@ -1,0 +1,197 @@
+{
+  "id": "SYN-05",
+  "header": {
+    "hospital_name": "Lakeview Medical Trust Hospital",
+    "hospital_address": "Boat Club Road, Pune 411001",
+    "hospital_gstin": "27AAATL5555J1ZW",
+    "hospital_contact": "020-26130500",
+    "hospital_registration": "MH/HOSP/2015/1198",
+    "bill_number": "SYN05/2026/1035",
+    "bill_datetime": "09/05/2026 14:10",
+    "patient_name": "Abdul Karim",
+    "patient_age": "49",
+    "patient_gender": "M",
+    "patient_hospital_id": "IP2600377",
+    "patient_uhid": "12-3456-7890-1005",
+    "patient_address": "Abdul residence, Pune 411001",
+    "patient_signature": true,
+    "authorised_signature": true,
+    "admission_datetime": "09/05/2026 09:00",
+    "discharge_datetime": "09/05/2026 14:10",
+    "admission_type": "day-care",
+    "procedure": "Haemodialysis (single session)",
+    "room_class": "day-care",
+    "payment_mode": "cashless (insurance)",
+    "insurance_info": "Policy shown; TPA authorisation on file",
+    "gross_amount": 29395.0,
+    "discount_amount": 1469.75,
+    "tax_amount": 0.0,
+    "net_payable": 27925.25
+  },
+  "line_items": [
+    {
+      "item": "ADMISSION SERVICES",
+      "unit": "nos",
+      "quantity": 1.0,
+      "rate": 350.0,
+      "total": 350.0,
+      "section": "REGISTRATION"
+    },
+    {
+      "item": "IP CONSULTATION - PHYSICIAN",
+      "unit": "visit",
+      "quantity": 1.0,
+      "rate": 900.0,
+      "total": 900.0,
+      "section": "CONSULTATION"
+    },
+    {
+      "item": "COMPLETE BLOOD COUNT (CBC)",
+      "unit": "test",
+      "quantity": 2.0,
+      "rate": 380.0,
+      "total": 760.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "SERUM ELECTROLYTES",
+      "unit": "test",
+      "quantity": 1.0,
+      "rate": 520.0,
+      "total": 520.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "LIVER FUNCTION TEST",
+      "unit": "test",
+      "quantity": 1.0,
+      "rate": 780.0,
+      "total": 780.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "KIDNEY FUNCTION TEST",
+      "unit": "test",
+      "quantity": 2.0,
+      "rate": 720.0,
+      "total": 1440.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "OPERATION THEATRE CHARGES",
+      "unit": "hour",
+      "quantity": 2.0,
+      "rate": 4500.0,
+      "total": 9000.0,
+      "section": "OT / PROCEDURE"
+    },
+    {
+      "item": "SURGEON'S FEE",
+      "unit": "nos",
+      "quantity": 1.0,
+      "rate": 15000.0,
+      "total": 15000.0,
+      "section": "OT / PROCEDURE"
+    },
+    {
+      "item": "INJ CEFTRIAXONE 1GM",
+      "unit": "vial",
+      "quantity": 2.0,
+      "rate": 62.0,
+      "total": 124.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "INJ PANTOPRAZOLE 40MG",
+      "unit": "vial",
+      "quantity": 3.0,
+      "rate": 38.0,
+      "total": 114.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "INJ ONDANSETRON 2MG/ML",
+      "unit": "amp",
+      "quantity": 4.0,
+      "rate": 14.0,
+      "total": 56.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "INJ TRAMADOL 50MG",
+      "unit": "amp",
+      "quantity": 5.0,
+      "rate": 22.0,
+      "total": 110.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "TAB PARACETAMOL 650MG",
+      "unit": "tab",
+      "quantity": 2.0,
+      "rate": 3.5,
+      "total": 7.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "IV CANNULA 20G",
+      "unit": "nos",
+      "quantity": 1.0,
+      "rate": 55.0,
+      "total": 55.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "IV SET",
+      "unit": "nos",
+      "quantity": 2.0,
+      "rate": 38.0,
+      "total": 76.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "DISPOSABLE SYRINGE 5ML",
+      "unit": "nos",
+      "quantity": 3.0,
+      "rate": 6.0,
+      "total": 18.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "DISPOSABLE SYRINGE 10ML",
+      "unit": "nos",
+      "quantity": 1.0,
+      "rate": 9.0,
+      "total": 9.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "SURGICAL GLOVES STERILE 7.0",
+      "unit": "pair",
+      "quantity": 2.0,
+      "rate": 26.0,
+      "total": 52.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "EXAMINATION GLOVES (NITRILE)",
+      "unit": "nos",
+      "quantity": 3.0,
+      "rate": 8.0,
+      "total": 24.0,
+      "section": "CONSUMABLES"
+    }
+  ],
+  "printed_subtotals": {
+    "REGISTRATION": 350.0,
+    "CONSULTATION": 900.0,
+    "INVESTIGATIONS": 3500.0,
+    "OT / PROCEDURE": 24000.0,
+    "PHARMACY": 411.0,
+    "CONSUMABLES": 234.0
+  },
+  "printed_grand_total": 29395.0,
+  "line_count": 19,
+  "defects": [],
+  "is_clean": true
+}

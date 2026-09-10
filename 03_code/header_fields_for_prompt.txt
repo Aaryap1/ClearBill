@@ -1,0 +1,30 @@
+EXTRACTION PROMPT ADD-ON — bill header (IS 19493:2025 fields)
+============================================================
+Append to the transcription instruction. Gemini reads only; it must copy what
+is printed and leave a field null if the bill does not show it. It must NOT
+guess, expand abbreviations, or normalise dates.
+
+  "Also return a `header` object with these fields, copied exactly as printed,
+   null if absent:
+     hospital_name, hospital_address, hospital_gstin, hospital_contact,
+     hospital_registration, hospital_accreditation,
+     bill_number, bill_datetime,
+     patient_name, patient_age, patient_gender, patient_hospital_id,
+     patient_uhid, patient_address, patient_gstin,
+     admission_datetime, discharge_datetime, admission_type,
+     gross_amount, discount_amount, tax_amount, net_payable,
+     payment_mode, insurance_info,
+     patient_signature (true if a patient/next-of-kin signature block is
+       present, else false),
+     authorised_signature (true if a hospital authorised-signatory block is
+       present, else false)."
+
+  "For every line item also return `unit` (e.g. 'nos', 'day', 'ml') exactly as
+   printed, null if the bill has no unit column."
+
+Then run completeness.js on { header, line_items }. The check is deterministic:
+every 'missing' line it prints names the IS 19493 element it came from.
+
+Note on status: IS 19493:2025 is a VOLUNTARY BIS guideline, not law. The check
+reports what the standard expects. Keep it visually separate from the NPPA
+ceiling check, which is a statutory price cap and a different kind of finding.

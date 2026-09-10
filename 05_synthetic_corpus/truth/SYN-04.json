@@ -1,0 +1,255 @@
+{
+  "id": "SYN-04",
+  "header": {
+    "hospital_name": "City Care Superspeciality Hospital",
+    "hospital_address": "Station Road, Nashik 422001",
+    "hospital_gstin": "27AADCC4444K1ZR",
+    "hospital_contact": "0253-2311220",
+    "hospital_registration": "MH/HOSP/2017/6033",
+    "bill_number": "SYN04/2026/1028",
+    "bill_datetime": "20/06/2026 12:00",
+    "patient_name": "Priya Salunke",
+    "patient_age": "28",
+    "patient_gender": "F",
+    "patient_hospital_id": "IP2600310",
+    "patient_uhid": "12-3456-7890-1004",
+    "patient_address": "Priya residence, Nashik 422001",
+    "patient_signature": true,
+    "authorised_signature": true,
+    "admission_datetime": "18/06/2026 02:40",
+    "discharge_datetime": "20/06/2026 12:00",
+    "admission_type": "inpatient",
+    "procedure": "Normal vaginal delivery",
+    "room_class": "twin-sharing",
+    "payment_mode": "cashless (insurance)",
+    "insurance_info": "Policy shown; TPA authorisation on file",
+    "gross_amount": 71064.0,
+    "discount_amount": 0.0,
+    "tax_amount": 0.0,
+    "net_payable": 71064.0
+  },
+  "line_items": [
+    {
+      "item": "ADMISSION SERVICES",
+      "unit": "nos",
+      "quantity": 1.0,
+      "rate": 350.0,
+      "total": 350.0,
+      "section": "REGISTRATION"
+    },
+    {
+      "item": "SINGLE ROOM - AC",
+      "unit": "day",
+      "quantity": 3.0,
+      "rate": 6000.0,
+      "total": 18000.0,
+      "section": "ROOM CHARGES"
+    },
+    {
+      "item": "TWIN SHARING ROOM",
+      "unit": "day",
+      "quantity": 3.0,
+      "rate": 3500.0,
+      "total": 10500.0,
+      "section": "ROOM CHARGES"
+    },
+    {
+      "item": "IP CONSULTATION - PHYSICIAN",
+      "unit": "visit",
+      "quantity": 2.0,
+      "rate": 900.0,
+      "total": 1800.0,
+      "section": "CONSULTATION"
+    },
+    {
+      "item": "IP CONSULTATION - PHYSICIAN",
+      "unit": "visit",
+      "quantity": 2.0,
+      "rate": 900.0,
+      "total": 1800.0,
+      "section": "CONSULTATION"
+    },
+    {
+      "item": "IP CONSULTATION - SURGEON",
+      "unit": "visit",
+      "quantity": 3.0,
+      "rate": 1200.0,
+      "total": 3600.0,
+      "section": "CONSULTATION"
+    },
+    {
+      "item": "COMPLETE BLOOD COUNT (CBC)",
+      "unit": "test",
+      "quantity": 2.0,
+      "rate": 380.0,
+      "total": 760.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "SERUM ELECTROLYTES",
+      "unit": "test",
+      "quantity": 1.0,
+      "rate": 520.0,
+      "total": 520.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "LIVER FUNCTION TEST",
+      "unit": "test",
+      "quantity": 1.0,
+      "rate": 780.0,
+      "total": 780.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "KIDNEY FUNCTION TEST",
+      "unit": "test",
+      "quantity": 2.0,
+      "rate": 720.0,
+      "total": 1440.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "OPERATION THEATRE CHARGES",
+      "unit": "hour",
+      "quantity": 2.0,
+      "rate": 4500.0,
+      "total": 9000.0,
+      "section": "OT / PROCEDURE"
+    },
+    {
+      "item": "SURGEON'S FEE",
+      "unit": "nos",
+      "quantity": 1.0,
+      "rate": 15000.0,
+      "total": 15000.0,
+      "section": "OT / PROCEDURE"
+    },
+    {
+      "item": "ANAESTHESIA CHARGES",
+      "unit": "nos",
+      "quantity": 1.0,
+      "rate": 6000.0,
+      "total": 6000.0,
+      "section": "OT / PROCEDURE"
+    },
+    {
+      "item": "INJ CEFTRIAXONE 1GM",
+      "unit": "vial",
+      "quantity": 4.0,
+      "rate": 62.0,
+      "total": 248.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "INJ PANTOPRAZOLE 40MG",
+      "unit": "vial",
+      "quantity": 5.0,
+      "rate": 38.0,
+      "total": 190.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "INJ ONDANSETRON 2MG/ML",
+      "unit": "amp",
+      "quantity": 6.0,
+      "rate": 14.0,
+      "total": 84.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "INJ TRAMADOL 50MG",
+      "unit": "amp",
+      "quantity": 7.0,
+      "rate": 22.0,
+      "total": 154.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "TAB PARACETAMOL 650MG",
+      "unit": "tab",
+      "quantity": 4.0,
+      "rate": 3.5,
+      "total": 14.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "TAB PANTOPRAZOLE 40MG",
+      "unit": "tab",
+      "quantity": 5.0,
+      "rate": 6.0,
+      "total": 30.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "IV CANNULA 20G",
+      "unit": "nos",
+      "quantity": 2.0,
+      "rate": 55.0,
+      "total": 110.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "IV SET",
+      "unit": "nos",
+      "quantity": 3.0,
+      "rate": 38.0,
+      "total": 114.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "DISPOSABLE SYRINGE 5ML",
+      "unit": "nos",
+      "quantity": 4.0,
+      "rate": 6.0,
+      "total": 24.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "DISPOSABLE SYRINGE 10ML",
+      "unit": "nos",
+      "quantity": 2.0,
+      "rate": 9.0,
+      "total": 18.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "SURGICAL GLOVES STERILE 7.0",
+      "unit": "pair",
+      "quantity": 3.0,
+      "rate": 26.0,
+      "total": 78.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "BIOMEDICAL WASTE CHARGES",
+      "unit": "nos",
+      "quantity": 3.0,
+      "rate": 150.0,
+      "total": 450.0,
+      "section": "MISCELLANEOUS"
+    }
+  ],
+  "printed_subtotals": {
+    "REGISTRATION": 350.0,
+    "ROOM CHARGES": 28500.0,
+    "CONSULTATION": 7200.0,
+    "INVESTIGATIONS": 3500.0,
+    "OT / PROCEDURE": 30000.0,
+    "PHARMACY": 720.0,
+    "CONSUMABLES": 344.0,
+    "MISCELLANEOUS": 450.0
+  },
+  "printed_grand_total": 71064.0,
+  "line_count": 25,
+  "defects": [
+    {
+      "type": "duplicate",
+      "section": "CONSULTATION",
+      "item": "IP CONSULTATION - PHYSICIAN",
+      "amount": 1800.0,
+      "note": "'IP CONSULTATION - PHYSICIAN' at Rs 1800.00 is printed twice in CONSULTATION."
+    }
+  ],
+  "is_clean": false
+}

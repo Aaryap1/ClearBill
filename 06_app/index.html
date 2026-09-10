@@ -1,0 +1,1665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>ClearBill — hospital bill, checkable</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2A211A">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ClearBill">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=Courier+Prime:wght@400;700&display=swap">
+<style>
+  :root{
+    --paper:#EFE8DA; --card:#F5F0E3; --field:#F7F3E8; --ink:#2A211A; --soft:#8A7A5F;
+    --rule:#C6B99E; --dash:#B6A988;
+    --red:#B0421C; --red-bg:#F2E3DA;
+    --ochre:#96631A; --ochre-bg:#F1E7D6;
+    --green:#3C5A4C; --green-bg:#E3EBE4;
+    --sh:0 1px 2px rgba(42,33,26,.05), 0 16px 38px -22px rgba(42,33,26,.22);
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --paper:#161109; --card:#1D170D; --field:#221B10; --ink:#E9E0CD; --soft:#9C8C6F;
+    --rule:#39301F; --dash:#463A26;
+    --red:#E27C4A; --red-bg:#2A1C12;
+    --ochre:#D3A24C; --ochre-bg:#261E10;
+    --green:#74AB92; --green-bg:#16241E;
+    --sh:0 1px 2px rgba(0,0,0,.4), 0 16px 38px -22px rgba(0,0,0,.6);
+  }}
+  :root[data-theme="dark"]{
+    --paper:#161109; --card:#1D170D; --field:#221B10; --ink:#E9E0CD; --soft:#9C8C6F;
+    --rule:#39301F; --dash:#463A26;
+    --red:#E27C4A; --red-bg:#2A1C12;
+    --ochre:#D3A24C; --ochre-bg:#261E10;
+    --green:#74AB92; --green-bg:#16241E;
+    --sh:0 1px 2px rgba(0,0,0,.4), 0 16px 38px -22px rgba(0,0,0,.6);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{background:var(--paper);color:var(--ink);
+    font-family:"Spectral",Georgia,serif;font-size:16.5px;line-height:1.55;
+    padding:24px 16px calc(84px + env(safe-area-inset-bottom));
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E")}
+  .wrap{max-width:560px;margin:0 auto}
+  /* Past phone width the app was a 560px column adrift in a mostly-empty
+     page, with a tab bar that stretched full-width regardless — each button
+     smeared across huge gaps. Past 620px the column gets a visible edge and
+     sits on its own ground, so the surrounding space reads as margin around
+     a deliberately-sized app, not empty page. */
+  @media (min-width:620px){
+    body{padding-top:40px;padding-bottom:calc(84px + 24px + env(safe-area-inset-bottom))}
+    .wrap{background:var(--card);border:1px solid var(--rule);border-radius:16px;
+      box-shadow:var(--sh);padding:28px 28px 8px;margin-bottom:40px}
+  }
+  .arch{font-family:"Archivo",system-ui,sans-serif}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+  .tnum{font-variant-numeric:tabular-nums}
+  .cour{font-family:"Courier Prime",monospace}
+
+  header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  header h1{font-family:"Archivo",sans-serif;font-weight:800;font-size:1.4rem;letter-spacing:-.02em}
+  header .tag{font-family:"IBM Plex Mono",monospace;font-size:.62rem;letter-spacing:.06em;color:var(--soft);margin-top:3px;max-width:30ch}
+  header .instbtn{font-family:"Archivo",sans-serif;font-weight:600;font-size:.66rem;letter-spacing:.03em;
+    border:1.5px solid var(--rule);background:transparent;color:var(--ink);padding:6px 10px;border-radius:8px;cursor:pointer;white-space:nowrap}
+  .langsw{display:flex;gap:4px}
+  .langsw button{font-family:"IBM Plex Mono",monospace;font-size:.66rem;font-weight:700;border:1.5px solid var(--rule);
+    background:transparent;color:var(--soft);padding:5px 8px;border-radius:7px;cursor:pointer;min-width:32px}
+  .langsw button.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+  .sec-label{font-family:"IBM Plex Mono",monospace;font-size:.64rem;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--soft);display:flex;align-items:center;gap:10px;margin:26px 0 12px}
+  .sec-label::after{content:"";flex:1;border-top:1.5px dashed var(--dash)}
+
+  .card{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:16px;box-shadow:var(--sh)}
+  .lead{font-size:.9rem;color:var(--soft)}
+  label{display:block;font-family:"Archivo",sans-serif;font-size:.78rem;font-weight:600;margin:14px 0 5px}
+  label:first-child{margin-top:0}
+  label .hint{font-family:"Spectral",serif;font-weight:400;color:var(--soft);font-size:.76rem}
+  .fin{position:relative;display:flex;align-items:center}
+  .fin .pfx{position:absolute;left:12px;color:var(--soft);font-family:"IBM Plex Mono",monospace}
+  input[type=number],input[type=password]{width:100%;min-height:46px;border:1.5px solid var(--rule);border-radius:9px;
+    padding:11px 12px 11px 26px;font-size:1rem;font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;
+    color:var(--ink);background:var(--field);outline:none;font-weight:500}
+  input[type=password]{padding-left:12px;font-family:"Spectral",serif}
+  input:focus{border-color:var(--ink);background:var(--card);box-shadow:0 0 0 3px var(--ochre-bg)}
+  input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .chips{display:flex;gap:6px;margin-top:8px}
+  .chip{flex:1;min-height:38px;border:1.5px solid var(--rule);background:var(--field);border-radius:8px;
+    font-family:"IBM Plex Mono",monospace;font-size:.82rem;font-weight:600;color:var(--soft);cursor:pointer}
+  .chip.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .link{background:none;border:none;color:var(--red);font-family:"Archivo",sans-serif;font-size:.8rem;font-weight:600;
+    cursor:pointer;text-decoration:underline;text-underline-offset:2px;padding:4px 0}
+  /* R4 borrow: solid filled primary button */
+  .btn{display:block;width:100%;min-height:48px;margin-top:16px;border:none;border-radius:10px;background:var(--ink);
+    color:var(--paper);font-family:"Archivo",sans-serif;font-weight:700;font-size:.9rem;letter-spacing:.01em;cursor:pointer}
+  .btn.sm{min-height:42px;font-size:.82rem;margin-top:0}
+  .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
+
+  /* the slip */
+  .slip{background:var(--card);border:1px solid var(--rule);border-radius:12px;box-shadow:var(--sh);
+    margin-top:16px;padding:18px 18px 16px}
+  .slip .mast{text-align:center}
+  .slip .mast .co{font-family:"Courier Prime",monospace;font-size:.66rem;letter-spacing:.06em;color:var(--soft)}
+  .rdash{border:0;border-top:1.5px dashed var(--dash);margin:13px 0}
+  .k{font-family:"Archivo",sans-serif;font-size:.62rem;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--soft)}
+  .amt{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;font-weight:600;font-size:2.2rem;
+    letter-spacing:-.02em;line-height:1.05;margin-top:2px}
+  .say{font-family:"Spectral",serif;font-size:.92rem;line-height:1.45;margin-top:6px;color:var(--ink)}
+  .say em{font-style:normal;color:var(--red);font-weight:600}
+
+  .bar{display:flex;height:13px;border:1.5px solid var(--ink);margin:16px 0 6px}
+  .bar i{display:block}
+  .leg{font-family:"IBM Plex Mono",monospace;font-size:.56rem;letter-spacing:.03em;color:var(--soft);display:flex;gap:10px;flex-wrap:wrap}
+
+  .tvs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+  @media(max-width:460px){.tvs{grid-template-columns:1fr}}
+  .tvs .p{border:1px solid var(--rule);border-radius:9px;padding:11px 12px;min-width:0}
+  .tvs .p h5{font-family:"Archivo",sans-serif;font-size:.58rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--soft);margin-bottom:7px}
+  .tvs .tr{display:flex;justify-content:space-between;gap:8px;font-size:.8rem;padding:3px 0}
+  .tvs .tr .v{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+  .tvs .tr.hi .v{color:var(--red);font-weight:600}
+  .tvs .tr.tot{border-top:1px solid var(--rule);margin-top:5px;padding-top:6px;font-weight:600;font-family:"Archivo",sans-serif}
+  .join{background:var(--ochre-bg);border:1px solid var(--dash);border-radius:9px;padding:11px 12px;font-size:.86rem;margin-top:11px}
+  .join b{color:var(--red);font-weight:600;font-family:"IBM Plex Mono",monospace}
+
+  .checks{margin-top:16px}
+  /* one finding = its stamp row + the two lines explaining it. Rotation and
+     the between-findings rule live on .finding, not .chk, so wrapping the
+     explanation alongside it doesn't disturb either. */
+  .finding{padding:13px 2px;border-top:1.5px dashed var(--dash)}
+  .finding:first-child{border-top:none;padding-top:0}
+  .chk{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;font-size:.86rem}
+  .chk .t{flex:1 1 58%;min-width:0}
+  .chk .t small{display:block;color:var(--soft);font-size:.76rem;margin-top:1px}
+  /* rubber-stamp finding badge */
+  .chk .st{font-family:"Courier Prime",monospace;font-size:.58rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    border:2px solid currentColor;border-radius:3px;padding:3px 7px 2px;white-space:nowrap;flex:none;line-height:1.15}
+  .finding:nth-child(odd)  .st{transform:rotate(-3deg)}
+  .finding:nth-child(even) .st{transform:rotate(2.4deg)}
+  .finding:nth-child(3n)   .st{transform:rotate(-1.2deg)}
+  .st.red{color:var(--red);background:var(--red-bg)}
+  .st.ochre{color:var(--ochre);background:var(--ochre-bg)}
+  .st.green{color:var(--green);background:var(--green-bg)}
+  /* the two-slot explanation under a finding: consequence, then action */
+  .expl{margin-top:8px;font-size:.84rem}
+  .expl .money{color:var(--soft);font-style:italic}
+  .expl .do{margin-top:7px;padding:8px 10px;background:var(--field);border-left:2px solid var(--ochre);border-radius:0 6px 6px 0}
+  .expl .do b{font-family:"Archivo",sans-serif;font-weight:700;font-size:.66rem;letter-spacing:.04em;
+    text-transform:uppercase;color:var(--ochre);display:block;margin-bottom:2px;font-style:normal}
+  .expl.ok .do{border-left-color:var(--green)}
+  .expl.ok .do b{color:var(--green)}
+
+  /* summary strip — three numbers before the detail */
+  .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+  /* min-width:0 stops a 1fr track from growing past its share to fit an
+     unbreakable figure like ₹41,395.92 — the classic grid-items-don't-shrink
+     gotcha, and without it "Deducted" alone crowds the other two tiles. */
+  .kpi{min-width:0;background:var(--field);border:1px solid var(--rule);border-radius:9px;padding:10px 8px}
+  .kpi .l{font-family:"Archivo",sans-serif;font-size:.56rem;font-weight:700;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .kpi .v{font-family:"IBM Plex Mono",monospace;font-weight:700;font-size:1rem;margin-top:2px;
+    font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  .flagtot{display:flex;justify-content:space-between;align-items:baseline;font-family:"Archivo",sans-serif;font-weight:700;
+    font-size:.82rem;border-top:1.5px solid var(--ink);border-bottom:1.5px solid var(--ink);padding:9px 2px;margin-top:14px}
+  .flagtot .v{font-family:"IBM Plex Mono",monospace}
+
+  details{border:1px solid var(--rule);border-radius:9px;margin-top:9px;overflow:hidden;background:var(--card)}
+  details>summary{list-style:none;cursor:pointer;padding:11px 13px;font-family:"Archivo",sans-serif;font-weight:600;font-size:.82rem;
+    display:flex;justify-content:space-between;align-items:center;gap:10px}
+  details>summary::-webkit-details-marker{display:none}
+  details>summary .tag{font-family:"IBM Plex Mono",monospace;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+  details>summary .tag.money{color:var(--red)}
+  details[open]>summary{border-bottom:1px solid var(--rule)}
+  .db{padding:11px 13px}
+  .li{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--rule);font-size:.84rem}
+  .li:first-child{border-top:none}
+  .li .src{display:block;color:var(--soft);font-size:.74rem;margin-top:1px}
+  .li .n{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+  .plain{font-size:.86rem;color:var(--soft);margin-top:9px}
+  .notez{background:var(--ochre-bg);border-left:3px solid var(--ochre);border-radius:0 8px 8px 0;padding:9px 11px;font-size:.84rem;margin-top:8px}
+
+  /* upload */
+  .drop{border:1.5px dashed var(--rule);border-radius:10px;padding:22px;text-align:center;color:var(--soft);
+    font-size:.88rem;cursor:pointer;background:var(--field);margin-top:14px}
+  .drop.hot{border-color:var(--red);background:var(--red-bg);color:var(--red)}
+  .drop b{color:var(--ink);font-family:"Archivo",sans-serif;font-weight:700}
+  /* what you actually picked — shown so nobody has to trust that a tap
+     silently registered */
+  .filePreview{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px;margin-top:12px}
+  .fthumb{position:relative;border-radius:8px;overflow:hidden;border:1.5px solid var(--rule);background:var(--field);
+    aspect-ratio:1;display:flex;align-items:center;justify-content:center}
+  .fthumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .fthumb .pg{position:absolute;top:3px;left:3px;background:var(--ink);color:var(--paper);font-family:"IBM Plex Mono",monospace;
+    font-size:.56rem;font-weight:700;padding:1px 5px;border-radius:4px;line-height:1.3}
+  /* the actual remove control — always present, always works, separate from
+     the rejection badge below so "cancel this photo" and "the model says
+     this isn't a bill" are never the same visual element */
+  .fthumb .fremove{position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;border:none;
+    background:rgba(42,33,26,.72);color:#fff;font-size:.8rem;line-height:1;cursor:pointer;display:flex;
+    align-items:center;justify-content:center;padding:0}
+  .fthumb .fremove:hover{background:var(--red)}
+  .fthumb.rejected{border-color:var(--red);opacity:.8}
+  .fthumb .rejbadge{position:absolute;left:0;right:0;bottom:0;background:var(--red);color:#fff;
+    font-family:"IBM Plex Mono",monospace;font-size:.5rem;font-weight:700;text-align:center;padding:2px 1px;
+    letter-spacing:.02em}
+  .wenote{grid-column:1/-1;font-size:.82rem;color:var(--soft);background:var(--field);border:1px dashed var(--rule);
+    border-radius:8px;padding:10px 12px;font-style:italic}
+  .status{font-size:.88rem;color:var(--soft);margin-top:10px;min-height:1.2em}
+  .status.err{color:var(--red)}
+  .reading{font-family:"IBM Plex Mono",monospace;font-size:.62rem;letter-spacing:.1em;color:var(--soft);margin-top:8px}
+  .rdots{letter-spacing:.3em;color:var(--red);font-size:1rem;margin-top:4px}
+
+  /* letter — tears off */
+  #letterWrap{margin-top:16px}
+  .letter{background:var(--card);border:1px solid var(--rule);border-top:0;border-radius:0 0 10px 10px;
+    padding:20px;font-family:"Courier Prime",monospace;font-size:.78rem;line-height:1.7;white-space:pre-wrap;
+    overflow-wrap:anywhere}
+  .letter .lh{font-family:"Archivo",sans-serif;font-weight:700;font-size:.6rem;letter-spacing:.08em;color:var(--soft);margin-bottom:10px}
+  .tearline{height:12px;background:var(--card);border:1px solid var(--rule);border-bottom:0;border-radius:10px 10px 0 0;
+    -webkit-mask:linear-gradient(-45deg,#0000 33%,#000 0) 0 100%/11px 12px repeat-x,linear-gradient(45deg,#0000 33%,#000 0) 0 100%/11px 12px repeat-x;
+            mask:linear-gradient(-45deg,#0000 33%,#000 0) 0 100%/11px 12px repeat-x,linear-gradient(45deg,#0000 33%,#000 0) 0 100%/11px 12px repeat-x}
+
+  .foot{margin-top:34px;padding-top:15px;border-top:1.5px dashed var(--dash);font-family:"IBM Plex Mono",monospace;
+    font-size:.66rem;color:var(--soft);line-height:1.7}
+  .hide{display:none!important}
+
+  /* ---- tabs ---- */
+  .tabpage{display:none}
+  .tabpage.on{display:block}
+  /* Fixed to the viewport (so it stays reachable while scrolling), but its
+     own width is capped and centred to match .wrap — without this it reads
+     as a full-width bar under a narrow column, each button stretched into
+     the gap between them instead of sitting under its own tab content. */
+  .tabbar{position:fixed;left:50%;transform:translateX(-50%);bottom:0;
+    width:100%;max-width:560px;z-index:20;display:flex;
+    background:var(--card);border-top:1px solid var(--rule);
+    padding-bottom:env(safe-area-inset-bottom)}
+  @media (min-width:620px){
+    .tabbar{bottom:24px;border:1px solid var(--rule);border-radius:14px;
+      box-shadow:var(--sh);overflow:hidden}
+  }
+  .tabbtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+    padding:9px 4px calc(9px + env(safe-area-inset-bottom, 0px));border:none;background:none;cursor:pointer;
+    font-family:"Archivo",sans-serif;font-size:.62rem;font-weight:600;color:var(--soft)}
+  .tabbtn .dot{width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;
+    font-family:"IBM Plex Mono",monospace;font-weight:700;font-size:.72rem;color:var(--soft)}
+  .tabbtn.on{color:var(--ink)}
+  .tabbtn.on .dot{background:var(--ink);color:var(--paper)}
+
+  /* ---- letter confirm card ---- */
+  /* each row you can actually choose to include is a real checkbox — not a
+     read-only preview — so unchecking it visibly leaves that section out of
+     the generated letter, not just out of this summary */
+  .inclrow{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:.86rem;padding:9px 0;
+    border-top:1px dashed var(--dash);cursor:pointer}
+  .inclrow:first-of-type{border-top:none}
+  .inclrow.static{cursor:default;color:var(--soft)}
+  .inclrow input[type=checkbox]{width:17px;height:17px;accent-color:var(--ink);flex:none;margin-right:2px}
+  .inclrow .incltext{flex:1;min-width:0}
+  .inclrow:has(input:not(:checked)) .incltext{color:var(--soft);text-decoration:line-through}
+  .inclrow .v{font-family:"IBM Plex Mono",monospace;color:var(--soft);white-space:nowrap}
+  .emptystate{text-align:center;color:var(--soft);font-size:.88rem;padding:20px 10px}
+
+  /* ---- how-it-works (About tab) ---- */
+  .steps3{display:flex;flex-direction:column;gap:11px}
+  .step3{display:flex;gap:10px;align-items:flex-start}
+  .step3 .n{font-family:"IBM Plex Mono",monospace;font-weight:700;font-size:.82rem;color:var(--red);flex:none;width:18px}
+  .step3 b{font-family:"Archivo",sans-serif;display:block;font-size:.86rem;margin-bottom:1px}
+  .step3 p{margin:0;font-size:.84rem;color:var(--soft)}
+  .gcstrip{font-family:"IBM Plex Mono",monospace;font-size:.58rem;letter-spacing:.05em;color:var(--soft);margin-top:5px;text-transform:uppercase}
+  .gcstrip span{color:var(--ink)}
+  .gcintro{margin:0 0 10px;font-size:.84rem;color:var(--soft)}
+  .gcrows{display:flex;flex-direction:column;gap:9px}
+  .gcrow{display:flex;gap:9px;align-items:flex-start;font-size:.84rem;line-height:1.4}
+  .gcrow .gcn{font-family:"Archivo",sans-serif;font-weight:700;flex:none;min-width:104px}
+  .gcrow .gcd{color:var(--soft)}
+  .gcrow .gclive{font-family:"IBM Plex Mono",monospace;font-size:.6rem;font-weight:700;letter-spacing:.04em;padding:1px 5px;border-radius:3px;flex:none;margin-top:1px}
+  .gcrow .gclive.on{background:var(--red);color:#fff}
+  .gcrow .gclive.eval{background:var(--dash);color:var(--ink)}
+  @media (max-width:440px){ .gcrow{flex-wrap:wrap} .gcrow .gcn{min-width:0} }
+  a{color:var(--red)}
+  :focus-visible{outline:2px solid var(--red);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>ClearBill</h1>
+      <p class="tag" id="tagLine">Your settlement, decomposed &mdash; then the itemised bill checked against what insurers don't pay for.</p>
+      <p class="gcstrip" id="gcStrip">Runs on Google Cloud &mdash; <span>Gemini &middot; Cloud Run &middot; Document AI</span></p>
+      <p class="tag hide" id="iosHint" style="margin-top:6px">To install: tap <b>Share</b> &rarr; <b>Add to Home Screen</b>.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:7px">
+      <div class="langsw" id="langsw" role="group" aria-label="Language">
+        <button data-lang="en" class="on">EN</button><button data-lang="hi">हिं</button><button data-lang="mr">मर</button>
+      </div>
+      <button class="instbtn hide" id="installBtn">Install</button>
+    </div>
+  </header>
+
+  <!-- TAB 1: SETTLEMENT -->
+  <div class="tabpage on" id="page-settlement">
+    <div class="sec-label" id="secSettlement">Settlement</div>
+    <div class="card">
+      <label id="lblTotal">Total bill amount <span class="hint">&mdash; the hospital's final bill</span></label>
+      <div class="fin"><span class="pfx">&#8377;</span><input type="number" id="total" step="any" placeholder="0"></div>
+      <label id="lblCounter">Amount paid at the discharge counter <span class="hint">&mdash; what you handed over</span></label>
+      <div class="fin"><span class="pfx">&#8377;</span><input type="number" id="counter" step="any" placeholder="0"></div>
+      <label id="lblDiscount">Hospital discount <span class="hint">&mdash; MOU / PPN waiver, if any</span></label>
+      <div class="fin"><span class="pfx">&#8377;</span><input type="number" id="discount" step="any" placeholder="0"></div>
+      <label id="lblCopay">Co-pay percentage <span class="hint">&mdash; your policy's share</span></label>
+      <div class="fin"><span class="pfx">%</span><input type="number" id="copay" step="any" min="0" max="100" placeholder="0"></div>
+      <div class="chips" id="copayChips">
+        <button class="chip" data-v="0">0</button><button class="chip" data-v="5">5</button>
+        <button class="chip" data-v="10">10</button><button class="chip" data-v="15">15</button>
+        <button class="chip" data-v="20">20</button>
+      </div>
+      <div style="margin-top:14px"><button class="link" id="egBtn">Load the worked example</button></div>
+    </div>
+
+    <div class="slip hide" id="settleOut">
+      <div class="k" id="neverItemisedLbl">Never itemised &mdash; you were not told what this was for</div>
+      <div class="amt tnum" id="mysteryAmt">&#8377;0</div>
+      <div class="say" id="mysterySub"></div>
+      <hr class="rdash">
+      <div class="tvs"><div class="p">
+        <div class="tr"><span id="dedAbsorbedLbl">Deduction absorbed by you</span><span class="v" id="rDed">&#8377;0</span></div>
+        <div class="tr"><span id="copayLbl">Co-pay</span><span class="v" id="rCopay">&#8377;0</span></div>
+        <div class="tr tot"><span id="counterPaymentLbl">Counter payment</span><span class="v" id="rCounter">&#8377;0</span></div>
+      </div><div class="p">
+        <div class="tr"><span id="insurerApprovedLbl">Insurer approved</span><span class="v" id="sInsurer">&#8377;0</span></div>
+        <div class="tr"><span id="rCopayDesc">Approved base</span><span class="v" id="sBase">&#8377;0</span></div>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- TAB 2: FINDINGS -->
+  <div class="tabpage" id="page-findings">
+    <div class="sec-label" id="secBill">Check the itemised bill</div>
+    <div class="card">
+      <p class="lead" id="billLead">Upload photos of your itemised bill (all pages, if more than one). Google Gemini reads them into rows; the checks then run in your browser against the published lists.</p>
+      <div class="drop" id="drop"><span id="dropText"><b>Tap to choose photos</b><br>or drag images here (JPG / PNG) &mdash; multiple pages OK</span>
+        <input type="file" id="file" accept="image/*" multiple class="hide"></div>
+      <div class="filePreview hide" id="filePreview"></div>
+      <button class="btn sm hide" id="checkPhotosBtn" style="margin-top:10px">Check these photos</button>
+      <div class="status" id="status"></div>
+      <div id="keyRow" class="hide" style="margin-top:12px">
+        <label id="apikeyLbl">Gemini API key <span class="hint">&mdash; one time &middot; <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">get one here</a> &middot; saved only in this browser</span></label>
+        <input type="password" id="apiKey" placeholder="AIza&hellip;" autocomplete="off">
+      </div>
+    </div>
+    <p class="emptystate" id="findingsEmpty">Upload a bill above to see findings here. Nothing to check yet.</p>
+    <div id="report"></div>
+  </div>
+
+  <!-- TAB 3: LETTER — nothing drafts until Generate is tapped -->
+  <div class="tabpage" id="page-letter">
+    <div class="sec-label" id="secLetter">Letter</div>
+    <p class="emptystate" id="letterEmpty">Upload a bill in the Findings tab to see what your letter will include.</p>
+    <div id="letterConfirm" class="hide">
+      <div class="card">
+        <div class="k" id="letterConfirmHead" style="margin-bottom:8px">This letter will include</div>
+        <div id="letterIncludes"></div>
+      </div>
+      <button class="btn" id="genLetterTab">Generate the letter</button>
+    </div>
+    <div id="letterWrap"></div>
+  </div>
+
+  <!-- TAB 4: ABOUT -->
+  <div class="tabpage" id="page-about">
+    <div class="sec-label" id="secAbout">About this check</div>
+    <div class="card">
+      <div class="k" style="margin-bottom:10px">How it works</div>
+      <div class="steps3">
+        <div class="step3"><span class="n">1</span><p><b id="howStep1b">The model reads</b><span id="howStep1p">Gemini turns your photo into rows. Nothing else.</span></p></div>
+        <div class="step3"><span class="n">2</span><p><b id="howStep2b">Code judges</b><span id="howStep2p">Every flag after that is a table lookup or arithmetic &mdash; never the model's opinion.</span></p></div>
+        <div class="step3"><span class="n">3</span><p><b id="howStep3b">You decide</b><span id="howStep3p">Nothing is sent anywhere on your behalf. The letter is yours to send or not.</span></p></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="k" id="gcloudHead" style="margin-bottom:4px">Built on Google Cloud</div>
+      <p class="gcintro" id="gcloudIntro">ClearBill runs end to end on Google Cloud. Each service does one job:</p>
+      <div class="gcrows" id="gcloudRows"></div>
+    </div>
+    <div class="foot" id="footText">
+      Base = total bill &minus; deduction &minus; hospital discount. Co-pay applies only to the base. Counter = deduction + co-pay.<br><br>
+      The model only reads the bill into rows. Every flag after that is a table lookup or an arithmetic comparison, shown with its source.
+      &ldquo;Matches the published non-payable list&rdquo; is not &ldquo;overcharge&rdquo;. IS 19493 is a voluntary standard; NPPA ceilings are statutory.<br><br>
+      IRDAI List I &middot; NPPA ceiling prices &middot; IS 19493:2025.
+    </div>
+  </div>
+
+</div>
+
+<nav class="tabbar" id="tabbar">
+  <button class="tabbtn on" data-tab="settlement"><span class="dot">&#8377;</span><span id="tabLblSettlement">Settlement</span></button>
+  <button class="tabbtn" data-tab="findings"><span class="dot" id="tabDotFindings">&mdash;</span><span id="tabLblFindings">Findings</span></button>
+  <button class="tabbtn" data-tab="letter"><span class="dot">&#9993;</span><span id="tabLblLetter">Letter</span></button>
+  <button class="tabbtn" data-tab="about"><span class="dot">i</span><span id="tabLblAbout">About</span></button>
+</nav>
+<div id="printArea" style="display:none"></div>
+
+<script>
+const NON_PAYABLE = [
+  { tier:"exact", item:"Admission/Registration Charges", keywords:"admission service|registration charge|admission charge" },
+  { tier:"exact", item:"Medical Records", keywords:"medical record" },
+  { tier:"exact", item:"Documentation Charges / Administrative Expenses", keywords:"documentation charge|administrative expense|admin charge" },
+  { tier:"exact", item:"TPA Charges", keywords:"tpa charge|insurance processing|insurance charge" },
+  { tier:"exact", item:"Discharge Procedure Charges", keywords:"discharge procedure|discharge charge" },
+  { tier:"exact", item:"Certificate Charges", keywords:"certificate charge" },
+  { tier:"exact", item:"Medical Certificate", keywords:"medical certificate" },
+  { tier:"exact", item:"Birth Certificate", keywords:"birth certificate" },
+  { tier:"exact", item:"Photocopies Charges", keywords:"photocopy|photocopies|xerox" },
+  { tier:"exact", item:"Courier Charges", keywords:"courier" },
+  { tier:"exact", item:"Conveyance Charges", keywords:"conveyance" },
+  { tier:"exact", item:"Medico Legal Case Charges", keywords:"medico legal|mlc charge" },
+  { tier:"exact", item:"Maintenance Charges", keywords:"maintenance charge" },
+  { tier:"exact", item:"Surcharges", keywords:"surcharge" },
+  { tier:"exact", item:"Attendant Charges", keywords:"attendant charge" },
+  { tier:"exact", item:"Entrance Pass / Visitors Pass Charges", keywords:"visitor pass|entrance pass" },
+  { tier:"exact", item:"Incidental Expenses / Misc. Charges", keywords:"incidental|miscellaneous charge|misc charge" },
+  { tier:"exact", item:"Daily Chart Charges", keywords:"daily chart" },
+  { tier:"exact", item:"Diabetic Chart Charges", keywords:"diabetic chart" },
+  { tier:"exact", item:"Preparation Charges", keywords:"preparation charge" },
+  { tier:"exact", item:"Patient Identification Band / Name Tag", keywords:"identification band|name tag|id band" },
+  { tier:"exact", item:"Blood Reservation Charges / Ante Natal Booking", keywords:"blood reservation|ante natal booking" },
+  { tier:"review", item:"Service Charges Where Nursing Charge Also Charged", keywords:"service charge" },
+  { tier:"review", item:"Referral Doctor's Fees", keywords:"referral doctor|referral fee" },
+  { tier:"exact", item:"Alcohol Swabs", keywords:"alco swab|alcohol swab|alcohol gauze" },
+  { tier:"exact", item:"Scrub Solution / Sterillium", keywords:"sterillium|scrub solution|propanol|alcorub|povidone scrub|hand rub" },
+  { tier:"exact", item:"Savlon", keywords:"savlon" },
+  { tier:"exact", item:"Hand Wash", keywords:"hand wash" },
+  { tier:"review", item:"Micro Shield", keywords:"micro shield|microshield" },
+  { tier:"exact", item:"Washing Charges", keywords:"washing charge" },
+  { tier:"exact", item:"Laundry Charges", keywords:"laundry" },
+  { tier:"review", item:"Clean Sheet", keywords:"clean sheet" },
+  { tier:"exact", item:"Examination Gloves", keywords:"gloves examination|examination glove|exam glove|nitrile glove|glove nitrile|examination medium nitrile" },
+  { tier:"review", item:"Surgical Gloves (sterile, in-procedure)", keywords:"surgical glove|glove size|gammex|encore" },
+  { tier:"exact", item:"Paper Gloves", keywords:"paper glove" },
+  { tier:"exact", item:"Mask", keywords:"face mask|flexi mask|surgical mask" },
+  { tier:"exact", item:"Apron", keywords:"apron" },
+  { tier:"exact", item:"Gown", keywords:"gown" },
+  { tier:"exact", item:"Shoe Cover", keywords:"shoe cover|foot cover" },
+  { tier:"exact", item:"Caps", keywords:"surgical cap|theatre cap" },
+  { tier:"exact", item:"Camera Cover", keywords:"camera cover" },
+  { tier:"exact", item:"Trolly Cover", keywords:"trolley cover|trolly cover" },
+  { tier:"exact", item:"Carry Bags", keywords:"carry bag" },
+  { tier:"exact", item:"Band Aids, Bandages, Sterile Injections, Needles, Syringes", keywords:"band aid|bandaid" },
+  { tier:"review", item:"Cotton", keywords:"cotton roll|absorbent cotton" },
+  { tier:"exact", item:"Cotton Bandage", keywords:"cotton bandage" },
+  { tier:"exact", item:"Crepe Bandage", keywords:"crepe bandage" },
+  { tier:"exact", item:"Hansaplast / Adhesive Bandages", keywords:"hansaplast|adhesive bandage" },
+  { tier:"review", item:"Gauze", keywords:"gauze|gauge soft" },
+  { tier:"review", item:"Cliniplast", keywords:"cliniplast" },
+  { tier:"review", item:"Curapore", keywords:"curapore" },
+  { tier:"review", item:"Blade", keywords:"blade" },
+  { tier:"review", item:"Tourniquet", keywords:"tourniquet" },
+  { tier:"exact", item:"Eyelet Collar", keywords:"eyelet collar" },
+  { tier:"review", item:"Eye Pad", keywords:"eye pad" },
+  { tier:"review", item:"Eye Shield", keywords:"eye shield" },
+  { tier:"review", item:"Bed Pan", keywords:"bed pan|bedpan" },
+  { tier:"exact", item:"Bed Under Pad Charges", keywords:"under pad|underpad" },
+  { tier:"exact", item:"Diaper of Any Type", keywords:"diaper" },
+  { tier:"review", item:"Blanket / Warmer Blanket", keywords:"blanket" },
+  { tier:"exact", item:"Admission Kit", keywords:"admission kit" },
+  { tier:"exact", item:"Kidney Tray", keywords:"kidney tray" },
+  { tier:"exact", item:"Ounce Glass", keywords:"ounce glass" },
+  { tier:"exact", item:"Urine Container", keywords:"urine container" },
+  { tier:"exact", item:"Urometer, Urine Jug", keywords:"urometer|urine jug" },
+  { tier:"review", item:"Medicine Box", keywords:"medicine box" },
+  { tier:"exact", item:"Thermometer", keywords:"thermometer" },
+  { tier:"exact", item:"Comb", keywords:"comb" },
+  { tier:"exact", item:"Brush", keywords:"tooth brush|toothbrush" },
+  { tier:"exact", item:"Tooth Paste", keywords:"tooth paste|toothpaste" },
+  { tier:"exact", item:"Towel", keywords:"towel|cosy towel" },
+  { tier:"exact", item:"Slippers", keywords:"slipper" },
+  { tier:"exact", item:"Sanitary Pad", keywords:"sanitary pad" },
+  { tier:"exact", item:"Tissue Paper", keywords:"tissue paper" },
+  { tier:"exact", item:"Powder", keywords:"talcum powder" },
+  { tier:"exact", item:"Moisturiser / Paste / Brush", keywords:"moisturiser|moisturizer" },
+  { tier:"exact", item:"Eau-De-Cologne / Room Freshners", keywords:"room freshener|room freshner|cologne" },
+  { tier:"exact", item:"Mineral Water", keywords:"mineral water" },
+  { tier:"exact", item:"Buds", keywords:"ear bud|cotton bud" },
+  { tier:"exact", item:"Barber Charges", keywords:"barber" },
+  { tier:"exact", item:"Beauty Services", keywords:"beauty service" },
+  { tier:"exact", item:"Baby Charges", keywords:"baby charge" },
+  { tier:"exact", item:"Baby Food", keywords:"baby food|lactogen|infant food" },
+  { tier:"exact", item:"Baby Utilities Charges", keywords:"baby utilities" },
+  { tier:"exact", item:"Baby Set", keywords:"baby set" },
+  { tier:"exact", item:"Baby Bottles", keywords:"baby bottle|feeding bottle" },
+  { tier:"exact", item:"Cradle Charges", keywords:"cradle" },
+  { tier:"exact", item:"Vaccine Charges for Baby", keywords:"baby vaccine|vaccine charges for baby" },
+  { tier:"exact", item:"Telephone Charges", keywords:"telephone charge" },
+  { tier:"exact", item:"Email / Internet Charges", keywords:"internet charge|email charge|wifi" },
+  { tier:"exact", item:"DVD, CD Charges", keywords:"dvd charge|cd charge" },
+  { tier:"exact", item:"Guest Services", keywords:"guest service" },
+  { tier:"exact", item:"Food Charges (Other than Patient's Diet)", keywords:"attendant food|guest food|visitor food" },
+  { tier:"exact", item:"Walking Aids Charges", keywords:"walking aid|walker charge" },
+  { tier:"review", item:"BiPAP Machine", keywords:"bipap" },
+  { tier:"review", item:"Commode", keywords:"commode" },
+  { tier:"review", item:"Oxygen Cylinder (usage outside hospital)", keywords:"oxygen cylinder" },
+  { tier:"exact", item:"Oxygen Mask", keywords:"oxygen mask" },
+  { tier:"exact", item:"Spacer", keywords:"spacer" },
+  { tier:"review", item:"SPO2 Probe", keywords:"spo2 probe|spo2 sensor" },
+  { tier:"exact", item:"Nebulizer Kit", keywords:"nebulizer kit|nebuliser kit" },
+  { tier:"exact", item:"Steam Inhaler", keywords:"steam inhaler" },
+  { tier:"exact", item:"Arm Sling", keywords:"arm sling" },
+  { tier:"exact", item:"Cervical Collar", keywords:"cervical collar" },
+  { tier:"exact", item:"Ambulance Collar", keywords:"ambulance collar" },
+  { tier:"exact", item:"Ambulance Equipment", keywords:"ambulance equipment" },
+  { tier:"exact", item:"Splint", keywords:"splint" },
+  { tier:"exact", item:"Knee Braces", keywords:"knee brace" },
+  { tier:"exact", item:"Knee/Shoulder Immobilizer", keywords:"immobilizer|immobiliser" },
+  { tier:"exact", item:"Diabetic Foot Wear", keywords:"diabetic footwear|diabetic foot wear" },
+  { tier:"exact", item:"Visco Belt Charges", keywords:"visco belt" },
+  { tier:"exact", item:"Cold Pack / Hot Pack", keywords:"cold pack|hot pack" },
+  { tier:"review", item:"Hand Holder", keywords:"hand holder" },
+  { tier:"review", item:"Any Kit With No Details Mentioned", keywords:"kit" },
+  { tier:"review", item:"CSSD / Sterilisation Charges", keywords:"cssd|sterilisation charge|sterilization charge" },
+  { tier:"review", item:"ECG Electrodes / Leads", keywords:"ecg lead|ecg electrode" },
+  { tier:"review", item:"Dressing / Tegaderm film", keywords:"tegaderm|transparent dressing" },
+  { tier:"exact", item:"Weight Control Programs / Supplies / Services", keywords:"weight control|obesity program" },
+  { tier:"exact", item:"Spectacles / Contact Lenses / Hearing Aids", keywords:"spectacle|contact lens|hearing aid" },
+  { tier:"exact", item:"Dental Treatment Not Requiring Hospitalisation", keywords:"dental treatment" },
+  { tier:"exact", item:"Hormone Replacement Therapy", keywords:"hormone replacement" },
+  { tier:"exact", item:"Home Visit Charges", keywords:"home visit" },
+  { tier:"exact", item:"Infertility / Assisted Conception", keywords:"infertility|ivf|assisted conception" },
+  { tier:"exact", item:"Obesity Treatment", keywords:"bariatric|obesity treatment" },
+  { tier:"exact", item:"Corrective Surgery for Refractive Error", keywords:"lasik|refractive error" },
+  { tier:"exact", item:"Donor Screening Charges", keywords:"donor screening" },
+  { tier:"exact", item:"Hospitalisation for Evaluation / Diagnostic Purpose", keywords:"evaluation only|diagnostic admission" },
+  { tier:"exact", item:"Aesthetic Treatment / Surgery", keywords:"aesthetic|cosmetic surgery" },
+  { tier:"exact", item:"Stem Cell Implantation / Surgery", keywords:"stem cell" }
+];
+// 14 of nppa_ceilings.csv's 16 rows — every row currently in force. The two
+// excluded are the superseded (pre-1 Apr 2026) stent ceilings: the matcher
+// below has no date logic, so a superseded row with the same keywords as its
+// current replacement would just sit dead in the array, never reached,
+// because the current row is checked first and always wins. Listing it
+// anyway would look like date-awareness that isn't actually there.
+//
+// Order matters: the matcher takes the first row whose keyword appears in
+// the line and stops, so a revision or variant row must be listed before
+// the generic row it could otherwise be swallowed by (a "REVISION FEMORAL
+// COMPONENT" line also contains the plain "femoral component" keyword).
+const NPPA = [
+  { item:"Knee revision — Femoral component", ceiling:62770, gst:"plus 5% GST", kw:["revision femoral","femoral revision"] },
+  { item:"Knee revision — Tibial component", ceiling:31220, gst:"plus 5% GST", kw:["revision tibial","tibial revision"] },
+  { item:"Knee revision — Articulating surface", ceiling:15870, gst:"plus 5% GST", kw:["revision articulating","revision insert"] },
+  { item:"Knee — Femoral component, High Flex", ceiling:25860, gst:"plus 5% GST", kw:["femoral component high flex","high flex femoral"] },
+  { item:"Knee — Femoral component, Cobalt Chromium", ceiling:24090, gst:"plus 5% GST", kw:["femoral component cobalt","cobalt chrome femoral","cocr femoral"] },
+  { item:"Knee — Femoral component (Ti / Oxidised Zirconium)", ceiling:38740, gst:"plus 5% GST", kw:["femoral component"] },
+  { item:"Knee — Tibial component, Cobalt Chromium", ceiling:16990, gst:"plus 5% GST", kw:["tibial component cobalt","cobalt chrome tibial","cocr tibial"] },
+  { item:"Knee — Tibial component (Ti / Oxidised Zirconium)", ceiling:24280, gst:"plus 5% GST", kw:["tibial component"] },
+  { item:"Knee — Tibial tray + insert, polyethylene", ceiling:12960, gst:"plus 5% GST", kw:["tibial tray polyethylene","poly tibial tray","tibial tray insert"] },
+  { item:"Knee — Tibial tray + insert, metallic", ceiling:26546, gst:"plus 5% GST", kw:["tibial tray metallic","metal tibial tray"] },
+  { item:"Knee — Articulating surface / insert", ceiling:9550, gst:"plus 5% GST", kw:["articulating surface","tibial insert"] },
+  { item:"Knee — Patella", ceiling:4090, gst:"plus 5% GST", kw:["patella component","patella implant"] },
+  { item:"Coronary stent — Bare Metal Stent (BMS)", ceiling:10762.15, gst:"exclusive of GST", kw:["bare metal stent","bms stent"] },
+  { item:"Coronary stent — Drug Eluting Stent (DES)", ceiling:39186.03, gst:"exclusive of GST", kw:["drug eluting stent","des stent","coronary stent"] },
+];
+// Full IS 19493:2025 header registry — matches 03_code/completeness.js's
+// HEADER_FIELDS exactly (23 mandatory + 3 conditional = 26), so the browser
+// app and the Node test tool no longer check two different standards under
+// the same name. A conditional field never counts as "missing" — same rule
+// completeness.js already uses.
+const IS19493_HEADER = [
+  ["hospital_name","Hospital name","mandatory"],
+  ["hospital_address","Hospital address","mandatory"],
+  ["hospital_gstin","Hospital GSTIN (15-digit)","mandatory"],
+  ["hospital_contact","Hospital phone / email","mandatory"],
+  ["hospital_registration","Registration / licence number","mandatory"],
+  ["hospital_accreditation","Accreditation details (e.g. NABH)","conditional"],
+  ["bill_number","Unique bill number","mandatory"],
+  ["bill_datetime","Bill date & time","mandatory"],
+  ["patient_name","Patient name","mandatory"],
+  ["patient_age","Patient age","mandatory"],
+  ["patient_gender","Patient gender","mandatory"],
+  ["patient_hospital_id","Hospital patient ID / IP no.","mandatory"],
+  ["patient_uhid","UHID / ABHA","mandatory"],
+  ["patient_address","Patient address","mandatory"],
+  ["patient_gstin","Patient GSTIN","conditional"],
+  ["admission_datetime","Admission date & time","mandatory"],
+  ["discharge_datetime","Discharge date & time","mandatory"],
+  ["admission_type","Admission type","mandatory"],
+  ["gross_amount","Gross amount","mandatory"],
+  ["discount_amount","Discount","mandatory"],
+  ["tax_amount","Taxes","mandatory"],
+  ["net_payable","Net payable","mandatory"],
+  ["payment_mode","Payment mode","mandatory"],
+  ["insurance_info","Insurance / TPA coverage info","conditional"],
+  ["patient_signature","Patient / next-of-kin signature","mandatory"],
+  ["authorised_signature","Authorised signatory","mandatory"],
+];
+const GSTIN_RE = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9][A-Z0-9]{2}$/;
+// The real, redacted 6-page bill this whole project is built around (the
+// same one in 04_test_bills/). Embedded here — not fetched — because the
+// deployed app has no server path to that file, and the worked-example
+// button needs to show a genuine, complete report (Settlement AND Findings
+// AND Letter) without a live Gemini call. Header fields the redaction
+// pipeline removed are null here, same as they'd read on a real bill that
+// genuinely never printed them.
+const WORKED_EXAMPLE_BILL = {"header":{"hospital_name":null,"hospital_address":null,"hospital_gstin":"27AAAAA0000A1Z5","hospital_contact":null,"hospital_registration":null,"hospital_accreditation":null,"bill_number":"Provisional Bill","bill_datetime":"01/06/2025 11:13","patient_name":null,"patient_age":null,"patient_gender":null,"patient_hospital_id":null,"patient_uhid":null,"patient_address":null,"patient_gstin":null,"admission_datetime":null,"discharge_datetime":null,"admission_type":null,"gross_amount":41395.92,"discount_amount":null,"tax_amount":null,"net_payable":41396,"payment_mode":null,"insurance_info":"Health Insurance","patient_signature":true,"authorised_signature":true},"line_items":[{"item":"ADMISSION SERVICES 10003","unit":null,"quantity":1,"rate":410,"total":410,"category":"REGISTRATION"},{"item":"PATIENT DINNER","unit":null,"quantity":1,"rate":150,"total":150,"category":"CLINICAL SUPPORT SERVICES"},{"item":"IP - SPECIALTY - FIRST VISIT (Dr. SURGEON) 2417","unit":null,"quantity":1,"rate":1260,"total":1260,"category":"CONSULTATION"},{"item":"IP - CONSULTATION - DIET ()","unit":null,"quantity":1,"rate":500,"total":500,"category":"CONSULTATION"},{"item":"IP - SPECIALTY - FIRST VISIT (Dr. SURGEON) 2417","unit":null,"quantity":1,"rate":1260,"total":1260,"category":"CONSULTATION"},{"item":"SINGLE ROOM - NON A/C","unit":null,"quantity":1,"rate":4500,"total":4500,"category":"BED CHARGES"},{"item":"CBC COMPLETE BLOOD COUNT 10449","unit":null,"quantity":1,"rate":430,"total":430,"category":"LAB SERVICES"},{"item":"HISTOPATHOLOGY, BIOPSY, MEDIUM SPECIMEN 12898","unit":null,"quantity":1,"rate":2550,"total":2550,"category":"LAB SERVICES"},{"item":"CREATININE, SERUM 10489","unit":null,"quantity":1,"rate":340,"total":340,"category":"LAB SERVICES"},{"item":"VIRAL PACK","unit":null,"quantity":1,"rate":2810,"total":2810,"category":"LAB SERVICES"},{"item":"CSSD - STERILISATION CHARGES - LEVEL 1","unit":null,"quantity":1,"rate":1040,"total":1040,"category":"CLINICAL SUPPORT SERVICES"},{"item":"OPERATION THEATRE CHARGES - PER HOUR 53661","unit":null,"quantity":1,"rate":5790,"total":5790,"category":"CLINICAL SUPPORT SERVICES"},{"item":"MEDICAL RECORDS CHARGES","unit":null,"quantity":1,"rate":300,"total":300,"category":"CLINICAL SUPPORT SERVICES"},{"item":"INSURANCE PROCESSING FEE","unit":null,"quantity":1,"rate":850,"total":850,"category":"CLINICAL SUPPORT SERVICES"},{"item":"SWELLING REMOVAL Dr. SURGEON (Surgeon)","unit":null,"quantity":1,"rate":11580,"total":11580,"category":"PROCEDURE / SURGERY CHARGES"},{"item":"ANESTHETIST CHARGES Dr. ANAESTHETIST (Anaesthetist)","unit":null,"quantity":1,"rate":3470,"total":3470,"category":"PROCEDURE / SURGERY CHARGES"},{"item":"IV CANNULA 20G-POLYFLON ADVA-POLYMEDICURE","unit":null,"quantity":1,"rate":120,"total":120,"category":"Consumables"},{"item":"TRANSPARENT DRESSING-TEGADERM-NON ADHESIVE WATERPROOF LATEX FREE 6X7CM/1623-3M","unit":null,"quantity":1,"rate":94,"total":94,"category":"Consumables"},{"item":"IV SET VENTED NOVOFUSION (PREMIUM) POLYMED","unit":null,"quantity":1,"rate":150,"total":150,"category":"Consumables"},{"item":"GLOVES EXAMINATION MEDIUM NITRILE POWDER FREE NON STERILE -1ST GLOVE","unit":null,"quantity":20,"rate":8,"total":160,"category":"Consumables"},{"item":"GALLANT SKIN BLADE","unit":null,"quantity":2,"rate":36,"total":72,"category":"Consumables"},{"item":"SYRINGE WITH NEEDLE 10ML-LIFELONG","unit":null,"quantity":4,"rate":15,"total":60,"category":"Consumables"},{"item":"SYRINGE WITH NEEDLE 2ML-LIFELONG","unit":null,"quantity":4,"rate":7,"total":28,"category":"Consumables"},{"item":"SYRINGE WITH NEEDLE 5ML-LIFELONG","unit":null,"quantity":4,"rate":9.35,"total":37.4,"category":"Consumables"},{"item":"NEEDLE-16G X 1.5INC-DISPOVAN","unit":null,"quantity":5,"rate":4,"total":20,"category":"Consumables"},{"item":"ALCO SWAB ALCOHOL GUAZE REF -SS-6090,ROMSONS","unit":null,"quantity":5,"rate":2.5,"total":12.5,"category":"Consumables"},{"item":"IV SET VENTED NOVOFUSION (PREMIUM) POLYMED","unit":null,"quantity":1,"rate":150,"total":150,"category":"Consumables"},{"item":"SUTURE MONOCRYL 5-0 #NW 3204,J&J","unit":null,"quantity":1,"rate":874,"total":874,"category":"Consumables"},{"item":"GLOVE SIZE 7.0 ENCORE NATURAL RUBBER LATEX MICRO ORTHOPEDIC POWDER-FREE SURGICAL ANSELL","unit":null,"quantity":1,"rate":138,"total":138,"category":"Consumables"},{"item":"SURGICAL GLOVE-ENCORE-MICRO, OPTIC, POWDER FREE LATEX-7/330104070-ANSELL","unit":null,"quantity":1,"rate":125,"total":125,"category":"Consumables"},{"item":"SURGICAL GLOVES POWDER FREE STERILE NO 6.5 330048065 GAMMEX LATEX ANSELL","unit":null,"quantity":1,"rate":126,"total":126,"category":"Consumables"},{"item":"ECG LEAD","unit":null,"quantity":5,"rate":27,"total":135,"category":"Consumables"},{"item":"SYRINGE WITH NEEDLE 2ML-LIFELONG","unit":null,"quantity":3,"rate":7,"total":21,"category":"Consumables"},{"item":"SYRINGE WITH NEEDLE 5ML-LIFELONG","unit":null,"quantity":3,"rate":9.35,"total":28.05,"category":"Consumables"},{"item":"SYRINGE WITH NEEDLE 10ML-LIFELONG","unit":null,"quantity":3,"rate":15,"total":45,"category":"Consumables"},{"item":"SURGICAL BLADE NO.15","unit":null,"quantity":1,"rate":7.1,"total":7.1,"category":"Consumables"},{"item":"SPINAL NEEDLE 26 GA X 3.5\" (REF #405124), BD","unit":null,"quantity":1,"rate":236.5,"total":236.5,"category":"Consumables"},{"item":"NEEDLE-18G X 1.5G-DISPOVAN","unit":null,"quantity":1,"rate":3.6,"total":3.6,"category":"Consumables"},{"item":"TRANSPARENT DRESSING-TEGADERM-NON ADHESIVE WATERPROOF LATEX FREE 6X7CM/1623-3M","unit":null,"quantity":1,"rate":94,"total":94,"category":"Consumables"},{"item":"SYRINGE WITH NEEDLE 5ML-LIFELONG","unit":null,"quantity":-4,"rate":9.35,"total":-37.4,"category":"Consumables"},{"item":"RL 500ML-ACULIFE INFUSION","unit":null,"quantity":1,"rate":63.27,"total":53.27,"category":"Medicines"},{"item":"NS 100ML (ACULIFE)","unit":null,"quantity":2,"rate":22.03,"total":44.06,"category":"Medicines"},{"item":"2 PROPANOL 45GM +1PROPANOL 30GM-100ML-ALCORUB","unit":null,"quantity":1,"rate":150,"total":150,"category":"Medicines"},{"item":"CEFBACT 1GM INJECTION","unit":null,"quantity":1,"rate":69.86,"total":69.86,"category":"Medicines"},{"item":"LOX 2% VIAL OF ADRENALINE 30ML INJECTION","unit":null,"quantity":1,"rate":35.27,"total":35.27,"category":"Medicines"},{"item":"POVIDONE IODINE SOLUTION IP 5%-500ML-POVINANZ","unit":null,"quantity":1,"rate":40,"total":40,"category":"Medicines"},{"item":"POVIDONE SCRUB 7.5% 500ML-NANZ POVINANZ NCOV","unit":null,"quantity":1,"rate":110,"total":110,"category":"Medicines"},{"item":"MEZOLAM 1MG/10ML INJECTION","unit":null,"quantity":1,"rate":66.25,"total":66.25,"category":"Medicines"},{"item":"PYROLATE 0.2MG 1ML INJECTION","unit":null,"quantity":1,"rate":16.12,"total":16.12,"category":"Medicines"},{"item":"BUTODOL -1 1ML INJECTION -NEON","unit":null,"quantity":1,"rate":69.2,"total":69.2,"category":"Medicines"},{"item":"MCT ROF 1% W/V 10 ML VIAL EMULSION FOR INJECTION","unit":null,"quantity":1,"rate":72.5,"total":72.5,"category":"Medicines"},{"item":"STERILE WATER-10ML INFUSION","unit":null,"quantity":5,"rate":3.24,"total":16.2,"category":"Medicines"},{"item":"JUSTIN AQ 1ML INJECTION DICLOFENAC SODIUM","unit":null,"quantity":1,"rate":25.4,"total":25.4,"category":"Medicines"},{"item":"RL 500ML-ACULIFE INFUSION","unit":null,"quantity":1,"rate":63.27,"total":63.27,"category":"Medicines"},{"item":"CEFBACT 1GM INJECTION","unit":null,"quantity":2,"rate":69.86,"total":139.72,"category":"Medicines"},{"item":"RL 500ML-ACULIFE INFUSION","unit":null,"quantity":3,"rate":63.27,"total":189.81,"category":"Medicines"},{"item":"GLANPAN DSR 30MG/40MG CAPSULE","unit":null,"quantity":10,"rate":10.3,"total":103,"category":"Medicines"},{"item":"ULTRANISE TABLET 37.5MG","unit":null,"quantity":10,"rate":8.83,"total":88.3,"category":"Medicines"},{"item":"CEPODEM 200MG TABLET","unit":null,"quantity":10,"rate":20.5,"total":205,"category":"Medicines"},{"item":"ULTRANISE TABLET 37.5MG","unit":null,"quantity":5,"rate":8.82,"total":44.1,"category":"Medicines"},{"item":"RL 500ML-ACULIFE INFUSION","unit":null,"quantity":-1,"rate":63.27,"total":-63.27,"category":"Medicines"},{"item":"CEFBACT 1GM INJECTION","unit":null,"quantity":-1,"rate":69.86,"total":-69.86,"category":"Medicines"},{"item":"NS 100ML (ACULIFE)","unit":null,"quantity":-1,"rate":22.03,"total":-22.03,"category":"Medicines"}],"printed_subtotals":{"REGISTRATION":410,"CLINICAL SUPPORT SERVICES":7980,"CONSULTATION":3020,"BED CHARGES":4500,"LAB SERVICES":6130,"Medicines":1456.17},"_redacted_header_fields":["hospital_name","hospital_address","hospital_contact","hospital_registration","hospital_accreditation","patient_name","patient_age","patient_gender","patient_hospital_id","patient_uhid","patient_address","admission_datetime","discharge_datetime"]};
+const EXTRACT_PROMPT = `Look at this image. First decide: is it a page from an Indian hospital bill (an itemised statement of charges — admission, room, procedures, medicines, consumables) or a printed/handwritten total? If the image is unrelated to a hospital bill (a person, a landscape, a random document, a receipt from an unrelated business, a blank or unreadable page), set "is_hospital_bill" to false, leave "line_items" empty, and stop — do not invent bill content to fill the schema.
+If it IS a hospital bill page, transcribe it. Return ONLY valid JSON, no markdown, no commentary.
+Copy every value exactly as printed. Do not calculate, correct, round, or invent anything.
+Use null for any field not present on the bill. Keep negative amounts negative.
+{"is_hospital_bill":true,"header":{"hospital_name":null,"hospital_address":null,"hospital_gstin":null,"hospital_contact":null,"hospital_registration":null,"hospital_accreditation":null,"bill_number":null,"bill_datetime":null,"patient_name":null,"patient_age":null,"patient_gender":null,"patient_hospital_id":null,"patient_uhid":null,"patient_address":null,"patient_gstin":null,"admission_datetime":null,"discharge_datetime":null,"admission_type":null,"gross_amount":null,"discount_amount":null,"tax_amount":null,"net_payable":null,"payment_mode":null,"insurance_info":null,"patient_signature":false,"authorised_signature":false},"line_items":[{"item":"","unit":null,"quantity":0,"rate":0,"total":0,"section":""}],"printed_subtotals":{}}
+Rules: one line_items object per charge row; "section" = the section heading it sits under; "unit" = null if the bill has no unit column; "printed_subtotals" = each "Total for <section>" figure printed on the bill, copied even if it does not match the sum of the lines. "patient_signature" / "authorised_signature" = true only if that signature block is visibly present on the page. A cover letter, TPA authorisation letter, or payment receipt that is NOT itself an itemised charge listing should also get "is_hospital_bill": false — those are valid hospital documents, just not the bill this tool checks. Numbers as numbers, no symbols, no commas.`;
+
+const money = n => Math.round((Number(n)+Number.EPSILON)*100)/100;
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ============================================================
+   i18n — the model reads, code judges, templates speak. Every rupee
+   figure and every finding count is computed by analyse()/calc(); this
+   layer only supplies the words around a number that was already
+   decided elsewhere. No template here is allowed to alter a figure.
+
+   -u-nu-latn pins Western digits even under hi-IN/mr-IN — Indian
+   financial UIs read amounts in Western numerals regardless of the
+   surrounding script, and Intl will otherwise silently switch to
+   Devanagari digits for these locales.
+   ============================================================ */
+const LOCALE_TAG = {en:'en-IN', hi:'hi-IN-u-nu-latn', mr:'mr-IN-u-nu-latn'};
+const makeInr = lang => new Intl.NumberFormat(LOCALE_TAG[lang]||'en-IN',{style:'currency',currency:'INR',maximumFractionDigits:2,minimumFractionDigits:0});
+let LANG = 'en';
+let inr = makeInr(LANG);
+try{ const saved=localStorage.getItem('clearbill_lang'); if(saved && LOCALE_TAG[saved]) LANG=saved; }catch(e){}
+
+const STRINGS = {
+en: {
+  tag: "Your settlement, decomposed &mdash; then the itemised bill checked against what insurers don't pay for.",
+  sec_settlement: "Settlement",
+  lbl_total: 'Total bill amount <span class="hint">&mdash; the hospital\'s final bill</span>',
+  lbl_counter: 'Amount paid at the discharge counter <span class="hint">&mdash; what you handed over</span>',
+  lbl_discount: 'Hospital discount <span class="hint">&mdash; MOU / PPN waiver, if any</span>',
+  lbl_copay: 'Co-pay percentage <span class="hint">&mdash; your policy\'s share</span>',
+  eg_btn: "Load the worked example",
+  never_itemised: "Never itemised &mdash; you were not told what this was for",
+  mystery_sub: (counter,copay,ded)=>`Of the ${counter} you paid at the counter, ${copay} was co-pay and ${ded} was never explained.`,
+  ded_absorbed: "Deduction absorbed by you",
+  copay_lbl: "Co-pay",
+  counter_payment: "Counter payment",
+  insurer_approved: "Insurer approved",
+  approved_base: cp=>`Approved base (${cp}% co-pay)`,
+  sec_bill: "Check the itemised bill",
+  bill_lead: "Upload photos of your itemised bill (all pages, if more than one). Google Gemini reads them into rows; the checks then run in your browser against the published lists.",
+  drop_html: '<b>Tap to choose photos</b><br>or drag images here (JPG / PNG) &mdash; multiple pages OK',
+  apikey_html: 'Gemini API key <span class="hint">&mdash; one time &middot; <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">get one here</a> &middot; saved only in this browser</span>',
+  need_key: "This version needs a Gemini key once (free). Add it above, then choose the photo again.",
+  choose_image: "Choose only images (JPG or PNG). For a PDF, screenshot each page.",
+  reading_page: (i,n)=>n>1?`Reading page ${i} of ${n}&hellip;`:'Reading your bill&hellip;',
+  read_lines: (n,pages)=>pages>1?`Read ${n} line items across ${pages} pages.`:`Read ${n} line items.`,
+  no_lines_found: "No line items found in the response.",
+  no_bill_pages: "None of these look like a hospital bill page. Upload a photo of the itemised bill — not a cover letter or receipt.",
+  read_lines_partial: (n,pages,skipped)=>`Read ${n} line items. ${skipped} of ${pages} photo${pages>1?'s':''} didn't look like a bill page and ${skipped>1?'were':'was'} skipped.`,
+  worked_example_note: "Worked example — a real, redacted 63-line hospital bill. No live photo to show; this is stored data, not something you uploaded.",
+  check_photos_btn: n=>`Check ${n} photo${n>1?'s':''}`,
+  rej_badge_text: "not a bill",
+  letter_confirm_nppa: n=>`${n} implant${n>1?'s':''} above NPPA ceiling`,
+  kpi_deducted:"Deducted", kpi_explained:"Explained", kpi_checks:"Checks run",
+  verdict_head: ded=>`What the un-itemised ${ded} appears to be`,
+  verdict_saturated: ded=>`matches or exceeds the whole ${ded} deduction on items named in the IRDAI non-payable list. Insurers deduct by category, so some of this may sit in a different bucket than the deduction line it's compared against.`,
+  verdict_normal: (pc,ded)=>`matches items named in the IRDAI non-payable list &mdash; about <em>${pc}%</em> of the ${ded}`,
+  verdict_extra: pc2=>`, or ${pc2}% counting charges commonly deducted but not named`,
+  verdict_tail: ". Insurers deduct by category, so the rest is likely consumables removed in bulk.",
+  bill_read_head:"Bill read",
+  bill_read_sub:"Fill in the settlement above to see how much of your deduction these account for.",
+  lines_total:(n,total)=>`${n} line items read, totalling ${total}.`,
+  told_shown_head:"What you were told &middot; what the bill shows",
+  told_h5:"The settlement told you", shown_h5:"The itemised bill contains",
+  total_bill:"Total bill", hospital_discount:"Hospital discount", you_paid:"You paid",
+  never_itemised_short:"never itemised", lines_word:n=>`${n} lines`,
+  join_sentence:(ded,n)=>`You were told <b>${ded}</b> of what you paid was never itemised. The hospital's own bill lists <b>${n}</b> charges. The checks below trace one against the other.`,
+  bill_every_check:"The bill, and every check",
+  leg_insurer:p=>`Insurer ${p}%`, leg_never:p=>`Never itemised ${p}%`, leg_copay:p=>`Co-pay ${p}%`, leg_discount:p=>`Discount ${p}%`,
+  flagged_so_far:"Flagged so far",
+  clear_word:"Clear",
+  do_label:"What you can do",
+  detail_matched:"Matched lines &mdash; IRDAI non-payable list",
+  detail_review:"Commonly deducted &mdash; not named in the list",
+  detail_review_plain:"Confirm these with your insurer. Not findings.",
+  detail_review_src:m=>`often deducted as: ${m}`,
+  detail_matched_src:m=>`matches: ${m}`,
+  detail_nppa:"Above the statutory price cap (NPPA)",
+  detail_nppa_plain:"A legal ceiling under the DPCO, not an opinion.",
+  detail_nppa_src:(ref,ceiling,gst)=>`NPPA ceiling for ${ref}: ${ceiling} (${gst})`,
+  detail_recon:"Reconciliation",
+  detail_recon_body:(gross,lineSum,diff)=>`The bill's printed total (${gross}) differs from the sum of its own lines (${lineSum}) by <strong>${diff}</strong>. This may be the hospital's arithmetic, not a reading error.`,
+  detail_dup:"Appears more than once",
+  detail_dup_src:n=>`appears ${n}&times; at the same amount`,
+  detail_is19493:"Bill completeness &mdash; IS 19493",
+  detail_is19493_plain:"IS 19493:2025 is a <strong>voluntary</strong> BIS standard. It expects the following, which this bill does not show:",
+  detail_is19493_unit:"Every charge line is missing the <strong>Unit</strong> column",
+  detail_is19493_malformed:"present, but not in the expected format",
+  detail_is19493_redacted:n=>`${n} patient/hospital identity field${n===1?'':'s'} were blacked out for privacy before analysis &mdash; not assessed here, and not counted against the bill.`,
+  letter_btn:"Generate a letter to attach to a complaint",
+  letter_shortcut:"Need to complain? Draft the letter now",
+  letter_note_lang:"This letter drafts in English, since that's the formal register your insurer and IRDAI work in.",
+  tab_settlement:"Settlement", tab_findings:"Findings", tab_letter:"Letter", tab_about:"About",
+  sec_letter:"Letter", sec_about:"About this check", how_head:"How it works",
+  how1b:"The model reads", how1p:"Google's Gemini model turns your photo into rows &mdash; transcription only, no judgement.",
+  how2b:"Code judges", how2p:"Every flag after that is a table lookup or arithmetic &mdash; never the model's opinion.",
+  how3b:"You decide", how3p:"Nothing is sent anywhere on your behalf. The letter is yours to send or not.",
+  gcloud_strip_html:'Runs on Google Cloud &mdash; <span>Gemini &middot; Cloud Run &middot; Document AI</span>',
+  gcloud_head:"Built on Google Cloud",
+  gcloud_intro:"ClearBill runs end to end on Google Cloud. Each service does one job:",
+  gcloud_rows:[
+    ["Gemini API","Reads the bill photo into structured rows (model gemini-3.6-flash). The only place a model is used.","on"],
+    ["Cloud Run","Hosts the app and runs the function that calls Gemini, in asia-south1.","on"],
+    ["Secret Manager","Holds the Gemini key server-side, so nothing has to be entered on your device.","on"],
+    ["Cloud Build","Builds and versions the container on every deploy.","on"],
+    ["Document AI","Form Parser, evaluated head-to-head against Gemini on the real test bill; the comparison is kept on file.","eval"]
+  ],
+  letter_confirm_head:"This letter will include",
+  letter_confirm_settlement:"Your settlement figures",
+  letter_confirm_irdai:n=>`${n} IRDAI-listed charge${n>1?'s':''}`,
+  letter_confirm_dup:n=>`${n} duplicate charge${n>1?'s':''}`,
+  letter_confirm_recon:"The reconciliation gap",
+  letter_confirm_sent_to:"Sent to", letter_confirm_sent_to_val:"Insurer / IRDAI",
+  letter_empty:"Upload a bill in the Findings tab to see what your letter will include.",
+  findings_empty:"Upload a bill above to see findings here. Nothing to check yet.",
+  gen_letter_btn:"Generate the letter",
+  print_btn:"Print / Save as PDF", copy_btn:"Copy text", copied_btn:"Copied",
+  foot_html: `Base = total bill &minus; deduction &minus; hospital discount. Co-pay applies only to the base. Counter = deduction + co-pay.<br><br>
+    The model only reads the bill into rows. Every flag after that is a table lookup or an arithmetic comparison, shown with its source.
+    &ldquo;Matches the published non-payable list&rdquo; is not &ldquo;overcharge&rdquo;. IS 19493 is a voluntary standard; NPPA ceilings are statutory.<br><br>
+    IRDAI List I &middot; NPPA ceiling prices &middot; IS 19493:2025.`,
+  checks: {
+    irdai_exact: { label:"IRDAI List I",
+      found:n=>`${n} charge${n>1?'s':''} match the published non-payable list`, sub:sum=>`${sum} &middot; IRDAI List I`,
+      foundClear:"No charge matches an item named in IRDAI List I", subClear:"nothing to flag here",
+      money:(dedRaw,dedFmt,pc)=>dedRaw>0?`Explains ${pc}% of the ${dedFmt} deducted &mdash; a legitimate deduction, not an error.`:`A legitimate deduction under IRDAI's published list, not an error.`,
+      doText:"Nothing extra needed here. Use it as the explained part when you ask the insurer about the rest." },
+    irdai_review: { label:"Confirm",
+      found:n=>`${n} charge${n>1?'s':''} commonly deducted, not on the list`, sub:sum=>`${sum} &middot; confirm with your insurer`,
+      foundClear:'No "commonly deducted but unlisted" charges', subClear:"",
+      money:()=>"These are commonly deducted in practice, but not actually named in the published list, so this is not a confirmed finding.",
+      doText:"Ask your insurer to confirm these specifically. Don&rsquo;t dispute them on this basis alone." },
+    nppa: { label:"Above NPPA cap",
+      found:n=>`${n} implant above its statutory ceiling`, sub:()=>"price cap under the DPCO",
+      foundClear:"No implant priced above an NPPA ceiling", subClear:"stents / knee implants checked",
+      money:()=>"This is a legal price ceiling, not a guideline. Billing above it is a statutory violation.",
+      doText:"This is your strongest line to raise &mdash; ask the hospital to justify the price against the NPPA notification, or request a refund of the difference." },
+    recon: { label:"Check sum",
+      found:diff=>`Bill total off by ${diff}`, sub:(gross,lineSum)=>`printed ${gross} vs lines ${lineSum} &mdash; may be the hospital's arithmetic`,
+      foundClear:"Bill reconciles", subClear:"sum of lines matches the printed total",
+      money:()=>"This is the hospital&rsquo;s own arithmetic, not yours or ours. It doesn&rsquo;t change what you owe.",
+      doText:"Point the billing desk to this gap and ask them to explain it. Keep this bill as your record either way." },
+    dup: { label:"Twice",
+      found:n=>`${n} charge${n>1?'s':''} appear more than once`, sub:()=>"same item, same amount",
+      foundClear:"No duplicated charges", subClear:"",
+      money:()=>"A charge repeated at the same amount is usually a duplicate entry, not two separate services.",
+      doText:"Ask the hospital to confirm whether each was reversed. If not, this is your strongest line item to dispute." },
+    is19493: { label:"IS 19493",
+      found:n=>`${n} field${n>1?'s':''} the standard expects are missing`, sub:()=>"IS 19493:2025 &mdash; a voluntary BIS format",
+      foundClear:"Bill carries every field IS 19493 expects", subClear:"",
+      money:()=>"IS 19493 is a voluntary standard, not a law &mdash; this costs you nothing by itself.",
+      doText:"Ask for the fields this bill is missing, especially a final bill number if it currently reads as provisional." },
+  },
+},
+hi: {
+  tag: "आपका सेटलमेंट, विस्तार से &mdash; फिर बिल की हर लाइन को उन चीज़ों से मिलाया गया जिनके लिए बीमा कंपनी भुगतान नहीं करती।",
+  sec_settlement: "सेटलमेंट",
+  lbl_total: 'कुल बिल राशि <span class="hint">&mdash; अस्पताल का अंतिम बिल</span>',
+  lbl_counter: 'डिस्चार्ज के समय काउंटर पर दी गई राशि <span class="hint">&mdash; आपने जो चुकाया</span>',
+  lbl_discount: 'अस्पताल की छूट <span class="hint">&mdash; MOU / PPN छूट, अगर हो</span>',
+  lbl_copay: 'को-पे प्रतिशत <span class="hint">&mdash; आपकी पॉलिसी का हिस्सा</span>',
+  eg_btn: "उदाहरण भरें",
+  never_itemised: "कभी नहीं बताया गया &mdash; आपको यह नहीं बताया गया कि यह किसलिए था",
+  mystery_sub: (counter,copay,ded)=>`काउंटर पर चुकाई गई ${counter} में से ${copay} को-पे था और ${ded} कभी नहीं समझाया गया।`,
+  ded_absorbed: "आपने वहन की गई कटौती",
+  copay_lbl: "को-पे",
+  counter_payment: "काउंटर भुगतान",
+  insurer_approved: "बीमा कंपनी ने मंज़ूर किया",
+  approved_base: cp=>`मंज़ूर आधार (${cp}% को-पे)`,
+  sec_bill: "बिल की हर लाइन जाँचें",
+  bill_lead: "अपने बिल की सभी पेज़ों की फ़ोटो अपलोड करें (अगर एक से ज़्यादा हैं तो सब)। Google Gemini इन्हें पंक्तियों में पढ़ता है; फिर जाँचें आपके ब्राउज़र में ही चलती हैं।",
+  drop_html: '<b>फ़ोटो चुनने के लिए टैप करें</b><br>या यहाँ तस्वीरें खींचकर लाएँ (JPG / PNG) &mdash; कई पेज़ चल सकते हैं',
+  apikey_html: 'Gemini API key <span class="hint">&mdash; एक बार &middot; <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">यहाँ से लें</a> &middot; सिर्फ़ इस ब्राउज़र में सुरक्षित</span>',
+  need_key: "इसके लिए एक बार Gemini key चाहिए (मुफ़्त)। ऊपर डालें, फिर फ़ोटो दोबारा चुनें।",
+  choose_image: "सिर्फ़ इमेज चुनें (JPG या PNG)। PDF के लिए, हर पेज़ का स्क्रीनशॉट लें।",
+  reading_page: (i,n)=>n>1?`पेज़ ${i} / ${n} पढ़ा जा रहा है&hellip;`:'आपका बिल पढ़ा जा रहा है&hellip;',
+  read_lines: (n,pages)=>pages>1?`${pages} पेज़ों में ${n} लाइन आइटम पढ़े गए।`:`${n} लाइन आइटम पढ़े गए।`,
+  no_lines_found: "जवाब में कोई लाइन आइटम नहीं मिला।",
+  no_bill_pages: "इनमें से कोई भी अस्पताल के बिल का पेज़ नहीं लगता। बिल की तस्वीर अपलोड करें — कवर लेटर या रसीद नहीं।",
+  read_lines_partial: (n,pages,skipped)=>`${n} लाइन आइटम पढ़े गए। ${pages} में से ${skipped} फ़ोटो बिल का पेज़ नहीं लगीं, इसलिए छोड़ दी गईं।`,
+  worked_example_note: "उदाहरण — एक असली, संपादित (redacted) 63-लाइन अस्पताल बिल। दिखाने के लिए कोई असली फ़ोटो नहीं है; यह सुरक्षित डेटा है, आपका अपलोड नहीं।",
+  check_photos_btn: n=>`${n} फ़ोटो जाँचें`,
+  rej_badge_text: "बिल नहीं",
+  letter_confirm_nppa: n=>`NPPA सीमा से ऊपर ${n} इम्प्लांट`,
+  kpi_deducted:"कटौती", kpi_explained:"समझाया गया", kpi_checks:"जाँचें पूरी",
+  verdict_head: ded=>`बिना बताई गई ${ded} की कटौती दरअसल क्या लगती है`,
+  verdict_saturated: ded=>`IRDAI की सूची में शामिल चीज़ों से ${ded} की पूरी कटौती बराबर या उससे ज़्यादा हो जाती है। बीमा कंपनियाँ श्रेणी के हिसाब से काटती हैं, इसलिए इसका कुछ हिस्सा किसी और मद में हो सकता है।`,
+  verdict_normal: (pc,ded)=>`IRDAI की प्रकाशित सूची में नामित चीज़ों से मेल खाता है &mdash; ${ded} का लगभग <em>${pc}%</em>`,
+  verdict_extra: pc2=>`, या ${pc2}% अगर उन चीज़ों को भी गिनें जो अक्सर काटी जाती हैं पर सूची में नाम से नहीं हैं`,
+  verdict_tail: "। बीमा कंपनियाँ श्रेणी के हिसाब से काटती हैं, इसलिए बाक़ी हिस्सा शायद थोक में हटाए गए उपभोज्य सामान का है।",
+  bill_read_head:"बिल पढ़ा गया",
+  bill_read_sub:"ऊपर सेटलमेंट भरें ताकि पता चले ये कितनी कटौती की वजह बताते हैं।",
+  lines_total:(n,total)=>`${n} लाइन आइटम पढ़े गए, कुल ${total}।`,
+  told_shown_head:"आपको क्या बताया गया &middot; बिल में क्या दिखता है",
+  told_h5:"सेटलमेंट ने आपको बताया", shown_h5:"बिल में यह शामिल है",
+  total_bill:"कुल बिल", hospital_discount:"अस्पताल की छूट", you_paid:"आपने चुकाया",
+  never_itemised_short:"कभी नहीं बताया गया", lines_word:n=>`${n} लाइनें`,
+  join_sentence:(ded,n)=>`आपको बताया गया कि आपने जो चुकाया उसमें से <b>${ded}</b> कभी नहीं बताई गई। अस्पताल के अपने बिल में <b>${n}</b> चार्ज हैं। नीचे की जाँचें दोनों को मिलाकर देखती हैं।`,
+  bill_every_check:"बिल, और हर जाँच",
+  leg_insurer:p=>`बीमा कंपनी ${p}%`, leg_never:p=>`कभी नहीं बताया ${p}%`, leg_copay:p=>`को-पे ${p}%`, leg_discount:p=>`छूट ${p}%`,
+  flagged_so_far:"अब तक चिन्हित",
+  clear_word:"ठीक",
+  do_label:"आप क्या कर सकते हैं",
+  detail_matched:"मेल खाती लाइनें &mdash; IRDAI की न-भुगतान सूची",
+  detail_review:"अक्सर काटी जाती हैं &mdash; सूची में नाम से नहीं",
+  detail_review_plain:"इन्हें अपने बीमा कंपनी से पुष्टि करें। ये निष्कर्ष नहीं हैं।",
+  detail_review_src:m=>`अक्सर इस रूप में काटा जाता है: ${m}`,
+  detail_matched_src:m=>`मेल: ${m}`,
+  detail_nppa:"सांविधिक मूल्य सीमा से ऊपर (NPPA)",
+  detail_nppa_plain:"DPCO के तहत एक क़ानूनी सीमा, राय नहीं।",
+  detail_nppa_src:(ref,ceiling,gst)=>`${ref} के लिए NPPA सीमा: ${ceiling} (${gst})`,
+  detail_recon:"मिलान",
+  detail_recon_body:(gross,lineSum,diff)=>`बिल की छपी कुल राशि (${gross}) उसकी अपनी लाइनों के योग (${lineSum}) से <strong>${diff}</strong> अलग है। यह अस्पताल की अपनी गणना हो सकती है, पढ़ने की ग़लती नहीं।`,
+  detail_dup:"एक से ज़्यादा बार दिखता है",
+  detail_dup_src:n=>`${n} बार एक ही राशि पर दिखता है`,
+  detail_is19493:"बिल की पूर्णता &mdash; IS 19493",
+  detail_is19493_plain:"IS 19493:2025 एक <strong>स्वैच्छिक</strong> BIS मानक है। यह निम्नलिखित की अपेक्षा करता है, जो इस बिल में नहीं है:",
+  detail_is19493_unit:"हर चार्ज लाइन में <strong>यूनिट</strong> कॉलम नहीं है",
+  detail_is19493_malformed:"मौजूद है, पर तय प्रारूप में नहीं",
+  detail_is19493_redacted:n=>`विश्लेषण से पहले ${n} मरीज़/अस्पताल पहचान फ़ील्ड निजता के लिए हटाई गई थीं &mdash; यहाँ इनकी जाँच नहीं की गई, और इन्हें बिल के विरुद्ध नहीं गिना गया।`,
+  letter_btn:"शिकायत के साथ लगाने के लिए पत्र बनाएँ",
+  letter_shortcut:"शिकायत करनी है? अभी पत्र तैयार करें",
+  letter_note_lang:"यह पत्र अंग्रेज़ी में तैयार होता है, क्योंकि आपकी बीमा कंपनी और IRDAI इसी औपचारिक भाषा में काम करते हैं।",
+  tab_settlement:"सेटलमेंट", tab_findings:"जाँचें", tab_letter:"पत्र", tab_about:"जानकारी",
+  sec_letter:"पत्र", sec_about:"इस जाँच के बारे में", how_head:"यह कैसे काम करता है",
+  how1b:"मॉडल पढ़ता है", how1p:"Google का Gemini मॉडल आपकी फ़ोटो को पंक्तियों में बदलता है &mdash; सिर्फ़ नक़ल, कोई राय नहीं।",
+  how2b:"कोड निर्णय करता है", how2p:"इसके बाद हर निशान एक तालिका-मिलान या गणना है &mdash; मॉडल की राय नहीं।",
+  how3b:"आप तय करते हैं", how3p:"आपकी ओर से कहीं कुछ नहीं भेजा जाता। पत्र भेजना या न भेजना आपका फ़ैसला है।",
+  gcloud_strip_html:'Google Cloud पर चलता है &mdash; <span>Gemini &middot; Cloud Run &middot; Document AI</span>',
+  gcloud_head:"Google Cloud पर बना",
+  gcloud_intro:"ClearBill पूरी तरह Google Cloud पर चलता है। हर सेवा का एक काम है:",
+  gcloud_rows:[
+    ["Gemini API","बिल की फ़ोटो को पंक्तियों में पढ़ता है (मॉडल gemini-3.6-flash)। मॉडल का इस्तेमाल सिर्फ़ यहीं होता है।","on"],
+    ["Cloud Run","ऐप को होस्ट करता है और Gemini को कॉल करने वाला फ़ंक्शन चलाता है, asia-south1 में।","on"],
+    ["Secret Manager","Gemini की key सर्वर पर रखता है, ताकि आपके डिवाइस पर कुछ डालना न पड़े।","on"],
+    ["Cloud Build","हर डिप्लॉय पर कंटेनर बनाता और वर्शन करता है।","on"],
+    ["Document AI","Form Parser, असली टेस्ट बिल पर Gemini के साथ तुलना की गई; तुलना रिकॉर्ड में रखी है।","eval"]
+  ],
+  letter_confirm_head:"इस पत्र में यह शामिल होगा",
+  letter_confirm_settlement:"आपके सेटलमेंट के आँकड़े",
+  letter_confirm_irdai:n=>`IRDAI सूची के ${n} चार्ज`,
+  letter_confirm_dup:n=>`${n} दोहरे चार्ज`,
+  letter_confirm_recon:"मिलान में अंतर",
+  letter_confirm_sent_to:"किसे भेजा जाएगा", letter_confirm_sent_to_val:"बीमा कंपनी / IRDAI",
+  letter_empty:"अपना पत्र देखने के लिए, 'जाँचें' टैब में बिल अपलोड करें।",
+  findings_empty:"बिल अपलोड करें ताकि यहाँ जाँचें दिखें। अभी कुछ जाँचने को नहीं है।",
+  gen_letter_btn:"पत्र तैयार करें",
+  print_btn:"प्रिंट करें / PDF सहेजें", copy_btn:"टेक्स्ट कॉपी करें", copied_btn:"कॉपी हो गया",
+  foot_html: `आधार = कुल बिल &minus; कटौती &minus; अस्पताल की छूट। को-पे सिर्फ़ आधार पर लागू होता है। काउंटर = कटौती + को-पे।<br><br>
+    मॉडल सिर्फ़ बिल को पंक्तियों में पढ़ता है। इसके बाद हर निशान एक तालिका-मिलान या गणना है, जिसका स्रोत साथ दिखता है।
+    &ldquo;प्रकाशित न-भुगतान सूची से मेल&rdquo; का मतलब &ldquo;ओवरचार्ज&rdquo; नहीं है। IS 19493 एक स्वैच्छिक मानक है; NPPA सीमाएँ सांविधिक हैं।<br><br>
+    IRDAI सूची I &middot; NPPA मूल्य सीमाएँ &middot; IS 19493:2025.`,
+  checks: {
+    irdai_exact: { label:"IRDAI सूची I",
+      found:n=>`${n} चार्ज प्रकाशित न-भुगतान सूची से मेल खाते हैं`, sub:sum=>`${sum} &middot; IRDAI सूची I`,
+      foundClear:"IRDAI सूची I में नामित किसी चीज़ से कोई चार्ज मेल नहीं खाता", subClear:"यहाँ कुछ चिन्हित नहीं करना",
+      money:(dedRaw,dedFmt,pc)=>dedRaw>0?`${dedFmt} की कटौती का ${pc}% समझाता है &mdash; एक वैध कटौती, ग़लती नहीं।`:`IRDAI की प्रकाशित सूची के तहत एक वैध कटौती, ग़लती नहीं।`,
+      doText:"यहाँ कुछ और करने की ज़रूरत नहीं। बाक़ी के बारे में पूछते समय इसे समझाए गए हिस्से के तौर पर इस्तेमाल करें।" },
+    irdai_review: { label:"पुष्टि करें",
+      found:n=>`${n} चार्ज अक्सर काटे जाते हैं, पर सूची में नहीं हैं`, sub:sum=>`${sum} &middot; अपने बीमा कंपनी से पुष्टि करें`,
+      foundClear:'"अक्सर काटी जाने वाली पर सूची में न होने वाली" कोई चार्ज नहीं', subClear:"",
+      money:()=>"ये व्यवहार में अक्सर काटी जाती हैं, पर प्रकाशित सूची में नाम से नहीं हैं, इसलिए यह पुष्ट निष्कर्ष नहीं है।",
+      doText:"अपने बीमा कंपनी से इन्हें विशेष रूप से पुष्टि करने को कहें। सिर्फ़ इसी आधार पर विवाद न करें।" },
+    nppa: { label:"NPPA सीमा से ऊपर",
+      found:n=>`${n} इम्प्लांट अपनी सांविधिक सीमा से ऊपर है`, sub:()=>"DPCO के तहत मूल्य सीमा",
+      foundClear:"कोई इम्प्लांट NPPA सीमा से ऊपर क़ीमत पर नहीं", subClear:"स्टेंट / घुटने के इम्प्लांट जाँचे गए",
+      money:()=>"यह एक क़ानूनी मूल्य सीमा है, सुझाव नहीं। इससे ऊपर बिल करना सांविधिक उल्लंघन है।",
+      doText:"यह आपकी सबसे मज़बूत बात है &mdash; अस्पताल से NPPA अधिसूचना के मुक़ाबले क़ीमत का औचित्य पूछें, या अंतर की वापसी माँगें।" },
+    recon: { label:"योग जाँच",
+      found:diff=>`बिल का योग ${diff} से गड़बड़ है`, sub:(gross,lineSum)=>`छपा ${gross} बनाम लाइनों का योग ${lineSum} &mdash; शायद अस्पताल की अपनी गणना`,
+      foundClear:"बिल का मिलान सही है", subClear:"लाइनों का योग छपी कुल राशि से मेल खाता है",
+      money:()=>"यह अस्पताल की अपनी गणना है, आपकी या हमारी नहीं। इससे आपकी देय राशि नहीं बदलती।",
+      doText:"बिलिंग डेस्क को यह अंतर दिखाएँ और समझाने को कहें। इस बिल को अपने रिकॉर्ड के तौर पर रखें।" },
+    dup: { label:"दो बार",
+      found:n=>`${n} चार्ज एक से ज़्यादा बार दिखते हैं`, sub:()=>"एक ही चीज़, एक ही राशि",
+      foundClear:"कोई दोहरा चार्ज नहीं", subClear:"",
+      money:()=>"एक ही राशि पर दोहराया गया चार्ज आमतौर पर एक डुप्लिकेट एंट्री होता है, दो अलग सेवाएँ नहीं।",
+      doText:"अस्पताल से पूछें कि क्या हर एक को उलटा (रिवर्स) किया गया था। अगर नहीं, तो यह आपकी सबसे मज़बूत विवाद वाली लाइन है।" },
+    is19493: { label:"IS 19493",
+      found:n=>`मानक द्वारा अपेक्षित ${n} फ़ील्ड ग़ायब हैं`, sub:()=>"IS 19493:2025 &mdash; एक स्वैच्छिक BIS प्रारूप",
+      foundClear:"बिल में IS 19493 की हर अपेक्षित फ़ील्ड मौजूद है", subClear:"",
+      money:()=>"IS 19493 एक स्वैच्छिक मानक है, क़ानून नहीं &mdash; इससे आपको कुछ ख़र्च नहीं होता।",
+      doText:"बिल में ग़ायब फ़ील्ड माँगें, ख़ासकर अगर बिल नंबर अभी प्रोविज़नल (अस्थायी) है तो अंतिम बिल नंबर माँगें।" },
+  },
+},
+mr: {
+  tag: "तुमचं सेटलमेंट, तपशीलवार &mdash; मग बिलाची प्रत्येक ओळ विमा कंपनी न भरत असलेल्या गोष्टींशी जुळवली.",
+  sec_settlement: "सेटलमेंट",
+  lbl_total: 'एकूण बिल रक्कम <span class="hint">&mdash; रुग्णालयाचं अंतिम बिल</span>',
+  lbl_counter: 'डिस्चार्जच्या वेळी काउंटरवर दिलेली रक्कम <span class="hint">&mdash; तुम्ही जे दिलं</span>',
+  lbl_discount: 'रुग्णालयाची सूट <span class="hint">&mdash; MOU / PPN सूट, असल्यास</span>',
+  lbl_copay: 'को-पे टक्केवारी <span class="hint">&mdash; तुमच्या पॉलिसीचा वाटा</span>',
+  eg_btn: "उदाहरण भरा",
+  never_itemised: "कधीच स्पष्ट केलं नाही &mdash; हे कशासाठी होतं हे तुम्हाला सांगितलं नाही",
+  mystery_sub: (counter,copay,ded)=>`काउंटरवर दिलेल्या ${counter} पैकी ${copay} को-पे होता आणि ${ded} कधीच स्पष्ट झाला नाही.`,
+  ded_absorbed: "तुम्ही सहन केलेली कपात",
+  copay_lbl: "को-पे",
+  counter_payment: "काउंटर पेमेंट",
+  insurer_approved: "विमा कंपनीने मंजूर केलेलं",
+  approved_base: cp=>`मंजूर आधार (${cp}% को-पे)`,
+  sec_bill: "तपशीलवार बिल तपासा",
+  bill_lead: "तुमच्या बिलाच्या सर्व पानांचे फोटो अपलोड करा (एकापेक्षा जास्त असल्यास सर्व). Google Gemini ते ओळींमध्ये वाचतं; मग तपासण्या तुमच्या ब्राउझरमध्येच चालतात.",
+  drop_html: '<b>फोटो निवडण्यासाठी टॅप करा</b><br>किंवा इथे फोटो आणा (JPG / PNG) &mdash; अनेक पानं चालतील',
+  apikey_html: 'Gemini API key <span class="hint">&mdash; एकदाच &middot; <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">इथून मिळवा</a> &middot; फक्त या ब्राउझरमध्ये जतन</span>',
+  need_key: "यासाठी एकदा Gemini key लागते (मोफत). वर टाका, मग फोटो पुन्हा निवडा.",
+  choose_image: "फक्त इमेज निवडा (JPG किंवा PNG). PDF साठी, प्रत्येक पानाचा स्क्रीनशॉट घ्या.",
+  reading_page: (i,n)=>n>1?`पान ${i} / ${n} वाचलं जात आहे&hellip;`:'तुमचं बिल वाचलं जात आहे&hellip;',
+  read_lines: (n,pages)=>pages>1?`${pages} पानांमध्ये ${n} लाइन आयटम वाचले.`:`${n} लाइन आयटम वाचले.`,
+  no_lines_found: "उत्तरात कोणतेही लाइन आयटम सापडले नाहीत.",
+  no_bill_pages: "यापैकी कोणतंही पान हॉस्पिटलच्या बिलासारखं दिसत नाही. बिलाचा फोटो अपलोड करा — कव्हर लेटर किंवा पावती नाही.",
+  read_lines_partial: (n,pages,skipped)=>`${n} लाइन आयटम वाचले. ${pages} पैकी ${skipped} फोटो बिलाचं पान वाटले नाहीत, म्हणून वगळले.`,
+  worked_example_note: "उदाहरण — एक खरं, संपादित (redacted) 63-ओळींचं हॉस्पिटल बिल. दाखवायला खरा फोटो नाही; हा साठवलेला डेटा आहे, तुम्ही अपलोड केलेला नाही.",
+  check_photos_btn: n=>`${n} फोटो तपासा`,
+  rej_badge_text: "बिल नाही",
+  letter_confirm_nppa: n=>`NPPA मर्यादेपेक्षा जास्त ${n} इम्प्लांट`,
+  kpi_deducted:"कपात", kpi_explained:"स्पष्ट केलं", kpi_checks:"तपासण्या पूर्ण",
+  verdict_head: ded=>`स्पष्ट न केलेली ${ded} ची कपात नक्की काय दिसते`,
+  verdict_saturated: ded=>`IRDAI यादीतील गोष्टींमुळे ${ded} ची संपूर्ण कपात बरोबर किंवा त्याहून जास्त होते. विमा कंपन्या श्रेणीनुसार कापतात, त्यामुळे यातला काही भाग वेगळ्या गटात असू शकतो.`,
+  verdict_normal: (pc,ded)=>`IRDAI च्या प्रकाशित यादीत नमूद गोष्टींशी जुळतं &mdash; ${ded} पैकी सुमारे <em>${pc}%</em>`,
+  verdict_extra: pc2=>`, किंवा ${pc2}% जर वारंवार कापल्या जाणाऱ्या पण यादीत नसलेल्या गोष्टीही मोजल्या`,
+  verdict_tail: "। विमा कंपन्या श्रेणीनुसार कापतात, त्यामुळे उरलेला भाग बहुधा घाऊक हटवलेलं साहित्य आहे.",
+  bill_read_head:"बिल वाचलं",
+  bill_read_sub:"वरती सेटलमेंट भरा म्हणजे कळेल की या गोष्टी तुमच्या कपातीपैकी किती स्पष्ट करतात.",
+  lines_total:(n,total)=>`${n} लाइन आयटम वाचले, एकूण ${total}.`,
+  told_shown_head:"तुम्हाला काय सांगितलं &middot; बिलात काय आहे",
+  told_h5:"सेटलमेंटने तुम्हाला सांगितलं", shown_h5:"तपशीलवार बिलात हे आहे",
+  total_bill:"एकूण बिल", hospital_discount:"रुग्णालयाची सूट", you_paid:"तुम्ही दिलं",
+  never_itemised_short:"कधीच स्पष्ट केलं नाही", lines_word:n=>`${n} ओळी`,
+  join_sentence:(ded,n)=>`तुम्हाला सांगितलं की तुम्ही दिलेल्या रकमेपैकी <b>${ded}</b> कधीच स्पष्ट केला नाही. रुग्णालयाच्या स्वतःच्या बिलात <b>${n}</b> चार्जेस आहेत. खालील तपासण्या दोन्ही जुळवून पाहतात.`,
+  bill_every_check:"बिल, आणि प्रत्येक तपासणी",
+  leg_insurer:p=>`विमा कंपनी ${p}%`, leg_never:p=>`कधीच स्पष्ट नाही ${p}%`, leg_copay:p=>`को-पे ${p}%`, leg_discount:p=>`सूट ${p}%`,
+  flagged_so_far:"आत्तापर्यंत नोंदवलेलं",
+  clear_word:"ठीक",
+  do_label:"तुम्ही काय करू शकता",
+  detail_matched:"जुळणाऱ्या ओळी &mdash; IRDAI ची न-भरणा यादी",
+  detail_review:"वारंवार कापले जातात &mdash; यादीत नाव नाही",
+  detail_review_plain:"हे तुमच्या विमा कंपनीकडून पुष्टी करून घ्या. हे निष्कर्ष नाहीत.",
+  detail_review_src:m=>`अनेकदा असं कापलं जातं: ${m}`,
+  detail_matched_src:m=>`जुळतं: ${m}`,
+  detail_nppa:"वैधानिक किंमत मर्यादेपेक्षा जास्त (NPPA)",
+  detail_nppa_plain:"DPCO अंतर्गत कायदेशीर मर्यादा, मत नाही.",
+  detail_nppa_src:(ref,ceiling,gst)=>`${ref} साठी NPPA मर्यादा: ${ceiling} (${gst})`,
+  detail_recon:"ताळमेळ",
+  detail_recon_body:(gross,lineSum,diff)=>`बिलाची छापील एकूण रक्कम (${gross}) त्याच्या स्वतःच्या ओळींच्या बेरजेपेक्षा (${lineSum}) <strong>${diff}</strong> ने वेगळी आहे. ही रुग्णालयाची स्वतःची गणना असू शकते, वाचण्यातली चूक नाही.`,
+  detail_dup:"एकापेक्षा जास्त वेळा दिसतं",
+  detail_dup_src:n=>`तेवढ्याच रकमेला ${n} वेळा दिसतं`,
+  detail_is19493:"बिलाची पूर्णता &mdash; IS 19493",
+  detail_is19493_plain:"IS 19493:2025 हा एक <strong>ऐच्छिक</strong> BIS मानक आहे. तो खालील अपेक्षा करतो, जे या बिलात नाही:",
+  detail_is19493_unit:"प्रत्येक चार्ज ओळीत <strong>युनिट</strong> कॉलम नाही",
+  detail_is19493_malformed:"आहे, पण अपेक्षित नमुन्यात नाही",
+  detail_is19493_redacted:n=>`विश्लेषणापूर्वी ${n} रुग्ण/रुग्णालय ओळख फील्ड गोपनीयतेसाठी काढून टाकली होती &mdash; येथे त्यांची तपासणी केलेली नाही, आणि ती बिलाविरुद्ध मोजलेली नाहीत.`,
+  letter_btn:"तक्रारीसोबत जोडण्यासाठी पत्र तयार करा",
+  letter_shortcut:"तक्रार करायची आहे? आत्ताच पत्र तयार करा",
+  letter_note_lang:"हे पत्र इंग्रजीत तयार होतं, कारण तुमची विमा कंपनी आणि IRDAI याच औपचारिक भाषेत काम करतात.",
+  tab_settlement:"सेटलमेंट", tab_findings:"तपासण्या", tab_letter:"पत्र", tab_about:"माहिती",
+  sec_letter:"पत्र", sec_about:"या तपासणीबद्दल", how_head:"हे कसं काम करतं",
+  how1b:"मॉडेल वाचतं", how1p:"Google चं Gemini मॉडेल तुमचा फोटो ओळींमध्ये बदलतं &mdash; फक्त नक्कल, मत नाही.",
+  how2b:"कोड निर्णय घेतो", how2p:"त्यानंतरचा प्रत्येक निष्कर्ष हा तक्ता-जुळवणी किंवा गणित आहे &mdash; मॉडेलचं मत नाही.",
+  how3b:"तुम्ही ठरवता", how3p:"तुमच्या वतीने कुठेही काहीही पाठवलं जात नाही. पत्र पाठवायचं की नाही, हा निर्णय तुमचा आहे.",
+  gcloud_strip_html:'Google Cloud वर चालतं &mdash; <span>Gemini &middot; Cloud Run &middot; Document AI</span>',
+  gcloud_head:"Google Cloud वर बांधलेलं",
+  gcloud_intro:"ClearBill संपूर्णपणे Google Cloud वर चालतं. प्रत्येक सेवेचं एक काम आहे:",
+  gcloud_rows:[
+    ["Gemini API","बिलाचा फोटो ओळींमध्ये वाचतं (मॉडेल gemini-3.6-flash). मॉडेल फक्त इथेच वापरलं जातं.","on"],
+    ["Cloud Run","अ‍ॅप होस्ट करतं आणि Gemini ला कॉल करणारं फंक्शन चालवतं, asia-south1 मध्ये.","on"],
+    ["Secret Manager","Gemini ची key सर्व्हरवर ठेवतं, त्यामुळे तुमच्या डिव्हाइसवर काही टाकावं लागत नाही.","on"],
+    ["Cloud Build","प्रत्येक डिप्लॉयला कंटेनर बांधतं आणि व्हर्जन करतं.","on"],
+    ["Document AI","Form Parser, खऱ्या टेस्ट बिलावर Gemini शी तुलना केली; तुलना नोंदीत ठेवली आहे.","eval"]
+  ],
+  letter_confirm_head:"या पत्रात हे असेल",
+  letter_confirm_settlement:"तुमचे सेटलमेंट आकडे",
+  letter_confirm_irdai:n=>`IRDAI यादीतील ${n} चार्जेस`,
+  letter_confirm_dup:n=>`${n} डुप्लिकेट चार्जेस`,
+  letter_confirm_recon:"ताळमेळातील फरक",
+  letter_confirm_sent_to:"कोणाला पाठवायचं", letter_confirm_sent_to_val:"विमा कंपनी / IRDAI",
+  letter_empty:"तुमचं पत्र पाहण्यासाठी, 'तपासण्या' टॅबमध्ये बिल अपलोड करा.",
+  findings_empty:"बिल अपलोड करा म्हणजे इथे तपासण्या दिसतील. अजून तपासण्यासारखं काही नाही.",
+  gen_letter_btn:"पत्र तयार करा",
+  print_btn:"प्रिंट करा / PDF सेव्ह करा", copy_btn:"मजकूर कॉपी करा", copied_btn:"कॉपी झालं",
+  foot_html: `आधार = एकूण बिल &minus; कपात &minus; रुग्णालयाची सूट. को-पे फक्त आधारावर लागू होतो. काउंटर = कपात + को-पे.<br><br>
+    मॉडेल फक्त बिल ओळींमध्ये वाचतं. त्यानंतरचा प्रत्येक निष्कर्ष हा तक्ता-जुळवणी किंवा गणित आहे, ज्याचा स्रोत सोबत दिसतो.
+    &ldquo;प्रकाशित न-भरणा यादीशी जुळतं&rdquo; याचा अर्थ &ldquo;ओव्हरचार्ज&rdquo; नाही. IS 19493 हा ऐच्छिक मानक आहे; NPPA मर्यादा वैधानिक आहेत.<br><br>
+    IRDAI यादी I &middot; NPPA किंमत मर्यादा &middot; IS 19493:2025.`,
+  checks: {
+    irdai_exact: { label:"IRDAI यादी I",
+      found:n=>`${n} चार्जेस प्रकाशित न-भरणा यादीशी जुळतात`, sub:sum=>`${sum} &middot; IRDAI यादी I`,
+      foundClear:"IRDAI यादी I मध्ये नमूद कोणत्याही गोष्टीशी चार्ज जुळत नाही", subClear:"इथे काही नोंदवण्यासारखं नाही",
+      money:(dedRaw,dedFmt,pc)=>dedRaw>0?`${dedFmt} च्या कपातीपैकी ${pc}% स्पष्ट करतं &mdash; ही वैध कपात आहे, चूक नाही.`:`IRDAI च्या प्रकाशित यादीनुसार वैध कपात, चूक नाही.`,
+      doText:"इथे आणखी काही करण्याची गरज नाही. उरलेल्याबद्दल विचारताना हा स्पष्ट झालेला भाग म्हणून वापरा." },
+    irdai_review: { label:"खात्री करा",
+      found:n=>`${n} चार्जेस वारंवार कापले जातात, पण यादीत नाहीत`, sub:sum=>`${sum} &middot; तुमच्या विमा कंपनीकडून खात्री करा`,
+      foundClear:'"वारंवार कापले जाणारे पण यादीत नसलेले" चार्ज नाहीत', subClear:"",
+      money:()=>"हे प्रत्यक्षात वारंवार कापले जातात, पण प्रकाशित यादीत नावाने नाहीत, त्यामुळे हा पक्का निष्कर्ष नाही.",
+      doText:"तुमच्या विमा कंपनीला हे विशेषतः खात्री करून द्यायला सांगा. फक्त याच आधारावर वाद घालू नका." },
+    nppa: { label:"NPPA मर्यादेपेक्षा जास्त",
+      found:n=>`${n} इम्प्लांट त्याच्या वैधानिक मर्यादेपेक्षा जास्त आहे`, sub:()=>"DPCO अंतर्गत किंमत मर्यादा",
+      foundClear:"कोणताही इम्प्लांट NPPA मर्यादेपेक्षा जास्त किमतीत नाही", subClear:"स्टेंट / गुडघा इम्प्लांट तपासले",
+      money:()=>"ही कायदेशीर किंमत मर्यादा आहे, सूचना नाही. यापेक्षा जास्त बिल करणं वैधानिक उल्लंघन आहे.",
+      doText:"हा तुमचा सर्वात भक्कम मुद्दा आहे &mdash; रुग्णालयाला NPPA अधिसूचनेच्या तुलनेत किमतीचं समर्थन विचारा, किंवा फरकाचा परतावा मागा." },
+    recon: { label:"बेरीज तपासा",
+      found:diff=>`बिलाची बेरीज ${diff} ने चुकीची आहे`, sub:(gross,lineSum)=>`छापील ${gross} विरुद्ध ओळींची बेरीज ${lineSum} &mdash; कदाचित रुग्णालयाची स्वतःची गणना`,
+      foundClear:"बिलाचा ताळमेळ बरोबर आहे", subClear:"ओळींची बेरीज छापील एकूण रकमेशी जुळते",
+      money:()=>"ही रुग्णालयाची स्वतःची गणना आहे, तुमची किंवा आमची नाही. यामुळे तुमची देय रक्कम बदलत नाही.",
+      doText:"बिलिंग डेस्कला हा फरक दाखवा आणि स्पष्टीकरण मागा. हे बिल तुमच्या रेकॉर्डसाठी जपून ठेवा." },
+    dup: { label:"दोनदा",
+      found:n=>`${n} चार्जेस एकापेक्षा जास्त वेळा दिसतात`, sub:()=>"तीच गोष्ट, तीच रक्कम",
+      foundClear:"कोणताही डुप्लिकेट चार्ज नाही", subClear:"",
+      money:()=>"तेवढ्याच रकमेला पुन्हा आलेला चार्ज साधारणपणे डुप्लिकेट नोंद असतो, दोन वेगळ्या सेवा नाहीत.",
+      doText:"रुग्णालयाला विचारा की प्रत्येक चार्ज परत केला गेला होता का. नसल्यास, वाद घालण्यासाठी हा तुमचा सर्वात भक्कम मुद्दा आहे." },
+    is19493: { label:"IS 19493",
+      found:n=>`मानकाने अपेक्षित ${n} फील्ड्स गहाळ आहेत`, sub:()=>"IS 19493:2025 &mdash; एक ऐच्छिक BIS स्वरूप",
+      foundClear:"बिलात IS 19493 ने अपेक्षित प्रत्येक फील्ड आहे", subClear:"",
+      money:()=>"IS 19493 हा ऐच्छिक मानक आहे, कायदा नाही &mdash; यामुळे तुम्हाला काहीही खर्च येत नाही.",
+      doText:"बिलात गहाळ असलेली फील्ड्स मागा, विशेषतः बिल नंबर सध्या प्रोव्हिजनल (तात्पुरता) असल्यास अंतिम बिल नंबर मागा." },
+  },
+},
+};
+const S = () => STRINGS[LANG] || STRINGS.en;
+// dot-path fallback: a language missing a key silently falls back to English
+// rather than showing a blank — a half-translated report beats no report.
+function Sv(path){
+  const walk=(obj)=>path.split('.').reduce((o,k)=>(o&&o[k]!==undefined)?o[k]:undefined,obj);
+  const v = walk(S()); if(v!==undefined) return v;
+  const fb = walk(STRINGS.en); if(fb===undefined) console.warn('i18n: missing key',path);
+  return fb;
+}
+
+/* settlement */
+const F = {total:$('total'),counter:$('counter'),discount:$('discount'),copay:$('copay')};
+function calc(){
+  const total=Math.max(0,+F.total.value||0), counter=Math.max(0,+F.counter.value||0),
+        disc=Math.max(0,+F.discount.value||0), cp=Math.max(0,Math.min(100,+F.copay.value||0));
+  if(!total||!counter){ $('settleOut').classList.add('hide'); window.__settle=null; if(window.__lastExtraction) renderReport(window.__lastExtraction); return; }
+  const r=cp/100;
+  let deduction = r<1 ? (counter-(total-disc)*r)/(1-r) : 0;
+  deduction = Math.max(0, money(deduction));
+  const base = Math.max(0, money(total-deduction-disc));
+  const copayAmt = money(base*r);
+  const insurer = Math.max(0, money(base-copayAmt));
+  window.__settle = {total,counter,disc,cp,deduction,base,copayAmt,insurer};
+  $('mysteryAmt').textContent = inr.format(deduction);
+  $('mysterySub').textContent = S().mystery_sub(inr.format(counter),inr.format(copayAmt),inr.format(deduction));
+  $('rDed').textContent = inr.format(deduction);
+  $('rCopay').textContent = inr.format(copayAmt);
+  $('rCopayDesc').textContent = S().approved_base(cp);
+  $('rCounter').textContent = inr.format(deduction+copayAmt);
+  $('sInsurer').textContent = inr.format(insurer);
+  $('sBase').textContent = inr.format(base);
+  $('settleOut').classList.remove('hide');
+  if(window.__lastExtraction) renderReport(window.__lastExtraction);
+}
+Object.values(F).forEach(el=>el.addEventListener('input',()=>{ if(el===F.copay) markChips(F.copay.value); calc(); }));
+function markChips(v){ document.querySelectorAll('#copayChips .chip').forEach(c=>c.classList.toggle('on',+c.dataset.v===+v)); }
+document.querySelectorAll('#copayChips .chip').forEach(c=>c.addEventListener('click',()=>{ F.copay.value=c.dataset.v; markChips(c.dataset.v); calc(); }));
+$('egBtn').addEventListener('click',()=>{
+  F.total.value=41396; F.counter.value=9349; F.discount.value=1572; F.copay.value=10; markChips(10);
+  // The worked example used to only fill in the settlement numbers, leaving
+  // Findings and Letter empty — a demo that couldn't show its own findings
+  // isn't convincing. It now loads the same real (redacted) 63-line bill
+  // the settlement figures came from, so all four tabs tell one story.
+  resetUploadState();
+  _usingWorkedExample=true;
+  renderFilePreview(); // resetUploadState() just rendered the empty state before this flag was set — render again now it's true
+  window.__lastExtraction=WORKED_EXAMPLE_BILL;
+  calc(); // computes the settlement AND calls renderReport() since lastExtraction is now set
+});
+
+/* checks */
+function bestMatch(text){
+  const t=String(text||'').toLowerCase(); let best=null;
+  for(const e of NON_PAYABLE){
+    for(const kw of e.keywords.split('|')){
+      const k=kw.trim().toLowerCase(); if(!k||!t.includes(k)) continue;
+      const c={e,kw:k,rank:e.tier==='exact'?2:1,len:k.length};
+      if(!best||c.rank>best.rank||(c.rank===best.rank&&c.len>best.len)) best=c;
+    }
+  }
+  return best;
+}
+function analyse(data){
+  const lines=(data.line_items||[]).map(l=>{
+    let q=l.quantity==null?null:+l.quantity; const tot=l.total==null?null:+l.total;
+    if(tot!=null&&tot<0&&q!=null&&q>0) q=-Math.abs(q);
+    return {item:String(l.item||''),unit:l.unit??null,quantity:q,rate:l.rate??null,total:tot,section:l.section||l.category||null};
+  });
+  const H=data.header||{};
+  const exact=[],review=[];
+  for(const l of lines){ const m=bestMatch(l.item); if(!m) continue;
+    (m.e.tier==='exact'?exact:review).push({...l,matched:m.e.item}); }
+  const sum=a=>money(a.reduce((s,r)=>s+(r.total||0),0));
+  const lineSum=sum(lines);
+  let recon=null; const g=H.gross_amount==null?null:+H.gross_amount;
+  if(g!=null&&!isNaN(g)){ const d=money(g-lineSum); if(Math.abs(d)>=1) recon={diff:d,gross:money(g),lineSum}; }
+  const seen={},dups=[];
+  lines.forEach(l=>{ const k=l.item.trim().toLowerCase()+'|'+(l.total==null?'':l.total.toFixed(2)); seen[k]=(seen[k]||0)+1; });
+  lines.forEach(l=>{ const k=l.item.trim().toLowerCase()+'|'+(l.total==null?'':l.total.toFixed(2));
+    if(seen[k]>1&&!dups.find(d=>d.k===k)) dups.push({k,item:l.item,amount:l.total,n:seen[k]}); });
+  const missing=[],malformed=[];
+  // A placeholder is not a value. "Provisional Bill" is truthy and non-blank,
+  // so the old isBlank-only test let it through as "present" — this bill is
+  // never the final numbered record IS 19493 expects, and that's a real
+  // finding, not a reading error.
+  const PLACEHOLDER_RE=/^(provisional|draft|temp(orary)?|sample|test|not\s*final)\b/i;
+  // Signature fields come back as booleans, not strings — the generic blank
+  // test below would read `false` as a non-empty value and call it present.
+  const BOOL_FIELDS=new Set(["patient_signature","authorised_signature"]);
+  // A blank field can mean two different things, and only one is a finding.
+  // "missing" = the hospital didn't print it. "redacted" = we blacked it out
+  // ourselves before analysis (set on data._redacted_header_fields, as the
+  // real test bill is) — nothing can be concluded from that, and it must
+  // never be counted as the hospital's failure. Conditional fields (per
+  // IS19493_HEADER's third column) never count as missing either, matching
+  // 03_code/completeness.js.
+  const redactedSet=new Set(data._redacted_header_fields||[]);
+  const redacted=[];
+  for(const [k,label,sev] of IS19493_HEADER){
+    const v=H[k];
+    const blank=BOOL_FIELDS.has(k) ? v!==true
+      : (v==null||String(v).trim()===''||/^(n\/?a|nil|none|-|--)$/i.test(String(v).trim()));
+    if(blank){
+      if(redactedSet.has(k)){ if(sev==='mandatory') redacted.push(label); continue; }   // we removed it — not assessable, not the hospital's fault
+      if(sev==='mandatory') missing.push(label);
+    }
+    else if(k==='bill_number'&&PLACEHOLDER_RE.test(String(v).trim())) missing.push(`${label} (reads "${String(v).trim()}", not a final bill number)`);
+    else if(k==='hospital_gstin'&&!GSTIN_RE.test(String(v).replace(/\s/g,''))) malformed.push(label);
+  }
+  const noUnit = lines.length>0 && lines.every(l=>l.unit==null);
+  const nppa=[];
+  for(const l of lines){ const t=l.item.toLowerCase();
+    for(const c of NPPA){ if(c.kw.some(k=>t.includes(k))){
+      const price=l.rate!=null?+l.rate:(l.total!=null&&l.quantity?(+l.total/Math.abs(l.quantity)):null);
+      if(price!=null&&price>c.ceiling) nppa.push({item:l.item,price:money(price),ceiling:c.ceiling,ref:c.item,gst:c.gst});
+      break;
+    }}
+  }
+  const subtotals = data.printed_subtotals && Object.keys(data.printed_subtotals).length ? data.printed_subtotals : null;
+  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,missing,malformed,redacted,noUnit,nppa,subtotals};
+}
+function sectionSums(lines){
+  const m={}; lines.forEach(l=>{ const k=l.section||'Uncategorised'; m[k]=(m[k]||0)+(l.total||0); });
+  return Object.entries(m).map(([k,v])=>[k,money(v)]);
+}
+
+/* report */
+function det(summary,tag,body,open){
+  return `<details ${open?'open':''}><summary><span>${summary}</span>${tag||''}</summary><div class="db">${body}</div></details>`;
+}
+function renderReport(data){
+  window.__lastExtraction=data;
+  const a=analyse(data), s=window.__settle, rep=$('report'), T_=S();
+  const ded = s? s.deduction : 0;
+  const H=data.header||{};
+  const co=[H.hospital_name,H.bill_datetime].filter(Boolean).join('  ·  ') || 'ITEMISED BILL';
+  let h='<div class="slip">';
+  h+=`<div class="mast"><div class="co">${esc(co)}</div></div><hr class="rdash">`;
+
+  /* verdict */
+  if(ded>0){
+    // clamped: matched items can exceed the deduction (insurers deduct by
+    // category, not line by line) and an unclamped ratio would print a
+    // meaningless >100%
+    const pc=Math.min(100,Math.round(a.exactSum/ded*100)), pc2=Math.min(100,Math.round((a.exactSum+a.reviewSum)/ded*100));
+    const saturated = a.exactSum>=ded;
+    h+=`<div class="k">${T_.verdict_head(inr.format(ded))}</div>
+      <div class="amt tnum">${inr.format(a.exactSum)}</div>
+      <div class="say">${saturated
+        ? T_.verdict_saturated(inr.format(ded))
+        : T_.verdict_normal(pc,inr.format(ded))+(a.review.length?T_.verdict_extra(pc2):'')+T_.verdict_tail}</div>`;
+  } else {
+    h+=`<div class="k">${T_.bill_read_head}</div><div class="amt tnum">${T_.lines_word(a.lines.length)}</div>
+      <div class="say">${T_.bill_read_sub}</div>`;
+  }
+  const pageNote = data._pageCount>1 ? ` (${data._pageCount} pages)` : '';
+  h+=`<div class="say" style="color:var(--soft);font-size:.82rem;margin-top:6px">${T_.lines_total(a.lines.length,inr.format(a.lineSum))}${pageNote}</div>`;
+
+  /* told vs shown */
+  if(s){
+    h+=`<hr class="rdash"><div class="k">${T_.told_shown_head}</div>
+    <div class="tvs" style="margin-top:8px">
+      <div class="p"><h5>${T_.told_h5}</h5>
+        <div class="tr"><span>${T_.total_bill}</span><span class="v">${inr.format(s.total)}</span></div>
+        <div class="tr"><span>${T_.insurer_approved}</span><span class="v">&minus;${inr.format(s.insurer)}</span></div>
+        <div class="tr"><span>${T_.hospital_discount}</span><span class="v">&minus;${inr.format(s.disc)}</span></div>
+        <div class="tr tot"><span>${T_.you_paid}</span><span class="v">${inr.format(s.counter)}</span></div>
+        <div class="tr hi"><span>&nbsp;&nbsp;${T_.never_itemised_short}</span><span class="v">${inr.format(s.deduction)}</span></div>
+      </div>
+      <div class="p"><h5>${T_.shown_h5}</h5>
+        ${(a.subtotals? Object.entries(a.subtotals) : sectionSums(a.lines)).slice(0,7).map(([k,v])=>
+          `<div class="tr"><span>${esc(k)}</span><span class="v">${inr.format(v)}</span></div>`).join('')}
+        <div class="tr tot"><span>${T_.lines_word(a.lines.length)}</span><span class="v">${inr.format(a.lineSum)}</span></div>
+      </div>
+    </div>
+    <div class="join">${T_.join_sentence(inr.format(s.deduction),a.lines.length)}</div>`;
+  }
+
+  /* composition + checks */
+  if(s){
+    const T=s.total||1;
+    h+=`<hr class="rdash"><div class="k">${T_.bill_every_check}</div>
+    <div class="bar">
+      <i style="width:${s.insurer/T*100}%;background:var(--green)"></i>
+      <i style="width:${s.deduction/T*100}%;background:var(--red)"></i>
+      <i style="width:${s.copayAmt/T*100}%;background:var(--ochre)"></i>
+      <i style="width:${s.disc/T*100}%;background:var(--soft)"></i>
+    </div>
+    <div class="leg">
+      <span>${T_.leg_insurer(Math.round(s.insurer/T*100))}</span>
+      <span>${T_.leg_never(Math.round(s.deduction/T*100))}</span>
+      <span>${T_.leg_copay(Math.round(s.copayAmt/T*100))}</span>
+      <span>${T_.leg_discount(Math.round(s.disc/T*100))}</span>
+    </div>`;
+  }
+  // one finding = the stamp row (what we found) +, when there's something to
+  // act on, two more lines: what it means for your money, what you can do.
+  // A clean "Clear" needs neither — there's nothing to explain about an
+  // absence.
+  const chk=(cls,label,t,sub,explain)=>
+    `<div class="finding"><div class="chk"><span class="t">${t}<small>${sub}</small></span><span class="st ${cls}">${label}</span></div>${explain?explainHtml(cls,explain):''}</div>`;
+  const explainHtml=(cls,{money,doText})=>
+    `<div class="expl${cls==='green'?' ok':''}">${money?`<div class="money">${money}</div>`:''}${doText?`<div class="do"><b>${T_.do_label}</b>${doText}</div>`:''}</div>`;
+
+  const totalFlagged = ded>0 ? money(a.exactSum + a.reviewSum) : null;
+  const pcClamped = ded>0 ? Math.min(100, Math.round((a.exactSum+a.reviewSum)/ded*100)) : null;
+  if(ded>0){
+    h+=`<div class="kpis">
+      <div class="kpi"><div class="l">${T_.kpi_deducted}</div><div class="v">${inr.format(ded)}</div></div>
+      <div class="kpi"><div class="l">${T_.kpi_explained}</div><div class="v">${pcClamped}%</div></div>
+      <div class="kpi"><div class="l">${T_.kpi_checks}</div><div class="v">5 / 5</div></div>
+    </div>
+    <button class="btn ghost sm" id="letterShortcut" style="margin-top:12px">${T_.letter_shortcut}</button>`;
+  }
+
+  h+=`<div class="checks">`;
+  const C=T_.checks;
+  h+= a.exact.length
+    ? chk('red',C.irdai_exact.label,C.irdai_exact.found(a.exact.length),C.irdai_exact.sub(inr.format(a.exactSum)),
+        {money:C.irdai_exact.money(ded,inr.format(ded),Math.min(100,Math.round(a.exactSum/(ded||1)*100))), doText:C.irdai_exact.doText})
+    : chk('green',T_.clear_word,C.irdai_exact.foundClear,C.irdai_exact.subClear);
+  h+= a.review.length
+    ? chk('ochre',C.irdai_review.label,C.irdai_review.found(a.review.length),C.irdai_review.sub(inr.format(a.reviewSum)),
+        {money:C.irdai_review.money(), doText:C.irdai_review.doText})
+    : chk('green',T_.clear_word,C.irdai_review.foundClear,C.irdai_review.subClear);
+  h+= a.nppa.length
+    ? chk('red',C.nppa.label,C.nppa.found(a.nppa.length),C.nppa.sub(),
+        {money:C.nppa.money(), doText:C.nppa.doText})
+    : chk('green',T_.clear_word,C.nppa.foundClear,C.nppa.subClear);
+  h+= a.recon
+    ? chk('ochre',C.recon.label,C.recon.found(inr.format(Math.abs(a.recon.diff))),C.recon.sub(inr.format(a.recon.gross),inr.format(a.recon.lineSum)),
+        {money:C.recon.money(), doText:C.recon.doText})
+    : chk('green',T_.clear_word,C.recon.foundClear,C.recon.subClear);
+  h+= a.dups.length
+    ? chk('ochre',C.dup.label,C.dup.found(a.dups.length),C.dup.sub(),
+        {money:C.dup.money(), doText:C.dup.doText})
+    : chk('green',T_.clear_word,C.dup.foundClear,C.dup.subClear);
+  const isN=a.missing.length+a.malformed.length+(a.noUnit?1:0);
+  h+= isN
+    ? chk('ochre',C.is19493.label,C.is19493.found(isN),C.is19493.sub(),
+        {money:C.is19493.money(), doText:C.is19493.doText})
+    : chk('green',T_.clear_word,C.is19493.foundClear,C.is19493.subClear);
+  h+=`</div>`;
+
+  if(ded>0) h+=`<div class="flagtot"><span>${T_.flagged_so_far}</span><span class="v">${inr.format(totalFlagged)}</span></div>`;
+
+  /* detail */
+  if(a.exact.length) h+=det(T_.detail_matched,`<span class="tag money">${inr.format(a.exactSum)}</span>`,
+    a.exact.sort((x,y)=>y.total-x.total).map(l=>`<div class="li"><div>${esc(l.item)}<span class="src">${T_.detail_matched_src(esc(l.matched))}</span></div><div class="n">${inr.format(l.total)}</div></div>`).join(''), true);
+  if(a.review.length) h+=det(T_.detail_review,`<span class="tag">${inr.format(a.reviewSum)}</span>`,
+    `<div class="plain">${T_.detail_review_plain}</div>`+
+    a.review.sort((x,y)=>y.total-x.total).map(l=>`<div class="li"><div>${esc(l.item)}<span class="src">${T_.detail_review_src(esc(l.matched))}</span></div><div class="n">${inr.format(l.total)}</div></div>`).join(''));
+  if(a.nppa.length) h+=det(T_.detail_nppa,`<span class="tag money">${a.nppa.length}</span>`,
+    `<div class="plain">${T_.detail_nppa_plain}</div>`+
+    a.nppa.map(n=>`<div class="li"><div>${esc(n.item)}<span class="src">${T_.detail_nppa_src(esc(n.ref),inr.format(n.ceiling),esc(n.gst))}</span></div><div class="n">${inr.format(n.price)}</div></div>`).join(''), true);
+  if(a.recon) h+=det(T_.detail_recon,'',
+    `<div class="notez">${T_.detail_recon_body(inr.format(a.recon.gross),inr.format(a.recon.lineSum),inr.format(Math.abs(a.recon.diff)))}</div>`);
+  if(a.dups.length) h+=det(T_.detail_dup,`<span class="tag">${a.dups.length}</span>`,
+    a.dups.map(d=>`<div class="li"><div>${esc(d.item)}<span class="src">${T_.detail_dup_src(d.n)}</span></div><div class="n">${inr.format(d.amount)}</div></div>`).join(''));
+  const redNote = (a.redacted&&a.redacted.length)
+    ? `<div class="notez">${T_.detail_is19493_redacted(a.redacted.length)}</div>` : '';
+  if(isN) h+=det(T_.detail_is19493,`<span class="tag">${isN}</span>`,
+    `<div class="plain">${T_.detail_is19493_plain}</div>`+
+    (a.noUnit?`<div class="li"><div>${T_.detail_is19493_unit}</div></div>`:'')+
+    a.malformed.map(m=>`<div class="li"><div>${esc(m)}<span class="src">${T_.detail_is19493_malformed}</span></div></div>`).join('')+
+    a.missing.map(m=>`<div class="li"><div>${esc(m)}</div></div>`).join('')+redNote);
+  else if(redNote) h+=det(T_.detail_is19493,'',redNote);
+
+  h+=`</div>`;
+  rep.innerHTML=h;
+  // The letter now lives on its own tab with its own confirm step (per
+  // feedback: nothing should be generated without being asked for first).
+  // This shortcut only takes you there — it never calls buildLetter itself.
+  const ls=$('letterShortcut'); if(ls) ls.addEventListener('click',()=>switchTab('letter'));
+  $('findingsEmpty').classList.toggle('hide', a.lines.length>0);
+  renderLetterTab();
+}
+
+/* letter */
+function buildLetter(a,include){
+  // Every section below is real content or it doesn't go in — include is
+  // built straight from the checklist's checkboxes, so unchecking "3
+  // duplicate charges" in the Letter tab removes exactly that paragraph
+  // here, nothing more, nothing hidden.
+  include=include||{settlement:true,irdai:true,nppa:true,dup:true,recon:true};
+  const s=window.__settle, H=a.header||{};
+  // If the bill actually carries the patient's name (not redacted, not blank),
+  // pre-fill it so there's one less bracket to chase. Everything else the
+  // sender still has to fill — we only know what the bill told us.
+  const pname=(typeof H.patient_name==='string'&&H.patient_name.trim()&&!/^(n\/?a|nil|none|-|--)$/i.test(H.patient_name.trim()))?H.patient_name.trim():null;
+  const nameSlot=pname||`[Your name]`;
+  const L=[];
+  L.push(nameSlot,`[Your address]`,`[Date]`,``,
+    `To: The Grievance Redressal Officer`,
+    `    [Insurer name] / IRDAI Bima Bharosa (bimabharosa.irdai.gov.in)`,``,
+    `Subject: Request for a line-by-line explanation of deductions - Claim no. [___]`,``);
+  const at=H.hospital_name?` at ${H.hospital_name}`:``;
+  const dt=(H.admission_datetime&&H.discharge_datetime)?` between ${H.admission_datetime} and ${H.discharge_datetime}`:``;
+  L.push(`${pname||'I'} was hospitalised${at}${dt}. The cashless settlement was recorded as follows:`,``);
+  if(s&&include.settlement){
+    L.push(`    Total bill                 ${inr.format(s.total)}`,
+      `    Insurer approved         - ${inr.format(s.insurer)}`,
+      `    Hospital discount        - ${inr.format(s.disc)}`,
+      `    Paid at discharge          ${inr.format(s.counter)}`,
+      `      of which co-pay          ${inr.format(s.copayAmt)}`,
+      `      of which not itemised    ${inr.format(s.deduction)}`,``,
+      `No breakdown of the ${inr.format(s.deduction)} recorded as non-payable has been provided, despite request.`,``);
+  }
+  if(a.exact.length&&include.irdai){
+    L.push(`Checking the hospital's own itemised bill against the IRDAI List of Non-Medical Items (List I), the following charges appear to fall within that list:`,``);
+    a.exact.sort((x,y)=>y.total-x.total).forEach(l=>L.push(`  - ${l.item} - ${inr.format(l.total)}  (IRDAI List I: ${l.matched})`));
+    L.push(`  Subtotal: ${inr.format(a.exactSum)}`,``);
+  }
+  if(a.nppa.length&&include.nppa){
+    L.push(`The following implant appears to be billed above its NPPA ceiling price, a statutory maximum under the DPCO:`,``);
+    a.nppa.forEach(n=>L.push(`  - ${n.item} - billed ${inr.format(n.price)}, ceiling ${inr.format(n.ceiling)} (${n.gst})`));
+    L.push(``);
+  }
+  if(a.recon&&include.recon) L.push(`The bill's printed total (${inr.format(a.recon.gross)}) differs from the sum of its own printed lines (${inr.format(a.recon.lineSum)}) by ${inr.format(Math.abs(a.recon.diff))}.`,``);
+  if(a.dups.length&&include.dup){ L.push(`The following charge(s) appear more than once at the same amount:`); a.dups.forEach(d=>L.push(`  - ${d.item} - ${inr.format(d.amount)}, ${d.n} times`)); L.push(``); }
+  L.push(`I request:`,
+    `  1. A line-by-line statement of every amount recorded as non-payable or deducted.`,
+    `  2. Reconsideration of any amount above that is not a valid exclusion under my policy.`);
+  if(a.nppa.length&&include.nppa) L.push(`  3. Refund of any implant charge above the NPPA ceiling.`);
+  L.push(``,`This letter was prepared with reference to published IRDAI and NPPA lists. It is a request for explanation, not an allegation.`,``,
+    `Yours faithfully,`,`${nameSlot}  -  [Policy no.]  -  [Contact]`);
+  const text=L.join('\n');
+  const T_=S();
+  // The letter itself always drafts in English — the register your insurer
+  // and IRDAI actually work in — regardless of the UI language. Only the
+  // note explaining that choice, and the surrounding buttons, translate.
+  const langNote = LANG!=='en' ? `<div class="notez" style="margin-bottom:10px">${T_.letter_note_lang}</div>` : '';
+  $('letterWrap').innerHTML=`<div class="tearline"></div><div class="letter">${langNote}<div class="lh">DRAFT &mdash; FILL THE [BRACKETS], THEN PRINT OR SAVE AS PDF</div>${esc(text)}</div>
+    <div style="margin-top:10px;display:flex;gap:8px">
+      <button class="btn sm" id="printLetter" style="flex:1">${T_.print_btn}</button>
+      <button class="btn sm ghost" id="copyLetter" style="flex:1">${T_.copy_btn}</button></div>`;
+  $('printLetter').addEventListener('click',()=>{ $('printArea').textContent=text; window.print(); });
+  $('copyLetter').addEventListener('click',()=>{ navigator.clipboard.writeText(text).then(()=>{const b=$('copyLetter'); b.textContent=T_.copied_btn; setTimeout(()=>b.textContent=T_.copy_btn,1500);}); });
+  $('letterWrap').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+/* upload + Gemini */
+const KEY_LS='clearbill_gemini_key';
+let USE_PROXY=false;
+try{ const k=localStorage.getItem(KEY_LS); if(k) $('apiKey').value=k; }catch(e){}
+$('apiKey').addEventListener('change',()=>{ try{ localStorage.setItem(KEY_LS,$('apiKey').value.trim()); }catch(e){} });
+try{
+  fetch('api/config').then(r=>r.ok?r.json():null).then(c=>{ if(c&&c.proxy) USE_PROXY=true; }).catch(()=>{});
+}catch(e){}
+const drop=$('drop'), fileInput=$('file'), statusEl=$('status');
+drop.addEventListener('click',()=>fileInput.click());
+['dragover','dragenter'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('hot');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('hot');}));
+drop.addEventListener('drop',e=>{ if(e.dataTransfer.files.length) addFiles(e.dataTransfer.files); });
+// value='' after reading: without it, re-picking the exact same file after
+// removing it fires no 'change' event at all, because the browser sees an
+// identical FileList and treats the pick as a no-op.
+fileInput.addEventListener('change',()=>{ if(fileInput.files.length) addFiles(fileInput.files); fileInput.value=''; });
+function setStatus(m,err){ statusEl.textContent=m; statusEl.classList.toggle('err',!!err); }
+
+// One page in, one structured object out. Multi-page just calls this once
+// per file and merges — the extraction contract per page doesn't change.
+async function extractOnePage(file,key){
+  const b64=await toB64(file);
+  let txt;
+  if(USE_PROXY){
+    const res=await fetch('api/read-bill',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mime_type:file.type,data:b64})});
+    txt=await res.text(); if(!res.ok) throw new Error('Server '+res.status+': '+txt.slice(0,300));
+  } else {
+    const body={contents:[{parts:[{text:EXTRACT_PROMPT},{inline_data:{mime_type:file.type,data:b64}}]}],generationConfig:{temperature:0,response_mime_type:"application/json"}};
+    // gemini-3.6-flash — confirmed working 9 Sep 2026 by an actual end-to-end
+    // upload through the deployed Cloud Run proxy (real image, real key, real
+    // response). The previous "gemini-3.5-flash" was never a real model id and
+    // 404'd silently; "gemini-flash-latest" (a floating alias, tried next) hit
+    // a real model but a transient 503 "high demand". Google's own 404 message
+    // when testing "gemini-2.5-flash" named this exact model as its
+    // replacement, and it's the one that actually returned real bill data.
+    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(key)}`,
+      {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!res.ok){ throw new Error('Gemini '+res.status+': '+(await res.text()).slice(0,300)); }
+    const j=await res.json(); txt=j?.candidates?.[0]?.content?.parts?.[0]?.text||'';
+  }
+  return JSON.parse(stripFence(txt));
+}
+
+// header: first non-null value per field wins (a later page rarely repeats
+// the masthead). line_items: concatenated in page order, so reconciliation
+// runs against the whole bill, not one page of it. printed_subtotals:
+// first occurrence per section wins — sections don't split across pages
+// in practice, and if one ever did, silently overwriting a real figure
+// with a second one would be worse than keeping the first.
+function mergePages(pages){
+  const merged={header:{},line_items:[],printed_subtotals:{}};
+  for(const p of pages){
+    for(const [k,v] of Object.entries(p.header||{})){
+      const blank=v===null||v===undefined||v==='';
+      const haveNone=merged.header[k]===undefined||merged.header[k]===null||merged.header[k]==='';
+      if(!blank&&haveNone) merged.header[k]=v;
+    }
+    merged.line_items.push(...(p.line_items||[]));
+    for(const [k,v] of Object.entries(p.printed_subtotals||{})){
+      if(merged.printed_subtotals[k]===undefined) merged.printed_subtotals[k]=v;
+    }
+  }
+  merged._pageCount=pages.length;
+  return merged;
+}
+
+/* ============================================================
+   Pending upload queue — files sit here, reviewable and editable, until
+   you explicitly ask to check them. Nothing is sent to Gemini just because
+   a file was picked or dropped: each thumbnail has a real remove button
+   (fix for one that used to just be a rejection marker, doing nothing when
+   clicked), and picking more files adds to the set instead of replacing
+   it — so swapping one photo out no longer means starting the whole
+   upload over.
+   ============================================================ */
+let _pendingFiles=[];      // File[] awaiting your confirmation
+let _previewUrls=[];       // object URLs for the current thumbnails, revoked on every re-render
+let _usingWorkedExample=false;
+
+function resetUploadState(){
+  _pendingFiles=[];
+  _usingWorkedExample=false;
+  renderFilePreview();
+}
+
+function renderFilePreview(){
+  _previewUrls.forEach(u=>URL.revokeObjectURL(u));
+  _previewUrls=[];
+  const el=$('filePreview'), T_=S();
+  if(_usingWorkedExample){
+    el.innerHTML=`<div class="wenote">${T_.worked_example_note}</div>`;
+    el.classList.remove('hide');
+    $('checkPhotosBtn').classList.add('hide');
+    return;
+  }
+  el.innerHTML=_pendingFiles.map((f,i)=>{
+    const url=URL.createObjectURL(f); _previewUrls.push(url);
+    return `<div class="fthumb" id="fthumb-${i}"><img src="${url}" alt="">
+      <span class="pg">${i+1}</span>
+      <button class="fremove" type="button" data-i="${i}" aria-label="Remove this photo">&times;</button></div>`;
+  }).join('');
+  el.classList.toggle('hide',_pendingFiles.length===0);
+  el.querySelectorAll('.fremove').forEach(b=>b.addEventListener('click',()=>removeFile(+b.dataset.i)));
+  $('checkPhotosBtn').classList.toggle('hide',_pendingFiles.length===0);
+  $('checkPhotosBtn').textContent=T_.check_photos_btn(_pendingFiles.length);
+}
+
+// Removing one file re-renders the whole grid rather than hiding the tile
+// in place — thumbnail indices (and the page-order badges) have to stay
+// contiguous, since they're also the order pages get merged in.
+function removeFile(i){
+  _pendingFiles.splice(i,1);
+  renderFilePreview();
+}
+
+function addFiles(fileList){
+  const T_=S();
+  const incoming=[...fileList];
+  if(!incoming.length) return;
+  if(incoming.some(f=>!f.type.startsWith('image/'))){ setStatus(T_.choose_image,true); return; }
+  _usingWorkedExample=false;
+  _pendingFiles=_pendingFiles.concat(incoming); // additive — a second pick adds to the set, it doesn't replace it
+  setStatus('');
+  renderFilePreview();
+}
+
+function markThumbRejected(i){
+  const t=$('fthumb-'+i);
+  if(t && !t.classList.contains('rejected')){
+    t.classList.add('rejected');
+    t.insertAdjacentHTML('beforeend',`<div class="rejbadge">${S().rej_badge_text}</div>`);
+  }
+}
+
+async function processQueuedFiles(){
+  const T_=S();
+  const key=$('apiKey').value.trim();
+  if(!USE_PROXY && !key){
+    $('keyRow').classList.remove('hide'); $('apiKey').focus();
+    setStatus(T_.need_key,true);
+    return;
+  }
+  const files=_pendingFiles;
+  if(!files.length) return;
+  $('report').innerHTML=`<div class="reading">READING YOUR BILL</div><div class="rdots">&#9679; &#9679; &#9679; &#9675; &#9675;</div>`;
+  try{
+    const pages=[], rejected=[];
+    for(let i=0;i<files.length;i++){
+      setStatus(T_.reading_page(i+1,files.length));
+      const p=await extractOnePage(files[i],key);
+      // is_hospital_bill===false is an explicit "no" from the model. Treat a
+      // missing/undefined flag as accepted — an older prompt or a proxy that
+      // hasn't picked up this change yet must not start rejecting bills it
+      // used to accept.
+      if(p.is_hospital_bill===false){ rejected.push(i+1); markThumbRejected(i); }
+      else pages.push(p);
+    }
+    if(!pages.length) throw new Error(T_.no_bill_pages);
+    const merged=mergePages(pages);
+    if(!merged.line_items.length) throw new Error(T_.no_lines_found);
+    setStatus(rejected.length
+      ? T_.read_lines_partial(merged.line_items.length,files.length,rejected.length)
+      : T_.read_lines(merged.line_items.length,files.length));
+    renderReport(merged);
+  }catch(err){ console.error(err); $('report').innerHTML=''; setStatus(String(err.message||err),true); }
+}
+$('checkPhotosBtn').addEventListener('click',processQueuedFiles);
+const toB64=file=>new Promise((ok,no)=>{ const r=new FileReader(); r.onload=()=>ok(String(r.result).split(',')[1]); r.onerror=no; r.readAsDataURL(file); });
+const stripFence=s=>s.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');
+
+/* language switch */
+function applyStaticI18n(){
+  const T_=S();
+  $('tagLine').innerHTML=T_.tag;
+  $('secSettlement').textContent=T_.sec_settlement;
+  $('lblTotal').innerHTML=T_.lbl_total;
+  $('lblCounter').innerHTML=T_.lbl_counter;
+  $('lblDiscount').innerHTML=T_.lbl_discount;
+  $('lblCopay').innerHTML=T_.lbl_copay;
+  $('egBtn').textContent=T_.eg_btn;
+  $('neverItemisedLbl').innerHTML=T_.never_itemised;
+  $('dedAbsorbedLbl').textContent=T_.ded_absorbed;
+  $('copayLbl').textContent=T_.copay_lbl;
+  $('counterPaymentLbl').textContent=T_.counter_payment;
+  $('insurerApprovedLbl').textContent=T_.insurer_approved;
+  $('secBill').textContent=T_.sec_bill;
+  $('billLead').textContent=T_.bill_lead;
+  $('dropText').innerHTML=T_.drop_html;
+  $('apikeyLbl').innerHTML=T_.apikey_html;
+  $('footText').innerHTML=T_.foot_html;
+  $('findingsEmpty').textContent=T_.findings_empty;
+  $('tabLblSettlement').textContent=T_.tab_settlement;
+  $('tabLblFindings').textContent=T_.tab_findings;
+  $('tabLblLetter').textContent=T_.tab_letter;
+  $('tabLblAbout').textContent=T_.tab_about;
+  $('secLetter').textContent=T_.sec_letter;
+  $('secAbout').textContent=T_.sec_about;
+  $('letterEmpty').textContent=T_.letter_empty;
+  $('letterConfirmHead').textContent=T_.letter_confirm_head;
+  $('genLetterTab').textContent=T_.gen_letter_btn;
+  document.querySelector('#page-about .k').textContent=T_.how_head;
+  $('howStep1b').textContent=T_.how1b; $('howStep1p').innerHTML=T_.how1p;
+  $('howStep2b').textContent=T_.how2b; $('howStep2p').innerHTML=T_.how2p;
+  $('howStep3b').textContent=T_.how3b; $('howStep3p').innerHTML=T_.how3p;
+  if($('gcStrip')) $('gcStrip').innerHTML=Sv('gcloud_strip_html');
+  if($('gcloudHead')) $('gcloudHead').textContent=Sv('gcloud_head');
+  if($('gcloudIntro')) $('gcloudIntro').textContent=Sv('gcloud_intro');
+  const gcr=$('gcloudRows');
+  if(gcr){
+    const rows=Sv('gcloud_rows')||[];
+    gcr.innerHTML=rows.map(([n,d,st])=>
+      `<div class="gcrow"><span class="gclive ${st==='on'?'on':'eval'}">${st==='on'?'LIVE':'EVAL'}</span><span class="gcn">${n}</span><span class="gcd">${d}</span></div>`).join('');
+  }
+}
+
+/* tabs */
+function switchTab(name){
+  document.querySelectorAll('.tabbtn').forEach(b=>b.classList.toggle('on', b.dataset.tab===name));
+  document.querySelectorAll('.tabpage').forEach(p=>p.classList.toggle('on', p.id==='page-'+name));
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('.tabbtn').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
+
+/* Letter tab: shows what the letter WOULD contain, and only writes it once
+   the user taps Generate. Called after every renderReport() and after every
+   settlement recalculation, so it's never stale. */
+// Each row is a real checkbox, not a preview. Someone requesting an
+// explanation should be able to see — and choose — exactly what they're
+// asking for, one item at a time, not just accept a fixed bundle.
+function renderLetterTab(){
+  const T_=S();
+  const data=window.__lastExtraction;
+  const hasData = data && data.line_items && data.line_items.length>0;
+  $('letterEmpty').classList.toggle('hide', !!hasData);
+  $('letterConfirm').classList.toggle('hide', !hasData);
+  if(!hasData) return;
+  const a=analyse(data), s=window.__settle;
+  window.__letterA=a; // so Generate reads the exact same analysis this checklist was built from
+  const rows=[];
+  if(s) rows.push(['settlement', T_.letter_confirm_settlement, '✓']);
+  if(a.exact.length) rows.push(['irdai', T_.letter_confirm_irdai(a.exact.length), inr.format(a.exactSum)]);
+  if(a.nppa.length) rows.push(['nppa', T_.letter_confirm_nppa(a.nppa.length), '✓']);
+  if(a.dups.length) rows.push(['dup', T_.letter_confirm_dup(a.dups.length), '✓']);
+  if(a.recon) rows.push(['recon', T_.letter_confirm_recon, inr.format(Math.abs(a.recon.diff))]);
+  $('letterIncludes').innerHTML=
+    rows.map(([key,k,v])=>`<label class="inclrow"><input type="checkbox" checked data-inc="${key}"><span class="incltext">${k}</span><span class="v">${v}</span></label>`).join('')
+    + `<div class="inclrow static"><span class="incltext">${T_.letter_confirm_sent_to}</span><span class="v">${T_.letter_confirm_sent_to_val}</span></div>`;
+}
+$('genLetterTab').addEventListener('click',()=>{
+  if(!window.__lastExtraction) return;
+  const a=window.__letterA || analyse(window.__lastExtraction);
+  const include={};
+  document.querySelectorAll('#letterIncludes input[type=checkbox]').forEach(cb=>{ include[cb.dataset.inc]=cb.checked; });
+  buildLetter(a,include);
+});
+function setLang(lang){
+  if(!STRINGS[lang]) return;
+  LANG=lang;
+  try{ localStorage.setItem('clearbill_lang',lang); }catch(e){}
+  inr=makeInr(lang);
+  document.querySelectorAll('#langsw button').forEach(b=>b.classList.toggle('on',b.dataset.lang===lang));
+  applyStaticI18n();
+  if(window.__settle) calc();                              // re-derives settle text and re-renders the report
+  else if(window.__lastExtraction) renderReport(window.__lastExtraction);
+}
+document.querySelectorAll('#langsw button').forEach(b=>b.addEventListener('click',()=>setLang(b.dataset.lang)));
+applyStaticI18n();
+document.querySelectorAll('#langsw button').forEach(b=>b.classList.toggle('on',b.dataset.lang===LANG));
+
+/* PWA — install prompt only. No service worker: it was caching stale pages. */
+try{
+  if('serviceWorker' in navigator && navigator.serviceWorker.getRegistrations){
+    navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{});
+    if(window.caches && caches.keys) caches.keys().then(ks=>ks.forEach(k=>caches.delete(k))).catch(()=>{});
+  }
+}catch(e){}
+try{
+  let deferredPrompt=null;
+  const installBtn=$('installBtn'), iosHint=$('iosHint');
+  const standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone;
+  window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); deferredPrompt=e; if(installBtn && !standalone) installBtn.classList.remove('hide'); });
+  if(installBtn) installBtn.addEventListener('click',async()=>{ if(!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt=null; installBtn.classList.add('hide'); });
+  window.addEventListener('appinstalled',()=>installBtn&&installBtn.classList.add('hide'));
+  if(iosHint && /iphone|ipad|ipod/i.test(navigator.userAgent) && !standalone) iosHint.classList.remove('hide');
+}catch(e){}
+</script>
+</body>
+</html>

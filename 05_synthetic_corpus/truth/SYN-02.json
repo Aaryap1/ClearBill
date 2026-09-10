@@ -1,0 +1,197 @@
+{
+  "id": "SYN-02",
+  "header": {
+    "hospital_name": "Sunrise Institute of Medical Sciences",
+    "hospital_address": "Plot 9, Sector 21, Navi Mumbai 400706",
+    "hospital_gstin": "27AABCS2222R1ZG",
+    "hospital_contact": "022-27801234",
+    "hospital_registration": "MH/HOSP/2016/2210",
+    "bill_number": "SYN02/2026/1014",
+    "bill_datetime": "12/04/2026 15:45",
+    "patient_name": "Kamala Iyer",
+    "patient_age": "61",
+    "patient_gender": "F",
+    "patient_hospital_id": "IP2600189",
+    "patient_uhid": "12-3456-7890-1002",
+    "patient_address": "Kamala residence, Navi Mumbai 400706",
+    "patient_signature": true,
+    "authorised_signature": true,
+    "admission_datetime": "12/04/2026 07:30",
+    "discharge_datetime": "12/04/2026 15:45",
+    "admission_type": "day-care",
+    "procedure": "Cataract surgery (day care)",
+    "room_class": "day-care",
+    "payment_mode": "cashless (insurance)",
+    "insurance_info": "Policy shown; TPA authorisation on file",
+    "gross_amount": 41272.0,
+    "discount_amount": 0.0,
+    "tax_amount": 0.0,
+    "net_payable": 41272.0
+  },
+  "line_items": [
+    {
+      "item": "ADMISSION SERVICES",
+      "unit": "nos",
+      "quantity": 1.0,
+      "rate": 350.0,
+      "total": 350.0,
+      "section": "REGISTRATION"
+    },
+    {
+      "item": "IP CONSULTATION - PHYSICIAN",
+      "unit": "visit",
+      "quantity": 1.0,
+      "rate": 900.0,
+      "total": 900.0,
+      "section": "CONSULTATION"
+    },
+    {
+      "item": "IP CONSULTATION - SURGEON",
+      "unit": "visit",
+      "quantity": 2.0,
+      "rate": 1200.0,
+      "total": 2400.0,
+      "section": "CONSULTATION"
+    },
+    {
+      "item": "COMPLETE BLOOD COUNT (CBC)",
+      "unit": "test",
+      "quantity": 2.0,
+      "rate": 380.0,
+      "total": 760.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "SERUM ELECTROLYTES",
+      "unit": "test",
+      "quantity": 1.0,
+      "rate": 520.0,
+      "total": 520.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "LIVER FUNCTION TEST",
+      "unit": "test",
+      "quantity": 1.0,
+      "rate": 780.0,
+      "total": 780.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "OPERATION THEATRE CHARGES",
+      "unit": "hour",
+      "quantity": 2.0,
+      "rate": 4500.0,
+      "total": 9000.0,
+      "section": "OT / PROCEDURE"
+    },
+    {
+      "item": "SURGEON'S FEE",
+      "unit": "nos",
+      "quantity": 1.0,
+      "rate": 15000.0,
+      "total": 15000.0,
+      "section": "OT / PROCEDURE"
+    },
+    {
+      "item": "ANAESTHESIA CHARGES",
+      "unit": "nos",
+      "quantity": 1.0,
+      "rate": 6000.0,
+      "total": 6000.0,
+      "section": "OT / PROCEDURE"
+    },
+    {
+      "item": "ANAESTHESIA GASES & DRUGS",
+      "unit": "nos",
+      "quantity": 1.0,
+      "rate": 1800.0,
+      "total": 1800.0,
+      "section": "OT / PROCEDURE"
+    },
+    {
+      "item": "OT CONSUMABLES PACKAGE",
+      "unit": "nos",
+      "quantity": 1.0,
+      "rate": 3200.0,
+      "total": 3200.0,
+      "section": "OT / PROCEDURE"
+    },
+    {
+      "item": "INJ CEFTRIAXONE 1GM",
+      "unit": "vial",
+      "quantity": 2.0,
+      "rate": 62.0,
+      "total": 124.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "INJ PANTOPRAZOLE 40MG",
+      "unit": "vial",
+      "quantity": 3.0,
+      "rate": 38.0,
+      "total": 114.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "INJ ONDANSETRON 2MG/ML",
+      "unit": "amp",
+      "quantity": 4.0,
+      "rate": 14.0,
+      "total": 56.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "INJ TRAMADOL 50MG",
+      "unit": "amp",
+      "quantity": 5.0,
+      "rate": 22.0,
+      "total": 110.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "IV CANNULA 20G",
+      "unit": "nos",
+      "quantity": 1.0,
+      "rate": 55.0,
+      "total": 55.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "IV SET",
+      "unit": "nos",
+      "quantity": 2.0,
+      "rate": 38.0,
+      "total": 76.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "DISPOSABLE SYRINGE 5ML",
+      "unit": "nos",
+      "quantity": 3.0,
+      "rate": 6.0,
+      "total": 18.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "DISPOSABLE SYRINGE 10ML",
+      "unit": "nos",
+      "quantity": 1.0,
+      "rate": 9.0,
+      "total": 9.0,
+      "section": "CONSUMABLES"
+    }
+  ],
+  "printed_subtotals": {
+    "REGISTRATION": 350.0,
+    "CONSULTATION": 3300.0,
+    "INVESTIGATIONS": 2060.0,
+    "OT / PROCEDURE": 35000.0,
+    "PHARMACY": 404.0,
+    "CONSUMABLES": 158.0
+  },
+  "printed_grand_total": 41272.0,
+  "line_count": 19,
+  "defects": [],
+  "is_clean": true
+}

@@ -1,0 +1,48 @@
+{
+  "header": {
+    "hospital_name": "LAKEVIEW MEDICAL TRUST HOSPITAL",
+    "hospital_gstin": "27AAATL5555J1ZW",
+    "bill_number": "SYN05/2026/1035",
+    "bill_datetime": "09/05/2026 14:10",
+    "patient_name": "Abdul Karim",
+    "patient_age": 49,
+    "patient_gender": "M",
+    "patient_hospital_id": "IP2600377",
+    "patient_uhid": "12-3456-7890-1005",
+    "admission_datetime": "09/05/2026 09:00",
+    "discharge_datetime": "09/05/2026 14:10",
+    "admission_type": "day-care",
+    "gross_amount": 29395.00,
+    "discount_amount": 1469.75,
+    "net_payable": 27925.25
+  },
+  "line_items": [
+    { "item": "ADMISSION SERVICES", "unit": "nos", "quantity": 1, "rate": 350.00, "total": 350.00, "section": "REGISTRATION" },
+    { "item": "IP CONSULTATION - PHYSICIAN", "unit": "visit", "quantity": 1, "rate": 900.00, "total": 900.00, "section": "CONSULTATION" },
+    { "item": "COMPLETE BLOOD COUNT (CBC)", "unit": "test", "quantity": 2, "rate": 380.00, "total": 760.00, "section": "INVESTIGATIONS" },
+    { "item": "SERUM ELECTROLYTES", "unit": "test", "quantity": 1, "rate": 520.00, "total": 520.00, "section": "INVESTIGATIONS" },
+    { "item": "LIVER FUNCTION TEST", "unit": "test", "quantity": 1, "rate": 780.00, "total": 780.00, "section": "INVESTIGATIONS" },
+    { "item": "KIDNEY FUNCTION TEST", "unit": "test", "quantity": 2, "rate": 720.00, "total": 1440.00, "section": "INVESTIGATIONS" },
+    { "item": "OPERATION THEATRE CHARGES", "unit": "hour", "quantity": 2, "rate": 4500.00, "total": 9000.00, "section": "OT / PROCEDURE" },
+    { "item": "SURGEON'S FEE", "unit": "nos", "quantity": 1, "rate": 15000.00, "total": 15000.00, "section": "OT / PROCEDURE" },
+    { "item": "INJ CEFTRIAXONE 1GM", "unit": "vial", "quantity": 2, "rate": 62.00, "total": 124.00, "section": "PHARMACY" },
+    { "item": "INJ PANTOPRAZOLE 40MG", "unit": "vial", "quantity": 3, "rate": 38.00, "total": 114.00, "section": "PHARMACY" },
+    { "item": "INJ ONDANSETRON 2MG/ML", "unit": "amp", "quantity": 4, "rate": 14.00, "total": 56.00, "section": "PHARMACY" },
+    { "item": "INJ TRAMADOL 50MG", "unit": "amp", "quantity": 5, "rate": 22.00, "total": 110.00, "section": "PHARMACY" },
+    { "item": "TAB PARACETAMOL 650MG", "unit": "tab", "quantity": 2, "rate": 3.50, "total": 7.00, "section": "PHARMACY" },
+    { "item": "IV CANNULA 20G", "unit": "nos", "quantity": 1, "rate": 55.00, "total": 55.00, "section": "CONSUMABLES" },
+    { "item": "IV SET", "unit": "nos", "quantity": 2, "rate": 38.00, "total": 76.00, "section": "CONSUMABLES" },
+    { "item": "DISPOSABLE SYRINGE 5ML", "unit": "nos", "quantity": 3, "rate": 6.00, "total": 18.00, "section": "CONSUMABLES" },
+    { "item": "DISPOSABLE SYRINGE 10ML", "unit": "nos", "quantity": 1, "rate": 9.00, "total": 9.00, "section": "CONSUMABLES" },
+    { "item": "SURGICAL GLOVES STERILE 7.0", "unit": "pair", "quantity": 2, "rate": 26.00, "total": 52.00, "section": "CONSUMABLES" },
+    { "item": "EXAMINATION GLOVES (NITRILE)", "unit": "nos", "quantity": 3, "rate": 8.00, "total": 24.00, "section": "CONSUMABLES" }
+  ],
+  "printed_subtotals": {
+    "REGISTRATION": 350.00,
+    "CONSULTATION": 900.00,
+    "INVESTIGATIONS": 3500.00,
+    "OT / PROCEDURE": 24000.00,
+    "PHARMACY": 411.00,
+    "CONSUMABLES": 234.00
+  }
+}

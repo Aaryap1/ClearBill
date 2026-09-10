@@ -1,0 +1,17 @@
+item,category,ceiling_inr,gst_note,source_order,effective_from,effective_to,confidence
+Coronary stent - Bare Metal Stent (BMS),cardiac,10762.15,exclusive of GST,"NPPA order S.O. 1587(E) under DPCO 2013, Schedule-I item 28",2026-04-01,,verified
+Coronary stent - Drug Eluting Stent (DES),cardiac,39186.03,exclusive of GST,"NPPA order S.O. 1587(E) under DPCO 2013, Schedule-I item 28",2026-04-01,,verified
+Coronary stent - BMS (previous ceiling),cardiac,10692.69,exclusive of GST,NPPA ceiling price notification,2025-04-01,2026-03-31,superseded
+Coronary stent - DES (previous ceiling),cardiac,38933.14,exclusive of GST,NPPA ceiling price notification,2025-04-01,2026-03-31,superseded
+"Knee - Femoral component, Titanium alloy / Oxidised Zirconium",ortho,38740,plus 5% GST,"NPPA knee implant ceiling, extended to Nov 2026",2017-08-16,2026-11-15,verify
+"Knee - Femoral component, High Flex",ortho,25860,plus 5% GST,"NPPA knee implant ceiling, extended to Nov 2026",2017-08-16,2026-11-15,verify
+"Knee - Femoral component, Cobalt Chromium",ortho,24090,plus 5% GST,"NPPA knee implant ceiling, extended to Nov 2026",2017-08-16,2026-11-15,verify
+"Knee - Tibial component, Titanium alloy / Oxidised Zirconium",ortho,24280,plus 5% GST,"NPPA knee implant ceiling, extended to Nov 2026",2017-08-16,2026-11-15,verify
+"Knee - Tibial component, Cobalt Chromium",ortho,16990,plus 5% GST,"NPPA knee implant ceiling, extended to Nov 2026",2017-08-16,2026-11-15,verify
+Knee - Articulating surface / insert,ortho,9550,plus 5% GST,"NPPA knee implant ceiling, extended to Nov 2026",2017-08-16,2026-11-15,verify
+Knee - Patella,ortho,4090,plus 5% GST,"NPPA knee implant ceiling, extended to Nov 2026",2017-08-16,2026-11-15,verify
+"Knee - Tibial tray + insert, polyethylene",ortho,12960,plus 5% GST,"NPPA knee implant ceiling, extended to Nov 2026",2017-08-16,2026-11-15,verify
+"Knee - Tibial tray + insert, metallic",ortho,26546,plus 5% GST,"NPPA knee implant ceiling, extended to Nov 2026",2017-08-16,2026-11-15,verify
+Knee revision - Femoral component,ortho,62770,plus 5% GST,"NPPA knee implant ceiling, extended to Nov 2026",2017-08-16,2026-11-15,verify
+Knee revision - Tibial component,ortho,31220,plus 5% GST,"NPPA knee implant ceiling, extended to Nov 2026",2017-08-16,2026-11-15,verify
+Knee revision - Articulating surface,ortho,15870,plus 5% GST,"NPPA knee implant ceiling, extended to Nov 2026",2017-08-16,2026-11-15,verify

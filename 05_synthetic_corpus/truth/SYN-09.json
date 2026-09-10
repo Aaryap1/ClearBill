@@ -1,0 +1,286 @@
+{
+  "id": "SYN-09",
+  "header": {
+    "hospital_name": "Deccan Heart Institute",
+    "hospital_address": "JM Road, Pune 411005",
+    "hospital_gstin": "27AAECD9999E1ZM",
+    "hospital_contact": "020-25670707",
+    "hospital_registration": "MH/HOSP/2013/0442",
+    "bill_number": "SYN09/2026/1063",
+    "bill_datetime": "09/08/2026 13:15",
+    "patient_name": "Lata Bhosale",
+    "patient_age": "66",
+    "patient_gender": "F",
+    "patient_hospital_id": "IP2600530",
+    "patient_uhid": "12-3456-7890-1009",
+    "patient_address": "Lata residence, Pune 411005",
+    "patient_signature": true,
+    "authorised_signature": true,
+    "admission_datetime": "05/08/2026 19:20",
+    "discharge_datetime": "09/08/2026 13:15",
+    "admission_type": "inpatient",
+    "procedure": "Pneumonia — medical admission",
+    "room_class": "single",
+    "payment_mode": "cashless (insurance)",
+    "insurance_info": "Policy shown; TPA authorisation on file",
+    "gross_amount": 91207.5,
+    "discount_amount": 4560.38,
+    "tax_amount": 0.0,
+    "net_payable": 86647.12
+  },
+  "line_items": [
+    {
+      "item": "ADMISSION SERVICES",
+      "unit": "nos",
+      "quantity": 1.0,
+      "rate": 350.0,
+      "total": 350.0,
+      "section": "REGISTRATION"
+    },
+    {
+      "item": "SINGLE ROOM - AC",
+      "unit": "day",
+      "quantity": 4.0,
+      "rate": 6000.0,
+      "total": 24000.0,
+      "section": "ROOM CHARGES"
+    },
+    {
+      "item": "TWIN SHARING ROOM",
+      "unit": "day",
+      "quantity": 4.0,
+      "rate": 3500.0,
+      "total": 14000.0,
+      "section": "ROOM CHARGES"
+    },
+    {
+      "item": "ICU BED CHARGES",
+      "unit": "day",
+      "quantity": 4.0,
+      "rate": 9500.0,
+      "total": 38000.0,
+      "section": "ROOM CHARGES"
+    },
+    {
+      "item": "IP CONSULTATION - PHYSICIAN",
+      "unit": "visit",
+      "quantity": 2.0,
+      "rate": 900.0,
+      "total": 1800.0,
+      "section": "CONSULTATION"
+    },
+    {
+      "item": "IP CONSULTATION - SURGEON",
+      "unit": "visit",
+      "quantity": 3.0,
+      "rate": 1200.0,
+      "total": 3600.0,
+      "section": "CONSULTATION"
+    },
+    {
+      "item": "IP CONSULTATION - ANAESTHETIST",
+      "unit": "visit",
+      "quantity": 2.0,
+      "rate": 1000.0,
+      "total": 2000.0,
+      "section": "CONSULTATION"
+    },
+    {
+      "item": "COMPLETE BLOOD COUNT (CBC)",
+      "unit": "test",
+      "quantity": 2.0,
+      "rate": 380.0,
+      "total": 760.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "SERUM ELECTROLYTES",
+      "unit": "test",
+      "quantity": 1.0,
+      "rate": 520.0,
+      "total": 520.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "LIVER FUNCTION TEST",
+      "unit": "test",
+      "quantity": 1.0,
+      "rate": 780.0,
+      "total": 780.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "KIDNEY FUNCTION TEST",
+      "unit": "test",
+      "quantity": 2.0,
+      "rate": 720.0,
+      "total": 1440.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "RANDOM BLOOD SUGAR",
+      "unit": "test",
+      "quantity": 1.0,
+      "rate": 120.0,
+      "total": 120.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "CHEST X-RAY PA VIEW",
+      "unit": "test",
+      "quantity": 1.0,
+      "rate": 450.0,
+      "total": 450.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "ECG",
+      "unit": "test",
+      "quantity": 2.0,
+      "rate": 300.0,
+      "total": 600.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "INJ CEFTRIAXONE 1GM",
+      "unit": "vial",
+      "quantity": 5.0,
+      "rate": 62.0,
+      "total": 310.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "INJ PANTOPRAZOLE 40MG",
+      "unit": "vial",
+      "quantity": 6.0,
+      "rate": 38.0,
+      "total": 228.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "INJ ONDANSETRON 2MG/ML",
+      "unit": "amp",
+      "quantity": 7.0,
+      "rate": 14.0,
+      "total": 98.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "INJ TRAMADOL 50MG",
+      "unit": "amp",
+      "quantity": 8.0,
+      "rate": 22.0,
+      "total": 176.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "TAB PARACETAMOL 650MG",
+      "unit": "tab",
+      "quantity": 5.0,
+      "rate": 3.5,
+      "total": 17.5,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "TAB PANTOPRAZOLE 40MG",
+      "unit": "tab",
+      "quantity": 6.0,
+      "rate": 6.0,
+      "total": 36.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "INJ AMIKACIN 500MG",
+      "unit": "vial",
+      "quantity": 7.0,
+      "rate": 48.0,
+      "total": 336.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "IV FLUID RL 500ML",
+      "unit": "bottle",
+      "quantity": 8.0,
+      "rate": 45.0,
+      "total": 360.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "IV FLUID NS 500ML",
+      "unit": "bottle",
+      "quantity": 5.0,
+      "rate": 42.0,
+      "total": 210.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "PHARMACY RETURN - INJ CEFTRIAXONE 1GM",
+      "unit": "vial",
+      "quantity": -1.0,
+      "rate": 62.0,
+      "total": -62.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "IV CANNULA 20G",
+      "unit": "nos",
+      "quantity": 3.0,
+      "rate": 55.0,
+      "total": 165.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "IV SET",
+      "unit": "nos",
+      "quantity": 4.0,
+      "rate": 38.0,
+      "total": 152.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "DISPOSABLE SYRINGE 5ML",
+      "unit": "nos",
+      "quantity": 5.0,
+      "rate": 6.0,
+      "total": 30.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "DISPOSABLE SYRINGE 10ML",
+      "unit": "nos",
+      "quantity": 3.0,
+      "rate": 9.0,
+      "total": 27.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "SURGICAL GLOVES STERILE 7.0",
+      "unit": "pair",
+      "quantity": 4.0,
+      "rate": 26.0,
+      "total": 104.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "BIOMEDICAL WASTE CHARGES",
+      "unit": "nos",
+      "quantity": 4.0,
+      "rate": 150.0,
+      "total": 600.0,
+      "section": "MISCELLANEOUS"
+    }
+  ],
+  "printed_subtotals": {
+    "REGISTRATION": 350.0,
+    "ROOM CHARGES": 76000.0,
+    "CONSULTATION": 7400.0,
+    "INVESTIGATIONS": 4670.0,
+    "PHARMACY": 1709.5,
+    "CONSUMABLES": 478.0,
+    "MISCELLANEOUS": 600.0
+  },
+  "printed_grand_total": 91207.5,
+  "line_count": 30,
+  "defects": [],
+  "is_clean": true
+}

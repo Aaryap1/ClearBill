@@ -1,0 +1,26 @@
+{
+  "_comment": "Rename to SYN-01_extraction.json etc. Paste Gemini's output here. header and printed_subtotals are optional. Keep negative amounts negative.",
+  "header": {
+    "hospital_name": null,
+    "hospital_gstin": null,
+    "bill_number": null,
+    "bill_datetime": null,
+    "patient_name": null,
+    "patient_age": null,
+    "patient_gender": null,
+    "patient_hospital_id": null,
+    "patient_uhid": null,
+    "admission_datetime": null,
+    "discharge_datetime": null,
+    "admission_type": null,
+    "gross_amount": null,
+    "discount_amount": null,
+    "net_payable": null
+  },
+  "printed_subtotals": {
+    "REGISTRATION": null
+  },
+  "line_items": [
+    { "item": "", "unit": null, "quantity": 0, "rate": 0, "total": 0, "section": "" }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "name": "ClearBill — hospital bill, checkable",
+  "short_name": "ClearBill",
+  "description": "Decompose an Indian hospital settlement, then check the itemised bill against IRDAI, NPPA and IS 19493.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F5F6F8",
+  "theme_color": "#16202A",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

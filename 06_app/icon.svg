@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#16202A"/>
+  <!-- the bill -->
+  <g transform="translate(150 96)">
+    <path d="M0 20 A20 20 0 0 1 20 0 H192 A20 20 0 0 1 212 20 V300
+             l-26 -18 l-27 18 l-27 -18 l-26 18 l-27 -18 l-26 18 V20 Z" fill="#F5F1E8"/>
+    <rect x="34" y="58" width="144" height="16" rx="8" fill="#C9C2B2"/>
+    <rect x="34" y="100" width="110" height="12" rx="6" fill="#D9D3C5"/>
+    <rect x="34" y="132" width="130" height="12" rx="6" fill="#D9D3C5"/>
+    <rect x="34" y="164" width="96" height="12" rx="6" fill="#D9D3C5"/>
+  </g>
+  <!-- verification mark -->
+  <circle cx="360" cy="366" r="70" fill="#A2620A" stroke="#16202A" stroke-width="12"/>
+  <path d="M332 366 l20 20 l40 -44" fill="none" stroke="#F5F1E8" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

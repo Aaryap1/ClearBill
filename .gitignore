@@ -1,0 +1,30 @@
+# Real hospital bill (patient redacted, but carries the hospital GSTIN and a
+# clinician name) — kept private, not for public distribution
+04_test_bills/
+
+# Internal submission notes and working drafts
+01_checkpoint2/
+
+# Local dev harness (preview.html is a generated copy of 06_app/index.html)
+06_app_dev/
+
+# Scratch / non-pipeline evaluation subfolders
+05_synthetic_corpus/_*/
+
+# Test scripts that load the private real-bill fixture above
+03_code/reextract_bill01.js
+03_code/test_completeness.js
+03_code/test_matcher.js
+
+# Session scratch files
+*_b64.txt
+/architecture_diagram.png
+
+# OS / editor / deps
+.DS_Store
+Thumbs.db
+node_modules/
+*.log
+
+# Personal terms used by 03_code/redact.py — never commit
+03_code/redact_terms.local.txt

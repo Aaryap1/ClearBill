@@ -1,0 +1,261 @@
+{
+  "id": "SYN-10",
+  "header": {
+    "hospital_name": "Nirmal Nursing Home",
+    "hospital_address": "Gandhi Chowk, Kolhapur 416001",
+    "hospital_gstin": null,
+    "hospital_contact": "0231-2650321",
+    "hospital_registration": "MH/HOSP/2012/0091",
+    "bill_number": null,
+    "bill_datetime": "13/06/2026 16:20",
+    "patient_name": "Imran Shaikh",
+    "patient_age": "38",
+    "patient_gender": "M",
+    "patient_hospital_id": "IP2600588",
+    "patient_uhid": "12-3456-7890-1010",
+    "patient_address": "Imran residence, Kolhapur 416001",
+    "patient_signature": true,
+    "authorised_signature": true,
+    "admission_datetime": "11/06/2026 05:30",
+    "discharge_datetime": "13/06/2026 16:20",
+    "admission_type": "inpatient",
+    "procedure": "Ureteroscopy for renal calculus",
+    "room_class": "twin-sharing",
+    "payment_mode": "cashless (insurance)",
+    "insurance_info": "Policy shown; TPA authorisation on file",
+    "gross_amount": 70734.0,
+    "discount_amount": 0.0,
+    "tax_amount": 0.0,
+    "net_payable": 70734.0
+  },
+  "line_items": [
+    {
+      "item": "ADMISSION SERVICES",
+      "unit": null,
+      "quantity": 1.0,
+      "rate": 350.0,
+      "total": 350.0,
+      "section": "REGISTRATION"
+    },
+    {
+      "item": "SINGLE ROOM - AC",
+      "unit": null,
+      "quantity": 3.0,
+      "rate": 6000.0,
+      "total": 18000.0,
+      "section": "ROOM CHARGES"
+    },
+    {
+      "item": "TWIN SHARING ROOM",
+      "unit": null,
+      "quantity": 3.0,
+      "rate": 3500.0,
+      "total": 10500.0,
+      "section": "ROOM CHARGES"
+    },
+    {
+      "item": "IP CONSULTATION - PHYSICIAN",
+      "unit": null,
+      "quantity": 2.0,
+      "rate": 900.0,
+      "total": 1800.0,
+      "section": "CONSULTATION"
+    },
+    {
+      "item": "IP CONSULTATION - SURGEON",
+      "unit": null,
+      "quantity": 3.0,
+      "rate": 1200.0,
+      "total": 3600.0,
+      "section": "CONSULTATION"
+    },
+    {
+      "item": "COMPLETE BLOOD COUNT (CBC)",
+      "unit": null,
+      "quantity": 2.0,
+      "rate": 380.0,
+      "total": 760.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "SERUM ELECTROLYTES",
+      "unit": null,
+      "quantity": 1.0,
+      "rate": 520.0,
+      "total": 520.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "LIVER FUNCTION TEST",
+      "unit": null,
+      "quantity": 1.0,
+      "rate": 780.0,
+      "total": 780.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "KIDNEY FUNCTION TEST",
+      "unit": null,
+      "quantity": 2.0,
+      "rate": 720.0,
+      "total": 1440.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "RANDOM BLOOD SUGAR",
+      "unit": null,
+      "quantity": 1.0,
+      "rate": 120.0,
+      "total": 120.0,
+      "section": "INVESTIGATIONS"
+    },
+    {
+      "item": "OPERATION THEATRE CHARGES",
+      "unit": null,
+      "quantity": 2.0,
+      "rate": 4500.0,
+      "total": 9000.0,
+      "section": "OT / PROCEDURE"
+    },
+    {
+      "item": "SURGEON'S FEE",
+      "unit": null,
+      "quantity": 1.0,
+      "rate": 15000.0,
+      "total": 15000.0,
+      "section": "OT / PROCEDURE"
+    },
+    {
+      "item": "ANAESTHESIA CHARGES",
+      "unit": null,
+      "quantity": 1.0,
+      "rate": 6000.0,
+      "total": 6000.0,
+      "section": "OT / PROCEDURE"
+    },
+    {
+      "item": "ANAESTHESIA GASES & DRUGS",
+      "unit": null,
+      "quantity": 1.0,
+      "rate": 1800.0,
+      "total": 1800.0,
+      "section": "OT / PROCEDURE"
+    },
+    {
+      "item": "INJ CEFTRIAXONE 1GM",
+      "unit": null,
+      "quantity": 4.0,
+      "rate": 62.0,
+      "total": 248.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "INJ PANTOPRAZOLE 40MG",
+      "unit": null,
+      "quantity": 5.0,
+      "rate": 38.0,
+      "total": 190.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "INJ ONDANSETRON 2MG/ML",
+      "unit": null,
+      "quantity": 6.0,
+      "rate": 14.0,
+      "total": 84.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "INJ TRAMADOL 50MG",
+      "unit": null,
+      "quantity": 7.0,
+      "rate": 22.0,
+      "total": 154.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "TAB PARACETAMOL 650MG",
+      "unit": null,
+      "quantity": 4.0,
+      "rate": 3.5,
+      "total": 14.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "TAB PANTOPRAZOLE 40MG",
+      "unit": null,
+      "quantity": 5.0,
+      "rate": 6.0,
+      "total": 30.0,
+      "section": "PHARMACY"
+    },
+    {
+      "item": "IV CANNULA 20G",
+      "unit": null,
+      "quantity": 2.0,
+      "rate": 55.0,
+      "total": 110.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "IV SET",
+      "unit": null,
+      "quantity": 3.0,
+      "rate": 38.0,
+      "total": 114.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "DISPOSABLE SYRINGE 5ML",
+      "unit": null,
+      "quantity": 4.0,
+      "rate": 6.0,
+      "total": 24.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "DISPOSABLE SYRINGE 10ML",
+      "unit": null,
+      "quantity": 2.0,
+      "rate": 9.0,
+      "total": 18.0,
+      "section": "CONSUMABLES"
+    },
+    {
+      "item": "SURGICAL GLOVES STERILE 7.0",
+      "unit": null,
+      "quantity": 3.0,
+      "rate": 26.0,
+      "total": 78.0,
+      "section": "CONSUMABLES"
+    }
+  ],
+  "printed_subtotals": {
+    "REGISTRATION": 350.0,
+    "ROOM CHARGES": 28500.0,
+    "CONSULTATION": 5400.0,
+    "INVESTIGATIONS": 3620.0,
+    "OT / PROCEDURE": 31800.0,
+    "PHARMACY": 720.0,
+    "CONSUMABLES": 344.0
+  },
+  "printed_grand_total": 70734.0,
+  "line_count": 25,
+  "defects": [
+    {
+      "type": "missing_field",
+      "field": "bill_number",
+      "note": "IS 19493 mandatory field 'bill_number' is blank on this bill."
+    },
+    {
+      "type": "missing_unit_column",
+      "note": "The bill has no Unit column; IS 19493 requires one on every charge line."
+    },
+    {
+      "type": "missing_field",
+      "field": "hospital_gstin",
+      "note": "IS 19493 mandatory field 'hospital_gstin' is blank on this bill."
+    }
+  ],
+  "is_clean": false
+}

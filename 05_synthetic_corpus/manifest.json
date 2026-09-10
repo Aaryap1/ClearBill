@@ -1,0 +1,99 @@
+[
+  {
+    "id": "SYN-01",
+    "procedure": "Laparoscopic appendectomy",
+    "lines": 23,
+    "grand_total": 51868.5,
+    "clean": true,
+    "defects": []
+  },
+  {
+    "id": "SYN-02",
+    "procedure": "Cataract surgery (day care)",
+    "lines": 19,
+    "grand_total": 41272.0,
+    "clean": true,
+    "defects": []
+  },
+  {
+    "id": "SYN-03",
+    "procedure": "Coronary angioplasty (1 stent)",
+    "lines": 34,
+    "grand_total": 78242.0,
+    "clean": false,
+    "defects": [
+      "subtotal_mismatch"
+    ]
+  },
+  {
+    "id": "SYN-04",
+    "procedure": "Normal vaginal delivery",
+    "lines": 25,
+    "grand_total": 71064.0,
+    "clean": false,
+    "defects": [
+      "duplicate"
+    ]
+  },
+  {
+    "id": "SYN-05",
+    "procedure": "Haemodialysis (single session)",
+    "lines": 19,
+    "grand_total": 29395.0,
+    "clean": true,
+    "defects": []
+  },
+  {
+    "id": "SYN-06",
+    "procedure": "Chemotherapy cycle",
+    "lines": 26,
+    "grand_total": 21756.5,
+    "clean": false,
+    "defects": [
+      "missing_field",
+      "missing_unit_column"
+    ]
+  },
+  {
+    "id": "SYN-07",
+    "procedure": "Knee arthroscopy",
+    "lines": 26,
+    "grand_total": 73696.0,
+    "clean": false,
+    "defects": [
+      "subtotal_mismatch",
+      "missing_field"
+    ]
+  },
+  {
+    "id": "SYN-08",
+    "procedure": "Inguinal hernia repair (mesh)",
+    "lines": 24,
+    "grand_total": 71104.0,
+    "clean": false,
+    "defects": [
+      "duplicate",
+      "missing_field"
+    ]
+  },
+  {
+    "id": "SYN-09",
+    "procedure": "Pneumonia \u2014 medical admission",
+    "lines": 30,
+    "grand_total": 91207.5,
+    "clean": true,
+    "defects": []
+  },
+  {
+    "id": "SYN-10",
+    "procedure": "Ureteroscopy for renal calculus",
+    "lines": 25,
+    "grand_total": 70734.0,
+    "clean": false,
+    "defects": [
+      "missing_field",
+      "missing_unit_column",
+      "missing_field"
+    ]
+  }
+]
