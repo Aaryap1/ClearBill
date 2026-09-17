@@ -284,6 +284,9 @@
   .gcstrip{font-family:"IBM Plex Mono",monospace;font-size:.58rem;letter-spacing:.05em;color:var(--soft);margin-top:5px;text-transform:uppercase}
   .gcstrip span{color:var(--ink)}
   .gcintro{margin:0 0 10px;font-size:.84rem;color:var(--soft)}
+  .scenlist{margin:0 0 10px;padding-left:19px;display:flex;flex-direction:column;gap:7px}
+  .scenlist li{font-size:.86rem;line-height:1.4}
+  .scennote{margin:0;font-size:.76rem;color:var(--soft);font-style:italic}
   .gcrows{display:flex;flex-direction:column;gap:9px}
   .gcrow{display:flex;gap:9px;align-items:flex-start;font-size:.84rem;line-height:1.4}
   .gcrow .gcn{font-family:"Archivo",sans-serif;font-weight:700;flex:none;min-width:104px}
@@ -404,6 +407,16 @@
         <div class="step3"><span class="n">2</span><p><b id="howStep2b">Code judges</b><span id="howStep2p">Every flag after that is a table lookup or arithmetic &mdash; never the model's opinion.</span></p></div>
         <div class="step3"><span class="n">3</span><p><b id="howStep3b">You decide</b><span id="howStep3p">Nothing is sent anywhere on your behalf. The letter is yours to send or not.</span></p></div>
       </div>
+    </div>
+    <div class="card">
+      <div class="k" id="scenariosHead" style="margin-bottom:6px">Who this is for</div>
+      <p class="gcintro" id="scenariosIntro">Built around one fully documented real cashless settlement &mdash; and meant for moments like these:</p>
+      <ul class="scenlist" id="scenariosList">
+        <li id="scen1">Checking what was charged after your own or a family member's hospital stay</li>
+        <li id="scen2">A senior citizen going through claim papers without help nearby</li>
+        <li id="scen3">A parent making sense of a child's hospital bill</li>
+      </ul>
+      <p class="scennote" id="scenariosNote">These are illustrative situations, not additional validated cases &mdash; the one documented result above is the only outcome ClearBill claims.</p>
     </div>
     <div class="card">
       <div class="k" id="gcloudHead" style="margin-bottom:4px">Built on Google Cloud</div>
@@ -753,6 +766,12 @@ en: {
   how2b:"Code judges", how2p:"Every flag after that is a table lookup or arithmetic &mdash; never the model's opinion.",
   how3b:"You decide", how3p:"Nothing is sent anywhere on your behalf. The letter is yours to send or not.",
   gcloud_strip_html:'Runs on Google Cloud &mdash; <span>Gemini &middot; Cloud Run</span>',
+  scenarios_head:"Who this is for",
+  scenarios_intro:"Built around one fully documented real cashless settlement &mdash; and meant for moments like these:",
+  scenario_1:"Checking what was charged after your own or a family member's hospital stay",
+  scenario_2:"A senior citizen going through claim papers without help nearby",
+  scenario_3:"A parent making sense of a child's hospital bill",
+  scenarios_note:"These are illustrative situations, not additional validated cases — the one documented result above is the only outcome ClearBill claims.",
   gcloud_head:"Built on Google Cloud",
   gcloud_intro:"ClearBill runs end to end on Google Cloud. Each service does one job:",
   gcloud_rows:[
@@ -903,6 +922,12 @@ hi: {
   how2b:"कोड निर्णय करता है", how2p:"इसके बाद हर निशान एक तालिका-मिलान या गणना है &mdash; मॉडल की राय नहीं।",
   how3b:"आप तय करते हैं", how3p:"आपकी ओर से कहीं कुछ नहीं भेजा जाता। पत्र भेजना या न भेजना आपका फ़ैसला है।",
   gcloud_strip_html:'Google Cloud पर चलता है &mdash; <span>Gemini &middot; Cloud Run</span>',
+  scenarios_head:"यह किनके लिए है",
+  scenarios_intro:"एक पूरी तरह दस्तावेज़ीकृत असली कैशलेस सेटलमेंट पर आधारित &mdash; और इन जैसे पलों के लिए:",
+  scenario_1:"अपने या परिवार के किसी सदस्य के अस्पताल में भर्ती होने के बाद क्या चार्ज हुआ, यह जाँचना",
+  scenario_2:"एक वरिष्ठ नागरिक जो बिना किसी मदद के अपने क्लेम के काग़ज़ात देख रहा है",
+  scenario_3:"एक माता-पिता जो अपने बच्चे के अस्पताल के बिल को समझने की कोशिश कर रहे हैं",
+  scenarios_note:"ये उदाहरण स्थितियाँ हैं, अतिरिक्त सत्यापित मामले नहीं — ऊपर बताया गया एक दस्तावेज़ीकृत नतीजा ही ClearBill का एकमात्र दावा है।",
   gcloud_head:"Google Cloud पर बना",
   gcloud_intro:"ClearBill पूरी तरह Google Cloud पर चलता है। हर सेवा का एक काम है:",
   gcloud_rows:[
@@ -1053,6 +1078,12 @@ mr: {
   how2b:"कोड निर्णय घेतो", how2p:"त्यानंतरचा प्रत्येक निष्कर्ष हा तक्ता-जुळवणी किंवा गणित आहे &mdash; मॉडेलचं मत नाही.",
   how3b:"तुम्ही ठरवता", how3p:"तुमच्या वतीने कुठेही काहीही पाठवलं जात नाही. पत्र पाठवायचं की नाही, हा निर्णय तुमचा आहे.",
   gcloud_strip_html:'Google Cloud वर चालतं &mdash; <span>Gemini &middot; Cloud Run</span>',
+  scenarios_head:"हे कोणासाठी आहे",
+  scenarios_intro:"एका पूर्णपणे दस्तऐवजीकृत खऱ्या कॅशलेस सेटलमेंटवर आधारित &mdash; आणि अशा क्षणांसाठी:",
+  scenario_1:"स्वतःच्या किंवा कुटुंबातील सदस्याच्या रुग्णालयात दाखल झाल्यानंतर काय चार्ज झालं हे तपासणं",
+  scenario_2:"जवळ मदत नसताना स्वतःच्या क्लेमची कागदपत्रं पाहणारे ज्येष्ठ नागरिक",
+  scenario_3:"मुलाचं रुग्णालयाचं बिल समजून घेणारे पालक",
+  scenarios_note:"ही उदाहरणादाखल परिस्थिती आहेत, अतिरिक्त पडताळलेली प्रकरणं नाहीत — वर नमूद केलेला एक दस्तऐवजीकृत निकाल हाच ClearBill चा एकमेव दावा आहे.",
   gcloud_head:"Google Cloud वर बांधलेलं",
   gcloud_intro:"ClearBill संपूर्णपणे Google Cloud वर चालतं. प्रत्येक सेवेचं एक काम आहे:",
   gcloud_rows:[
@@ -1747,6 +1778,12 @@ function applyStaticI18n(){
   $('howStep2b').textContent=T_.how2b; $('howStep2p').innerHTML=T_.how2p;
   $('howStep3b').textContent=T_.how3b; $('howStep3p').innerHTML=T_.how3p;
   if($('gcStrip')) $('gcStrip').innerHTML=Sv('gcloud_strip_html');
+  if($('scenariosHead')) $('scenariosHead').textContent=Sv('scenarios_head');
+  if($('scenariosIntro')) $('scenariosIntro').innerHTML=Sv('scenarios_intro');
+  if($('scen1')) $('scen1').textContent=Sv('scenario_1');
+  if($('scen2')) $('scen2').textContent=Sv('scenario_2');
+  if($('scen3')) $('scen3').textContent=Sv('scenario_3');
+  if($('scenariosNote')) $('scenariosNote').textContent=Sv('scenarios_note');
   if($('gcloudHead')) $('gcloudHead').textContent=Sv('gcloud_head');
   if($('gcloudIntro')) $('gcloudIntro').textContent=Sv('gcloud_intro');
   const gcr=$('gcloudRows');
