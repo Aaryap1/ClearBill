@@ -181,6 +181,8 @@
   .li{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--rule);font-size:.84rem}
   .li:first-child{border-top:none}
   .li .src{display:block;color:var(--soft);font-size:.74rem;margin-top:1px}
+  .li .gradebadge{display:inline-block;margin-top:3px;padding:1px 6px;border-radius:9px;
+    background:var(--ochre-bg);color:var(--ochre);font-size:.68rem;font-weight:600;letter-spacing:.02em}
   .li .n{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
   .plain{font-size:.86rem;color:var(--soft);margin-top:9px}
   .notez{background:var(--ochre-bg);border-left:3px solid var(--ochre);border-radius:0 8px 8px 0;padding:9px 11px;font-size:.84rem;margin-top:8px}
@@ -530,17 +532,21 @@ const NON_PAYABLE = [
   { tier:"review", item:"Dressing / Tegaderm film", keywords:"tegaderm|transparent dressing" },
   { tier:"exact", item:"Weight Control Programs / Supplies / Services", keywords:"weight control|obesity program" },
   { tier:"exact", item:"Spectacles / Contact Lenses / Hearing Aids", keywords:"spectacle|contact lens|hearing aid" },
-  { tier:"exact", item:"Dental Treatment Not Requiring Hospitalisation", keywords:"dental treatment" },
-  { tier:"exact", item:"Hormone Replacement Therapy", keywords:"hormone replacement" },
+  { tier:"exact", item:"Dental Treatment Not Requiring Hospitalisation", keywords:"dental treatment", basis:"policy_exclusion" },
+  { tier:"exact", item:"Hormone Replacement Therapy", keywords:"hormone replacement", basis:"policy_exclusion" },
   { tier:"exact", item:"Home Visit Charges", keywords:"home visit" },
-  { tier:"exact", item:"Infertility / Assisted Conception", keywords:"infertility|ivf|assisted conception" },
-  { tier:"exact", item:"Obesity Treatment", keywords:"bariatric|obesity treatment" },
-  { tier:"exact", item:"Corrective Surgery for Refractive Error", keywords:"lasik|refractive error" },
+  { tier:"exact", item:"Infertility / Assisted Conception", keywords:"infertility|ivf|assisted conception", basis:"policy_exclusion" },
+  { tier:"exact", item:"Obesity Treatment", keywords:"bariatric|obesity treatment", basis:"policy_exclusion" },
+  { tier:"exact", item:"Corrective Surgery for Refractive Error", keywords:"lasik|refractive error", basis:"policy_exclusion" },
   { tier:"exact", item:"Donor Screening Charges", keywords:"donor screening" },
   { tier:"exact", item:"Hospitalisation for Evaluation / Diagnostic Purpose", keywords:"evaluation only|diagnostic admission" },
-  { tier:"exact", item:"Aesthetic Treatment / Surgery", keywords:"aesthetic|cosmetic surgery" },
-  { tier:"exact", item:"Stem Cell Implantation / Surgery", keywords:"stem cell" }
+  { tier:"exact", item:"Aesthetic Treatment / Surgery", keywords:"aesthetic|cosmetic surgery", basis:"policy_exclusion" },
+  { tier:"exact", item:"Stem Cell Implantation / Surgery", keywords:"stem cell", basis:"policy_exclusion" }
 ];
+// `basis` (unset = "list_i"): these 7 rows are IRDAI's standardized *policy
+// exclusions* (Excl-series), not List I non-medical items — still non-payable,
+// but citing them as "IRDAI List I" names the wrong document. Verified against
+// the official list; see 02_reference_data/IRDAI_VERIFICATION.md.
 // 14 of nppa_ceilings.csv's 16 rows — every row currently in force. The two
 // excluded are the superseded (pre-1 Apr 2026) stent ceilings: the matcher
 // below has no date logic, so a superseded row with the same keywords as its
@@ -553,21 +559,26 @@ const NON_PAYABLE = [
 // the generic row it could otherwise be swallowed by (a "REVISION FEMORAL
 // COMPONENT" line also contains the plain "femoral component" keyword).
 const NPPA = [
-  { item:"Knee revision — Femoral component", ceiling:62770, gst:"plus 5% GST", kw:["revision femoral","femoral revision"] },
-  { item:"Knee revision — Tibial component", ceiling:31220, gst:"plus 5% GST", kw:["revision tibial","tibial revision"] },
-  { item:"Knee revision — Articulating surface", ceiling:15870, gst:"plus 5% GST", kw:["revision articulating","revision insert"] },
-  { item:"Knee — Femoral component, High Flex", ceiling:25860, gst:"plus 5% GST", kw:["femoral component high flex","high flex femoral"] },
-  { item:"Knee — Femoral component, Cobalt Chromium", ceiling:24090, gst:"plus 5% GST", kw:["femoral component cobalt","cobalt chrome femoral","cocr femoral"] },
-  { item:"Knee — Femoral component (Ti / Oxidised Zirconium)", ceiling:38740, gst:"plus 5% GST", kw:["femoral component"] },
-  { item:"Knee — Tibial component, Cobalt Chromium", ceiling:16990, gst:"plus 5% GST", kw:["tibial component cobalt","cobalt chrome tibial","cocr tibial"] },
-  { item:"Knee — Tibial component (Ti / Oxidised Zirconium)", ceiling:24280, gst:"plus 5% GST", kw:["tibial component"] },
-  { item:"Knee — Tibial tray + insert, polyethylene", ceiling:12960, gst:"plus 5% GST", kw:["tibial tray polyethylene","poly tibial tray","tibial tray insert"] },
-  { item:"Knee — Tibial tray + insert, metallic", ceiling:26546, gst:"plus 5% GST", kw:["tibial tray metallic","metal tibial tray"] },
-  { item:"Knee — Articulating surface / insert", ceiling:9550, gst:"plus 5% GST", kw:["articulating surface","tibial insert"] },
-  { item:"Knee — Patella", ceiling:4090, gst:"plus 5% GST", kw:["patella component","patella implant"] },
-  { item:"Coronary stent — Bare Metal Stent (BMS)", ceiling:10762.15, gst:"exclusive of GST", kw:["bare metal stent","bms stent"] },
-  { item:"Coronary stent — Drug Eluting Stent (DES)", ceiling:39186.03, gst:"exclusive of GST", kw:["drug eluting stent","des stent","coronary stent"] },
+  { item:"Knee revision — Femoral component", ceiling:62770, gst:"plus 5% GST", grade:"verify", kw:["revision femoral","femoral revision"] },
+  { item:"Knee revision — Tibial component", ceiling:31220, gst:"plus 5% GST", grade:"verify", kw:["revision tibial","tibial revision"] },
+  { item:"Knee revision — Articulating surface", ceiling:15870, gst:"plus 5% GST", grade:"verify", kw:["revision articulating","revision insert"] },
+  { item:"Knee — Femoral component, High Flex", ceiling:25860, gst:"plus 5% GST", grade:"verify", kw:["femoral component high flex","high flex femoral"] },
+  { item:"Knee — Femoral component, Cobalt Chromium", ceiling:24090, gst:"plus 5% GST", grade:"verify", kw:["femoral component cobalt","cobalt chrome femoral","cocr femoral"] },
+  { item:"Knee — Femoral component (Ti / Oxidised Zirconium)", ceiling:38740, gst:"plus 5% GST", grade:"verify", kw:["femoral component"] },
+  { item:"Knee — Tibial component, Cobalt Chromium", ceiling:16990, gst:"plus 5% GST", grade:"verify", kw:["tibial component cobalt","cobalt chrome tibial","cocr tibial"] },
+  { item:"Knee — Tibial component (Ti / Oxidised Zirconium)", ceiling:24280, gst:"plus 5% GST", grade:"verify", kw:["tibial component"] },
+  { item:"Knee — Tibial tray + insert, polyethylene", ceiling:12960, gst:"plus 5% GST", grade:"verify", kw:["tibial tray polyethylene","poly tibial tray","tibial tray insert"] },
+  { item:"Knee — Tibial tray + insert, metallic", ceiling:26546, gst:"plus 5% GST", grade:"verify", kw:["tibial tray metallic","metal tibial tray"] },
+  { item:"Knee — Articulating surface / insert", ceiling:9550, gst:"plus 5% GST", grade:"verify", kw:["articulating surface","tibial insert"] },
+  { item:"Knee — Patella", ceiling:4090, gst:"plus 5% GST", grade:"verify", kw:["patella component","patella implant"] },
+  { item:"Coronary stent — Bare Metal Stent (BMS)", ceiling:10762.15, gst:"exclusive of GST", grade:"verified", kw:["bare metal stent","bms stent"] },
+  { item:"Coronary stent — Drug Eluting Stent (DES)", ceiling:39186.03, gst:"exclusive of GST", grade:"verified", kw:["drug eluting stent","des stent","coronary stent"] },
 ];
+// grade "verified" = independently confirmed against the NPPA notification.
+// grade "verify" = the knee-implant ceiling itself is real (NPPA order, extended
+// to Nov 2026 per 02_reference_data/nppa_ceilings.csv) but this project has not
+// independently re-confirmed it — so the app must not assert it as a settled
+// "statutory violation" the way it can for the two verified stent ceilings.
 // Full IS 19493:2025 header registry — matches 03_code/completeness.js's
 // HEADER_FIELDS exactly (23 mandatory + 3 conditional = 26), so the browser
 // app and the Node test tool no longer check two different standards under
@@ -655,7 +666,7 @@ en: {
   insurer_approved: "Insurer approved",
   approved_base: cp=>`Approved base (${cp}% co-pay)`,
   sec_bill: "Check the itemised bill",
-  bill_lead: "Upload photos of your itemised bill (all pages, if more than one). Google Gemini reads them into rows; the checks then run in your browser against the published lists.",
+  bill_lead: "Upload photos of your itemised bill (all pages, if more than one). Google Gemini reads them into rows; the checks then run in your browser against the published lists. Your photo is sent to Google's Gemini API to be read, once &mdash; ClearBill itself doesn't store it.",
   drop_html: '<b>Tap to choose photos</b><br>or drag images here (JPG / PNG) &mdash; multiple pages OK',
   apikey_html: 'Gemini API key <span class="hint">&mdash; one time &middot; <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">get one here</a> &middot; saved only in this browser</span>',
   need_key: "This version needs a Gemini key once (free). Add it above, then choose the photo again.",
@@ -693,6 +704,8 @@ en: {
   detail_review_plain:"Confirm these with your insurer. Not findings.",
   detail_review_src:m=>`often deducted as: ${m}`,
   detail_matched_src:m=>`matches: ${m}`,
+  basis_policy_exclusion_badge:"policy exclusion, not List I",
+  nppa_unverified_badge:"ceiling not independently confirmed",
   detail_nppa:"Above the statutory price cap (NPPA)",
   detail_nppa_plain:"A legal ceiling under the DPCO, not an opinion.",
   detail_nppa_src:(ref,ceiling,gst)=>`NPPA ceiling for ${ref}: ${ceiling} (${gst})`,
@@ -713,7 +726,7 @@ en: {
   how1b:"The model reads", how1p:"Google's Gemini model turns your photo into rows &mdash; transcription only, no judgement.",
   how2b:"Code judges", how2p:"Every flag after that is a table lookup or arithmetic &mdash; never the model's opinion.",
   how3b:"You decide", how3p:"Nothing is sent anywhere on your behalf. The letter is yours to send or not.",
-  gcloud_strip_html:'Runs on Google Cloud &mdash; <span>Gemini &middot; Cloud Run &middot; Document AI</span>',
+  gcloud_strip_html:'Runs on Google Cloud &mdash; <span>Gemini &middot; Cloud Run</span>',
   gcloud_head:"Built on Google Cloud",
   gcloud_intro:"ClearBill runs end to end on Google Cloud. Each service does one job:",
   gcloud_rows:[
@@ -749,10 +762,15 @@ en: {
       money:()=>"These are commonly deducted in practice, but not actually named in the published list, so this is not a confirmed finding.",
       doText:"Ask your insurer to confirm these specifically. Don&rsquo;t dispute them on this basis alone." },
     nppa: { label:"Above NPPA cap",
-      found:n=>`${n} implant above its statutory ceiling`, sub:()=>"price cap under the DPCO",
+      found:n=>`${n} implant above its statutory ceiling`,
+      foundUnverified:n=>`${n} implant${n>1?'s':''} above a published NPPA ceiling`,
+      sub:()=>"price cap under the DPCO",
+      subUnverified:()=>"ceiling not independently re-confirmed &mdash; see below",
       foundClear:"No implant priced above an NPPA ceiling", subClear:"stents / knee implants checked",
       money:()=>"This is a legal price ceiling, not a guideline. Billing above it is a statutory violation.",
-      doText:"This is your strongest line to raise &mdash; ask the hospital to justify the price against the NPPA notification, or request a refund of the difference." },
+      moneyUnverified:()=>"This is a real NPPA notification, but this app has not independently re-confirmed it is still the current ceiling &mdash; confirm before treating it as settled.",
+      doText:"This is your strongest line to raise &mdash; ask the hospital to justify the price against the NPPA notification, or request a refund of the difference.",
+      doTextUnverified:"Ask the hospital to justify the price against the NPPA notification, and confirm the ceiling is still current before requesting a refund." },
     recon: { label:"Check sum",
       found:diff=>`Bill total off by ${diff}`, sub:(gross,lineSum)=>`printed ${gross} vs lines ${lineSum} &mdash; may be the hospital's arithmetic`,
       foundClear:"Bill reconciles", subClear:"sum of lines matches the printed total",
@@ -786,7 +804,7 @@ hi: {
   insurer_approved: "बीमा कंपनी ने मंज़ूर किया",
   approved_base: cp=>`मंज़ूर आधार (${cp}% को-पे)`,
   sec_bill: "बिल की हर लाइन जाँचें",
-  bill_lead: "अपने बिल की सभी पेज़ों की फ़ोटो अपलोड करें (अगर एक से ज़्यादा हैं तो सब)। Google Gemini इन्हें पंक्तियों में पढ़ता है; फिर जाँचें आपके ब्राउज़र में ही चलती हैं।",
+  bill_lead: "अपने बिल की सभी पेज़ों की फ़ोटो अपलोड करें (अगर एक से ज़्यादा हैं तो सब)। Google Gemini इन्हें पंक्तियों में पढ़ता है; फिर जाँचें आपके ब्राउज़र में ही चलती हैं। आपकी फ़ोटो पढ़ने के लिए एक बार Google के Gemini API को भेजी जाती है &mdash; ClearBill इसे ख़ुद सुरक्षित नहीं रखता।",
   drop_html: '<b>फ़ोटो चुनने के लिए टैप करें</b><br>या यहाँ तस्वीरें खींचकर लाएँ (JPG / PNG) &mdash; कई पेज़ चल सकते हैं',
   apikey_html: 'Gemini API key <span class="hint">&mdash; एक बार &middot; <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">यहाँ से लें</a> &middot; सिर्फ़ इस ब्राउज़र में सुरक्षित</span>',
   need_key: "इसके लिए एक बार Gemini key चाहिए (मुफ़्त)। ऊपर डालें, फिर फ़ोटो दोबारा चुनें।",
@@ -824,6 +842,8 @@ hi: {
   detail_review_plain:"इन्हें अपने बीमा कंपनी से पुष्टि करें। ये निष्कर्ष नहीं हैं।",
   detail_review_src:m=>`अक्सर इस रूप में काटा जाता है: ${m}`,
   detail_matched_src:m=>`मेल: ${m}`,
+  basis_policy_exclusion_badge:"नीति अपवाद, IRDAI सूची I नहीं",
+  nppa_unverified_badge:"सीमा की स्वतंत्र रूप से पुष्टि नहीं हुई",
   detail_nppa:"सांविधिक मूल्य सीमा से ऊपर (NPPA)",
   detail_nppa_plain:"DPCO के तहत एक क़ानूनी सीमा, राय नहीं।",
   detail_nppa_src:(ref,ceiling,gst)=>`${ref} के लिए NPPA सीमा: ${ceiling} (${gst})`,
@@ -844,7 +864,7 @@ hi: {
   how1b:"मॉडल पढ़ता है", how1p:"Google का Gemini मॉडल आपकी फ़ोटो को पंक्तियों में बदलता है &mdash; सिर्फ़ नक़ल, कोई राय नहीं।",
   how2b:"कोड निर्णय करता है", how2p:"इसके बाद हर निशान एक तालिका-मिलान या गणना है &mdash; मॉडल की राय नहीं।",
   how3b:"आप तय करते हैं", how3p:"आपकी ओर से कहीं कुछ नहीं भेजा जाता। पत्र भेजना या न भेजना आपका फ़ैसला है।",
-  gcloud_strip_html:'Google Cloud पर चलता है &mdash; <span>Gemini &middot; Cloud Run &middot; Document AI</span>',
+  gcloud_strip_html:'Google Cloud पर चलता है &mdash; <span>Gemini &middot; Cloud Run</span>',
   gcloud_head:"Google Cloud पर बना",
   gcloud_intro:"ClearBill पूरी तरह Google Cloud पर चलता है। हर सेवा का एक काम है:",
   gcloud_rows:[
@@ -880,10 +900,15 @@ hi: {
       money:()=>"ये व्यवहार में अक्सर काटी जाती हैं, पर प्रकाशित सूची में नाम से नहीं हैं, इसलिए यह पुष्ट निष्कर्ष नहीं है।",
       doText:"अपने बीमा कंपनी से इन्हें विशेष रूप से पुष्टि करने को कहें। सिर्फ़ इसी आधार पर विवाद न करें।" },
     nppa: { label:"NPPA सीमा से ऊपर",
-      found:n=>`${n} इम्प्लांट अपनी सांविधिक सीमा से ऊपर है`, sub:()=>"DPCO के तहत मूल्य सीमा",
+      found:n=>`${n} इम्प्लांट अपनी सांविधिक सीमा से ऊपर है`,
+      foundUnverified:n=>`${n} इम्प्लांट एक प्रकाशित NPPA सीमा से ऊपर है`,
+      sub:()=>"DPCO के तहत मूल्य सीमा",
+      subUnverified:()=>"सीमा की स्वतंत्र रूप से दोबारा पुष्टि नहीं हुई &mdash; नीचे देखें",
       foundClear:"कोई इम्प्लांट NPPA सीमा से ऊपर क़ीमत पर नहीं", subClear:"स्टेंट / घुटने के इम्प्लांट जाँचे गए",
       money:()=>"यह एक क़ानूनी मूल्य सीमा है, सुझाव नहीं। इससे ऊपर बिल करना सांविधिक उल्लंघन है।",
-      doText:"यह आपकी सबसे मज़बूत बात है &mdash; अस्पताल से NPPA अधिसूचना के मुक़ाबले क़ीमत का औचित्य पूछें, या अंतर की वापसी माँगें।" },
+      moneyUnverified:()=>"यह एक असली NPPA अधिसूचना है, पर इस ऐप ने स्वतंत्र रूप से पुष्टि नहीं की है कि यही अभी की सीमा है &mdash; इसे तय मानने से पहले पुष्टि करें।",
+      doText:"यह आपकी सबसे मज़बूत बात है &mdash; अस्पताल से NPPA अधिसूचना के मुक़ाबले क़ीमत का औचित्य पूछें, या अंतर की वापसी माँगें।",
+      doTextUnverified:"अस्पताल से NPPA अधिसूचना के मुक़ाबले क़ीमत का औचित्य पूछें, और वापसी माँगने से पहले सीमा की पुष्टि करें।" },
     recon: { label:"योग जाँच",
       found:diff=>`बिल का योग ${diff} से गड़बड़ है`, sub:(gross,lineSum)=>`छपा ${gross} बनाम लाइनों का योग ${lineSum} &mdash; शायद अस्पताल की अपनी गणना`,
       foundClear:"बिल का मिलान सही है", subClear:"लाइनों का योग छपी कुल राशि से मेल खाता है",
@@ -917,7 +942,7 @@ mr: {
   insurer_approved: "विमा कंपनीने मंजूर केलेलं",
   approved_base: cp=>`मंजूर आधार (${cp}% को-पे)`,
   sec_bill: "तपशीलवार बिल तपासा",
-  bill_lead: "तुमच्या बिलाच्या सर्व पानांचे फोटो अपलोड करा (एकापेक्षा जास्त असल्यास सर्व). Google Gemini ते ओळींमध्ये वाचतं; मग तपासण्या तुमच्या ब्राउझरमध्येच चालतात.",
+  bill_lead: "तुमच्या बिलाच्या सर्व पानांचे फोटो अपलोड करा (एकापेक्षा जास्त असल्यास सर्व). Google Gemini ते ओळींमध्ये वाचतं; मग तपासण्या तुमच्या ब्राउझरमध्येच चालतात. तुमचा फोटो वाचण्यासाठी एकदा Google च्या Gemini API ला पाठवला जातो &mdash; ClearBill स्वतः तो साठवत नाही.",
   drop_html: '<b>फोटो निवडण्यासाठी टॅप करा</b><br>किंवा इथे फोटो आणा (JPG / PNG) &mdash; अनेक पानं चालतील',
   apikey_html: 'Gemini API key <span class="hint">&mdash; एकदाच &middot; <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">इथून मिळवा</a> &middot; फक्त या ब्राउझरमध्ये जतन</span>',
   need_key: "यासाठी एकदा Gemini key लागते (मोफत). वर टाका, मग फोटो पुन्हा निवडा.",
@@ -955,6 +980,8 @@ mr: {
   detail_review_plain:"हे तुमच्या विमा कंपनीकडून पुष्टी करून घ्या. हे निष्कर्ष नाहीत.",
   detail_review_src:m=>`अनेकदा असं कापलं जातं: ${m}`,
   detail_matched_src:m=>`जुळतं: ${m}`,
+  basis_policy_exclusion_badge:"धोरण अपवाद, यादी I नाही",
+  nppa_unverified_badge:"मर्यादेची स्वतंत्रपणे पुष्टी झालेली नाही",
   detail_nppa:"वैधानिक किंमत मर्यादेपेक्षा जास्त (NPPA)",
   detail_nppa_plain:"DPCO अंतर्गत कायदेशीर मर्यादा, मत नाही.",
   detail_nppa_src:(ref,ceiling,gst)=>`${ref} साठी NPPA मर्यादा: ${ceiling} (${gst})`,
@@ -975,7 +1002,7 @@ mr: {
   how1b:"मॉडेल वाचतं", how1p:"Google चं Gemini मॉडेल तुमचा फोटो ओळींमध्ये बदलतं &mdash; फक्त नक्कल, मत नाही.",
   how2b:"कोड निर्णय घेतो", how2p:"त्यानंतरचा प्रत्येक निष्कर्ष हा तक्ता-जुळवणी किंवा गणित आहे &mdash; मॉडेलचं मत नाही.",
   how3b:"तुम्ही ठरवता", how3p:"तुमच्या वतीने कुठेही काहीही पाठवलं जात नाही. पत्र पाठवायचं की नाही, हा निर्णय तुमचा आहे.",
-  gcloud_strip_html:'Google Cloud वर चालतं &mdash; <span>Gemini &middot; Cloud Run &middot; Document AI</span>',
+  gcloud_strip_html:'Google Cloud वर चालतं &mdash; <span>Gemini &middot; Cloud Run</span>',
   gcloud_head:"Google Cloud वर बांधलेलं",
   gcloud_intro:"ClearBill संपूर्णपणे Google Cloud वर चालतं. प्रत्येक सेवेचं एक काम आहे:",
   gcloud_rows:[
@@ -1011,10 +1038,15 @@ mr: {
       money:()=>"हे प्रत्यक्षात वारंवार कापले जातात, पण प्रकाशित यादीत नावाने नाहीत, त्यामुळे हा पक्का निष्कर्ष नाही.",
       doText:"तुमच्या विमा कंपनीला हे विशेषतः खात्री करून द्यायला सांगा. फक्त याच आधारावर वाद घालू नका." },
     nppa: { label:"NPPA मर्यादेपेक्षा जास्त",
-      found:n=>`${n} इम्प्लांट त्याच्या वैधानिक मर्यादेपेक्षा जास्त आहे`, sub:()=>"DPCO अंतर्गत किंमत मर्यादा",
+      found:n=>`${n} इम्प्लांट त्याच्या वैधानिक मर्यादेपेक्षा जास्त आहे`,
+      foundUnverified:n=>`${n} इम्प्लांट प्रकाशित NPPA मर्यादेपेक्षा जास्त आहे`,
+      sub:()=>"DPCO अंतर्गत किंमत मर्यादा",
+      subUnverified:()=>"मर्यादेची स्वतंत्रपणे पुन्हा पुष्टी झालेली नाही &mdash; खाली पहा",
       foundClear:"कोणताही इम्प्लांट NPPA मर्यादेपेक्षा जास्त किमतीत नाही", subClear:"स्टेंट / गुडघा इम्प्लांट तपासले",
       money:()=>"ही कायदेशीर किंमत मर्यादा आहे, सूचना नाही. यापेक्षा जास्त बिल करणं वैधानिक उल्लंघन आहे.",
-      doText:"हा तुमचा सर्वात भक्कम मुद्दा आहे &mdash; रुग्णालयाला NPPA अधिसूचनेच्या तुलनेत किमतीचं समर्थन विचारा, किंवा फरकाचा परतावा मागा." },
+      moneyUnverified:()=>"ही खरी NPPA अधिसूचना आहे, पण हे अ‍ॅप सध्याची मर्यादा हीच आहे याची स्वतंत्रपणे पुष्टी करू शकलेलं नाही &mdash; हे निश्चित मानण्याआधी पुष्टी करा.",
+      doText:"हा तुमचा सर्वात भक्कम मुद्दा आहे &mdash; रुग्णालयाला NPPA अधिसूचनेच्या तुलनेत किमतीचं समर्थन विचारा, किंवा फरकाचा परतावा मागा.",
+      doTextUnverified:"रुग्णालयाला NPPA अधिसूचनेच्या तुलनेत किमतीचं समर्थन विचारा, आणि परतावा मागण्याआधी मर्यादेची पुष्टी करा." },
     recon: { label:"बेरीज तपासा",
       found:diff=>`बिलाची बेरीज ${diff} ने चुकीची आहे`, sub:(gross,lineSum)=>`छापील ${gross} विरुद्ध ओळींची बेरीज ${lineSum} &mdash; कदाचित रुग्णालयाची स्वतःची गणना`,
       foundClear:"बिलाचा ताळमेळ बरोबर आहे", subClear:"ओळींची बेरीज छापील एकूण रकमेशी जुळते",
@@ -1104,7 +1136,7 @@ function analyse(data){
   const H=data.header||{};
   const exact=[],review=[];
   for(const l of lines){ const m=bestMatch(l.item); if(!m) continue;
-    (m.e.tier==='exact'?exact:review).push({...l,matched:m.e.item}); }
+    (m.e.tier==='exact'?exact:review).push({...l,matched:m.e.item,basis:m.e.basis||'list_i'}); }
   const sum=a=>money(a.reduce((s,r)=>s+(r.total||0),0));
   const lineSum=sum(lines);
   let recon=null; const g=H.gross_amount==null?null:+H.gross_amount;
@@ -1147,7 +1179,7 @@ function analyse(data){
   for(const l of lines){ const t=l.item.toLowerCase();
     for(const c of NPPA){ if(c.kw.some(k=>t.includes(k))){
       const price=l.rate!=null?+l.rate:(l.total!=null&&l.quantity?(+l.total/Math.abs(l.quantity)):null);
-      if(price!=null&&price>c.ceiling) nppa.push({item:l.item,price:money(price),ceiling:c.ceiling,ref:c.item,gst:c.gst});
+      if(price!=null&&price>c.ceiling) nppa.push({item:l.item,price:money(price),ceiling:c.ceiling,ref:c.item,gst:c.gst,grade:c.grade||'verify'});
       break;
     }}
   }
@@ -1258,9 +1290,12 @@ function renderReport(data){
     ? chk('ochre',C.irdai_review.label,C.irdai_review.found(a.review.length),C.irdai_review.sub(inr.format(a.reviewSum)),
         {money:C.irdai_review.money(), doText:C.irdai_review.doText})
     : chk('green',T_.clear_word,C.irdai_review.foundClear,C.irdai_review.subClear);
+  const nppaAllVerified = a.nppa.length>0 && a.nppa.every(n=>n.grade==='verified');
   h+= a.nppa.length
-    ? chk('red',C.nppa.label,C.nppa.found(a.nppa.length),C.nppa.sub(),
-        {money:C.nppa.money(), doText:C.nppa.doText})
+    ? chk('red',C.nppa.label,
+        nppaAllVerified?C.nppa.found(a.nppa.length):C.nppa.foundUnverified(a.nppa.length),
+        nppaAllVerified?C.nppa.sub():C.nppa.subUnverified(),
+        {money:nppaAllVerified?C.nppa.money():C.nppa.moneyUnverified(), doText:nppaAllVerified?C.nppa.doText:C.nppa.doTextUnverified})
     : chk('green',T_.clear_word,C.nppa.foundClear,C.nppa.subClear);
   h+= a.recon
     ? chk('ochre',C.recon.label,C.recon.found(inr.format(Math.abs(a.recon.diff))),C.recon.sub(inr.format(a.recon.gross),inr.format(a.recon.lineSum)),
@@ -1281,13 +1316,13 @@ function renderReport(data){
 
   /* detail */
   if(a.exact.length) h+=det(T_.detail_matched,`<span class="tag money">${inr.format(a.exactSum)}</span>`,
-    a.exact.sort((x,y)=>y.total-x.total).map(l=>`<div class="li"><div>${esc(l.item)}<span class="src">${T_.detail_matched_src(esc(l.matched))}</span></div><div class="n">${inr.format(l.total)}</div></div>`).join(''), true);
+    a.exact.sort((x,y)=>y.total-x.total).map(l=>`<div class="li"><div>${esc(l.item)}<span class="src">${T_.detail_matched_src(esc(l.matched))}</span>${l.basis==='policy_exclusion'?`<span class="gradebadge">${T_.basis_policy_exclusion_badge}</span>`:''}</div><div class="n">${inr.format(l.total)}</div></div>`).join(''), true);
   if(a.review.length) h+=det(T_.detail_review,`<span class="tag">${inr.format(a.reviewSum)}</span>`,
     `<div class="plain">${T_.detail_review_plain}</div>`+
     a.review.sort((x,y)=>y.total-x.total).map(l=>`<div class="li"><div>${esc(l.item)}<span class="src">${T_.detail_review_src(esc(l.matched))}</span></div><div class="n">${inr.format(l.total)}</div></div>`).join(''));
   if(a.nppa.length) h+=det(T_.detail_nppa,`<span class="tag money">${a.nppa.length}</span>`,
     `<div class="plain">${T_.detail_nppa_plain}</div>`+
-    a.nppa.map(n=>`<div class="li"><div>${esc(n.item)}<span class="src">${T_.detail_nppa_src(esc(n.ref),inr.format(n.ceiling),esc(n.gst))}</span></div><div class="n">${inr.format(n.price)}</div></div>`).join(''), true);
+    a.nppa.map(n=>`<div class="li"><div>${esc(n.item)}<span class="src">${T_.detail_nppa_src(esc(n.ref),inr.format(n.ceiling),esc(n.gst))}</span>${n.grade!=='verified'?`<span class="gradebadge">${T_.nppa_unverified_badge}</span>`:''}</div><div class="n">${inr.format(n.price)}</div></div>`).join(''), true);
   if(a.recon) h+=det(T_.detail_recon,'',
     `<div class="notez">${T_.detail_recon_body(inr.format(a.recon.gross),inr.format(a.recon.lineSum),inr.format(Math.abs(a.recon.diff)))}</div>`);
   if(a.dups.length) h+=det(T_.detail_dup,`<span class="tag">${a.dups.length}</span>`,
@@ -1342,21 +1377,49 @@ function buildLetter(a,include){
       `No breakdown of the ${inr.format(s.deduction)} recorded as non-payable has been provided, despite request.`,``);
   }
   if(a.exact.length&&include.irdai){
-    L.push(`Checking the hospital's own itemised bill against the IRDAI List of Non-Medical Items (List I), the following charges appear to fall within that list:`,``);
-    a.exact.sort((x,y)=>y.total-x.total).forEach(l=>L.push(`  - ${l.item} - ${inr.format(l.total)}  (IRDAI List I: ${l.matched})`));
+    // Two different documents, two different citations — collapsing them into
+    // one "IRDAI List I" line was a real mis-citation for the policy-exclusion
+    // rows (verified against 02_reference_data/IRDAI_VERIFICATION.md).
+    const listI=a.exact.filter(l=>l.basis!=='policy_exclusion'), policyExcl=a.exact.filter(l=>l.basis==='policy_exclusion');
+    if(listI.length){
+      L.push(`Checking the hospital's own itemised bill against the IRDAI List of Non-Medical Items (List I), the following charges appear to fall within that list:`,``);
+      listI.sort((x,y)=>y.total-x.total).forEach(l=>L.push(`  - ${l.item} - ${inr.format(l.total)}  (IRDAI List I: ${l.matched})`));
+      L.push(``);
+    }
+    if(policyExcl.length){
+      L.push(`The following charges appear to fall under IRDAI's standardised policy exclusions (a separate list from List I):`,``);
+      policyExcl.sort((x,y)=>y.total-x.total).forEach(l=>L.push(`  - ${l.item} - ${inr.format(l.total)}  (policy exclusion: ${l.matched})`));
+      L.push(``);
+    }
     L.push(`  Subtotal: ${inr.format(a.exactSum)}`,``);
   }
   if(a.nppa.length&&include.nppa){
-    L.push(`The following implant appears to be billed above its NPPA ceiling price, a statutory maximum under the DPCO:`,``);
-    a.nppa.forEach(n=>L.push(`  - ${n.item} - billed ${inr.format(n.price)}, ceiling ${inr.format(n.ceiling)} (${n.gst})`));
-    L.push(``);
+    // Grade-aware: the two verified stent ceilings support a firm statutory
+    // claim; the 12 knee-implant ceilings are real NPPA notifications this
+    // project has not independently re-confirmed, so the ask for those is
+    // "confirm, then refund" rather than an assertion of violation.
+    const verified=a.nppa.filter(n=>n.grade==='verified'), unverified=a.nppa.filter(n=>n.grade!=='verified');
+    if(verified.length){
+      L.push(`The following implant appears to be billed above its NPPA ceiling price, a statutory maximum under the DPCO:`,``);
+      verified.forEach(n=>L.push(`  - ${n.item} - billed ${inr.format(n.price)}, ceiling ${inr.format(n.ceiling)} (${n.gst})`));
+      L.push(``);
+    }
+    if(unverified.length){
+      L.push(`The following implant appears to be billed above a published NPPA ceiling price; please confirm this is still the current ceiling:`,``);
+      unverified.forEach(n=>L.push(`  - ${n.item} - billed ${inr.format(n.price)}, published ceiling ${inr.format(n.ceiling)} (${n.gst})`));
+      L.push(``);
+    }
   }
   if(a.recon&&include.recon) L.push(`The bill's printed total (${inr.format(a.recon.gross)}) differs from the sum of its own printed lines (${inr.format(a.recon.lineSum)}) by ${inr.format(Math.abs(a.recon.diff))}.`,``);
   if(a.dups.length&&include.dup){ L.push(`The following charge(s) appear more than once at the same amount:`); a.dups.forEach(d=>L.push(`  - ${d.item} - ${inr.format(d.amount)}, ${d.n} times`)); L.push(``); }
   L.push(`I request:`,
     `  1. A line-by-line statement of every amount recorded as non-payable or deducted.`,
     `  2. Reconsideration of any amount above that is not a valid exclusion under my policy.`);
-  if(a.nppa.length&&include.nppa) L.push(`  3. Refund of any implant charge above the NPPA ceiling.`);
+  if(a.nppa.length&&include.nppa){
+    const hasVerified=a.nppa.some(n=>n.grade==='verified'), hasUnverified=a.nppa.some(n=>n.grade!=='verified');
+    if(hasVerified) L.push(`  3. Refund of any implant charge above the confirmed NPPA ceiling.`);
+    if(hasUnverified) L.push(`  ${hasVerified?'4':'3'}. Confirmation of the current NPPA ceiling for the implant(s) above, and refund of any excess once confirmed.`);
+  }
   L.push(``,`This letter was prepared with reference to published IRDAI and NPPA lists. It is a request for explanation, not an allegation.`,``,
     `Yours faithfully,`,`${nameSlot}  -  [Policy no.]  -  [Contact]`);
   const text=L.join('\n');
@@ -1453,10 +1516,15 @@ function mergePages(pages){
 let _pendingFiles=[];      // File[] awaiting your confirmation
 let _previewUrls=[];       // object URLs for the current thumbnails, revoked on every re-render
 let _usingWorkedExample=false;
+let _letterGenerated=false;   // has a letter actually been generated for the current extraction?
+let _lastLetterInclude=null;  // the include-checkbox state it was generated with, so a language
+                               // switch can rebuild the same letter instead of leaving it stale
+                               // or silently re-checking boxes the user had unchecked
 
 function resetUploadState(){
   _pendingFiles=[];
   _usingWorkedExample=false;
+  _letterGenerated=false; _lastLetterInclude=null;
   renderFilePreview();
 }
 
@@ -1628,6 +1696,7 @@ $('genLetterTab').addEventListener('click',()=>{
   const a=window.__letterA || analyse(window.__lastExtraction);
   const include={};
   document.querySelectorAll('#letterIncludes input[type=checkbox]').forEach(cb=>{ include[cb.dataset.inc]=cb.checked; });
+  _letterGenerated=true; _lastLetterInclude=include;
   buildLetter(a,include);
 });
 function setLang(lang){
@@ -1639,6 +1708,11 @@ function setLang(lang){
   applyStaticI18n();
   if(window.__settle) calc();                              // re-derives settle text and re-renders the report
   else if(window.__lastExtraction) renderReport(window.__lastExtraction);
+  // A letter already on screen doesn't get touched by the report re-render
+  // above (renderLetterTab() only rebuilds the checklist) — without this it
+  // stayed frozen in the old language after a switch. Rebuild it with the
+  // same include choices the user made, not a reset-to-all-checked default.
+  if(_letterGenerated && window.__letterA) buildLetter(window.__letterA,_lastLetterInclude);
 }
 document.querySelectorAll('#langsw button').forEach(b=>b.addEventListener('click',()=>setLang(b.dataset.lang)));
 applyStaticI18n();
