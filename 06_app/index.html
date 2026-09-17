@@ -323,9 +323,9 @@
       <div class="fin"><span class="pfx">&#8377;</span><input type="number" id="total" step="any" placeholder="0"></div>
       <label id="lblCounter">Amount paid at the discharge counter <span class="hint">&mdash; what you handed over</span></label>
       <div class="fin"><span class="pfx">&#8377;</span><input type="number" id="counter" step="any" placeholder="0"></div>
-      <label id="lblDiscount">Hospital discount <span class="hint">&mdash; MOU / PPN waiver, if any</span></label>
+      <label id="lblDiscount">Hospital discount <span class="hint">&mdash; a discount your hospital agreed with your insurer, if any (sometimes called MOU / PPN waiver)</span></label>
       <div class="fin"><span class="pfx">&#8377;</span><input type="number" id="discount" step="any" placeholder="0"></div>
-      <label id="lblCopay">Co-pay percentage <span class="hint">&mdash; your policy's share</span></label>
+      <label id="lblCopay">Co-pay percentage <span class="hint">&mdash; the % you pay yourself, even after approval</span></label>
       <div class="fin"><span class="pfx">%</span><input type="number" id="copay" step="any" min="0" max="100" placeholder="0"></div>
       <div class="chips" id="copayChips">
         <button class="chip" data-v="0">0</button><button class="chip" data-v="5">5</button>
@@ -672,8 +672,8 @@ en: {
   sec_settlement: "Settlement",
   lbl_total: 'Total bill amount <span class="hint">&mdash; the hospital\'s final bill</span>',
   lbl_counter: 'Amount paid at the discharge counter <span class="hint">&mdash; what you handed over</span>',
-  lbl_discount: 'Hospital discount <span class="hint">&mdash; MOU / PPN waiver, if any</span>',
-  lbl_copay: 'Co-pay percentage <span class="hint">&mdash; your policy\'s share</span>',
+  lbl_discount: 'Hospital discount <span class="hint">&mdash; a discount your hospital agreed with your insurer, if any (sometimes called MOU / PPN waiver)</span>',
+  lbl_copay: 'Co-pay percentage <span class="hint">&mdash; the % you pay yourself, even after approval</span>',
   eg_btn: "Load the worked example",
   skip_to_findings: "Have the itemised bill but not these numbers? Check it directly →",
   findnums_summary: "Not sure which number is which?",
@@ -690,7 +690,7 @@ en: {
   copay_lbl: "Co-pay",
   counter_payment: "Counter payment",
   insurer_approved: "Insurer approved",
-  approved_base: cp=>`Approved base (${cp}% co-pay)`,
+  approved_base: cp=>`Amount your ${cp}% co-pay applies to`,
   sec_bill: "Check the itemised bill",
   bill_lead: "Upload photos of your itemised bill (all pages, if more than one). Google Gemini reads them into rows; the checks then run in your browser against the published lists. Your photo is sent to Google's Gemini API to be read, once &mdash; ClearBill itself doesn't store it.",
   drop_html: '<b>Tap to choose photos</b><br>or drag images here (JPG / PNG) &mdash; multiple pages OK',
@@ -733,20 +733,20 @@ en: {
   basis_policy_exclusion_badge:"policy exclusion, not List I",
   nppa_unverified_badge:"ceiling not independently confirmed",
   detail_nppa:"Above the statutory price cap (NPPA)",
-  detail_nppa_plain:"A legal ceiling under the DPCO, not an opinion.",
+  detail_nppa_plain:"A legal ceiling set by NPPA, India's drug and medical-device price regulator &mdash; not an opinion.",
   detail_nppa_src:(ref,ceiling,gst)=>`NPPA ceiling for ${ref}: ${ceiling} (${gst})`,
   detail_recon:"Reconciliation",
   detail_recon_body:(gross,lineSum,diff)=>`The bill's printed total (${gross}) differs from the sum of its own lines (${lineSum}) by <strong>${diff}</strong>. This may be the hospital's arithmetic, not a reading error.`,
   detail_dup:"Appears more than once",
   detail_dup_src:n=>`appears ${n}&times; at the same amount`,
   detail_is19493:"Bill completeness &mdash; IS 19493",
-  detail_is19493_plain:"IS 19493:2025 is a <strong>voluntary</strong> BIS standard. It expects the following, which this bill does not show:",
+  detail_is19493_plain:"IS 19493:2025 is a <strong>voluntary</strong> format set by the Bureau of Indian Standards (BIS). It expects the following, which this bill does not show:",
   detail_is19493_unit:"Every charge line is missing the <strong>Unit</strong> column",
   detail_is19493_malformed:"present, but not in the expected format",
   detail_is19493_redacted:n=>`${n} patient/hospital identity field${n===1?'':'s'} were blacked out for privacy before analysis &mdash; not assessed here, and not counted against the bill.`,
   letter_btn:"Generate a letter to attach to a complaint",
   letter_shortcut:"Need to complain? Draft the letter now",
-  letter_note_lang:"This letter drafts in English, since that's the formal register your insurer and IRDAI work in.",
+  letter_note_lang:"This letter drafts in English, since that's the formal language your insurer and IRDAI actually work in.",
   tab_settlement:"Settlement", tab_findings:"Findings", tab_letter:"Letter", tab_about:"About",
   sec_letter:"Letter", sec_about:"About this check", how_head:"How it works",
   how1b:"The model reads", how1p:"Google's Gemini model turns your photo into rows &mdash; transcription only, no judgement.",
@@ -778,7 +778,7 @@ en: {
   foot_html: `Base = total bill &minus; deduction &minus; hospital discount. Co-pay applies only to the base. Counter = deduction + co-pay.<br><br>
     The model only reads the bill into rows. Every flag after that is a table lookup or an arithmetic comparison, shown with its source.
     &ldquo;Matches the published non-payable list&rdquo; is not &ldquo;overcharge&rdquo;. IS 19493 is a voluntary standard; NPPA ceilings are statutory.<br><br>
-    IRDAI List I &middot; NPPA ceiling prices &middot; IS 19493:2025.`,
+    <b>IRDAI</b> (India's insurance regulator) publishes <b>List I</b> &mdash; the official list of hospital charges insurers don't have to pay. <b>NPPA</b> is India's drug and medical-device price regulator. <b>IS 19493:2025</b> is the Bureau of Indian Standards' hospital-bill format.`,
   checks: {
     irdai_exact: { label:"IRDAI List I",
       found:n=>`${n} charge${n>1?'s':''} match the published non-payable list`, sub:sum=>`${sum} &middot; IRDAI List I`,
@@ -793,7 +793,7 @@ en: {
     nppa: { label:"Above NPPA cap",
       found:n=>`${n} implant above its statutory ceiling`,
       foundUnverified:n=>`${n} implant${n>1?'s':''} above a published NPPA ceiling`,
-      sub:()=>"price cap under the DPCO",
+      sub:()=>"price cap set by NPPA, India's price regulator",
       subUnverified:()=>"ceiling not independently re-confirmed &mdash; see below",
       foundClear:"No implant priced above an NPPA ceiling", subClear:"stents / knee implants checked",
       money:()=>"This is a legal price ceiling, not a guideline. Billing above it is a statutory violation.",
@@ -811,7 +811,7 @@ en: {
       money:()=>"A charge repeated at the same amount is usually a duplicate entry, not two separate services.",
       doText:"Ask the hospital to confirm whether each was reversed. If not, this is your strongest line item to dispute." },
     is19493: { label:"IS 19493",
-      found:n=>`${n} field${n>1?'s':''} the standard expects are missing`, sub:()=>"IS 19493:2025 &mdash; a voluntary BIS format",
+      found:n=>`${n} field${n>1?'s':''} the standard expects are missing`, sub:()=>"IS 19493:2025 &mdash; a voluntary Bureau of Indian Standards format",
       foundClear:"Bill carries every field IS 19493 expects", subClear:"",
       money:()=>"IS 19493 is a voluntary standard, not a law &mdash; this costs you nothing by itself.",
       doText:"Ask for the fields this bill is missing, especially a final bill number if it currently reads as provisional." },
@@ -822,8 +822,8 @@ hi: {
   sec_settlement: "सेटलमेंट",
   lbl_total: 'कुल बिल राशि <span class="hint">&mdash; अस्पताल का अंतिम बिल</span>',
   lbl_counter: 'डिस्चार्ज के समय काउंटर पर दी गई राशि <span class="hint">&mdash; आपने जो चुकाया</span>',
-  lbl_discount: 'अस्पताल की छूट <span class="hint">&mdash; MOU / PPN छूट, अगर हो</span>',
-  lbl_copay: 'को-पे प्रतिशत <span class="hint">&mdash; आपकी पॉलिसी का हिस्सा</span>',
+  lbl_discount: 'अस्पताल की छूट <span class="hint">&mdash; आपके अस्पताल और बीमा कंपनी के बीच तय छूट, अगर हो (कभी-कभी MOU / PPN छूट कहते हैं)</span>',
+  lbl_copay: 'को-पे प्रतिशत <span class="hint">&mdash; मंज़ूरी के बाद भी आप जो % ख़ुद चुकाते हैं</span>',
   eg_btn: "उदाहरण भरें",
   skip_to_findings: "बिल है पर ये आँकड़े नहीं? सीधे बिल जाँचें →",
   findnums_summary: "कौन सा आँकड़ा कहाँ मिलेगा, पक्का नहीं?",
@@ -840,7 +840,7 @@ hi: {
   copay_lbl: "को-पे",
   counter_payment: "काउंटर भुगतान",
   insurer_approved: "बीमा कंपनी ने मंज़ूर किया",
-  approved_base: cp=>`मंज़ूर आधार (${cp}% को-पे)`,
+  approved_base: cp=>`जिस राशि पर आपका ${cp}% को-पे लागू होता है`,
   sec_bill: "बिल की हर लाइन जाँचें",
   bill_lead: "अपने बिल की सभी पेज़ों की फ़ोटो अपलोड करें (अगर एक से ज़्यादा हैं तो सब)। Google Gemini इन्हें पंक्तियों में पढ़ता है; फिर जाँचें आपके ब्राउज़र में ही चलती हैं। आपकी फ़ोटो पढ़ने के लिए एक बार Google के Gemini API को भेजी जाती है &mdash; ClearBill इसे ख़ुद सुरक्षित नहीं रखता।",
   drop_html: '<b>फ़ोटो चुनने के लिए टैप करें</b><br>या यहाँ तस्वीरें खींचकर लाएँ (JPG / PNG) &mdash; कई पेज़ चल सकते हैं',
@@ -883,14 +883,14 @@ hi: {
   basis_policy_exclusion_badge:"नीति अपवाद, IRDAI सूची I नहीं",
   nppa_unverified_badge:"सीमा की स्वतंत्र रूप से पुष्टि नहीं हुई",
   detail_nppa:"सांविधिक मूल्य सीमा से ऊपर (NPPA)",
-  detail_nppa_plain:"DPCO के तहत एक क़ानूनी सीमा, राय नहीं।",
+  detail_nppa_plain:"NPPA, भारत के दवा और मेडिकल डिवाइस मूल्य नियामक, द्वारा तय क़ानूनी सीमा &mdash; राय नहीं।",
   detail_nppa_src:(ref,ceiling,gst)=>`${ref} के लिए NPPA सीमा: ${ceiling} (${gst})`,
   detail_recon:"मिलान",
   detail_recon_body:(gross,lineSum,diff)=>`बिल की छपी कुल राशि (${gross}) उसकी अपनी लाइनों के योग (${lineSum}) से <strong>${diff}</strong> अलग है। यह अस्पताल की अपनी गणना हो सकती है, पढ़ने की ग़लती नहीं।`,
   detail_dup:"एक से ज़्यादा बार दिखता है",
   detail_dup_src:n=>`${n} बार एक ही राशि पर दिखता है`,
   detail_is19493:"बिल की पूर्णता &mdash; IS 19493",
-  detail_is19493_plain:"IS 19493:2025 एक <strong>स्वैच्छिक</strong> BIS मानक है। यह निम्नलिखित की अपेक्षा करता है, जो इस बिल में नहीं है:",
+  detail_is19493_plain:"IS 19493:2025 भारतीय मानक ब्यूरो (BIS) का एक <strong>स्वैच्छिक</strong> प्रारूप है। यह निम्नलिखित की अपेक्षा करता है, जो इस बिल में नहीं है:",
   detail_is19493_unit:"हर चार्ज लाइन में <strong>यूनिट</strong> कॉलम नहीं है",
   detail_is19493_malformed:"मौजूद है, पर तय प्रारूप में नहीं",
   detail_is19493_redacted:n=>`विश्लेषण से पहले ${n} मरीज़/अस्पताल पहचान फ़ील्ड निजता के लिए हटाई गई थीं &mdash; यहाँ इनकी जाँच नहीं की गई, और इन्हें बिल के विरुद्ध नहीं गिना गया।`,
@@ -928,7 +928,7 @@ hi: {
   foot_html: `आधार = कुल बिल &minus; कटौती &minus; अस्पताल की छूट। को-पे सिर्फ़ आधार पर लागू होता है। काउंटर = कटौती + को-पे।<br><br>
     मॉडल सिर्फ़ बिल को पंक्तियों में पढ़ता है। इसके बाद हर निशान एक तालिका-मिलान या गणना है, जिसका स्रोत साथ दिखता है।
     &ldquo;प्रकाशित न-भुगतान सूची से मेल&rdquo; का मतलब &ldquo;ओवरचार्ज&rdquo; नहीं है। IS 19493 एक स्वैच्छिक मानक है; NPPA सीमाएँ सांविधिक हैं।<br><br>
-    IRDAI सूची I &middot; NPPA मूल्य सीमाएँ &middot; IS 19493:2025.`,
+    <b>IRDAI</b> (भारत का बीमा नियामक) <b>सूची I</b> प्रकाशित करता है &mdash; अस्पताल के उन चार्जों की आधिकारिक सूची जिन्हें बीमा कंपनी को चुकाना ज़रूरी नहीं। <b>NPPA</b> भारत का दवा और मेडिकल डिवाइस मूल्य नियामक है। <b>IS 19493:2025</b> भारतीय मानक ब्यूरो का अस्पताल-बिल प्रारूप है।`,
   checks: {
     irdai_exact: { label:"IRDAI सूची I",
       found:n=>`${n} चार्ज प्रकाशित न-भुगतान सूची से मेल खाते हैं`, sub:sum=>`${sum} &middot; IRDAI सूची I`,
@@ -943,7 +943,7 @@ hi: {
     nppa: { label:"NPPA सीमा से ऊपर",
       found:n=>`${n} इम्प्लांट अपनी सांविधिक सीमा से ऊपर है`,
       foundUnverified:n=>`${n} इम्प्लांट एक प्रकाशित NPPA सीमा से ऊपर है`,
-      sub:()=>"DPCO के तहत मूल्य सीमा",
+      sub:()=>"NPPA, भारत के मूल्य नियामक, द्वारा तय सीमा",
       subUnverified:()=>"सीमा की स्वतंत्र रूप से दोबारा पुष्टि नहीं हुई &mdash; नीचे देखें",
       foundClear:"कोई इम्प्लांट NPPA सीमा से ऊपर क़ीमत पर नहीं", subClear:"स्टेंट / घुटने के इम्प्लांट जाँचे गए",
       money:()=>"यह एक क़ानूनी मूल्य सीमा है, सुझाव नहीं। इससे ऊपर बिल करना सांविधिक उल्लंघन है।",
@@ -961,7 +961,7 @@ hi: {
       money:()=>"एक ही राशि पर दोहराया गया चार्ज आमतौर पर एक डुप्लिकेट एंट्री होता है, दो अलग सेवाएँ नहीं।",
       doText:"अस्पताल से पूछें कि क्या हर एक को उलटा (रिवर्स) किया गया था। अगर नहीं, तो यह आपकी सबसे मज़बूत विवाद वाली लाइन है।" },
     is19493: { label:"IS 19493",
-      found:n=>`मानक द्वारा अपेक्षित ${n} फ़ील्ड ग़ायब हैं`, sub:()=>"IS 19493:2025 &mdash; एक स्वैच्छिक BIS प्रारूप",
+      found:n=>`मानक द्वारा अपेक्षित ${n} फ़ील्ड ग़ायब हैं`, sub:()=>"IS 19493:2025 &mdash; भारतीय मानक ब्यूरो का एक स्वैच्छिक प्रारूप",
       foundClear:"बिल में IS 19493 की हर अपेक्षित फ़ील्ड मौजूद है", subClear:"",
       money:()=>"IS 19493 एक स्वैच्छिक मानक है, क़ानून नहीं &mdash; इससे आपको कुछ ख़र्च नहीं होता।",
       doText:"बिल में ग़ायब फ़ील्ड माँगें, ख़ासकर अगर बिल नंबर अभी प्रोविज़नल (अस्थायी) है तो अंतिम बिल नंबर माँगें।" },
@@ -972,8 +972,8 @@ mr: {
   sec_settlement: "सेटलमेंट",
   lbl_total: 'एकूण बिल रक्कम <span class="hint">&mdash; रुग्णालयाचं अंतिम बिल</span>',
   lbl_counter: 'डिस्चार्जच्या वेळी काउंटरवर दिलेली रक्कम <span class="hint">&mdash; तुम्ही जे दिलं</span>',
-  lbl_discount: 'रुग्णालयाची सूट <span class="hint">&mdash; MOU / PPN सूट, असल्यास</span>',
-  lbl_copay: 'को-पे टक्केवारी <span class="hint">&mdash; तुमच्या पॉलिसीचा वाटा</span>',
+  lbl_discount: 'रुग्णालयाची सूट <span class="hint">&mdash; तुमच्या रुग्णालय आणि विमा कंपनीमध्ये ठरलेली सूट, असल्यास (कधी कधी MOU / PPN सूट म्हणतात)</span>',
+  lbl_copay: 'को-पे टक्केवारी <span class="hint">&mdash; मंजुरीनंतरही तुम्ही स्वतः भरता ती %</span>',
   eg_btn: "उदाहरण भरा",
   skip_to_findings: "बिल आहे पण हे आकडे नाहीत? थेट बिल तपासा →",
   findnums_summary: "कोणता आकडा कुठे मिळेल, खात्री नाही?",
@@ -990,7 +990,7 @@ mr: {
   copay_lbl: "को-पे",
   counter_payment: "काउंटर पेमेंट",
   insurer_approved: "विमा कंपनीने मंजूर केलेलं",
-  approved_base: cp=>`मंजूर आधार (${cp}% को-पे)`,
+  approved_base: cp=>`ज्या रकमेवर तुमचा ${cp}% को-पे लागू होतो`,
   sec_bill: "तपशीलवार बिल तपासा",
   bill_lead: "तुमच्या बिलाच्या सर्व पानांचे फोटो अपलोड करा (एकापेक्षा जास्त असल्यास सर्व). Google Gemini ते ओळींमध्ये वाचतं; मग तपासण्या तुमच्या ब्राउझरमध्येच चालतात. तुमचा फोटो वाचण्यासाठी एकदा Google च्या Gemini API ला पाठवला जातो &mdash; ClearBill स्वतः तो साठवत नाही.",
   drop_html: '<b>फोटो निवडण्यासाठी टॅप करा</b><br>किंवा इथे फोटो आणा (JPG / PNG) &mdash; अनेक पानं चालतील',
@@ -1033,14 +1033,14 @@ mr: {
   basis_policy_exclusion_badge:"धोरण अपवाद, यादी I नाही",
   nppa_unverified_badge:"मर्यादेची स्वतंत्रपणे पुष्टी झालेली नाही",
   detail_nppa:"वैधानिक किंमत मर्यादेपेक्षा जास्त (NPPA)",
-  detail_nppa_plain:"DPCO अंतर्गत कायदेशीर मर्यादा, मत नाही.",
+  detail_nppa_plain:"NPPA, भारताच्या औषध आणि वैद्यकीय उपकरण किंमत नियामकाने ठरवलेली कायदेशीर मर्यादा &mdash; मत नाही.",
   detail_nppa_src:(ref,ceiling,gst)=>`${ref} साठी NPPA मर्यादा: ${ceiling} (${gst})`,
   detail_recon:"ताळमेळ",
   detail_recon_body:(gross,lineSum,diff)=>`बिलाची छापील एकूण रक्कम (${gross}) त्याच्या स्वतःच्या ओळींच्या बेरजेपेक्षा (${lineSum}) <strong>${diff}</strong> ने वेगळी आहे. ही रुग्णालयाची स्वतःची गणना असू शकते, वाचण्यातली चूक नाही.`,
   detail_dup:"एकापेक्षा जास्त वेळा दिसतं",
   detail_dup_src:n=>`तेवढ्याच रकमेला ${n} वेळा दिसतं`,
   detail_is19493:"बिलाची पूर्णता &mdash; IS 19493",
-  detail_is19493_plain:"IS 19493:2025 हा एक <strong>ऐच्छिक</strong> BIS मानक आहे. तो खालील अपेक्षा करतो, जे या बिलात नाही:",
+  detail_is19493_plain:"IS 19493:2025 हा भारतीय मानक ब्युरो (BIS) चा एक <strong>ऐच्छिक</strong> स्वरूप आहे. तो खालील अपेक्षा करतो, जे या बिलात नाही:",
   detail_is19493_unit:"प्रत्येक चार्ज ओळीत <strong>युनिट</strong> कॉलम नाही",
   detail_is19493_malformed:"आहे, पण अपेक्षित नमुन्यात नाही",
   detail_is19493_redacted:n=>`विश्लेषणापूर्वी ${n} रुग्ण/रुग्णालय ओळख फील्ड गोपनीयतेसाठी काढून टाकली होती &mdash; येथे त्यांची तपासणी केलेली नाही, आणि ती बिलाविरुद्ध मोजलेली नाहीत.`,
@@ -1078,7 +1078,7 @@ mr: {
   foot_html: `आधार = एकूण बिल &minus; कपात &minus; रुग्णालयाची सूट. को-पे फक्त आधारावर लागू होतो. काउंटर = कपात + को-पे.<br><br>
     मॉडेल फक्त बिल ओळींमध्ये वाचतं. त्यानंतरचा प्रत्येक निष्कर्ष हा तक्ता-जुळवणी किंवा गणित आहे, ज्याचा स्रोत सोबत दिसतो.
     &ldquo;प्रकाशित न-भरणा यादीशी जुळतं&rdquo; याचा अर्थ &ldquo;ओव्हरचार्ज&rdquo; नाही. IS 19493 हा ऐच्छिक मानक आहे; NPPA मर्यादा वैधानिक आहेत.<br><br>
-    IRDAI यादी I &middot; NPPA किंमत मर्यादा &middot; IS 19493:2025.`,
+    <b>IRDAI</b> (भारताचा विमा नियामक) <b>यादी I</b> प्रकाशित करतो &mdash; रुग्णालयाच्या ज्या चार्जेसना विमा कंपनीने भरणं बंधनकारक नाही त्यांची अधिकृत यादी. <b>NPPA</b> हा भारताचा औषध आणि वैद्यकीय उपकरण किंमत नियामक आहे. <b>IS 19493:2025</b> हा भारतीय मानक ब्युरोचा रुग्णालय-बिल स्वरूप आहे.`,
   checks: {
     irdai_exact: { label:"IRDAI यादी I",
       found:n=>`${n} चार्जेस प्रकाशित न-भरणा यादीशी जुळतात`, sub:sum=>`${sum} &middot; IRDAI यादी I`,
@@ -1093,7 +1093,7 @@ mr: {
     nppa: { label:"NPPA मर्यादेपेक्षा जास्त",
       found:n=>`${n} इम्प्लांट त्याच्या वैधानिक मर्यादेपेक्षा जास्त आहे`,
       foundUnverified:n=>`${n} इम्प्लांट प्रकाशित NPPA मर्यादेपेक्षा जास्त आहे`,
-      sub:()=>"DPCO अंतर्गत किंमत मर्यादा",
+      sub:()=>"NPPA, भारताच्या किंमत नियामकाने ठरवलेली मर्यादा",
       subUnverified:()=>"मर्यादेची स्वतंत्रपणे पुन्हा पुष्टी झालेली नाही &mdash; खाली पहा",
       foundClear:"कोणताही इम्प्लांट NPPA मर्यादेपेक्षा जास्त किमतीत नाही", subClear:"स्टेंट / गुडघा इम्प्लांट तपासले",
       money:()=>"ही कायदेशीर किंमत मर्यादा आहे, सूचना नाही. यापेक्षा जास्त बिल करणं वैधानिक उल्लंघन आहे.",
@@ -1111,7 +1111,7 @@ mr: {
       money:()=>"तेवढ्याच रकमेला पुन्हा आलेला चार्ज साधारणपणे डुप्लिकेट नोंद असतो, दोन वेगळ्या सेवा नाहीत.",
       doText:"रुग्णालयाला विचारा की प्रत्येक चार्ज परत केला गेला होता का. नसल्यास, वाद घालण्यासाठी हा तुमचा सर्वात भक्कम मुद्दा आहे." },
     is19493: { label:"IS 19493",
-      found:n=>`मानकाने अपेक्षित ${n} फील्ड्स गहाळ आहेत`, sub:()=>"IS 19493:2025 &mdash; एक ऐच्छिक BIS स्वरूप",
+      found:n=>`मानकाने अपेक्षित ${n} फील्ड्स गहाळ आहेत`, sub:()=>"IS 19493:2025 &mdash; भारतीय मानक ब्युरोचा एक ऐच्छिक स्वरूप",
       foundClear:"बिलात IS 19493 ने अपेक्षित प्रत्येक फील्ड आहे", subClear:"",
       money:()=>"IS 19493 हा ऐच्छिक मानक आहे, कायदा नाही &mdash; यामुळे तुम्हाला काहीही खर्च येत नाही.",
       doText:"बिलात गहाळ असलेली फील्ड्स मागा, विशेषतः बिल नंबर सध्या प्रोव्हिजनल (तात्पुरता) असल्यास अंतिम बिल नंबर मागा." },
