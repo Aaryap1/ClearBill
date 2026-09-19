@@ -62,8 +62,48 @@ async function readBill(req, res) {
   });
 }
 
+/* WhatsApp bot (v1). Inert unless configured: with no WHATSAPP_APP_SECRET the
+ * POST route answers 501 and does nothing, so deploying this alongside the
+ * web app changes nothing until the Meta credentials are added. */
+const whatsapp = require('./lib/whatsapp.js');
+// Trimmed copy: a secret piped in from a shell often carries a trailing newline,
+// which would silently break the Bearer header / HMAC. Never depend on it being clean.
+const WA_ENV = Object.fromEntries(Object.entries(process.env).map(([k, v]) => [k, String(v).trim()]));
+const bot = whatsapp.createBot({
+  env: WA_ENV,
+  extractPrompt: EXTRACT_PROMPT,
+  webUrl: process.env.PUBLIC_URL || 'https://clearbill-673502835894.asia-south1.run.app/',
+  geminiBase: process.env.GEMINI_BASE || undefined,
+  graphBase: process.env.GRAPH_BASE || undefined,
+  log: (...a) => console.log('[wa]', ...a),
+});
+function whatsappWebhook(req, res, url) {
+  if (req.method === 'GET') {
+    const r = whatsapp.handleVerify(url.searchParams, WA_ENV.WHATSAPP_VERIFY_TOKEN);
+    return send(res, r.status, r.body);
+  }
+  if (!WA_ENV.WHATSAPP_APP_SECRET || !WA_ENV.WHATSAPP_TOKEN || !WA_ENV.WHATSAPP_PHONE_NUMBER_ID) {
+    return send(res, 501, 'WhatsApp not configured');
+  }
+  const chunks = []; let size = 0;
+  req.on('data', c => { size += c.length; if (size > 1024 * 1024) req.destroy(); else chunks.push(c); });
+  req.on('end', () => {
+    const raw = Buffer.concat(chunks);
+    if (!whatsapp.verifySignature(raw, req.headers['x-hub-signature-256'], WA_ENV.WHATSAPP_APP_SECRET)) {
+      return send(res, 401, 'bad signature');
+    }
+    let payload; try { payload = JSON.parse(raw.toString('utf8')); } catch (e) { return send(res, 400, 'bad json'); }
+    send(res, 200, 'ok'); // answer Meta right away; reading the bill takes ~30s
+    bot.handlePayload(payload).catch(e => console.log('[wa] error', String(e.message || e)));
+  });
+}
+
 http.createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
+  if (url.pathname === '/webhook/whatsapp' && (req.method === 'GET' || req.method === 'POST')) return whatsappWebhook(req, res, url);
+  // The dedicated bot service sets WHATSAPP_ONLY so it is not a second public
+  // door to the Gemini key: it serves the webhook and nothing else.
+  if (process.env.WHATSAPP_ONLY) return send(res, 404, 'not found');
   if (req.method === 'POST' && url.pathname === '/api/read-bill') return readBill(req, res);
   if (url.pathname === '/api/config') return send(res, 200, JSON.stringify({ proxy: !!KEY }), TYPES['.json']);
 
