@@ -87,6 +87,12 @@
     padding:11px 12px 11px 26px;font-size:1rem;font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;
     color:var(--ink);background:var(--field);outline:none;font-weight:500}
   input[type=password]{padding-left:12px;font-family:"Spectral",serif}
+  .ldf input[type=text],.ldf textarea{width:100%;min-height:44px;border:1.5px solid var(--rule);border-radius:9px;padding:10px 12px;
+    font-size:.95rem;font-family:"Spectral",serif;color:var(--ink);background:var(--field);outline:none;resize:vertical}
+  .ldf textarea:focus,.ldf input[type=text]:focus{border-color:var(--ink);background:var(--card);box-shadow:0 0 0 3px var(--ochre-bg)}
+  .ldf label.chk{display:flex;align-items:flex-start;gap:9px;font-family:"Spectral",serif;font-weight:400;font-size:.86rem;margin:12px 0 0;cursor:pointer}
+  .ldf label.chk input{width:17px;height:17px;accent-color:var(--ink);flex:none;margin-top:2px}
+  .ldf .ldnote{font-size:.78rem;color:var(--soft);margin:4px 0 0 26px}
   input:focus{border-color:var(--ink);background:var(--card);box-shadow:0 0 0 3px var(--ochre-bg)}
   input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
   .chips{display:flex;gap:6px;margin-top:8px}
@@ -234,6 +240,14 @@
     -webkit-mask:linear-gradient(-45deg,#0000 33%,#000 0) 0 100%/11px 12px repeat-x,linear-gradient(45deg,#0000 33%,#000 0) 0 100%/11px 12px repeat-x;
             mask:linear-gradient(-45deg,#0000 33%,#000 0) 0 100%/11px 12px repeat-x,linear-gradient(45deg,#0000 33%,#000 0) 0 100%/11px 12px repeat-x}
 
+  /* Print / Save as PDF: only the letter, never the app around it. */
+  @media print{
+    body>*:not(#printArea){display:none!important}
+    #printArea{display:block!important;white-space:pre-wrap;overflow-wrap:anywhere;color:#000;background:#fff;
+      font-family:"Courier Prime","Courier New",monospace;font-size:11.5pt;line-height:1.55;padding:0}
+    body{background:#fff!important}
+  }
+
   .foot{margin-top:34px;padding-top:15px;border-top:1.5px dashed var(--dash);font-family:"IBM Plex Mono",monospace;
     font-size:.66rem;color:var(--soft);line-height:1.7}
   .hide{display:none!important}
@@ -322,18 +336,18 @@
     <div class="sec-label" id="secSettlement">Settlement</div>
     <button class="link" id="skipToFindingsBtn" style="margin:-2px 0 12px;display:block">Have the itemised bill but not these numbers? Check it directly &rarr;</button>
     <div class="card">
-      <label id="lblTotal">Total bill amount <span class="hint">&mdash; the hospital's final bill</span></label>
+      <label id="lblTotal" for="total">Total bill amount <span class="hint">&mdash; the hospital's final bill</span></label>
       <div class="fin"><span class="pfx">&#8377;</span><input type="number" id="total" step="any" placeholder="0"></div>
-      <label id="lblCounter">Amount paid at the discharge counter <span class="hint">&mdash; what you handed over</span></label>
+      <label id="lblCounter" for="counter">Amount paid at the discharge counter <span class="hint">&mdash; what you handed over</span></label>
       <div class="fin"><span class="pfx">&#8377;</span><input type="number" id="counter" step="any" placeholder="0"></div>
-      <label id="lblDiscount">Hospital discount <span class="hint">&mdash; a discount your hospital agreed with your insurer, if any (sometimes called MOU / PPN waiver)</span></label>
+      <label id="lblDiscount" for="discount">Hospital discount <span class="hint">&mdash; a discount your hospital agreed with your insurer, if any (sometimes called MOU / PPN waiver)</span></label>
       <div class="fin"><span class="pfx">&#8377;</span><input type="number" id="discount" step="any" placeholder="0"></div>
-      <label id="lblCopay">Co-pay percentage <span class="hint">&mdash; the % you pay yourself, even after approval</span></label>
+      <label id="lblCopay" for="copay">Co-pay percentage <span class="hint">&mdash; the % you pay yourself, even after approval</span></label>
       <div class="fin"><span class="pfx">%</span><input type="number" id="copay" step="any" min="0" max="100" placeholder="0"></div>
       <div class="chips" id="copayChips">
-        <button class="chip" data-v="0">0</button><button class="chip" data-v="5">5</button>
-        <button class="chip" data-v="10">10</button><button class="chip" data-v="15">15</button>
-        <button class="chip" data-v="20">20</button>
+        <button type="button" class="chip" data-v="0">0</button><button type="button" class="chip" data-v="5">5</button>
+        <button type="button" class="chip" data-v="10">10</button><button type="button" class="chip" data-v="15">15</button>
+        <button type="button" class="chip" data-v="20">20</button>
       </div>
       <details class="findnums">
         <summary id="findNumsSummary">Not sure which number is which?</summary>
@@ -361,6 +375,8 @@
         <div class="tr"><span id="insurerApprovedLbl">Insurer approved</span><span class="v" id="sInsurer">&#8377;0</span></div>
         <div class="tr"><span id="rCopayDesc">Approved base</span><span class="v" id="sBase">&#8377;0</span></div>
       </div></div>
+      <div id="settleWarn" role="status" class="hide" style="margin-top:12px;font-size:.86rem;line-height:1.5;color:var(--ochre,#8a5a00)"></div>
+      <button class="btn ghost sm" id="nextBill" style="margin-top:12px;width:100%">Next: check the itemised bill &rarr;</button>
     </div>
   </div>
 
@@ -369,13 +385,13 @@
     <div class="sec-label" id="secBill">Check the itemised bill</div>
     <div class="card">
       <p class="lead" id="billLead">Upload photos of your itemised bill (all pages, if more than one). Google Gemini reads them into rows; the checks then run in your browser against the published lists.</p>
-      <div class="drop" id="drop"><span id="dropText"><b>Tap to choose photos</b><br>or drag images here (JPG / PNG) &mdash; multiple pages OK</span>
+      <div class="drop" id="drop" role="button" tabindex="0" aria-labelledby="dropText"><span id="dropText"><b>Tap to choose photos</b><br>or drag images here (JPG / PNG) &mdash; multiple pages OK</span>
         <input type="file" id="file" accept="image/*" multiple class="hide"></div>
       <div class="filePreview hide" id="filePreview"></div>
       <button class="btn sm hide" id="checkPhotosBtn" style="margin-top:10px">Check these photos</button>
-      <div class="status" id="status"></div>
+      <div class="status" id="status" role="status" aria-live="polite"></div>
       <div id="keyRow" class="hide" style="margin-top:12px">
-        <label id="apikeyLbl">Gemini API key <span class="hint">&mdash; one time &middot; <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">get one here</a> &middot; saved only in this browser</span></label>
+        <label id="apikeyLbl" for="apiKey">Gemini API key <span class="hint">&mdash; one time &middot; <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">get one here</a> &middot; saved only in this browser</span></label>
         <input type="password" id="apiKey" placeholder="AIza&hellip;" autocomplete="off">
       </div>
     </div>
@@ -391,6 +407,19 @@
       <div class="card">
         <div class="k" id="letterConfirmHead" style="margin-bottom:8px">This letter will include</div>
         <div id="letterIncludes"></div>
+      </div>
+      <div class="card ldf" id="letterDetails">
+        <div class="k" id="ldHead" style="margin-bottom:4px">Your details (optional)</div>
+        <p class="lead" id="ldIntro" style="margin:0 0 6px;font-size:.82rem">Anything you leave blank is simply left out of the letter.</p>
+        <label for="ld_name" id="ldLblName">Your name</label><input type="text" id="ld_name" autocomplete="name" maxlength="120">
+        <label for="ld_address" id="ldLblAddress">Your address</label><textarea id="ld_address" rows="2" autocomplete="street-address" maxlength="300"></textarea>
+        <label for="ld_insurer" id="ldLblInsurer">Insurer name</label><input type="text" id="ld_insurer" maxlength="120">
+        <label for="ld_claim" id="ldLblClaim">Claim number</label><input type="text" id="ld_claim" maxlength="60">
+        <label for="ld_policy" id="ldLblPolicy">Policy number</label><input type="text" id="ld_policy" maxlength="60">
+        <label for="ld_contact" id="ldLblContact">Phone or email for replies</label><input type="text" id="ld_contact" autocomplete="tel" maxlength="120">
+        <label class="chk"><input type="checkbox" id="ld_asked"><span id="ldLblAsked">I have already asked the hospital or insurer for this breakdown</span></label>
+        <label class="chk"><input type="checkbox" id="ld_remember"><span id="ldLblRemember">Remember these details on this device</span></label>
+        <p class="ldnote" id="ldNote">Off by default. Details stay on this device only; they are never sent anywhere.</p>
       </div>
       <button class="btn" id="genLetterTab">Generate the letter</button>
     </div>
@@ -433,8 +462,8 @@
 
 </div>
 
-<nav class="tabbar" id="tabbar">
-  <button class="tabbtn on" data-tab="settlement"><span class="dot">&#8377;</span><span id="tabLblSettlement">Settlement</span></button>
+<nav class="tabbar" id="tabbar" aria-label="Sections">
+  <button class="tabbtn on" data-tab="settlement" aria-current="page"><span class="dot">&#8377;</span><span id="tabLblSettlement">Settlement</span></button>
   <button class="tabbtn" data-tab="findings"><span class="dot" id="tabDotFindings">&mdash;</span><span id="tabLblFindings">Findings</span></button>
   <button class="tabbtn" data-tab="letter"><span class="dot">&#9993;</span><span id="tabLblLetter">Letter</span></button>
   <button class="tabbtn" data-tab="about"><span class="dot">i</span><span id="tabLblAbout">About</span></button>
@@ -704,6 +733,10 @@ en: {
   counter_payment: "Counter payment",
   insurer_approved: "Insurer approved",
   approved_base: cp=>`Amount your ${cp}% co-pay applies to`,
+  next_bill_btn:"Next: check the itemised bill →",
+  settle_warn_over:"The amount paid is more than the bill after discount. Please re-check the figures you typed.",
+  settle_warn_low:"The amount paid is smaller than your co-pay alone would be, so no hidden deduction can be worked out. Please re-check the figures you typed.",
+  settle_warn_full:"With a 100% co-pay the insurer pays nothing, so a hidden deduction cannot be worked out.",
   sec_bill: "Check the itemised bill",
   bill_lead: "Upload photos of your itemised bill (all pages, if more than one). Google Gemini reads them into rows; the checks then run in your browser against the published lists. Your photo is sent to Google's Gemini API to be read, once &mdash; ClearBill itself doesn't store it.",
   drop_html: '<b>Tap to choose photos</b><br>or drag images here (JPG / PNG) &mdash; multiple pages OK',
@@ -793,6 +826,14 @@ en: {
   findings_empty:"Upload a bill above to see findings here. Nothing to check yet.",
   gen_letter_btn:"Generate the letter",
   print_btn:"Print / Save as PDF", copy_btn:"Copy text", copied_btn:"Copied", share_btn:"Share",
+  copy_failed_btn:"Select the text and copy it",
+  letter_draft_head:"DRAFT &mdash; CHECK EVERY DETAIL, THEN PRINT OR SAVE AS PDF",
+  ld_head:"Your details (optional)", ld_intro:"Anything you leave blank is simply left out of the letter.",
+  ld_name:"Your name", ld_address:"Your address", ld_insurer:"Insurer name", ld_claim:"Claim number", ld_policy:"Policy number",
+  ld_contact:"Phone or email for replies",
+  ld_asked:"I have already asked the hospital or insurer for this breakdown",
+  ld_remember:"Remember these details on this device",
+  ld_note:"Off by default. Details stay on this device only; they are never sent anywhere.",
   share_findings_btn:"Share findings",
   share_findings_text:(exactN,exactSum,nppaN,dupN,reconTxt,url)=>`ClearBill checked my hospital bill against India's published rules.${exactN?` ${exactN} charge(s) match the IRDAI non-payable list (${exactSum}).`:''}${nppaN?` ${nppaN} implant charge(s) flagged against NPPA ceilings.`:''}${dupN?` ${dupN} duplicate charge(s) found.`:''}${reconTxt?` ${reconTxt}`:''} Check your own bill free: ${url}`,
   share_findings_recon:diff=>`A ${diff} gap in the bill's own arithmetic.`,
@@ -862,6 +903,10 @@ hi: {
   counter_payment: "काउंटर भुगतान",
   insurer_approved: "बीमा कंपनी ने मंज़ूर किया",
   approved_base: cp=>`जिस राशि पर आपका ${cp}% को-पे लागू होता है`,
+  next_bill_btn:"आगे: विस्तृत बिल जाँचें →",
+  settle_warn_over:"चुकाई गई राशि छूट के बाद के बिल से ज़्यादा है। कृपया डाले गए आँकड़े फिर से जाँचें।",
+  settle_warn_low:"चुकाई गई राशि अकेले आपके को-पे से भी कम है, इसलिए छिपी कटौती नहीं निकाली जा सकती। कृपया डाले गए आँकड़े फिर से जाँचें।",
+  settle_warn_full:"100% को-पे में बीमा कंपनी कुछ नहीं देती, इसलिए छिपी कटौती नहीं निकाली जा सकती।",
   sec_bill: "बिल की हर लाइन जाँचें",
   bill_lead: "अपने बिल की सभी पेज़ों की फ़ोटो अपलोड करें (अगर एक से ज़्यादा हैं तो सब)। Google Gemini इन्हें पंक्तियों में पढ़ता है; फिर जाँचें आपके ब्राउज़र में ही चलती हैं। आपकी फ़ोटो पढ़ने के लिए एक बार Google के Gemini API को भेजी जाती है &mdash; ClearBill इसे ख़ुद सुरक्षित नहीं रखता।",
   drop_html: '<b>फ़ोटो चुनने के लिए टैप करें</b><br>या यहाँ तस्वीरें खींचकर लाएँ (JPG / PNG) &mdash; कई पेज़ चल सकते हैं',
@@ -951,6 +996,14 @@ hi: {
   findings_empty:"बिल अपलोड करें ताकि यहाँ जाँचें दिखें। अभी कुछ जाँचने को नहीं है।",
   gen_letter_btn:"पत्र तैयार करें",
   print_btn:"प्रिंट करें / PDF सहेजें", copy_btn:"टेक्स्ट कॉपी करें", copied_btn:"कॉपी हो गया", share_btn:"शेयर करें",
+  copy_failed_btn:"टेक्स्ट चुनकर खुद कॉपी करें",
+  letter_draft_head:"ड्राफ़्ट &mdash; हर जानकारी जाँचें, फिर प्रिंट करें या PDF सहेजें",
+  ld_head:"आपकी जानकारी (वैकल्पिक)", ld_intro:"जो खाली छोड़ेंगे, वह पत्र में शामिल नहीं होगा।",
+  ld_name:"आपका नाम", ld_address:"आपका पता", ld_insurer:"बीमा कंपनी का नाम", ld_claim:"क्लेम नंबर", ld_policy:"पॉलिसी नंबर",
+  ld_contact:"जवाब के लिए फ़ोन या ईमेल",
+  ld_asked:"मैं अस्पताल या बीमा कंपनी से यह ब्योरा पहले माँग चुका/चुकी हूँ",
+  ld_remember:"ये जानकारी इस डिवाइस पर याद रखें",
+  ld_note:"डिफ़ॉल्ट रूप से बंद। जानकारी सिर्फ़ इसी डिवाइस पर रहती है; कहीं भेजी नहीं जाती।",
   share_findings_btn:"जाँचें शेयर करें",
   share_findings_text:(exactN,exactSum,nppaN,dupN,reconTxt,url)=>`ClearBill ने मेरे अस्पताल के बिल की जाँच भारत के प्रकाशित नियमों से की।${exactN?` ${exactN} चार्ज IRDAI की न-भुगतान सूची से मेल खाते हैं (${exactSum}).`:''}${nppaN?` ${nppaN} इम्प्लांट चार्ज NPPA सीमा के विरुद्ध चिन्हित हुए।`:''}${dupN?` ${dupN} दोहरे चार्ज मिले।`:''}${reconTxt?` ${reconTxt}`:''} अपना बिल मुफ़्त जाँचें: ${url}`,
   share_findings_recon:diff=>`बिल की अपनी गणना में ${diff} का अंतर।`,
@@ -1020,6 +1073,10 @@ mr: {
   counter_payment: "काउंटर पेमेंट",
   insurer_approved: "विमा कंपनीने मंजूर केलेलं",
   approved_base: cp=>`ज्या रकमेवर तुमचा ${cp}% को-पे लागू होतो`,
+  next_bill_btn:"पुढे: तपशीलवार बिल तपासा →",
+  settle_warn_over:"दिलेली रक्कम सवलतीनंतरच्या बिलापेक्षा जास्त आहे. कृपया टाकलेले आकडे पुन्हा तपासा.",
+  settle_warn_low:"दिलेली रक्कम फक्त तुमच्या को-पे पेक्षाही कमी आहे, त्यामुळे लपलेली कपात काढता येत नाही. कृपया टाकलेले आकडे पुन्हा तपासा.",
+  settle_warn_full:"100% को-पे मध्ये विमा कंपनी काहीच देत नाही, त्यामुळे लपलेली कपात काढता येत नाही.",
   sec_bill: "तपशीलवार बिल तपासा",
   bill_lead: "तुमच्या बिलाच्या सर्व पानांचे फोटो अपलोड करा (एकापेक्षा जास्त असल्यास सर्व). Google Gemini ते ओळींमध्ये वाचतं; मग तपासण्या तुमच्या ब्राउझरमध्येच चालतात. तुमचा फोटो वाचण्यासाठी एकदा Google च्या Gemini API ला पाठवला जातो &mdash; ClearBill स्वतः तो साठवत नाही.",
   drop_html: '<b>फोटो निवडण्यासाठी टॅप करा</b><br>किंवा इथे फोटो आणा (JPG / PNG) &mdash; अनेक पानं चालतील',
@@ -1109,6 +1166,14 @@ mr: {
   findings_empty:"बिल अपलोड करा म्हणजे इथे तपासण्या दिसतील. अजून तपासण्यासारखं काही नाही.",
   gen_letter_btn:"पत्र तयार करा",
   print_btn:"प्रिंट करा / PDF सेव्ह करा", copy_btn:"मजकूर कॉपी करा", copied_btn:"कॉपी झालं", share_btn:"शेअर करा",
+  copy_failed_btn:"मजकूर निवडून स्वतः कॉपी करा",
+  letter_draft_head:"मसुदा &mdash; प्रत्येक तपशील तपासा, मग प्रिंट करा किंवा PDF सेव्ह करा",
+  ld_head:"तुमचे तपशील (ऐच्छिक)", ld_intro:"जे रिकामं सोडाल ते पत्रात येणार नाही.",
+  ld_name:"तुमचं नाव", ld_address:"तुमचा पत्ता", ld_insurer:"विमा कंपनीचं नाव", ld_claim:"क्लेम नंबर", ld_policy:"पॉलिसी नंबर",
+  ld_contact:"उत्तरासाठी फोन किंवा ईमेल",
+  ld_asked:"मी हे तपशील रुग्णालयाकडून किंवा विमा कंपनीकडून आधीच मागितले आहेत",
+  ld_remember:"हे तपशील या डिव्हाइसवर लक्षात ठेवा",
+  ld_note:"डिफॉल्टने बंद. तपशील फक्त याच डिव्हाइसवर राहतात; कुठेही पाठवले जात नाहीत.",
   share_findings_btn:"तपासण्या शेअर करा",
   share_findings_text:(exactN,exactSum,nppaN,dupN,reconTxt,url)=>`ClearBill ने माझं रुग्णालयाचं बिल भारताच्या प्रकाशित नियमांविरुद्ध तपासलं.${exactN?` ${exactN} चार्ज IRDAI च्या न-भरपाई यादीशी जुळतात (${exactSum}).`:''}${nppaN?` ${nppaN} इम्प्लांट चार्ज NPPA मर्यादेविरुद्ध चिन्हांकित झाले.`:''}${dupN?` ${dupN} दुहेरी चार्ज सापडले.`:''}${reconTxt?` ${reconTxt}`:''} तुमचं बिल मोफत तपासा: ${url}`,
   share_findings_recon:diff=>`बिलाच्या स्वतःच्या बेरजेत ${diff} चा फरक.`,
@@ -1190,6 +1255,9 @@ function calc(){
   if(!total||!counter){ $('settleOut').classList.add('hide'); window.__settle=null; if(window.__lastExtraction) renderReport(window.__lastExtraction); return; }
   const r=cp/100;
   let deduction = r<1 ? (counter-(total-disc)*r)/(1-r) : 0;
+  // Figures that cannot all be true together are flagged instead of quietly
+  // clamping to zero and showing a confident-looking result.
+  const warnKey = r>=1 ? 'settle_warn_full' : counter>Math.max(0,total-disc) ? 'settle_warn_over' : deduction<0 ? 'settle_warn_low' : null;
   deduction = Math.max(0, money(deduction));
   const base = Math.max(0, money(total-deduction-disc));
   const copayAmt = money(base*r);
@@ -1204,10 +1272,16 @@ function calc(){
   $('sInsurer').textContent = inr.format(insurer);
   $('sBase').textContent = inr.format(base);
   $('settleOut').classList.remove('hide');
+  $('settleWarn').textContent = warnKey ? S()[warnKey] : '';
+  $('settleWarn').classList.toggle('hide', !warnKey);
   if(window.__lastExtraction) renderReport(window.__lastExtraction);
 }
+$('nextBill').addEventListener('click',()=>switchTab('findings'));
+// Bring the result into view once a field is committed (on leaving the field),
+// not on every keystroke, so typing is never interrupted.
+Object.values(F).forEach(el=>el.addEventListener('change',()=>{ const o=$('settleOut'); if(!o.classList.contains('hide')) o.scrollIntoView({behavior:'smooth',block:'nearest'}); }));
 Object.values(F).forEach(el=>el.addEventListener('input',()=>{ if(el===F.copay) markChips(F.copay.value); calc(); saveDraft(); }));
-function markChips(v){ document.querySelectorAll('#copayChips .chip').forEach(c=>c.classList.toggle('on',+c.dataset.v===+v)); }
+function markChips(v){ document.querySelectorAll('#copayChips .chip').forEach(c=>{ const on=+c.dataset.v===+v; c.classList.toggle('on',on); c.setAttribute('aria-pressed',on); }); }
 document.querySelectorAll('#copayChips .chip').forEach(c=>c.addEventListener('click',()=>{ F.copay.value=c.dataset.v; markChips(c.dataset.v); calc(); saveDraft(); }));
 restoreDraft(); calc();
 $('egBtn').addEventListener('click',()=>{
@@ -1507,26 +1581,65 @@ function shareText(text,title){
 }
 
 /* letter */
-function buildLetter(a,include){
+/* Details the sender types for the letter. Nothing is stored unless they tick
+   "remember" (then localStorage); otherwise sessionStorage, which the browser
+   discards when the tab closes. Never sent anywhere. */
+const LD_KEY='clearbill_letter_details', LD_FIELDS=['name','address','insurer','claim','policy','contact'];
+function readLetterDetails(){
+  const D={asked:!!$('ld_asked').checked};
+  LD_FIELDS.forEach(f=>{ D[f]=($('ld_'+f).value||'').replace(/\s*\n\s*/g,', ').trim(); });
+  return D;
+}
+function saveLetterDetails(){
+  const D=readLetterDetails(), remember=$('ld_remember').checked;
+  try{
+    if(remember){ localStorage.setItem(LD_KEY,JSON.stringify({...D,remember:true})); sessionStorage.removeItem(LD_KEY); }
+    else { sessionStorage.setItem(LD_KEY,JSON.stringify(D)); localStorage.removeItem(LD_KEY); }
+  }catch(e){}
+}
+(function restoreLetterDetails(){
+  let raw=null;
+  try{ raw=localStorage.getItem(LD_KEY)||sessionStorage.getItem(LD_KEY); }catch(e){}
+  if(!raw) return;
+  try{
+    const D=JSON.parse(raw);
+    LD_FIELDS.forEach(f=>{ if(typeof D[f]==='string') $('ld_'+f).value=D[f]; });
+    $('ld_asked').checked=!!D.asked; $('ld_remember').checked=!!D.remember;
+  }catch(e){}
+})();
+function copyText(text){
+  if(navigator.clipboard&&navigator.clipboard.writeText) return navigator.clipboard.writeText(text).then(()=>true,()=>false);
+  try{
+    const t=document.createElement('textarea'); t.value=text; t.setAttribute('readonly',''); t.style.cssText='position:fixed;opacity:0;top:0';
+    document.body.appendChild(t); t.select(); const ok=document.execCommand('copy'); t.remove(); return Promise.resolve(!!ok);
+  }catch(e){ return Promise.resolve(false); }
+}
+function buildLetter(a,include,noScroll){
   // Every section below is real content or it doesn't go in — include is
   // built straight from the checklist's checkboxes, so unchecking "3
   // duplicate charges" in the Letter tab removes exactly that paragraph
   // here, nothing more, nothing hidden.
   include=include||{settlement:true,irdai:true,nppa:true,dup:true,recon:true};
-  const s=window.__settle, H=a.header||{};
-  // If the bill actually carries the patient's name (not redacted, not blank),
-  // pre-fill it so there's one less bracket to chase. Everything else the
-  // sender still has to fill — we only know what the bill told us.
+  const s=window.__settle, H=a.header||{}, D=readLetterDetails();
+  // The letter is English whatever the screen language, so its amounts use
+  // English formatting too (not the screen language's).
+  const inr=makeInr('en');
+  // If the bill actually carries the patient's name (not redacted, not blank)
+  // it is used as the patient. The sender's own details come only from the
+  // form: a blank field is left out, never printed as a fill-in bracket.
   const pname=(typeof H.patient_name==='string'&&H.patient_name.trim()&&!/^(n\/?a|nil|none|-|--)$/i.test(H.patient_name.trim()))?H.patient_name.trim():null;
-  const nameSlot=pname||`[Your name]`;
+  const sender=D.name||pname||'';
+  const today=new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
   const L=[];
-  L.push(nameSlot,`[Your address]`,`[Date]`,``,
-    `To: The Grievance Redressal Officer`,
-    `    [Insurer name] / IRDAI Bima Bharosa (bimabharosa.irdai.gov.in)`,``,
-    `Subject: Request for a line-by-line explanation of deductions - Claim no. [___]`,``);
+  if(sender) L.push(sender);
+  if(D.address) L.push(D.address);
+  L.push(today,``,`To: The Grievance Redressal Officer`);
+  if(D.insurer) L.push(`    ${D.insurer}`);
+  L.push(`Copy to: IRDAI Bima Bharosa (bimabharosa.irdai.gov.in)`,``,
+    `Subject: Request for a line-by-line explanation of deductions${D.claim?` - Claim no. ${D.claim}`:``}`,``);
   const at=H.hospital_name?` at ${H.hospital_name}`:``;
   const dt=(H.admission_datetime&&H.discharge_datetime)?` between ${H.admission_datetime} and ${H.discharge_datetime}`:``;
-  L.push(`${pname||'I'} was hospitalised${at}${dt}. The cashless settlement was recorded as follows:`,``);
+  L.push(`${pname||'I'} was hospitalised${at}${dt}.`+((s&&include.settlement)?` By my calculation from the discharge figures, the cashless settlement was as follows:`:``),``);
   if(s&&include.settlement){
     L.push(`    Total bill                 ${inr.format(s.total)}`,
       `    Insurer approved         - ${inr.format(s.insurer)}`,
@@ -1534,7 +1647,9 @@ function buildLetter(a,include){
       `    Paid at discharge          ${inr.format(s.counter)}`,
       `      of which co-pay          ${inr.format(s.copayAmt)}`,
       `      of which not itemised    ${inr.format(s.deduction)}`,``,
-      `No breakdown of the ${inr.format(s.deduction)} recorded as non-payable has been provided, despite request.`,``);
+      D.asked
+        ? `A breakdown of the ${inr.format(s.deduction)} recorded as non-payable has not been provided despite my earlier request.`
+        : `I would like a breakdown of the ${inr.format(s.deduction)} that I calculate as non-payable.`,``);
   }
   if(a.exact.length&&include.irdai){
     // Two different documents, two different citations — collapsing them into
@@ -1571,7 +1686,7 @@ function buildLetter(a,include){
     }
   }
   if(a.recon&&include.recon) L.push(`The bill's printed total (${inr.format(a.recon.gross)}) differs from the sum of its own printed lines (${inr.format(a.recon.lineSum)}) by ${inr.format(Math.abs(a.recon.diff))}.`,``);
-  if(a.dups.length&&include.dup){ L.push(`The following charge(s) appear more than once at the same amount:`); a.dups.forEach(d=>L.push(`  - ${d.item} - ${inr.format(d.amount)}, ${d.n} times`)); L.push(``); }
+  if(a.dups.length&&include.dup){ L.push(`The following charge(s) appear more than once at the same amount; please confirm whether each is a separate service or a duplicate entry:`); a.dups.forEach(d=>L.push(`  - ${d.item} - ${inr.format(d.amount)}, ${d.n} times`)); L.push(``); }
   L.push(`I request:`,
     `  1. A line-by-line statement of every amount recorded as non-payable or deducted.`,
     `  2. Reconsideration of any amount above that is not a valid exclusion under my policy.`);
@@ -1581,22 +1696,24 @@ function buildLetter(a,include){
     if(hasUnverified) L.push(`  ${hasVerified?'4':'3'}. Confirmation of the current NPPA ceiling for the implant(s) above, and refund of any excess once confirmed.`);
   }
   L.push(``,`This letter was prepared with reference to published IRDAI and NPPA lists. It is a request for explanation, not an allegation.`,``,
-    `Yours faithfully,`,`${nameSlot}  -  [Policy no.]  -  [Contact]`);
+    `Yours faithfully,`);
+  const sig=[sender,D.policy?`Policy no. ${D.policy}`:'',D.contact].filter(Boolean);
+  if(sig.length) L.push(sig.join('  -  '));
   const text=L.join('\n');
   const T_=S();
   // The letter itself always drafts in English — the register your insurer
   // and IRDAI actually work in — regardless of the UI language. Only the
   // note explaining that choice, and the surrounding buttons, translate.
   const langNote = LANG!=='en' ? `<div class="notez" style="margin-bottom:10px">${T_.letter_note_lang}</div>` : '';
-  $('letterWrap').innerHTML=`<div class="tearline"></div><div class="letter">${langNote}<div class="lh">DRAFT &mdash; FILL THE [BRACKETS], THEN PRINT OR SAVE AS PDF</div>${esc(text)}</div>
+  $('letterWrap').innerHTML=`<div class="tearline"></div><div class="letter">${langNote}<div class="lh">${T_.letter_draft_head}</div>${esc(text)}</div>
     <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn sm" id="printLetter" style="flex:1">${T_.print_btn}</button>
       <button class="btn sm ghost" id="copyLetter" style="flex:1">${T_.copy_btn}</button>
       <button class="btn sm ghost" id="shareLetter" style="flex:1">${T_.share_btn}</button></div>`;
   $('printLetter').addEventListener('click',()=>{ $('printArea').textContent=text; window.print(); });
-  $('copyLetter').addEventListener('click',()=>{ navigator.clipboard.writeText(text).then(()=>{const b=$('copyLetter'); b.textContent=T_.copied_btn; setTimeout(()=>b.textContent=T_.copy_btn,1500);}); });
+  $('copyLetter').addEventListener('click',()=>{ copyText(text).then(done=>{const b=$('copyLetter'); b.textContent=done?T_.copied_btn:T_.copy_failed_btn; setTimeout(()=>b.textContent=T_.copy_btn,done?1500:3500);}); });
   $('shareLetter').addEventListener('click',()=>shareText(text,'ClearBill'));
-  $('letterWrap').scrollIntoView({behavior:'smooth',block:'nearest'});
+  if(!noScroll) $('letterWrap').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
 /* upload + Gemini */
@@ -1609,6 +1726,7 @@ try{
 }catch(e){}
 const drop=$('drop'), fileInput=$('file'), statusEl=$('status');
 drop.addEventListener('click',()=>fileInput.click());
+drop.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); fileInput.click(); } });
 ['dragover','dragenter'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('hot');}));
 ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('hot');}));
 drop.addEventListener('drop',e=>{ if(e.dataTransfer.files.length) addFiles(e.dataTransfer.files); });
@@ -1825,6 +1943,10 @@ function applyStaticI18n(){
   $('letterEmpty').textContent=T_.letter_empty;
   $('letterConfirmHead').textContent=T_.letter_confirm_head;
   $('genLetterTab').textContent=T_.gen_letter_btn;
+  $('nextBill').textContent=T_.next_bill_btn;
+  [['ldHead','ld_head'],['ldIntro','ld_intro'],['ldLblName','ld_name'],['ldLblAddress','ld_address'],['ldLblInsurer','ld_insurer'],
+   ['ldLblClaim','ld_claim'],['ldLblPolicy','ld_policy'],['ldLblContact','ld_contact'],['ldLblAsked','ld_asked'],
+   ['ldLblRemember','ld_remember'],['ldNote','ld_note']].forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
   document.querySelector('#page-about .k').textContent=T_.how_head;
   $('howStep1b').textContent=T_.how1b; $('howStep1p').innerHTML=T_.how1p;
   $('howStep2b').textContent=T_.how2b; $('howStep2p').innerHTML=T_.how2p;
@@ -1848,7 +1970,7 @@ function applyStaticI18n(){
 
 /* tabs */
 function switchTab(name){
-  document.querySelectorAll('.tabbtn').forEach(b=>b.classList.toggle('on', b.dataset.tab===name));
+  document.querySelectorAll('.tabbtn').forEach(b=>{ const on=b.dataset.tab===name; b.classList.toggle('on',on); if(on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
   document.querySelectorAll('.tabpage').forEach(p=>p.classList.toggle('on', p.id==='page-'+name));
   window.scrollTo(0,0);
 }
@@ -1880,6 +2002,11 @@ function renderLetterTab(){
     rows.map(([key,k,v])=>`<label class="inclrow"><input type="checkbox" checked data-inc="${key}"><span class="incltext">${k}</span><span class="v">${v}</span></label>`).join('')
     + `<div class="inclrow static"><span class="incltext">${T_.letter_confirm_sent_to}</span><span class="v">${T_.letter_confirm_sent_to_val}</span></div>`;
 }
+// Editing a detail updates a letter that is already on screen (no scroll jump).
+document.querySelectorAll('#letterDetails input,#letterDetails textarea').forEach(el=>el.addEventListener('input',()=>{
+  saveLetterDetails();
+  if(_letterGenerated && window.__letterA) buildLetter(window.__letterA,_lastLetterInclude,true);
+}));
 $('genLetterTab').addEventListener('click',()=>{
   if(!window.__lastExtraction) return;
   const a=window.__letterA || analyse(window.__lastExtraction);
