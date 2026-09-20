@@ -1,0 +1,297 @@
+{
+ "worked_example": {
+  "lines": 63,
+  "exactSum": 1992.5,
+  "reviewSum": 1831.1,
+  "exact": [
+   "Admission/Registration Charges|list_i",
+   "Alcohol Swabs|list_i",
+   "Examination Gloves|list_i",
+   "Medical Records|list_i",
+   "Scrub Solution / Sterillium|list_i",
+   "Scrub Solution / Sterillium|list_i",
+   "TPA Charges|list_i"
+  ],
+  "review": [
+   "Blade",
+   "Blade",
+   "CSSD / Sterilisation Charges",
+   "Dressing / Tegaderm film",
+   "Dressing / Tegaderm film",
+   "ECG Electrodes / Leads",
+   "Surgical Gloves (sterile, in-procedure)",
+   "Surgical Gloves (sterile, in-procedure)",
+   "Surgical Gloves (sterile, in-procedure)"
+  ],
+  "recon": 10,
+  "dupGroups": [
+   "ip - specialty - first visit (dr. surgeon) 2417 x2",
+   "iv set vented novofusion (premium) polymed x2",
+   "transparent dressing-tegaderm-non adhesive waterproof latex free 6x7cm/1623-3m x2"
+  ],
+  "redacted": 12,
+  "missing": [
+   "Admission type",
+   "Discount",
+   "Payment mode",
+   "Taxes",
+   "Unique bill number (reads \"Provisional Bill\", not a final bill number)"
+  ],
+  "malformed": [],
+  "noUnit": true,
+  "nppa": []
+ },
+ "SYN-01": {
+  "lines": 23,
+  "exactSum": 350,
+  "reviewSum": 78,
+  "exact": [
+   "Admission/Registration Charges|list_i"
+  ],
+  "review": [
+   "Surgical Gloves (sterile, in-procedure)"
+  ],
+  "recon": null,
+  "dupGroups": [],
+  "redacted": 0,
+  "missing": [
+   "Authorised signatory",
+   "Hospital address",
+   "Hospital phone / email",
+   "Patient / next-of-kin signature",
+   "Patient address",
+   "Payment mode",
+   "Registration / licence number",
+   "Taxes"
+  ],
+  "malformed": [],
+  "noUnit": false,
+  "nppa": []
+ },
+ "SYN-02": {
+  "lines": 19,
+  "exactSum": 350,
+  "reviewSum": 0,
+  "exact": [
+   "Admission/Registration Charges|list_i"
+  ],
+  "review": [],
+  "recon": null,
+  "dupGroups": [],
+  "redacted": 0,
+  "missing": [
+   "Authorised signatory",
+   "Hospital address",
+   "Hospital phone / email",
+   "Patient / next-of-kin signature",
+   "Patient address",
+   "Payment mode",
+   "Registration / licence number",
+   "Taxes"
+  ],
+  "malformed": [],
+  "noUnit": false,
+  "nppa": []
+ },
+ "SYN-03": {
+  "lines": 34,
+  "exactSum": 382,
+  "reviewSum": 318,
+  "exact": [
+   "Admission/Registration Charges|list_i",
+   "Examination Gloves|list_i"
+  ],
+  "review": [
+   "Cotton",
+   "Surgical Gloves (sterile, in-procedure)"
+  ],
+  "recon": 10,
+  "dupGroups": [],
+  "redacted": 0,
+  "missing": [
+   "Authorised signatory",
+   "Hospital address",
+   "Hospital phone / email",
+   "Patient / next-of-kin signature",
+   "Patient address",
+   "Payment mode",
+   "Registration / licence number",
+   "Taxes"
+  ],
+  "malformed": [],
+  "noUnit": false,
+  "nppa": []
+ },
+ "SYN-04": {
+  "lines": 25,
+  "exactSum": 350,
+  "reviewSum": 78,
+  "exact": [
+   "Admission/Registration Charges|list_i"
+  ],
+  "review": [
+   "Surgical Gloves (sterile, in-procedure)"
+  ],
+  "recon": null,
+  "dupGroups": [
+   "ip consultation - physician x2"
+  ],
+  "redacted": 0,
+  "missing": [
+   "Authorised signatory",
+   "Hospital address",
+   "Hospital phone / email",
+   "Patient / next-of-kin signature",
+   "Patient address",
+   "Payment mode",
+   "Registration / licence number",
+   "Taxes"
+  ],
+  "malformed": [],
+  "noUnit": false,
+  "nppa": []
+ },
+ "SYN-05": {
+  "lines": 19,
+  "exactSum": 374,
+  "reviewSum": 52,
+  "exact": [
+   "Admission/Registration Charges|list_i",
+   "Examination Gloves|list_i"
+  ],
+  "review": [
+   "Surgical Gloves (sterile, in-procedure)"
+  ],
+  "recon": null,
+  "dupGroups": [],
+  "redacted": 0,
+  "missing": [
+   "Authorised signatory",
+   "Hospital address",
+   "Hospital phone / email",
+   "Patient / next-of-kin signature",
+   "Patient address",
+   "Payment mode",
+   "Registration / licence number",
+   "Taxes"
+  ],
+  "malformed": [],
+  "noUnit": false,
+  "nppa": []
+ },
+ "SYN-06": {
+  "lines": 26,
+  "exactSum": 382,
+  "reviewSum": 78,
+  "exact": [
+   "Admission/Registration Charges|list_i",
+   "Examination Gloves|list_i"
+  ],
+  "review": [
+   "Surgical Gloves (sterile, in-procedure)"
+  ],
+  "recon": null,
+  "dupGroups": [],
+  "redacted": 0,
+  "missing": [
+   "Authorised signatory",
+   "Hospital GSTIN (15-digit)",
+   "Hospital address",
+   "Hospital phone / email",
+   "Patient / next-of-kin signature",
+   "Patient address",
+   "Payment mode",
+   "Registration / licence number",
+   "Taxes"
+  ],
+  "malformed": [],
+  "noUnit": true,
+  "nppa": []
+ },
+ "SYN-08": {
+  "lines": 24,
+  "exactSum": 350,
+  "reviewSum": 78,
+  "exact": [
+   "Admission/Registration Charges|list_i"
+  ],
+  "review": [
+   "Surgical Gloves (sterile, in-procedure)"
+  ],
+  "recon": null,
+  "dupGroups": [
+   "serum electrolytes x2"
+  ],
+  "redacted": 0,
+  "missing": [
+   "Authorised signatory",
+   "Hospital GSTIN (15-digit)",
+   "Hospital address",
+   "Hospital phone / email",
+   "Patient / next-of-kin signature",
+   "Patient address",
+   "Payment mode",
+   "Registration / licence number",
+   "Taxes"
+  ],
+  "malformed": [],
+  "noUnit": false,
+  "nppa": []
+ },
+ "SYN-09": {
+  "lines": 30,
+  "exactSum": 350,
+  "reviewSum": 104,
+  "exact": [
+   "Admission/Registration Charges|list_i"
+  ],
+  "review": [
+   "Surgical Gloves (sterile, in-procedure)"
+  ],
+  "recon": null,
+  "dupGroups": [],
+  "redacted": 0,
+  "missing": [
+   "Authorised signatory",
+   "Hospital address",
+   "Hospital phone / email",
+   "Patient / next-of-kin signature",
+   "Patient address",
+   "Payment mode",
+   "Registration / licence number",
+   "Taxes"
+  ],
+  "malformed": [],
+  "noUnit": false,
+  "nppa": []
+ },
+ "SYN-10": {
+  "lines": 25,
+  "exactSum": 350,
+  "reviewSum": 78,
+  "exact": [
+   "Admission/Registration Charges|list_i"
+  ],
+  "review": [
+   "Surgical Gloves (sterile, in-procedure)"
+  ],
+  "recon": null,
+  "dupGroups": [],
+  "redacted": 0,
+  "missing": [
+   "Authorised signatory",
+   "Hospital GSTIN (15-digit)",
+   "Hospital address",
+   "Hospital phone / email",
+   "Patient / next-of-kin signature",
+   "Patient address",
+   "Payment mode",
+   "Registration / licence number",
+   "Taxes",
+   "Unique bill number"
+  ],
+  "malformed": [],
+  "noUnit": true,
+  "nppa": []
+ }
+}

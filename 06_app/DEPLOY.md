@@ -99,3 +99,27 @@ Find your PC's IP: `ipconfig` (Windows) → IPv4 Address, e.g. `192.168.1.7`.
 On the phone browser: `http://192.168.1.7:8000`
 (Service worker / install needs https, so PWA install won't work over plain
 http — but the whole app and the Gemini call will.)
+
+---
+
+## Spend protection (free)
+
+The proxy is public and sits in front of a billed key, so `server.js` limits
+abuse on its own: it serves only `index.html`, `manifest.json` and `icon.svg`;
+accepts photos only; answers an honest `429 busy` when a per-IP or per-day cap
+is reached (the app then offers "use your own free Gemini key"); and times out
+a hanging upstream call. Defaults are generous (60 calls / 10 min / IP, 600 /
+day) and can be changed with env vars `RATE_MAX_PER_IP`, `RATE_WINDOW_MS`,
+`DAILY_CAP`, `MAX_BODY_BYTES`, `UPSTREAM_TIMEOUT_MS`.
+
+These counters live in memory: every Cloud Run instance counts separately and
+they reset when an instance restarts. They reduce abuse; they are not a quota.
+**The hard backstop is a daily quota on the key itself** (free, set once):
+Google Cloud console → APIs & Services → *Generative Language API* → Quotas →
+pick the per-day request quota → Edit → set a ceiling you are comfortable
+paying for. Optionally add a Billing budget alert (Billing → Budgets & alerts).
+
+Before every deploy run `node lib/run_gates.js` — it checks the generated
+`lib/checks.js`, the frozen regression numbers, the Node suites and the server
+protections. If a deploy misbehaves, roll back in seconds with
+`gcloud run services update-traffic clearbill --region asia-south1 --to-revisions=<previous-revision>=100`.

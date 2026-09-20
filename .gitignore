@@ -26,5 +26,6 @@ Thumbs.db
 node_modules/
 *.log
 
+
 # Personal terms used by 03_code/redact.py — never commit
 03_code/redact_terms.local.txt

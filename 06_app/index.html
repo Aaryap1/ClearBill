@@ -709,6 +709,7 @@ en: {
   drop_html: '<b>Tap to choose photos</b><br>or drag images here (JPG / PNG) &mdash; multiple pages OK',
   apikey_html: 'Gemini API key <span class="hint">&mdash; one time &middot; <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">get one here</a> &middot; saved only in this browser</span>',
   need_key: "This version needs a Gemini key once (free). Add it above, then choose the photo again.",
+  busy_byo: "The free reading service is busy right now. Try again in a few minutes, or paste your own free Gemini key below and tap Check again.",
   choose_image: "Choose only images (JPG or PNG). For a PDF, screenshot each page.",
   reading_page: (i,n)=>n>1?`Reading page ${i} of ${n}&hellip;`:'Reading your bill&hellip;',
   read_lines: (n,pages)=>pages>1?`Read ${n} line items across ${pages} pages.`:`Read ${n} line items.`,
@@ -865,6 +866,7 @@ hi: {
   drop_html: '<b>फ़ोटो चुनने के लिए टैप करें</b><br>या यहाँ तस्वीरें खींचकर लाएँ (JPG / PNG) &mdash; कई पेज़ चल सकते हैं',
   apikey_html: 'Gemini API key <span class="hint">&mdash; एक बार &middot; <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">यहाँ से लें</a> &middot; सिर्फ़ इस ब्राउज़र में सुरक्षित</span>',
   need_key: "इसके लिए एक बार Gemini key चाहिए (मुफ़्त)। ऊपर डालें, फिर फ़ोटो दोबारा चुनें।",
+  busy_byo: "मुफ़्त पढ़ने की सेवा अभी व्यस्त है। कुछ मिनट बाद दोबारा कोशिश करें, या नीचे अपनी मुफ़्त Gemini key डालकर फिर से Check दबाएँ।",
   choose_image: "सिर्फ़ इमेज चुनें (JPG या PNG)। PDF के लिए, हर पेज़ का स्क्रीनशॉट लें।",
   reading_page: (i,n)=>n>1?`पेज़ ${i} / ${n} पढ़ा जा रहा है&hellip;`:'आपका बिल पढ़ा जा रहा है&hellip;',
   read_lines: (n,pages)=>pages>1?`${pages} पेज़ों में ${n} लाइन आइटम पढ़े गए।`:`${n} लाइन आइटम पढ़े गए।`,
@@ -1021,6 +1023,7 @@ mr: {
   drop_html: '<b>फोटो निवडण्यासाठी टॅप करा</b><br>किंवा इथे फोटो आणा (JPG / PNG) &mdash; अनेक पानं चालतील',
   apikey_html: 'Gemini API key <span class="hint">&mdash; एकदाच &middot; <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">इथून मिळवा</a> &middot; फक्त या ब्राउझरमध्ये जतन</span>',
   need_key: "यासाठी एकदा Gemini key लागते (मोफत). वर टाका, मग फोटो पुन्हा निवडा.",
+  busy_byo: "मोफत वाचन सेवा सध्या व्यस्त आहे. काही मिनिटांनी पुन्हा प्रयत्न करा, किंवा खाली तुमची स्वतःची मोफत Gemini key टाकून पुन्हा Check दाबा.",
   choose_image: "फक्त इमेज निवडा (JPG किंवा PNG). PDF साठी, प्रत्येक पानाचा स्क्रीनशॉट घ्या.",
   reading_page: (i,n)=>n>1?`पान ${i} / ${n} वाचलं जात आहे&hellip;`:'तुमचं बिल वाचलं जात आहे&hellip;',
   read_lines: (n,pages)=>pages>1?`${pages} पानांमध्ये ${n} लाइन आयटम वाचले.`:`${n} लाइन आयटम वाचले.`,
@@ -1577,12 +1580,17 @@ function setStatus(m,err){ statusEl.textContent=m; statusEl.classList.toggle('er
 
 // One page in, one structured object out. Multi-page just calls this once
 // per file and merges — the extraction contract per page doesn't change.
+let _proxyBusy=false;
 async function extractOnePage(file,key){
   const b64=await toB64(file);
   let txt;
-  if(USE_PROXY){
+  // If the free service says it is busy (429), the user can paste their own
+  // free Gemini key and continue — then this page goes direct to Google.
+  if(USE_PROXY && !(_proxyBusy && key)){
     const res=await fetch('api/read-bill',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mime_type:file.type,data:b64})});
-    txt=await res.text(); if(!res.ok) throw new Error('Server '+res.status+': '+txt.slice(0,300));
+    txt=await res.text();
+    if(res.status===429){ _proxyBusy=true; const e=new Error('busy'); e.code='BUSY'; throw e; }
+    if(!res.ok){ let m=''; try{ m=JSON.parse(txt).message||''; }catch(e){} throw new Error(m||('Server '+res.status)); }
   } else {
     const body={contents:[{parts:[{text:EXTRACT_PROMPT},{inline_data:{mime_type:file.type,data:b64}}]}],generationConfig:{temperature:0,response_mime_type:"application/json"}};
     // gemini-3.6-flash — confirmed working 9 Sep 2026 by an actual end-to-end
@@ -1726,7 +1734,11 @@ async function processQueuedFiles(){
       ? T_.read_lines_partial(merged.line_items.length,files.length,rejected.length)
       : T_.read_lines(merged.line_items.length,files.length));
     renderReport(merged);
-  }catch(err){ console.error(err); $('report').innerHTML=''; setStatus(String(err.message||err),true); }
+  }catch(err){
+    console.error(err); $('report').innerHTML='';
+    if(err.code==='BUSY'){ $('keyRow').classList.remove('hide'); $('apiKey').focus(); setStatus(T_.busy_byo,true); return; }
+    setStatus(String(err.message||err),true);
+  }
 }
 $('checkPhotosBtn').addEventListener('click',processQueuedFiles);
 const toB64=file=>new Promise((ok,no)=>{ const r=new FileReader(); r.onload=()=>ok(String(r.result).split(',')[1]); r.onerror=no; r.readAsDataURL(file); });
