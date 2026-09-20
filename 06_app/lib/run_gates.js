@@ -90,6 +90,13 @@ console.log('== 2. analysis regression (frozen fixtures)');
   else console.log('  skip private_bill_01 (04_test_bills not on this machine)');
 }
 
+console.log('== 2b. matching / duplicate / amount rules');
+{
+  const r = run(path.join(__dirname, 'test_analysis.js'), [], APP);
+  const last = (r.stdout || '').trim().split('\n').pop();
+  ok(r.status === 0, 'test_analysis.js — ' + last, r.status === 0 ? '' : ((r.stdout || '').split('\n').filter(l => /FAIL/.test(l)).join('\n') || r.stderr).slice(-800));
+}
+
 console.log('== 3. Node suites (03_code)');
 {
   const fixture = path.join(REPO, '04_test_bills', 'bill_01_extracted.json');

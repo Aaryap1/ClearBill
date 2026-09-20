@@ -100,7 +100,7 @@ const NON_PAYABLE = [
   { tier:"review", item:"Commode", keywords:"commode" },
   { tier:"review", item:"Oxygen Cylinder (usage outside hospital)", keywords:"oxygen cylinder" },
   { tier:"exact", item:"Oxygen Mask", keywords:"oxygen mask" },
-  { tier:"exact", item:"Spacer", keywords:"spacer" },
+  { tier:"exact", item:"Spacer", keywords:"spacer", not:"cage|interbody|cement|knee|hip|spine|spinal|vertebral|antibiotic|implant" },
   { tier:"review", item:"SPO2 Probe", keywords:"spo2 probe|spo2 sensor" },
   { tier:"exact", item:"Nebulizer Kit", keywords:"nebulizer kit|nebuliser kit" },
   { tier:"exact", item:"Steam Inhaler", keywords:"steam inhaler" },
@@ -124,7 +124,7 @@ const NON_PAYABLE = [
   { tier:"exact", item:"Dental Treatment Not Requiring Hospitalisation", keywords:"dental treatment", basis:"policy_exclusion" },
   { tier:"exact", item:"Hormone Replacement Therapy", keywords:"hormone replacement", basis:"policy_exclusion" },
   { tier:"exact", item:"Home Visit Charges", keywords:"home visit" },
-  { tier:"exact", item:"Infertility / Assisted Conception", keywords:"infertility|ivf|assisted conception", basis:"policy_exclusion" },
+  { tier:"exact", item:"Infertility / Assisted Conception", keywords:"infertility|assisted conception|ivf treatment|ivf cycle|ivf procedure|in vitro fertilisation|in vitro fertilization", basis:"policy_exclusion" },
   { tier:"exact", item:"Obesity Treatment", keywords:"bariatric|obesity treatment", basis:"policy_exclusion" },
   { tier:"exact", item:"Corrective Surgery for Refractive Error", keywords:"lasik|refractive error", basis:"policy_exclusion" },
   { tier:"exact", item:"Donor Screening Charges", keywords:"donor screening" },
@@ -205,22 +205,49 @@ const IS19493_HEADER = [
 const GSTIN_RE = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9][A-Z0-9]{2}$/;
 
 const money = n => Math.round((Number(n)+Number.EPSILON)*100)/100;
+/* checks */
+// Whole-word matching. The old substring test flagged COMBIFLAM (a medicine)
+// as "Comb", APRONAX as "Apron" and ANAESTHETIC as "Aesthetic" (a policy
+// exclusion) — and those went into a letter to the insurer as IRDAI List I
+// items. Text and keywords are lowercased, punctuation becomes a space (so
+// TOOTH-BRUSH and NAME-TAG match), and a keyword must match whole words, with an
+// optional plural s/es. An entry may carry a "not" list: words that, if present,
+// mean the line is something else (e.g. a spinal-cage spacer is not an inhaler spacer).
+const _normTxt=s=>' '+String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()+' ';
+const _hasWord=(t,k)=>t.includes(' '+k+' ')||t.includes(' '+k+'s ')||t.includes(' '+k+'es ');
+let _matchIndex=null;
 function bestMatch(text){
-  const t=String(text||'').toLowerCase(); let best=null;
-  for(const e of NON_PAYABLE){
-    for(const kw of e.keywords.split('|')){
-      const k=kw.trim().toLowerCase(); if(!k||!t.includes(k)) continue;
+  const t=_normTxt(text); let best=null;
+  _matchIndex=_matchIndex||NON_PAYABLE.map(e=>({e,
+    kws:e.keywords.split('|').map(k=>_normTxt(k).trim()).filter(Boolean),
+    not:(e.not||'').split('|').map(k=>_normTxt(k).trim()).filter(Boolean)}));
+  for(const {e,kws,not} of _matchIndex){
+    if(not.some(n=>_hasWord(t,n))) continue;
+    for(const k of kws){
+      if(!_hasWord(t,k)) continue;
       const c={e,kw:k,rank:e.tier==='exact'?2:1,len:k.length};
       if(!best||c.rank>best.rank||(c.rank===best.rank&&c.len>best.len)) best=c;
     }
   }
   return best;
 }
+// Amounts normally arrive as JSON numbers, but a photo can yield text like
+// "1,260.00" or "₹ 500". Plain comma / rupee text is read. Anything ambiguous
+// (parentheses, CR/DR suffixes) is NOT guessed: it is counted, so the report can
+// say how many amounts were left out instead of silently treating them as 0.
+function parseAmount(v){
+  if(v==null||v==='') return {n:null,bad:false};
+  if(typeof v==='number') return Number.isFinite(v)?{n:v,bad:false}:{n:null,bad:true};
+  const s=String(v).trim().replace(/^(?:₹|rs\.?|inr)\s*/i,'').replace(/,/g,'').replace(/\s+/g,'');
+  return /^-?\d+(\.\d+)?$/.test(s)?{n:+s,bad:false}:{n:null,bad:true};
+}
 function analyse(data){
+  let unreadable=0;
+  const amt=v=>{ const p=parseAmount(v); if(p.bad) unreadable++; return p.n; };
   const lines=(data.line_items||[]).map(l=>{
-    let q=l.quantity==null?null:+l.quantity; const tot=l.total==null?null:+l.total;
+    let q=amt(l.quantity); const tot=amt(l.total), rate=amt(l.rate);
     if(tot!=null&&tot<0&&q!=null&&q>0) q=-Math.abs(q);
-    return {item:String(l.item||''),unit:l.unit??null,quantity:q,rate:l.rate??null,total:tot,section:l.section||l.category||null};
+    return {item:String(l.item||''),unit:l.unit??null,quantity:q,rate,total:tot,section:l.section||l.category||null};
   });
   const H=data.header||{};
   const exact=[],review=[];
@@ -228,12 +255,22 @@ function analyse(data){
     (m.e.tier==='exact'?exact:review).push({...l,matched:m.e.item,basis:m.e.basis||'list_i'}); }
   const sum=a=>money(a.reduce((s,r)=>s+(r.total||0),0));
   const lineSum=sum(lines);
-  let recon=null; const g=H.gross_amount==null?null:+H.gross_amount;
-  if(g!=null&&!isNaN(g)){ const d=money(g-lineSum); if(Math.abs(d)>=1) recon={diff:d,gross:money(g),lineSum}; }
-  const seen={},dups=[];
-  lines.forEach(l=>{ const k=l.item.trim().toLowerCase()+'|'+(l.total==null?'':l.total.toFixed(2)); seen[k]=(seen[k]||0)+1; });
-  lines.forEach(l=>{ const k=l.item.trim().toLowerCase()+'|'+(l.total==null?'':l.total.toFixed(2));
-    if(seen[k]>1&&!dups.find(d=>d.k===k)) dups.push({k,item:l.item,amount:l.total,n:seen[k]}); });
+  let recon=null; const g=amt(H.gross_amount);
+  if(g!=null){ const d=money(g-lineSum); if(Math.abs(d)>=1) recon={diff:d,gross:money(g),lineSum}; }
+  // Repeated charges: same item text and same amount. Ignored: blank items and
+  // zero/missing amounts (a repeated 0.00 row is layout, not a double charge).
+  // A charge that was reversed (a matching negative line) is netted out — that
+  // is a correction, not a duplicate. Recurring services (room rent, daily
+  // visits) can legitimately repeat, so the wording asks the user to check.
+  const keyOf=(item,amount)=>item.trim().toLowerCase()+'|'+amount.toFixed(2);
+  const pos={},neg={};
+  lines.forEach(l=>{ if(!l.item.trim()||l.total==null||l.total===0) return;
+    if(l.total>0) pos[keyOf(l.item,l.total)]=(pos[keyOf(l.item,l.total)]||0)+1;
+    else neg[keyOf(l.item,-l.total)]=(neg[keyOf(l.item,-l.total)]||0)+1; });
+  const dups=[];
+  lines.forEach(l=>{ if(!l.item.trim()||l.total==null||l.total<=0) return;
+    const k=keyOf(l.item,l.total), net=(pos[k]||0)-(neg[k]||0);
+    if(net>1&&!dups.find(d=>d.k===k)) dups.push({k,item:l.item,amount:l.total,n:net}); });
   const missing=[],malformed=[];
   // A placeholder is not a value. "Provisional Bill" is truthy and non-blank,
   // so the old isBlank-only test let it through as "present" — this bill is
@@ -273,7 +310,7 @@ function analyse(data){
     }}
   }
   const subtotals = data.printed_subtotals && Object.keys(data.printed_subtotals).length ? data.printed_subtotals : null;
-  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,missing,malformed,redacted,noUnit,nppa,subtotals};
+  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,missing,malformed,redacted,noUnit,nppa,subtotals,unreadable};
 }
 
-module.exports = { NON_PAYABLE, NPPA, IS19493_HEADER, GSTIN_RE, money, bestMatch, analyse };
+module.exports = { NON_PAYABLE, NPPA, IS19493_HEADER, GSTIN_RE, money, bestMatch, parseAmount, analyse };

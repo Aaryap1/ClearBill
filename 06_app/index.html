@@ -541,7 +541,7 @@ const NON_PAYABLE = [
   { tier:"review", item:"Commode", keywords:"commode" },
   { tier:"review", item:"Oxygen Cylinder (usage outside hospital)", keywords:"oxygen cylinder" },
   { tier:"exact", item:"Oxygen Mask", keywords:"oxygen mask" },
-  { tier:"exact", item:"Spacer", keywords:"spacer" },
+  { tier:"exact", item:"Spacer", keywords:"spacer", not:"cage|interbody|cement|knee|hip|spine|spinal|vertebral|antibiotic|implant" },
   { tier:"review", item:"SPO2 Probe", keywords:"spo2 probe|spo2 sensor" },
   { tier:"exact", item:"Nebulizer Kit", keywords:"nebulizer kit|nebuliser kit" },
   { tier:"exact", item:"Steam Inhaler", keywords:"steam inhaler" },
@@ -565,7 +565,7 @@ const NON_PAYABLE = [
   { tier:"exact", item:"Dental Treatment Not Requiring Hospitalisation", keywords:"dental treatment", basis:"policy_exclusion" },
   { tier:"exact", item:"Hormone Replacement Therapy", keywords:"hormone replacement", basis:"policy_exclusion" },
   { tier:"exact", item:"Home Visit Charges", keywords:"home visit" },
-  { tier:"exact", item:"Infertility / Assisted Conception", keywords:"infertility|ivf|assisted conception", basis:"policy_exclusion" },
+  { tier:"exact", item:"Infertility / Assisted Conception", keywords:"infertility|assisted conception|ivf treatment|ivf cycle|ivf procedure|in vitro fertilisation|in vitro fertilization", basis:"policy_exclusion" },
   { tier:"exact", item:"Obesity Treatment", keywords:"bariatric|obesity treatment", basis:"policy_exclusion" },
   { tier:"exact", item:"Corrective Surgery for Refractive Error", keywords:"lasik|refractive error", basis:"policy_exclusion" },
   { tier:"exact", item:"Donor Screening Charges", keywords:"donor screening" },
@@ -753,6 +753,7 @@ en: {
   detail_recon_body:(gross,lineSum,diff)=>`The bill's printed total (${gross}) differs from the sum of its own lines (${lineSum}) by <strong>${diff}</strong>. This may be the hospital's arithmetic, not a reading error.`,
   detail_dup:"Appears more than once",
   detail_dup_src:n=>`appears ${n}&times; at the same amount`,
+  unreadable_note:n=>`${n} amount${n>1?'s':''} on this bill couldn&rsquo;t be read reliably and ${n>1?'were':'was'} left out of the totals above. Check ${n>1?'those lines':'that line'} against the paper bill.`,
   detail_is19493:"Bill completeness &mdash; IS 19493",
   detail_is19493_plain:"IS 19493:2025 is a <strong>voluntary</strong> format set by the Bureau of Indian Standards (BIS). It expects the following, which this bill does not show:",
   detail_is19493_unit:"Every charge line is missing the <strong>Unit</strong> column",
@@ -828,8 +829,8 @@ en: {
     dup: { label:"Twice",
       found:n=>`${n} charge${n>1?'s':''} appear more than once`, sub:()=>"same item, same amount",
       foundClear:"No duplicated charges", subClear:"",
-      money:()=>"A charge repeated at the same amount is usually a duplicate entry, not two separate services.",
-      doText:"Ask the hospital to confirm whether each was reversed. If not, this is your strongest line item to dispute." },
+      money:()=>"The same item at the same amount appears more than once. That can be a duplicate entry, or a service that genuinely repeats (daily visits, room rent).",
+      doText:"Check the dates and quantities on those lines first. If they don&rsquo;t explain the repeat, ask the hospital to confirm whether each one was reversed or is a separate service." },
     is19493: { label:"IS 19493",
       found:n=>`${n} field${n>1?'s':''} the standard expects are missing`, sub:()=>"IS 19493:2025 &mdash; a voluntary Bureau of Indian Standards format",
       foundClear:"Bill carries every field IS 19493 expects", subClear:"",
@@ -910,6 +911,7 @@ hi: {
   detail_recon_body:(gross,lineSum,diff)=>`बिल की छपी कुल राशि (${gross}) उसकी अपनी लाइनों के योग (${lineSum}) से <strong>${diff}</strong> अलग है। यह अस्पताल की अपनी गणना हो सकती है, पढ़ने की ग़लती नहीं।`,
   detail_dup:"एक से ज़्यादा बार दिखता है",
   detail_dup_src:n=>`${n} बार एक ही राशि पर दिखता है`,
+  unreadable_note:n=>`इस बिल की ${n} राशि भरोसे से पढ़ी नहीं जा सकी और ऊपर के जोड़ में शामिल नहीं है। कागज़ के बिल से उन लाइनों को मिलाकर देखें।`,
   detail_is19493:"बिल की पूर्णता &mdash; IS 19493",
   detail_is19493_plain:"IS 19493:2025 भारतीय मानक ब्यूरो (BIS) का एक <strong>स्वैच्छिक</strong> प्रारूप है। यह निम्नलिखित की अपेक्षा करता है, जो इस बिल में नहीं है:",
   detail_is19493_unit:"हर चार्ज लाइन में <strong>यूनिट</strong> कॉलम नहीं है",
@@ -985,8 +987,8 @@ hi: {
     dup: { label:"दो बार",
       found:n=>`${n} चार्ज एक से ज़्यादा बार दिखते हैं`, sub:()=>"एक ही चीज़, एक ही राशि",
       foundClear:"कोई दोहरा चार्ज नहीं", subClear:"",
-      money:()=>"एक ही राशि पर दोहराया गया चार्ज आमतौर पर एक डुप्लिकेट एंट्री होता है, दो अलग सेवाएँ नहीं।",
-      doText:"अस्पताल से पूछें कि क्या हर एक को उलटा (रिवर्स) किया गया था। अगर नहीं, तो यह आपकी सबसे मज़बूत विवाद वाली लाइन है।" },
+      money:()=>"एक ही चीज़ एक ही राशि पर एक से ज़्यादा बार दिखती है। यह डुप्लिकेट एंट्री हो सकती है, या ऐसी सेवा जो सच में दोहराई जाती है (रोज़ की विज़िट, कमरे का किराया)।",
+      doText:"पहले इन लाइनों की तारीख़ें और मात्रा देखें। अगर उनसे दोहराव समझ न आए, तो अस्पताल से पूछें कि हर एक उलटा (रिवर्स) किया गया था या अलग सेवा है।" },
     is19493: { label:"IS 19493",
       found:n=>`मानक द्वारा अपेक्षित ${n} फ़ील्ड ग़ायब हैं`, sub:()=>"IS 19493:2025 &mdash; भारतीय मानक ब्यूरो का एक स्वैच्छिक प्रारूप",
       foundClear:"बिल में IS 19493 की हर अपेक्षित फ़ील्ड मौजूद है", subClear:"",
@@ -1067,6 +1069,7 @@ mr: {
   detail_recon_body:(gross,lineSum,diff)=>`बिलाची छापील एकूण रक्कम (${gross}) त्याच्या स्वतःच्या ओळींच्या बेरजेपेक्षा (${lineSum}) <strong>${diff}</strong> ने वेगळी आहे. ही रुग्णालयाची स्वतःची गणना असू शकते, वाचण्यातली चूक नाही.`,
   detail_dup:"एकापेक्षा जास्त वेळा दिसतं",
   detail_dup_src:n=>`तेवढ्याच रकमेला ${n} वेळा दिसतं`,
+  unreadable_note:n=>`या बिलातील ${n} रक्कम खात्रीने वाचता आली नाही आणि वरच्या बेरजेत धरलेली नाही. त्या ओळी कागदी बिलाशी पडताळून पहा.`,
   detail_is19493:"बिलाची पूर्णता &mdash; IS 19493",
   detail_is19493_plain:"IS 19493:2025 हा भारतीय मानक ब्युरो (BIS) चा एक <strong>ऐच्छिक</strong> स्वरूप आहे. तो खालील अपेक्षा करतो, जे या बिलात नाही:",
   detail_is19493_unit:"प्रत्येक चार्ज ओळीत <strong>युनिट</strong> कॉलम नाही",
@@ -1142,8 +1145,8 @@ mr: {
     dup: { label:"दोनदा",
       found:n=>`${n} चार्जेस एकापेक्षा जास्त वेळा दिसतात`, sub:()=>"तीच गोष्ट, तीच रक्कम",
       foundClear:"कोणताही डुप्लिकेट चार्ज नाही", subClear:"",
-      money:()=>"तेवढ्याच रकमेला पुन्हा आलेला चार्ज साधारणपणे डुप्लिकेट नोंद असतो, दोन वेगळ्या सेवा नाहीत.",
-      doText:"रुग्णालयाला विचारा की प्रत्येक चार्ज परत केला गेला होता का. नसल्यास, वाद घालण्यासाठी हा तुमचा सर्वात भक्कम मुद्दा आहे." },
+      money:()=>"तीच गोष्ट तीच रक्कम घेऊन एकापेक्षा जास्त वेळा दिसते. ही डुप्लिकेट नोंद असू शकते, किंवा खरंच पुन्हा होणारी सेवा (रोजच्या भेटी, खोलीचं भाडं).",
+      doText:"आधी या ओळींच्या तारखा आणि प्रमाण तपासा. त्यातून पुनरावृत्ती समजली नाही, तर रुग्णालयाला विचारा की प्रत्येक चार्ज परत केला गेला होता की ती वेगळी सेवा आहे." },
     is19493: { label:"IS 19493",
       found:n=>`मानकाने अपेक्षित ${n} फील्ड्स गहाळ आहेत`, sub:()=>"IS 19493:2025 &mdash; भारतीय मानक ब्युरोचा एक ऐच्छिक स्वरूप",
       foundClear:"बिलात IS 19493 ने अपेक्षित प्रत्येक फील्ड आहे", subClear:"",
@@ -1221,22 +1224,48 @@ $('egBtn').addEventListener('click',()=>{
 });
 
 /* checks */
+// Whole-word matching. The old substring test flagged COMBIFLAM (a medicine)
+// as "Comb", APRONAX as "Apron" and ANAESTHETIC as "Aesthetic" (a policy
+// exclusion) — and those went into a letter to the insurer as IRDAI List I
+// items. Text and keywords are lowercased, punctuation becomes a space (so
+// TOOTH-BRUSH and NAME-TAG match), and a keyword must match whole words, with an
+// optional plural s/es. An entry may carry a "not" list: words that, if present,
+// mean the line is something else (e.g. a spinal-cage spacer is not an inhaler spacer).
+const _normTxt=s=>' '+String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()+' ';
+const _hasWord=(t,k)=>t.includes(' '+k+' ')||t.includes(' '+k+'s ')||t.includes(' '+k+'es ');
+let _matchIndex=null;
 function bestMatch(text){
-  const t=String(text||'').toLowerCase(); let best=null;
-  for(const e of NON_PAYABLE){
-    for(const kw of e.keywords.split('|')){
-      const k=kw.trim().toLowerCase(); if(!k||!t.includes(k)) continue;
+  const t=_normTxt(text); let best=null;
+  _matchIndex=_matchIndex||NON_PAYABLE.map(e=>({e,
+    kws:e.keywords.split('|').map(k=>_normTxt(k).trim()).filter(Boolean),
+    not:(e.not||'').split('|').map(k=>_normTxt(k).trim()).filter(Boolean)}));
+  for(const {e,kws,not} of _matchIndex){
+    if(not.some(n=>_hasWord(t,n))) continue;
+    for(const k of kws){
+      if(!_hasWord(t,k)) continue;
       const c={e,kw:k,rank:e.tier==='exact'?2:1,len:k.length};
       if(!best||c.rank>best.rank||(c.rank===best.rank&&c.len>best.len)) best=c;
     }
   }
   return best;
 }
+// Amounts normally arrive as JSON numbers, but a photo can yield text like
+// "1,260.00" or "₹ 500". Plain comma / rupee text is read. Anything ambiguous
+// (parentheses, CR/DR suffixes) is NOT guessed: it is counted, so the report can
+// say how many amounts were left out instead of silently treating them as 0.
+function parseAmount(v){
+  if(v==null||v==='') return {n:null,bad:false};
+  if(typeof v==='number') return Number.isFinite(v)?{n:v,bad:false}:{n:null,bad:true};
+  const s=String(v).trim().replace(/^(?:₹|rs\.?|inr)\s*/i,'').replace(/,/g,'').replace(/\s+/g,'');
+  return /^-?\d+(\.\d+)?$/.test(s)?{n:+s,bad:false}:{n:null,bad:true};
+}
 function analyse(data){
+  let unreadable=0;
+  const amt=v=>{ const p=parseAmount(v); if(p.bad) unreadable++; return p.n; };
   const lines=(data.line_items||[]).map(l=>{
-    let q=l.quantity==null?null:+l.quantity; const tot=l.total==null?null:+l.total;
+    let q=amt(l.quantity); const tot=amt(l.total), rate=amt(l.rate);
     if(tot!=null&&tot<0&&q!=null&&q>0) q=-Math.abs(q);
-    return {item:String(l.item||''),unit:l.unit??null,quantity:q,rate:l.rate??null,total:tot,section:l.section||l.category||null};
+    return {item:String(l.item||''),unit:l.unit??null,quantity:q,rate,total:tot,section:l.section||l.category||null};
   });
   const H=data.header||{};
   const exact=[],review=[];
@@ -1244,12 +1273,22 @@ function analyse(data){
     (m.e.tier==='exact'?exact:review).push({...l,matched:m.e.item,basis:m.e.basis||'list_i'}); }
   const sum=a=>money(a.reduce((s,r)=>s+(r.total||0),0));
   const lineSum=sum(lines);
-  let recon=null; const g=H.gross_amount==null?null:+H.gross_amount;
-  if(g!=null&&!isNaN(g)){ const d=money(g-lineSum); if(Math.abs(d)>=1) recon={diff:d,gross:money(g),lineSum}; }
-  const seen={},dups=[];
-  lines.forEach(l=>{ const k=l.item.trim().toLowerCase()+'|'+(l.total==null?'':l.total.toFixed(2)); seen[k]=(seen[k]||0)+1; });
-  lines.forEach(l=>{ const k=l.item.trim().toLowerCase()+'|'+(l.total==null?'':l.total.toFixed(2));
-    if(seen[k]>1&&!dups.find(d=>d.k===k)) dups.push({k,item:l.item,amount:l.total,n:seen[k]}); });
+  let recon=null; const g=amt(H.gross_amount);
+  if(g!=null){ const d=money(g-lineSum); if(Math.abs(d)>=1) recon={diff:d,gross:money(g),lineSum}; }
+  // Repeated charges: same item text and same amount. Ignored: blank items and
+  // zero/missing amounts (a repeated 0.00 row is layout, not a double charge).
+  // A charge that was reversed (a matching negative line) is netted out — that
+  // is a correction, not a duplicate. Recurring services (room rent, daily
+  // visits) can legitimately repeat, so the wording asks the user to check.
+  const keyOf=(item,amount)=>item.trim().toLowerCase()+'|'+amount.toFixed(2);
+  const pos={},neg={};
+  lines.forEach(l=>{ if(!l.item.trim()||l.total==null||l.total===0) return;
+    if(l.total>0) pos[keyOf(l.item,l.total)]=(pos[keyOf(l.item,l.total)]||0)+1;
+    else neg[keyOf(l.item,-l.total)]=(neg[keyOf(l.item,-l.total)]||0)+1; });
+  const dups=[];
+  lines.forEach(l=>{ if(!l.item.trim()||l.total==null||l.total<=0) return;
+    const k=keyOf(l.item,l.total), net=(pos[k]||0)-(neg[k]||0);
+    if(net>1&&!dups.find(d=>d.k===k)) dups.push({k,item:l.item,amount:l.total,n:net}); });
   const missing=[],malformed=[];
   // A placeholder is not a value. "Provisional Bill" is truthy and non-blank,
   // so the old isBlank-only test let it through as "present" — this bill is
@@ -1289,7 +1328,7 @@ function analyse(data){
     }}
   }
   const subtotals = data.printed_subtotals && Object.keys(data.printed_subtotals).length ? data.printed_subtotals : null;
-  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,missing,malformed,redacted,noUnit,nppa,subtotals};
+  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,missing,malformed,redacted,noUnit,nppa,subtotals,unreadable};
 }
 function sectionSums(lines){
   const m={}; lines.forEach(l=>{ const k=l.section||'Uncategorised'; m[k]=(m[k]||0)+(l.total||0); });
@@ -1416,6 +1455,7 @@ function renderReport(data){
         {money:C.is19493.money(), doText:C.is19493.doText})
     : chk('green',T_.clear_word,C.is19493.foundClear,C.is19493.subClear);
   h+=`</div>`;
+  if(a.unreadable>0) h+=`<div role="note" style="margin-top:10px;font-family:'Spectral',serif;font-size:.86rem;color:var(--soft);line-height:1.5">${T_.unreadable_note(a.unreadable)}</div>`;
 
   if(ded>0) h+=`<div class="flagtot"><span>${T_.flagged_so_far}</span><span class="v">${inr.format(totalFlagged)}</span></div>`;
   if(a.lines.length>0) h+=`<button class="btn ghost sm" id="shareFindingsBtn" style="margin-top:10px;width:100%">${T_.share_findings_btn}</button>`;

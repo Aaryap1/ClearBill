@@ -21,13 +21,21 @@ const money = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
 // Find the best lookup entry for one item string.
 // All entries are tested. Ties broken by: exact beats review, then longest
 // keyword (most specific wins), so the order of NON_PAYABLE does not matter.
+// Whole-word matching — MUST behave identically to bestMatch() in
+// 06_app/index.html (lib/run_gates.js checks the two agree): lowercase,
+// punctuation -> space, a keyword must match whole words (optional plural s/es),
+// and an entry's optional `not` words veto the match.
+const normTxt = (s) => " " + String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim() + " ";
+const hasWord = (t, k) => t.includes(" " + k + " ") || t.includes(" " + k + "s ") || t.includes(" " + k + "es ");
 function bestMatch(itemText, table = NON_PAYABLE) {
-  const t = String(itemText || "").toLowerCase();
+  const t = normTxt(itemText);
   let best = null;
   for (const entry of table) {
-    const kws = String(entry.keywords).split("|").map((k) => k.trim().toLowerCase()).filter(Boolean);
+    const kws = String(entry.keywords).split("|").map((k) => normTxt(k).trim()).filter(Boolean);
+    const not = String(entry.not || "").split("|").map((k) => normTxt(k).trim()).filter(Boolean);
+    if (not.some((n) => hasWord(t, n))) continue;
     for (const kw of kws) {
-      if (t.includes(kw)) {
+      if (hasWord(t, kw)) {
         const cand = { entry, keyword: kw, tierRank: entry.tier === "exact" ? 2 : 1, len: kw.length };
         if (!best || cand.tierRank > best.tierRank || (cand.tierRank === best.tierRank && cand.len > best.len)) {
           best = cand;
@@ -76,17 +84,23 @@ function analyseBill(lines, printed_subtotal = null, deduction = null, table = N
     }
   }
 
-  // duplicate check: identical item name + identical amount, appearing more than once
-  const seen = new Map();
+  // duplicate check — mirrors analyse() in 06_app/index.html: same item text and
+  // same amount, more than once. Blank items and zero/missing amounts are ignored
+  // (layout, not a double charge); a charge reversed by a matching negative line
+  // is netted out (a correction, not a duplicate).
+  const keyOf = (item, amount) => item.trim().toLowerCase() + "|" + amount.toFixed(2);
+  const pos = {}, neg = {};
   for (const l of norm) {
-    const key = l.item.trim().toLowerCase() + "|" + (l.total == null ? "" : l.total.toFixed(2));
-    seen.set(key, (seen.get(key) || 0) + 1);
+    if (!l.item.trim() || l.total == null || l.total === 0) continue;
+    if (l.total > 0) pos[keyOf(l.item, l.total)] = (pos[keyOf(l.item, l.total)] || 0) + 1;
+    else neg[keyOf(l.item, -l.total)] = (neg[keyOf(l.item, -l.total)] || 0) + 1;
   }
   const duplicates = [];
   for (const l of norm) {
-    const key = l.item.trim().toLowerCase() + "|" + (l.total == null ? "" : l.total.toFixed(2));
-    if (seen.get(key) > 1 && !duplicates.find((d) => d.key === key)) {
-      duplicates.push({ key, item: l.item, amount: l.total, count: seen.get(key),
+    if (!l.item.trim() || l.total == null || l.total <= 0) continue;
+    const key = keyOf(l.item, l.total), net = (pos[key] || 0) - (neg[key] || 0);
+    if (net > 1 && !duplicates.find((d) => d.key === key)) {
+      duplicates.push({ key, item: l.item, amount: l.total, count: net,
         note: "This item appears more than once at the same amount. Worth asking about." });
     }
   }
