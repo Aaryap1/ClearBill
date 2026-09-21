@@ -152,6 +152,7 @@
   .st.red{color:var(--red);background:var(--red-bg)}
   .st.ochre{color:var(--ochre);background:var(--ochre-bg)}
   .st.green{color:var(--green);background:var(--green-bg)}
+  .st.grey{color:var(--soft);background:var(--field);border:1px solid var(--rule)}
   /* the two-slot explanation under a finding: consequence, then action */
   .expl{margin-top:8px;font-size:.84rem}
   .expl .money{color:var(--soft);font-style:italic}
@@ -707,6 +708,7 @@ const makeInr = lang => new Intl.NumberFormat(LOCALE_TAG[lang]||'en-IN',{style:'
 let LANG = 'en';
 let inr = makeInr(LANG);
 try{ const saved=localStorage.getItem('clearbill_lang'); if(saved && LOCALE_TAG[saved]) LANG=saved; }catch(e){}
+document.documentElement.lang=LANG;
 
 const STRINGS = {
 en: {
@@ -744,7 +746,7 @@ en: {
   need_key: "This version needs a Gemini key once (free). Add it above, then choose the photo again.",
   busy_byo: "The free reading service is busy right now. Try again in a few minutes, or paste your own free Gemini key below and tap Check again.",
   choose_image: "Choose only images (JPG or PNG). For a PDF, screenshot each page.",
-  reading_page: (i,n)=>n>1?`Reading page ${i} of ${n}&hellip;`:'Reading your bill&hellip;',
+  reading_page: (i,n)=>n>1?`Reading page ${i} of ${n}…`:'Reading your bill…',
   read_lines: (n,pages)=>pages>1?`Read ${n} line items across ${pages} pages.`:`Read ${n} line items.`,
   no_lines_found: "No line items found in the response.",
   no_bill_pages: "None of these look like a hospital bill page. Upload a photo of the itemised bill — not a cover letter or receipt.",
@@ -779,6 +781,9 @@ en: {
   detail_matched_src:m=>`matches: ${m}`,
   basis_policy_exclusion_badge:"policy exclusion, not List I",
   nppa_unverified_badge:"ceiling not independently confirmed",
+  nppa_stale_note:"Knee-implant ceilings were published as valid until 15 November 2026. Check whether a newer NPPA notification applies before relying on this.",
+  notcompared_word:"Not compared",
+  partial_note:(one,rej)=>[one?"Only one page was read. If your bill has more pages, add them &mdash; these checks cover only what was uploaded.":"",rej?`${rej} photo${rej>1?'s':''} didn&rsquo;t look like a bill page and ${rej>1?'were':'was'} skipped, so these checks may not cover the whole bill.`:""].filter(Boolean).join(" "),
   detail_nppa:"Above the statutory price cap (NPPA)",
   detail_nppa_plain:"A legal ceiling set by NPPA, India's drug and medical-device price regulator &mdash; not an opinion.",
   detail_nppa_src:(ref,ceiling,gst)=>`NPPA ceiling for ${ref}: ${ceiling} (${gst})`,
@@ -852,19 +857,24 @@ en: {
       foundClear:'No "commonly deducted but unlisted" charges', subClear:"",
       money:()=>"These are commonly deducted in practice, but not actually named in the published list, so this is not a confirmed finding.",
       doText:"Ask your insurer to confirm these specifically. Don&rsquo;t dispute them on this basis alone." },
-    nppa: { label:"Above NPPA cap",
-      found:n=>`${n} implant above its statutory ceiling`,
-      foundUnverified:n=>`${n} implant${n>1?'s':''} above a published NPPA ceiling`,
+    nppa: { label:"Above NPPA cap", labelGst:"NPPA — check GST",
+      found:n=>`${n} implant${n>1?'s':''} priced above the NPPA ceiling plus GST`,
+      foundUnverified:n=>`${n} implant${n>1?'s':''} priced above a published NPPA ceiling plus GST`,
+      foundGst:n=>`${n} implant${n>1?'s':''} priced just above the NPPA ceiling`,
+      subGst:()=>"within 5% above it &mdash; may just be GST",
+      moneyGst:()=>"GST is charged on top of the ceiling, so a price a few percent above it can be normal. This is not a finding by itself.",
+      doTextGst:"Check whether the price on the bill includes GST. If it does, there is nothing to raise; if it doesn&rsquo;t, ask the hospital to show the GST separately.",
       sub:()=>"price cap set by NPPA, India's price regulator",
       subUnverified:()=>"ceiling not independently re-confirmed &mdash; see below",
       foundClear:"No implant priced above an NPPA ceiling", subClear:"stents / knee implants checked",
-      money:()=>"This is a legal price ceiling, not a guideline. Billing above it is a statutory violation.",
+      money:()=>"This is a price ceiling set by NPPA, not a guideline. A price above the ceiling plus GST is worth asking the hospital to explain.",
       moneyUnverified:()=>"This is a real NPPA notification, but this app has not independently re-confirmed it is still the current ceiling &mdash; confirm before treating it as settled.",
-      doText:"This is your strongest line to raise &mdash; ask the hospital to justify the price against the NPPA notification, or request a refund of the difference.",
+      doText:"Ask the hospital to justify the price against the NPPA notification, or request a refund of the difference.",
       doTextUnverified:"Ask the hospital to justify the price against the NPPA notification, and confirm the ceiling is still current before requesting a refund." },
     recon: { label:"Check sum",
       found:diff=>`Bill total off by ${diff}`, sub:(gross,lineSum)=>`printed ${gross} vs lines ${lineSum} &mdash; may be the hospital's arithmetic`,
       foundClear:"Bill reconciles", subClear:"sum of lines matches the printed total",
+      foundNotCompared:"Bill total not compared", subNotCompared:"no printed total could be read from this bill",
       money:()=>"This is the hospital&rsquo;s own arithmetic, not yours or ours. It doesn&rsquo;t change what you owe.",
       doText:"Point the billing desk to this gap and ask them to explain it. Keep this bill as your record either way." },
     dup: { label:"Twice",
@@ -914,7 +924,7 @@ hi: {
   need_key: "इसके लिए एक बार Gemini key चाहिए (मुफ़्त)। ऊपर डालें, फिर फ़ोटो दोबारा चुनें।",
   busy_byo: "मुफ़्त पढ़ने की सेवा अभी व्यस्त है। कुछ मिनट बाद दोबारा कोशिश करें, या नीचे अपनी मुफ़्त Gemini key डालकर फिर से Check दबाएँ।",
   choose_image: "सिर्फ़ इमेज चुनें (JPG या PNG)। PDF के लिए, हर पेज़ का स्क्रीनशॉट लें।",
-  reading_page: (i,n)=>n>1?`पेज़ ${i} / ${n} पढ़ा जा रहा है&hellip;`:'आपका बिल पढ़ा जा रहा है&hellip;',
+  reading_page: (i,n)=>n>1?`पेज़ ${i} / ${n} पढ़ा जा रहा है…`:'आपका बिल पढ़ा जा रहा है…',
   read_lines: (n,pages)=>pages>1?`${pages} पेज़ों में ${n} लाइन आइटम पढ़े गए।`:`${n} लाइन आइटम पढ़े गए।`,
   no_lines_found: "जवाब में कोई लाइन आइटम नहीं मिला।",
   no_bill_pages: "इनमें से कोई भी अस्पताल के बिल का पेज़ नहीं लगता। बिल की तस्वीर अपलोड करें — कवर लेटर या रसीद नहीं।",
@@ -949,6 +959,9 @@ hi: {
   detail_matched_src:m=>`मेल: ${m}`,
   basis_policy_exclusion_badge:"नीति अपवाद, IRDAI सूची I नहीं",
   nppa_unverified_badge:"सीमा की स्वतंत्र रूप से पुष्टि नहीं हुई",
+  nppa_stale_note:"घुटने के इम्प्लांट की सीमाएँ 15 नवंबर 2026 तक मान्य प्रकाशित थीं। इन पर भरोसा करने से पहले जाँचें कि कोई नई NPPA अधिसूचना लागू है या नहीं।",
+  notcompared_word:"जाँचा नहीं गया",
+  partial_note:(one,rej)=>[one?"सिर्फ़ एक पेज पढ़ा गया। अगर आपके बिल में और पेज हैं तो उन्हें जोड़ें &mdash; ये जाँचें सिर्फ़ अपलोड किए गए हिस्से पर हैं।":"",rej?`${rej} फ़ोटो बिल का पेज नहीं लगी और छोड़ दी गई, इसलिए ये जाँचें पूरे बिल पर लागू नहीं हो सकतीं।`:""].filter(Boolean).join(" "),
   detail_nppa:"सांविधिक मूल्य सीमा से ऊपर (NPPA)",
   detail_nppa_plain:"NPPA, भारत के दवा और मेडिकल डिवाइस मूल्य नियामक, द्वारा तय क़ानूनी सीमा &mdash; राय नहीं।",
   detail_nppa_src:(ref,ceiling,gst)=>`${ref} के लिए NPPA सीमा: ${ceiling} (${gst})`,
@@ -1023,18 +1036,24 @@ hi: {
       money:()=>"ये व्यवहार में अक्सर काटी जाती हैं, पर प्रकाशित सूची में नाम से नहीं हैं, इसलिए यह पुष्ट निष्कर्ष नहीं है।",
       doText:"अपने बीमा कंपनी से इन्हें विशेष रूप से पुष्टि करने को कहें। सिर्फ़ इसी आधार पर विवाद न करें।" },
     nppa: { label:"NPPA सीमा से ऊपर",
-      found:n=>`${n} इम्प्लांट अपनी सांविधिक सीमा से ऊपर है`,
-      foundUnverified:n=>`${n} इम्प्लांट एक प्रकाशित NPPA सीमा से ऊपर है`,
+      labelGst:"NPPA — GST जाँचें",
+      found:n=>`${n} इम्प्लांट NPPA सीमा और GST से ऊपर की क़ीमत पर है`,
+      foundUnverified:n=>`${n} इम्प्लांट एक प्रकाशित NPPA सीमा और GST से ऊपर की क़ीमत पर है`,
+      foundGst:n=>`${n} इम्प्लांट NPPA सीमा से थोड़ा ऊपर की क़ीमत पर है`,
+      subGst:()=>"सीमा से 5% के भीतर &mdash; शायद सिर्फ़ GST हो",
+      moneyGst:()=>"GST सीमा के ऊपर से लगता है, इसलिए सीमा से कुछ प्रतिशत ऊपर की क़ीमत सामान्य हो सकती है। यह अपने आप में कोई निष्कर्ष नहीं है।",
+      doTextGst:"देखें कि बिल की क़ीमत में GST शामिल है या नहीं। शामिल है तो कुछ उठाने की ज़रूरत नहीं; नहीं है तो अस्पताल से GST अलग दिखाने को कहें।",
       sub:()=>"NPPA, भारत के मूल्य नियामक, द्वारा तय सीमा",
       subUnverified:()=>"सीमा की स्वतंत्र रूप से दोबारा पुष्टि नहीं हुई &mdash; नीचे देखें",
       foundClear:"कोई इम्प्लांट NPPA सीमा से ऊपर क़ीमत पर नहीं", subClear:"स्टेंट / घुटने के इम्प्लांट जाँचे गए",
-      money:()=>"यह एक क़ानूनी मूल्य सीमा है, सुझाव नहीं। इससे ऊपर बिल करना सांविधिक उल्लंघन है।",
+      money:()=>"यह NPPA द्वारा तय क़ीमत की सीमा है, सुझाव नहीं। सीमा और GST से ऊपर की क़ीमत के बारे में अस्पताल से स्पष्टीकरण माँगना उचित है।",
       moneyUnverified:()=>"यह एक असली NPPA अधिसूचना है, पर इस ऐप ने स्वतंत्र रूप से पुष्टि नहीं की है कि यही अभी की सीमा है &mdash; इसे तय मानने से पहले पुष्टि करें।",
-      doText:"यह आपकी सबसे मज़बूत बात है &mdash; अस्पताल से NPPA अधिसूचना के मुक़ाबले क़ीमत का औचित्य पूछें, या अंतर की वापसी माँगें।",
+      doText:"अस्पताल से NPPA अधिसूचना के मुक़ाबले क़ीमत का औचित्य पूछें, या अंतर की वापसी माँगें।",
       doTextUnverified:"अस्पताल से NPPA अधिसूचना के मुक़ाबले क़ीमत का औचित्य पूछें, और वापसी माँगने से पहले सीमा की पुष्टि करें।" },
     recon: { label:"योग जाँच",
       found:diff=>`बिल का योग ${diff} से गड़बड़ है`, sub:(gross,lineSum)=>`छपा ${gross} बनाम लाइनों का योग ${lineSum} &mdash; शायद अस्पताल की अपनी गणना`,
       foundClear:"बिल का मिलान सही है", subClear:"लाइनों का योग छपी कुल राशि से मेल खाता है",
+      foundNotCompared:"बिल का कुल योग मिलाया नहीं गया", subNotCompared:"इस बिल से छपी कुल राशि पढ़ी नहीं जा सकी",
       money:()=>"यह अस्पताल की अपनी गणना है, आपकी या हमारी नहीं। इससे आपकी देय राशि नहीं बदलती।",
       doText:"बिलिंग डेस्क को यह अंतर दिखाएँ और समझाने को कहें। इस बिल को अपने रिकॉर्ड के तौर पर रखें।" },
     dup: { label:"दो बार",
@@ -1084,7 +1103,7 @@ mr: {
   need_key: "यासाठी एकदा Gemini key लागते (मोफत). वर टाका, मग फोटो पुन्हा निवडा.",
   busy_byo: "मोफत वाचन सेवा सध्या व्यस्त आहे. काही मिनिटांनी पुन्हा प्रयत्न करा, किंवा खाली तुमची स्वतःची मोफत Gemini key टाकून पुन्हा Check दाबा.",
   choose_image: "फक्त इमेज निवडा (JPG किंवा PNG). PDF साठी, प्रत्येक पानाचा स्क्रीनशॉट घ्या.",
-  reading_page: (i,n)=>n>1?`पान ${i} / ${n} वाचलं जात आहे&hellip;`:'तुमचं बिल वाचलं जात आहे&hellip;',
+  reading_page: (i,n)=>n>1?`पान ${i} / ${n} वाचलं जात आहे…`:'तुमचं बिल वाचलं जात आहे…',
   read_lines: (n,pages)=>pages>1?`${pages} पानांमध्ये ${n} लाइन आयटम वाचले.`:`${n} लाइन आयटम वाचले.`,
   no_lines_found: "उत्तरात कोणतेही लाइन आयटम सापडले नाहीत.",
   no_bill_pages: "यापैकी कोणतंही पान हॉस्पिटलच्या बिलासारखं दिसत नाही. बिलाचा फोटो अपलोड करा — कव्हर लेटर किंवा पावती नाही.",
@@ -1119,6 +1138,9 @@ mr: {
   detail_matched_src:m=>`जुळतं: ${m}`,
   basis_policy_exclusion_badge:"धोरण अपवाद, यादी I नाही",
   nppa_unverified_badge:"मर्यादेची स्वतंत्रपणे पुष्टी झालेली नाही",
+  nppa_stale_note:"गुडघा इम्प्लांटच्या मर्यादा 15 नोव्हेंबर 2026 पर्यंत वैध म्हणून प्रकाशित होत्या. यावर विसंबण्याआधी नवीन NPPA अधिसूचना लागू आहे का ते तपासा.",
+  notcompared_word:"तपासले नाही",
+  partial_note:(one,rej)=>[one?"फक्त एक पान वाचलं गेलं. तुमच्या बिलात आणखी पानं असतील तर ती जोडा &mdash; या तपासण्या फक्त अपलोड केलेल्या भागावर आहेत.":"",rej?`${rej} फोटो बिलाचं पान वाटला नाही आणि वगळला गेला, त्यामुळे या तपासण्या संपूर्ण बिलावर लागू नसू शकतात.`:""].filter(Boolean).join(" "),
   detail_nppa:"वैधानिक किंमत मर्यादेपेक्षा जास्त (NPPA)",
   detail_nppa_plain:"NPPA, भारताच्या औषध आणि वैद्यकीय उपकरण किंमत नियामकाने ठरवलेली कायदेशीर मर्यादा &mdash; मत नाही.",
   detail_nppa_src:(ref,ceiling,gst)=>`${ref} साठी NPPA मर्यादा: ${ceiling} (${gst})`,
@@ -1193,18 +1215,24 @@ mr: {
       money:()=>"हे प्रत्यक्षात वारंवार कापले जातात, पण प्रकाशित यादीत नावाने नाहीत, त्यामुळे हा पक्का निष्कर्ष नाही.",
       doText:"तुमच्या विमा कंपनीला हे विशेषतः खात्री करून द्यायला सांगा. फक्त याच आधारावर वाद घालू नका." },
     nppa: { label:"NPPA मर्यादेपेक्षा जास्त",
-      found:n=>`${n} इम्प्लांट त्याच्या वैधानिक मर्यादेपेक्षा जास्त आहे`,
-      foundUnverified:n=>`${n} इम्प्लांट प्रकाशित NPPA मर्यादेपेक्षा जास्त आहे`,
+      labelGst:"NPPA — GST तपासा",
+      found:n=>`${n} इम्प्लांट NPPA मर्यादा आणि GST पेक्षा जास्त किमतीत आहे`,
+      foundUnverified:n=>`${n} इम्प्लांट प्रकाशित NPPA मर्यादा आणि GST पेक्षा जास्त किमतीत आहे`,
+      foundGst:n=>`${n} इम्प्लांट NPPA मर्यादेपेक्षा थोड्या जास्त किमतीत आहे`,
+      subGst:()=>"मर्यादेपेक्षा 5% च्या आत &mdash; कदाचित फक्त GST असेल",
+      moneyGst:()=>"GST मर्यादेच्या वर लागतो, त्यामुळे मर्यादेपेक्षा काही टक्के जास्त किंमत सामान्य असू शकते. हा स्वतःमध्ये निष्कर्ष नाही.",
+      doTextGst:"बिलावरील किमतीत GST समाविष्ट आहे का ते पहा. असेल तर काही मांडण्याची गरज नाही; नसेल तर रुग्णालयाला GST वेगळा दाखवायला सांगा.",
       sub:()=>"NPPA, भारताच्या किंमत नियामकाने ठरवलेली मर्यादा",
       subUnverified:()=>"मर्यादेची स्वतंत्रपणे पुन्हा पुष्टी झालेली नाही &mdash; खाली पहा",
       foundClear:"कोणताही इम्प्लांट NPPA मर्यादेपेक्षा जास्त किमतीत नाही", subClear:"स्टेंट / गुडघा इम्प्लांट तपासले",
-      money:()=>"ही कायदेशीर किंमत मर्यादा आहे, सूचना नाही. यापेक्षा जास्त बिल करणं वैधानिक उल्लंघन आहे.",
+      money:()=>"ही NPPA ने ठरवलेली किंमत मर्यादा आहे, सूचना नाही. मर्यादा आणि GST पेक्षा जास्त किमतीबद्दल रुग्णालयाकडून स्पष्टीकरण मागणं योग्य आहे.",
       moneyUnverified:()=>"ही खरी NPPA अधिसूचना आहे, पण हे अ‍ॅप सध्याची मर्यादा हीच आहे याची स्वतंत्रपणे पुष्टी करू शकलेलं नाही &mdash; हे निश्चित मानण्याआधी पुष्टी करा.",
-      doText:"हा तुमचा सर्वात भक्कम मुद्दा आहे &mdash; रुग्णालयाला NPPA अधिसूचनेच्या तुलनेत किमतीचं समर्थन विचारा, किंवा फरकाचा परतावा मागा.",
+      doText:"रुग्णालयाला NPPA अधिसूचनेच्या तुलनेत किमतीचं समर्थन विचारा, किंवा फरकाचा परतावा मागा.",
       doTextUnverified:"रुग्णालयाला NPPA अधिसूचनेच्या तुलनेत किमतीचं समर्थन विचारा, आणि परतावा मागण्याआधी मर्यादेची पुष्टी करा." },
     recon: { label:"बेरीज तपासा",
       found:diff=>`बिलाची बेरीज ${diff} ने चुकीची आहे`, sub:(gross,lineSum)=>`छापील ${gross} विरुद्ध ओळींची बेरीज ${lineSum} &mdash; कदाचित रुग्णालयाची स्वतःची गणना`,
       foundClear:"बिलाचा ताळमेळ बरोबर आहे", subClear:"ओळींची बेरीज छापील एकूण रकमेशी जुळते",
+      foundNotCompared:"बिलाची एकूण रक्कम जुळवली नाही", subNotCompared:"या बिलावरील छापील एकूण रक्कम वाचता आली नाही",
       money:()=>"ही रुग्णालयाची स्वतःची गणना आहे, तुमची किंवा आमची नाही. यामुळे तुमची देय रक्कम बदलत नाही.",
       doText:"बिलिंग डेस्कला हा फरक दाखवा आणि स्पष्टीकरण मागा. हे बिल तुमच्या रेकॉर्डसाठी जपून ठेवा." },
     dup: { label:"दोनदा",
@@ -1333,7 +1361,21 @@ function parseAmount(v){
   const s=String(v).trim().replace(/^(?:₹|rs\.?|inr)\s*/i,'').replace(/,/g,'').replace(/\s+/g,'');
   return /^-?\d+(\.\d+)?$/.test(s)?{n:+s,bad:false}:{n:null,bad:true};
 }
-function analyse(data){
+// NPPA ceilings exclude GST, so a price a few percent above the ceiling can be
+// the ceiling plus GST. ASSUMPTION: 5% — the knee-implant notification says
+// "plus 5% GST", but the rate that applies to stents has not been confirmed from
+// a primary source (CBIC) — until it is, nothing between the ceiling and
+// ceiling x 1.05 is ever reported as a finding; it only asks "does the price
+// include GST?".
+const NPPA_GST_FACTOR=1.05;
+// Knee-implant ceilings were published as valid until 15 Nov 2026
+// (02_reference_data/nppa_ceilings.csv). After that the copy asks the user to
+// check for a newer notification instead of relying on the number.
+const NPPA_KNEE_VALID_TO=Date.UTC(2026,10,15,23,59,59);
+// "femoral component" also names a HIP part; a knee ceiling must never be
+// applied to it.
+const HIP_WORDS=/\b(hip|acetabul\w*|bipolar|unipolar|thr|stem|neck|head)\b/;
+function analyse(data,now){
   let unreadable=0;
   const amt=v=>{ const p=parseAmount(v); if(p.bad) unreadable++; return p.n; };
   const lines=(data.line_items||[]).map(l=>{
@@ -1348,6 +1390,7 @@ function analyse(data){
   const sum=a=>money(a.reduce((s,r)=>s+(r.total||0),0));
   const lineSum=sum(lines);
   let recon=null; const g=amt(H.gross_amount);
+  const reconCompared=g!=null;   // no printed total read => "not compared", never "clear"
   if(g!=null){ const d=money(g-lineSum); if(Math.abs(d)>=1) recon={diff:d,gross:money(g),lineSum}; }
   // Repeated charges: same item text and same amount. Ignored: blank items and
   // zero/missing amounts (a repeated 0.00 row is layout, not a double charge).
@@ -1393,16 +1436,28 @@ function analyse(data){
     else if(k==='hospital_gstin'&&!GSTIN_RE.test(String(v).replace(/\s/g,''))) malformed.push(label);
   }
   const noUnit = lines.length>0 && lines.every(l=>l.unit==null);
-  const nppa=[];
+  const nppa=[], nppaGst=[]; let nppaStale=false;
+  const clock=(now instanceof Date?now:new Date()).getTime();
   for(const l of lines){ const t=l.item.toLowerCase();
     for(const c of NPPA){ if(c.kw.some(k=>t.includes(k))){
+      const knee=c.item.startsWith('Knee');
+      if(knee&&HIP_WORDS.test(t)) break;
       const price=l.rate!=null?+l.rate:(l.total!=null&&l.quantity?(+l.total/Math.abs(l.quantity)):null);
-      if(price!=null&&price>c.ceiling) nppa.push({item:l.item,price:money(price),ceiling:c.ceiling,ref:c.item,gst:c.gst,grade:c.grade||'verify'});
+      // At or below the ceiling: never flagged.
+      if(price!=null&&price>c.ceiling){
+        const stale=knee&&clock>NPPA_KNEE_VALID_TO;
+        const row={item:l.item,price:money(price),ceiling:c.ceiling,ref:c.item,gst:c.gst,grade:c.grade||'verify',stale};
+        if(price>c.ceiling*NPPA_GST_FACTOR){ nppa.push(row); if(stale) nppaStale=true; }
+        else nppaGst.push(row);
+      }
       break;
     }}
   }
+  // Structural hedges only (no invented threshold): one page uploaded, or a
+  // page rejected as not-a-bill. Set by the upload flow on the merged object.
+  const partial=data._pageCount===1||(data._rejected||0)>0;
   const subtotals = data.printed_subtotals && Object.keys(data.printed_subtotals).length ? data.printed_subtotals : null;
-  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,missing,malformed,redacted,noUnit,nppa,subtotals,unreadable};
+  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,subtotals,unreadable,reconCompared,partial,rejected:data._rejected||0,pageCount:data._pageCount||null};
 }
 function sectionSums(lines){
   const m={}; lines.forEach(l=>{ const k=l.section||'Uncategorised'; m[k]=(m[k]||0)+(l.total||0); });
@@ -1487,13 +1542,16 @@ function renderReport(data){
   const explainHtml=(cls,{money,doText})=>
     `<div class="expl${cls==='green'?' ok':''}">${money?`<div class="money">${money}</div>`:''}${doText?`<div class="do"><b>${T_.do_label}</b>${doText}</div>`:''}</div>`;
 
-  const totalFlagged = ded>0 ? money(a.exactSum + a.reviewSum) : null;
-  const pcClamped = ded>0 ? Math.min(100, Math.round((a.exactSum+a.reviewSum)/ded*100)) : null;
+  // Only items NAMED in the published list count as "explained" or "flagged".
+  // The "commonly deducted" tier is a suggestion to confirm, not an explanation.
+  const totalFlagged = ded>0 ? money(a.exactSum) : null;
+  const pcClamped = ded>0 ? Math.min(100, Math.round(a.exactSum/ded*100)) : null;
+  const checksRan = 5-(a.reconCompared?0:1);
   if(ded>0){
     h+=`<div class="kpis">
       <div class="kpi"><div class="l">${T_.kpi_deducted}</div><div class="v">${inr.format(ded)}</div></div>
       <div class="kpi"><div class="l">${T_.kpi_explained}</div><div class="v">${pcClamped}%</div></div>
-      <div class="kpi"><div class="l">${T_.kpi_checks}</div><div class="v">5 / 5</div></div>
+      <div class="kpi"><div class="l">${T_.kpi_checks}</div><div class="v">${checksRan} / 5</div></div>
     </div>
     <button class="btn ghost sm" id="letterShortcut" style="margin-top:12px">${T_.letter_shortcut}</button>`;
   }
@@ -1513,12 +1571,16 @@ function renderReport(data){
     ? chk('red',C.nppa.label,
         nppaAllVerified?C.nppa.found(a.nppa.length):C.nppa.foundUnverified(a.nppa.length),
         nppaAllVerified?C.nppa.sub():C.nppa.subUnverified(),
-        {money:nppaAllVerified?C.nppa.money():C.nppa.moneyUnverified(), doText:nppaAllVerified?C.nppa.doText:C.nppa.doTextUnverified})
-    : chk('green',T_.clear_word,C.nppa.foundClear,C.nppa.subClear);
+        {money:(nppaAllVerified?C.nppa.money():C.nppa.moneyUnverified())+(a.nppaStale?' '+T_.nppa_stale_note:''), doText:nppaAllVerified?C.nppa.doText:C.nppa.doTextUnverified})
+    : (a.nppaGst.length?'':chk('green',T_.clear_word,C.nppa.foundClear,C.nppa.subClear));
+  if(a.nppaGst.length) h+=chk('ochre',C.nppa.labelGst,C.nppa.foundGst(a.nppaGst.length),C.nppa.subGst(),
+        {money:C.nppa.moneyGst(), doText:C.nppa.doTextGst});
   h+= a.recon
     ? chk('ochre',C.recon.label,C.recon.found(inr.format(Math.abs(a.recon.diff))),C.recon.sub(inr.format(a.recon.gross),inr.format(a.recon.lineSum)),
         {money:C.recon.money(), doText:C.recon.doText})
-    : chk('green',T_.clear_word,C.recon.foundClear,C.recon.subClear);
+    : (a.reconCompared
+        ? chk('green',T_.clear_word,C.recon.foundClear,C.recon.subClear)
+        : chk('grey',T_.notcompared_word,C.recon.foundNotCompared,C.recon.subNotCompared));
   h+= a.dups.length
     ? chk('ochre',C.dup.label,C.dup.found(a.dups.length),C.dup.sub(),
         {money:C.dup.money(), doText:C.dup.doText})
@@ -1529,6 +1591,7 @@ function renderReport(data){
         {money:C.is19493.money(), doText:C.is19493.doText})
     : chk('green',T_.clear_word,C.is19493.foundClear,C.is19493.subClear);
   h+=`</div>`;
+  if(a.partial) h+=`<div role="note" style="margin-top:10px;font-family:'Spectral',serif;font-size:.86rem;color:var(--soft);line-height:1.5">${T_.partial_note(a.pageCount===1,a.rejected)}</div>`;
   if(a.unreadable>0) h+=`<div role="note" style="margin-top:10px;font-family:'Spectral',serif;font-size:.86rem;color:var(--soft);line-height:1.5">${T_.unreadable_note(a.unreadable)}</div>`;
 
   if(ded>0) h+=`<div class="flagtot"><span>${T_.flagged_so_far}</span><span class="v">${inr.format(totalFlagged)}</span></div>`;
@@ -1675,12 +1738,12 @@ function buildLetter(a,include,noScroll){
     // "confirm, then refund" rather than an assertion of violation.
     const verified=a.nppa.filter(n=>n.grade==='verified'), unverified=a.nppa.filter(n=>n.grade!=='verified');
     if(verified.length){
-      L.push(`The following implant appears to be billed above its NPPA ceiling price, a statutory maximum under the DPCO:`,``);
+      L.push(`The following implant appears to be billed above its NPPA ceiling price (plus applicable GST):`,``);
       verified.forEach(n=>L.push(`  - ${n.item} - billed ${inr.format(n.price)}, ceiling ${inr.format(n.ceiling)} (${n.gst})`));
       L.push(``);
     }
     if(unverified.length){
-      L.push(`The following implant appears to be billed above a published NPPA ceiling price; please confirm this is still the current ceiling:`,``);
+      L.push(`The following implant appears to be billed above a published NPPA ceiling price (plus applicable GST); please confirm this is still the current ceiling:`,``);
       unverified.forEach(n=>L.push(`  - ${n.item} - billed ${inr.format(n.price)}, published ceiling ${inr.format(n.ceiling)} (${n.gst})`));
       L.push(``);
     }
@@ -1692,7 +1755,7 @@ function buildLetter(a,include,noScroll){
     `  2. Reconsideration of any amount above that is not a valid exclusion under my policy.`);
   if(a.nppa.length&&include.nppa){
     const hasVerified=a.nppa.some(n=>n.grade==='verified'), hasUnverified=a.nppa.some(n=>n.grade!=='verified');
-    if(hasVerified) L.push(`  3. Refund of any implant charge above the confirmed NPPA ceiling.`);
+    if(hasVerified) L.push(`  3. Refund of any implant charge above the confirmed NPPA ceiling plus applicable GST.`);
     if(hasUnverified) L.push(`  ${hasVerified?'4':'3'}. Confirmation of the current NPPA ceiling for the implant(s) above, and refund of any excess once confirmed.`);
   }
   L.push(``,`This letter was prepared with reference to published IRDAI and NPPA lists. It is a request for explanation, not an allegation.`,``,
@@ -1774,7 +1837,9 @@ async function extractOnePage(file,key){
 // with a second one would be worse than keeping the first.
 function mergePages(pages){
   const merged={header:{},line_items:[],printed_subtotals:{}};
+  const grosses=[], ambiguous=new Set();
   for(const p of pages){
+    const g0=parseAmount((p.header||{}).gross_amount).n; if(g0!=null&&!grosses.includes(g0)) grosses.push(g0);
     for(const [k,v] of Object.entries(p.header||{})){
       const blank=v===null||v===undefined||v==='';
       const haveNone=merged.header[k]===undefined||merged.header[k]===null||merged.header[k]==='';
@@ -1783,7 +1848,19 @@ function mergePages(pages){
     merged.line_items.push(...(p.line_items||[]));
     for(const [k,v] of Object.entries(p.printed_subtotals||{})){
       if(merged.printed_subtotals[k]===undefined) merged.printed_subtotals[k]=v;
+      else if(parseAmount(merged.printed_subtotals[k]).n!==parseAmount(v).n) ambiguous.add(k);
     }
+  }
+  // Two different printed figures for the same section: keeping either would be
+  // a guess, so drop it and let the report use the computed sum.
+  ambiguous.forEach(k=>delete merged.printed_subtotals[k]);
+  // The first page's gross is not necessarily the bill's grand total. Prefer a
+  // gross that reconciles with the merged lines; if several pages disagree and
+  // none reconciles, use none (the check then reads "not compared").
+  if(grosses.length>1){
+    const total=merged.line_items.reduce((s,l)=>s+(parseAmount(l.total).n||0),0);
+    const ok=grosses.find(g=>Math.abs(g-total)<1);
+    merged.header.gross_amount = ok!==undefined ? ok : null;
   }
   merged._pageCount=pages.length;
   return merged;
@@ -1887,6 +1964,7 @@ async function processQueuedFiles(){
     }
     if(!pages.length) throw new Error(T_.no_bill_pages);
     const merged=mergePages(pages);
+    merged._rejected=rejected.length;
     if(!merged.line_items.length) throw new Error(T_.no_lines_found);
     setStatus(rejected.length
       ? T_.read_lines_partial(merged.line_items.length,files.length,rejected.length)
@@ -1929,7 +2007,7 @@ function applyStaticI18n(){
   $('counterPaymentLbl').textContent=T_.counter_payment;
   $('insurerApprovedLbl').textContent=T_.insurer_approved;
   $('secBill').textContent=T_.sec_bill;
-  $('billLead').textContent=T_.bill_lead;
+  $('billLead').innerHTML=T_.bill_lead;
   $('dropText').innerHTML=T_.drop_html;
   $('apikeyLbl').innerHTML=T_.apikey_html;
   $('footText').innerHTML=T_.foot_html;
@@ -1999,7 +2077,7 @@ function renderLetterTab(){
   if(a.dups.length) rows.push(['dup', T_.letter_confirm_dup(a.dups.length), '✓']);
   if(a.recon) rows.push(['recon', T_.letter_confirm_recon, inr.format(Math.abs(a.recon.diff))]);
   $('letterIncludes').innerHTML=
-    rows.map(([key,k,v])=>`<label class="inclrow"><input type="checkbox" checked data-inc="${key}"><span class="incltext">${k}</span><span class="v">${v}</span></label>`).join('')
+    rows.map(([key,k,v])=>`<label class="inclrow"><input type="checkbox" ${key==='recon'&&a.partial?'':'checked'} data-inc="${key}"><span class="incltext">${k}</span><span class="v">${v}</span></label>`).join('')
     + `<div class="inclrow static"><span class="incltext">${T_.letter_confirm_sent_to}</span><span class="v">${T_.letter_confirm_sent_to_val}</span></div>`;
 }
 // Editing a detail updates a letter that is already on screen (no scroll jump).
@@ -2018,6 +2096,7 @@ $('genLetterTab').addEventListener('click',()=>{
 function setLang(lang){
   if(!STRINGS[lang]) return;
   LANG=lang;
+  document.documentElement.lang=lang;
   try{ localStorage.setItem('clearbill_lang',lang); }catch(e){}
   inr=makeInr(lang);
   document.querySelectorAll('#langsw button').forEach(b=>b.classList.toggle('on',b.dataset.lang===lang));

@@ -19,9 +19,10 @@ pharmacy-return lines (SYN-03, SYN-09), 30-line ICU bill (SYN-09), bills with no
 unit column (SYN-06, SYN-10), bills with no GSTIN / no bill number (SYN-06, 07,
 08, 10).
 
-## Defect detection — deterministic checks on the Gemini output
+## Defect detection — deterministic checks on the clean ground-truth data
 
-11 / 11 planted defects caught, 0 false positives on the 4 clean bills
+11 / 11 planted defects caught, 0 false positives on the 4 clean bills.
+(The 11 are counted across the 6 defective bills, some carrying more than one. This run used the clean ground truth, not the Gemini extractions — `check_detection.js` says so itself — so it shows the checks work, not that photo noise never hides a defect.)
 (SYN-01, 02, 05, 09 produced zero flags).
 
 | bill | planted | caught |
@@ -69,7 +70,7 @@ file needed).
 | section | lines | extracted | printed | |
 |---|---|---|---|---|
 | REGISTRATION | 1 | 410.00 | 410.00 | ✓ |
-| CLINICAL SUPPORT SERVICES | 5 | 8,130.00 | 8,130.00 | ✓ |
+| CLINICAL SUPPORT SERVICES | 5 | 8,130.00 | 8,130.00 | ✓ (needs re-checking: the stored extraction lists this section's printed subtotal as 7,980.00) |
 | CONSULTATION | 3 | 3,020.00 | 3,020.00 | ✓ |
 | BED CHARGES | 1 | 4,500.00 | 4,500.00 | ✓ |
 | LAB SERVICES | 4 | 6,130.00 | 6,130.00 | ✓ |

@@ -104,7 +104,10 @@ Above that line a mistake is a bug. Below it a mistake is a lie. Keep them on op
 
 ## Still open
 
-- **Google Cloud** — billing active, but the Gemini key returned `RESOURCE_EXHAUSTED` (prepayment credits depleted) on 2 Sep, so the live extraction path is down until that is topped up. Cloud Run deploy status unverified: `DEPLOY.md` Path B is written and untested against a real deploy. Confirm at console.cloud.google.com/run and update this line and the checkpoint submission together.
+- **Live extraction and its limits** — the app runs on Cloud Run (asia-south1) with the Gemini key in Secret Manager. The server limits requests per IP and per day; when a limit is hit it says so and offers the user's own key. It is not a guaranteed-availability service.
 - **User validation** at n=1.
-- **Test corpus** at one bill. Accuracy cannot be claimed until ten.
-- **IRDAI table** built from an insurer-circulated copy. Verify against the current master circular before flagging on it.
+- **Test corpus** — one real six-page bill plus a synthetic set. Accuracy on real photographed bills beyond that one bill is not established.
+- **Not tested on real devices** — phone browsers, print-to-PDF output, screen readers.
+- **Hindi and Marathi text** is machine-translated and has not been reviewed by a native speaker.
+- **NPPA knee-implant ceilings** are real notifications this project has not independently re-confirmed, and were published as valid until 15 Nov 2026. The GST allowance applied to implant ceilings (5%) is an assumption pending a primary source.
+- **IRDAI table** is built from an insurer's reproduction of List I; see `02_reference_data/IRDAI_VERIFICATION.md` for what was checked and what was not.

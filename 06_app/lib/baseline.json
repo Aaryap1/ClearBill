@@ -39,7 +39,9 @@
   ],
   "malformed": [],
   "noUnit": true,
-  "nppa": []
+  "nppa": [],
+  "nppaGst": [],
+  "reconCompared": true
  },
  "SYN-01": {
   "lines": 23,
@@ -66,7 +68,9 @@
   ],
   "malformed": [],
   "noUnit": false,
-  "nppa": []
+  "nppa": [],
+  "nppaGst": [],
+  "reconCompared": true
  },
  "SYN-02": {
   "lines": 19,
@@ -91,7 +95,9 @@
   ],
   "malformed": [],
   "noUnit": false,
-  "nppa": []
+  "nppa": [],
+  "nppaGst": [],
+  "reconCompared": true
  },
  "SYN-03": {
   "lines": 34,
@@ -120,7 +126,9 @@
   ],
   "malformed": [],
   "noUnit": false,
-  "nppa": []
+  "nppa": [],
+  "nppaGst": [],
+  "reconCompared": true
  },
  "SYN-04": {
   "lines": 25,
@@ -149,7 +157,9 @@
   ],
   "malformed": [],
   "noUnit": false,
-  "nppa": []
+  "nppa": [],
+  "nppaGst": [],
+  "reconCompared": true
  },
  "SYN-05": {
   "lines": 19,
@@ -177,7 +187,9 @@
   ],
   "malformed": [],
   "noUnit": false,
-  "nppa": []
+  "nppa": [],
+  "nppaGst": [],
+  "reconCompared": true
  },
  "SYN-06": {
   "lines": 26,
@@ -206,7 +218,9 @@
   ],
   "malformed": [],
   "noUnit": true,
-  "nppa": []
+  "nppa": [],
+  "nppaGst": [],
+  "reconCompared": true
  },
  "SYN-08": {
   "lines": 24,
@@ -236,7 +250,9 @@
   ],
   "malformed": [],
   "noUnit": false,
-  "nppa": []
+  "nppa": [],
+  "nppaGst": [],
+  "reconCompared": true
  },
  "SYN-09": {
   "lines": 30,
@@ -263,7 +279,9 @@
   ],
   "malformed": [],
   "noUnit": false,
-  "nppa": []
+  "nppa": [],
+  "nppaGst": [],
+  "reconCompared": true
  },
  "SYN-10": {
   "lines": 25,
@@ -292,6 +310,8 @@
   ],
   "malformed": [],
   "noUnit": true,
-  "nppa": []
+  "nppa": [],
+  "nppaGst": [],
+  "reconCompared": true
  }
 }

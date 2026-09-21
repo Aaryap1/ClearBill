@@ -55,6 +55,8 @@ function snapshot(a) {
     malformed: a.malformed.slice().sort(),
     noUnit: !!a.noUnit,
     nppa: a.nppa.map(n => n.ref + '|' + n.grade).sort(),
+    nppaGst: a.nppaGst.map(n => n.ref).sort(),
+    reconCompared: a.reconCompared,
   };
 }
 

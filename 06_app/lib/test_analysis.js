@@ -69,6 +69,46 @@ console.log('== unreadable amounts are counted, not treated as 0');
   ok(A([['Bed', 10], ['Drug', 40]]).unreadable === 0, 'clean bills report zero unreadable');
 }
 
+console.log('== NPPA: conservative-only');
+const N = (item, rate, now) => checks.analyse({ header: {}, line_items: [{ item, quantity: 1, rate, total: rate }] }, now);
+const before = new Date('2026-09-21'), after = new Date('2026-11-16');
+ok(N('Drug eluting stent', 39186.03, before).nppa.length === 0 && N('Drug eluting stent', 39186.03, before).nppaGst.length === 0, 'a stent at exactly the ceiling is never flagged');
+ok(N('Drug eluting stent', 30000, before).nppa.length === 0, 'a stent below the ceiling is never flagged');
+{ const r = N('Drug eluting stent', 41000, before); ok(r.nppa.length === 0 && r.nppaGst.length === 1, 'just above the ceiling (within 5%) is only "check GST", not a finding'); }
+{ const r = N('Drug eluting stent', 39186.03 * 1.05, before); ok(r.nppa.length === 0 && r.nppaGst.length === 1, 'exactly ceiling x 1.05 is still "check GST"'); }
+{ const r = N('Drug eluting stent', 45000, before); ok(r.nppa.length === 1 && r.nppaGst.length === 0, 'well above ceiling plus GST is flagged'); }
+ok(N('Hip femoral component', 90000, before).nppa.length === 0, 'a HIP femoral component never gets a knee ceiling');
+ok(N('Bipolar femoral component', 90000, before).nppa.length === 0, 'a bipolar femoral component never gets a knee ceiling');
+ok(N('Knee femoral component', 90000, before).nppa.length === 1, 'a knee femoral component is still checked');
+ok(N('Knee femoral component', 90000, before).nppaStale === false, 'knee ceilings are not marked stale before 15 Nov 2026');
+ok(N('Knee femoral component', 90000, after).nppaStale === true, 'knee ceilings are marked stale after 15 Nov 2026 (copy becomes more cautious)');
+ok(N('Drug eluting stent', 45000, after).nppaStale === false, 'stent ceilings (open-ended from 1 Apr 2026) are not marked stale');
+
+console.log('== recon: not compared is not clear');
+ok(checks.analyse({ header: {}, line_items: [{ item: 'X', total: 10 }] }).reconCompared === false, 'no printed total => reconCompared is false');
+ok(checks.analyse({ header: { gross_amount: 10 }, line_items: [{ item: 'X', total: 10 }] }).reconCompared === true, 'a printed total that matches => compared and no gap');
+ok(checks.analyse({ header: { gross_amount: '(10)' }, line_items: [{ item: 'X', total: 10 }] }).reconCompared === false, 'an unreadable printed total => not compared');
+
+console.log('== partial uploads');
+ok(checks.analyse({ header: {}, line_items: [{ item: 'X', total: 1 }], _pageCount: 1 }).partial === true, 'one page uploaded is flagged partial');
+ok(checks.analyse({ header: {}, line_items: [{ item: 'X', total: 1 }], _pageCount: 3, _rejected: 0 }).partial === false, 'three pages read is not partial');
+ok(checks.analyse({ header: {}, line_items: [{ item: 'X', total: 1 }], _pageCount: 3, _rejected: 1 }).partial === true, 'a rejected page is flagged partial');
+
+console.log('== mergePages: gross and section totals');
+{
+  const src = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  const m = src.match(/function mergePages\(pages\)\{[\s\S]*?\r?\n\}\r?\n/);
+  const mergePages = new Function('parseAmount', m[0] + '; return mergePages;')(checks.parseAmount);
+  const pg = (gross, rows, sub) => ({ header: { gross_amount: gross }, line_items: rows.map(t => ({ item: 'I', total: t })), printed_subtotals: sub || {} });
+  ok(mergePages([pg(100, [40]), pg(100, [60])]).header.gross_amount === 100, 'the same gross on every page is kept');
+  ok(mergePages([pg(40, [40]), pg(100, [60])]).header.gross_amount === 100, 'a gross that reconciles with all the lines beats the first page\'s figure');
+  ok(mergePages([pg(55, [40]), pg(77, [60])]).header.gross_amount === null, 'conflicting grosses with none reconciling => none used (not compared)');
+  ok(mergePages([pg(null, [40]), pg(100, [60])]).header.gross_amount === 100, 'a gross only on a later page is still found');
+  const s = mergePages([pg(null, [1], { Room: 100 }), pg(null, [1], { Room: 200 })]).printed_subtotals;
+  ok(!('Room' in s), 'two different printed subtotals for one section => neither is trusted');
+  ok(mergePages([pg(null, [1], { Room: 100 }), pg(null, [1], { Room: 100 })]).printed_subtotals.Room === 100, 'identical repeats are kept');
+}
+
 if (old) {
   console.log('== matcher.js duplicate parity');
   const rows = (r) => r.map(([item, total]) => ({ item, quantity: 1, total }));

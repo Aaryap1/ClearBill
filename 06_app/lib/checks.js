@@ -241,7 +241,21 @@ function parseAmount(v){
   const s=String(v).trim().replace(/^(?:₹|rs\.?|inr)\s*/i,'').replace(/,/g,'').replace(/\s+/g,'');
   return /^-?\d+(\.\d+)?$/.test(s)?{n:+s,bad:false}:{n:null,bad:true};
 }
-function analyse(data){
+// NPPA ceilings exclude GST, so a price a few percent above the ceiling can be
+// the ceiling plus GST. ASSUMPTION: 5% — the knee-implant notification says
+// "plus 5% GST", but the rate that applies to stents has not been confirmed from
+// a primary source (CBIC) — until it is, nothing between the ceiling and
+// ceiling x 1.05 is ever reported as a finding; it only asks "does the price
+// include GST?".
+const NPPA_GST_FACTOR=1.05;
+// Knee-implant ceilings were published as valid until 15 Nov 2026
+// (02_reference_data/nppa_ceilings.csv). After that the copy asks the user to
+// check for a newer notification instead of relying on the number.
+const NPPA_KNEE_VALID_TO=Date.UTC(2026,10,15,23,59,59);
+// "femoral component" also names a HIP part; a knee ceiling must never be
+// applied to it.
+const HIP_WORDS=/\b(hip|acetabul\w*|bipolar|unipolar|thr|stem|neck|head)\b/;
+function analyse(data,now){
   let unreadable=0;
   const amt=v=>{ const p=parseAmount(v); if(p.bad) unreadable++; return p.n; };
   const lines=(data.line_items||[]).map(l=>{
@@ -256,6 +270,7 @@ function analyse(data){
   const sum=a=>money(a.reduce((s,r)=>s+(r.total||0),0));
   const lineSum=sum(lines);
   let recon=null; const g=amt(H.gross_amount);
+  const reconCompared=g!=null;   // no printed total read => "not compared", never "clear"
   if(g!=null){ const d=money(g-lineSum); if(Math.abs(d)>=1) recon={diff:d,gross:money(g),lineSum}; }
   // Repeated charges: same item text and same amount. Ignored: blank items and
   // zero/missing amounts (a repeated 0.00 row is layout, not a double charge).
@@ -301,16 +316,28 @@ function analyse(data){
     else if(k==='hospital_gstin'&&!GSTIN_RE.test(String(v).replace(/\s/g,''))) malformed.push(label);
   }
   const noUnit = lines.length>0 && lines.every(l=>l.unit==null);
-  const nppa=[];
+  const nppa=[], nppaGst=[]; let nppaStale=false;
+  const clock=(now instanceof Date?now:new Date()).getTime();
   for(const l of lines){ const t=l.item.toLowerCase();
     for(const c of NPPA){ if(c.kw.some(k=>t.includes(k))){
+      const knee=c.item.startsWith('Knee');
+      if(knee&&HIP_WORDS.test(t)) break;
       const price=l.rate!=null?+l.rate:(l.total!=null&&l.quantity?(+l.total/Math.abs(l.quantity)):null);
-      if(price!=null&&price>c.ceiling) nppa.push({item:l.item,price:money(price),ceiling:c.ceiling,ref:c.item,gst:c.gst,grade:c.grade||'verify'});
+      // At or below the ceiling: never flagged.
+      if(price!=null&&price>c.ceiling){
+        const stale=knee&&clock>NPPA_KNEE_VALID_TO;
+        const row={item:l.item,price:money(price),ceiling:c.ceiling,ref:c.item,gst:c.gst,grade:c.grade||'verify',stale};
+        if(price>c.ceiling*NPPA_GST_FACTOR){ nppa.push(row); if(stale) nppaStale=true; }
+        else nppaGst.push(row);
+      }
       break;
     }}
   }
+  // Structural hedges only (no invented threshold): one page uploaded, or a
+  // page rejected as not-a-bill. Set by the upload flow on the merged object.
+  const partial=data._pageCount===1||(data._rejected||0)>0;
   const subtotals = data.printed_subtotals && Object.keys(data.printed_subtotals).length ? data.printed_subtotals : null;
-  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,missing,malformed,redacted,noUnit,nppa,subtotals,unreadable};
+  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,subtotals,unreadable,reconCompared,partial,rejected:data._rejected||0,pageCount:data._pageCount||null};
 }
 
 module.exports = { NON_PAYABLE, NPPA, IS19493_HEADER, GSTIN_RE, money, bestMatch, parseAmount, analyse };
