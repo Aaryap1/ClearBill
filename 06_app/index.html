@@ -796,6 +796,7 @@ en: {
   detail_is19493_plain:"IS 19493:2025 is a <strong>voluntary</strong> format set by the Bureau of Indian Standards (BIS). It expects the following, which this bill does not show:",
   detail_is19493_unit:"Every charge line is missing the <strong>Unit</strong> column",
   detail_is19493_malformed:"present, but not in the expected format",
+  is19493_placeholder:v=>`Unique bill number (reads "${v}", not a final bill number)`,
   detail_is19493_redacted:n=>`${n} patient/hospital identity field${n===1?'':'s'} were blacked out for privacy before analysis &mdash; not assessed here, and not counted against the bill.`,
   letter_btn:"Generate a letter to attach to a complaint",
   letter_shortcut:"Need to complain? Draft the letter now",
@@ -974,6 +975,7 @@ hi: {
   detail_is19493_plain:"IS 19493:2025 भारतीय मानक ब्यूरो (BIS) का एक <strong>स्वैच्छिक</strong> प्रारूप है। यह निम्नलिखित की अपेक्षा करता है, जो इस बिल में नहीं है:",
   detail_is19493_unit:"हर चार्ज लाइन में <strong>यूनिट</strong> कॉलम नहीं है",
   detail_is19493_malformed:"मौजूद है, पर तय प्रारूप में नहीं",
+  is19493_placeholder:v=>`यूनिक बिल नंबर (“${v}” लिखा है, अंतिम बिल नंबर नहीं)`,
   detail_is19493_redacted:n=>`विश्लेषण से पहले ${n} मरीज़/अस्पताल पहचान फ़ील्ड निजता के लिए हटाई गई थीं &mdash; यहाँ इनकी जाँच नहीं की गई, और इन्हें बिल के विरुद्ध नहीं गिना गया।`,
   letter_btn:"शिकायत के साथ लगाने के लिए पत्र बनाएँ",
   letter_shortcut:"शिकायत करनी है? अभी पत्र तैयार करें",
@@ -1153,6 +1155,7 @@ mr: {
   detail_is19493_plain:"IS 19493:2025 हा भारतीय मानक ब्युरो (BIS) चा एक <strong>ऐच्छिक</strong> स्वरूप आहे. तो खालील अपेक्षा करतो, जे या बिलात नाही:",
   detail_is19493_unit:"प्रत्येक चार्ज ओळीत <strong>युनिट</strong> कॉलम नाही",
   detail_is19493_malformed:"आहे, पण अपेक्षित नमुन्यात नाही",
+  is19493_placeholder:v=>`युनिक बिल नंबर (“${v}” असं लिहिलं आहे, अंतिम बिल नंबर नाही)`,
   detail_is19493_redacted:n=>`विश्लेषणापूर्वी ${n} रुग्ण/रुग्णालय ओळख फील्ड गोपनीयतेसाठी काढून टाकली होती &mdash; येथे त्यांची तपासणी केलेली नाही, आणि ती बिलाविरुद्ध मोजलेली नाहीत.`,
   letter_btn:"तक्रारीसोबत जोडण्यासाठी पत्र तयार करा",
   letter_shortcut:"तक्रार करायची आहे? आत्ताच पत्र तयार करा",
@@ -1616,7 +1619,11 @@ function renderReport(data){
     `<div class="plain">${T_.detail_is19493_plain}</div>`+
     (a.noUnit?`<div class="li"><div>${T_.detail_is19493_unit}</div></div>`:'')+
     a.malformed.map(m=>`<div class="li"><div>${esc(m)}<span class="src">${T_.detail_is19493_malformed}</span></div></div>`).join('')+
-    a.missing.map(m=>`<div class="li"><div>${esc(m)}</div></div>`).join('')+redNote);
+    a.missing.map(m=>{
+      // analyse() words a placeholder bill number in English; show it in the screen language.
+      const ph=/^.*? \(reads "(.*)", not a final bill number\)$/.exec(m);
+      return `<div class="li"><div>${esc(ph?T_.is19493_placeholder(ph[1]):m)}</div></div>`;
+    }).join('')+redNote);
   else if(redNote) h+=det(T_.detail_is19493,'',redNote);
 
   h+=`</div>`;
@@ -2103,6 +2110,9 @@ function setLang(lang){
   applyStaticI18n();
   if(window.__settle) calc();                              // re-derives settle text and re-renders the report
   else if(window.__lastExtraction) renderReport(window.__lastExtraction);
+  // The worked-example note under the upload box is built once by
+  // renderFilePreview(); without this it stayed in the old language.
+  if(_usingWorkedExample) renderFilePreview();
   // A letter already on screen doesn't get touched by the report re-render
   // above (renderLetterTab() only rebuilds the checklist) — without this it
   // stayed frozen in the old language after a switch. Rebuild it with the
