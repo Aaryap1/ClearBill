@@ -2,7 +2,7 @@
  *
  * index.html stays the single source of truth for the reference tables and
  * the analysis logic (the app is deliberately one self-contained file). The
- * WhatsApp bot runs the same checks server-side, so instead of hand-copying
+ * release gate (lib/run_gates.js) runs the same checks in Node, so instead of hand-copying
  * 129 rows and ~60 lines of logic — which is exactly how this project's
  * reference data drifted before — this script slices the exact source text
  * out of index.html and wraps it as a Node module.
