@@ -29,3 +29,6 @@ node_modules/
 
 # Personal terms used by 03_code/redact.py — never commit
 03_code/redact_terms.local.txt
+
+# Personal change log (screenshots + snapshots) - decide before publishing
+07_change_log/
