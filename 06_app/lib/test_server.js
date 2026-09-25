@@ -9,7 +9,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 
 const OK_JSON = JSON.stringify({ is_hospital_bill: true, header: {}, line_items: [{ item: 'X', total: 1 }] });
-let upstreamCalls = 0;
+let upstreamCalls = 0, upstreamClosed = false;
 const mock = http.createServer((req, res) => {
   const c = []; req.on('data', d => c.push(d));
   req.on('end', () => {
@@ -17,6 +17,11 @@ const mock = http.createServer((req, res) => {
     const j = JSON.parse(Buffer.concat(c).toString());
     const img = Buffer.from(j.contents[0].parts[1].inline_data.data, 'base64').toString();
     if (img === 'hang') return; // never answer
+    if (img === 'hang2') { req.socket.on('close', () => { upstreamClosed = true; }); return; } // never answers; records whether ClearBill hung up on us
+    if (img === 'badjson' || img === 'notobject') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ candidates: [{ content: { parts: [{ text: img === 'badjson' ? '{"is_hospital_bill": true, "line_items": [{"item": "BED' : '[1,2,3]' }] } }] }));
+    }
     if (img === 'secret') { res.writeHead(500); return res.end('SECRET_UPSTREAM_DETAIL key=AIzaFAKE'); }
     if (img === 'quota') { res.writeHead(429); return res.end('{"error":{"status":"RESOURCE_EXHAUSTED"}}'); }
     if (img === 'overload') { res.writeHead(503); return res.end('{"error":"high demand"}'); }
@@ -127,6 +132,35 @@ async function start(port, env) {
     r = await postH(P + 2, 'a photo', { 'X-Forwarded-For': '5.5.5.5' });
     ok(r.status === 429 && /busy/i.test(text(r)), 'over the daily cap: an honest "busy" message, from any IP');
     r = await req(P + 2, 'GET', '/'); ok(r.status === 200, 'the static app still loads when the proxy is capped');
+
+    console.log('== R3a: invalid requests do not spend the cap');
+    await start(P + 4, { ...common, RATE_MAX_PER_IP: '1000', DAILY_CAP: '2', MAX_BODY_BYTES: String(1024 * 1024) });
+    const beforeInvalid = upstreamCalls;
+    const bads = [];
+    for (let i = 0; i < 2; i++) {
+      bads.push((await req(P + 4, 'POST', '/api/read-bill', { body: 'not json', headers: { 'Content-Type': 'application/json' } })).status);
+      bads.push((await req(P + 4, 'POST', '/api/read-bill', { body: JSON.stringify({ mime_type: 'application/pdf', data: 'aGk=' }), headers: { 'Content-Type': 'application/json' } })).status);
+      bads.push((await req(P + 4, 'POST', '/api/read-bill', { body: JSON.stringify({ mime_type: 'image/jpeg' }), headers: { 'Content-Type': 'application/json' } })).status);
+      bads.push((await req(P + 4, 'POST', '/api/read-bill', { body: JSON.stringify({ mime_type: 'image/jpeg', data: 'A'.repeat(2 * 1024 * 1024) }), headers: { 'Content-Type': 'application/json' } })).status);
+    }
+    ok(bads.join(',') === '400,415,400,413,400,415,400,413', 'eight malformed, wrong-type and oversized requests are refused with the right codes (' + bads.join(',') + ')');
+    ok(upstreamCalls === beforeInvalid, 'none of them reached Google');
+    ok((await post(P + 4, 'a photo')).status === 200 && (await post(P + 4, 'a photo')).status === 200, 'after eight invalid requests the two valid reads of a cap of 2 are still served');
+    r = await post(P + 4, 'a photo'); ok(r.status === 429 && JSON.parse(text(r)).error === 'busy', 'the cap still holds: a third valid read is "busy"');
+
+    console.log('== R3a: unreadable answers and disconnects');
+    r = await post(P, 'badjson'); ok(r.status === 502 && JSON.parse(text(r)).error === 'unreadable' && !/BED/.test(text(r)), 'a cut-off Gemini answer becomes a plain 502, never a 200 with broken JSON');
+    r = await post(P, 'notobject'); ok(r.status === 502 && JSON.parse(text(r)).error === 'unreadable', 'an answer that is JSON but not an object is also a 502');
+    upstreamClosed = false;
+    await start(P + 5, { ...common, RATE_MAX_PER_IP: '1000', DAILY_CAP: '100000', UPSTREAM_TIMEOUT_MS: '20000' });
+    await new Promise(resolve => {
+      const cr = http.request({ host: '127.0.0.1', port: P + 5, method: 'POST', path: '/api/read-bill', headers: { 'Content-Type': 'application/json' } });
+      cr.on('error', () => {}); cr.on('response', () => {});
+      cr.end(JSON.stringify({ mime_type: 'image/jpeg', data: Buffer.from('hang2').toString('base64') }));
+      setTimeout(() => { cr.destroy(); resolve(); }, 500);
+    });
+    for (let i = 0; i < 20 && !upstreamClosed; i++) await sleep(100);
+    ok(upstreamClosed, 'when the phone disconnects, ClearBill hangs up on Google too (it did not wait for the 20 s timeout)');
 
     console.log('== not configured');
     await start(P + 3, { GEMINI_API_KEY: '' });

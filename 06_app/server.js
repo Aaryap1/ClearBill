@@ -77,22 +77,31 @@ function clientIp(req) {
   const xff = String(req.headers['x-forwarded-for'] || '').split(',').map(s => s.trim()).filter(Boolean);
   return xff.length ? xff[xff.length - 1] : req.socket.remoteAddress || 'unknown';
 }
-function admit(req) {
+// admit(req, false) only CHECKS the limits; admit(req, true) checks and counts.
+// A request is checked first (so a capped caller is turned away before its body
+// is read) but counted only just before the paid upstream call, so malformed,
+// oversized or wrong-type requests never spend the daily cap or a caller's
+// allowance. Requests that are in flight at the same moment can pass the check
+// together, so the cap can be overshot by at most the number of concurrent
+// requests; the recheck at count time keeps that bounded.
+function admit(req, count) {
   const now = Date.now(), today = new Date(now).toISOString().slice(0, 10);
   if (today !== day) { day = today; dayCount = 0; }
   if (dayCount >= DAILY_CAP) return { ok: false, why: 'daily' };
   const ip = clientIp(req);
   const recent = (ipHits.get(ip) || []).filter(t => now - t < IP_WINDOW_MS);
   if (recent.length >= IP_MAX) { ipHits.set(ip, recent); return { ok: false, why: 'ip' }; }
-  recent.push(now); ipHits.set(ip, recent); dayCount++;
-  if (ipHits.size > 5000) for (const [k, v] of ipHits) if (!v.some(t => now - t < IP_WINDOW_MS)) ipHits.delete(k);
+  if (count) {
+    recent.push(now); ipHits.set(ip, recent); dayCount++;
+    if (ipHits.size > 5000) for (const [k, v] of ipHits) if (!v.some(t => now - t < IP_WINDOW_MS)) ipHits.delete(k);
+  }
   return { ok: true };
 }
 const BUSY = { error: 'busy', message: 'The free reading service is busy right now. Try again in a few minutes, or use your own free Gemini key.' };
 
 async function readBill(req, res) {
   if (!KEY) return sendJson(res, 501, { error: 'not_configured', message: 'Server has no GEMINI_API_KEY set.' });
-  const gate = admit(req);
+  const gate = admit(req, false);
   if (!gate.ok) { console.log('[limit]', gate.why); return sendJson(res, 429, BUSY, { 'Retry-After': '300' }); }
 
   const chunks = []; let size = 0, tooBig = false;
@@ -122,11 +131,23 @@ async function readBill(req, res) {
         contents: [{ parts: [{ text: EXTRACT_PROMPT }, { inline_data: { mime_type: mime, data } }] }],
         generationConfig: { temperature: 0, response_mime_type: 'application/json' }
       };
+      // The request is valid: count it now (see admit()).
+      const paid = admit(req, true);
+      if (!paid.ok) { console.log('[limit]', paid.why); return sendJson(res, 429, BUSY, { 'Retry-After': '300' }); }
+
+      // Stop the upstream call if the phone goes away (dropped signal, Cancel
+      // pressed) or the timeout passes, so an abandoned read does not keep an
+      // instance busy for the full timeout.
+      const ac = new AbortController();
+      const timer = setTimeout(() => ac.abort(), UPSTREAM_TIMEOUT_MS);
+      let clientGone = false;
+      res.on('close', () => { clearTimeout(timer); if (!res.writableEnded) { clientGone = true; ac.abort(); } });
       let r;
       try {
         r = await fetch(`${GEMINI_BASE}/v1beta/models/${MODEL}:generateContent?key=${KEY}`,
-          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) });
+          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: ac.signal });
       } catch (e) {
+        if (clientGone) { console.log('[upstream] client left, call aborted'); return; }
         console.log('[upstream] timeout/network', e && e.name);
         return sendJson(res, 504, { error: 'timeout', message: 'Reading the photo took too long. Please try again.' });
       }
@@ -136,10 +157,22 @@ async function readBill(req, res) {
         if (r.status === 503) return sendJson(res, 503, { error: 'overloaded', message: 'The reading service is overloaded. Please try again in a moment.' });
         return sendJson(res, 502, { error: 'upstream', message: 'The reading service could not read that photo. Please try again.' });
       }
-      const j = await r.json();
+      let j;
+      try { j = await r.json(); }
+      catch (e) {
+        if (clientGone) return;
+        console.log('[upstream] body', e && e.name);
+        return sendJson(res, ac.signal.aborted ? 504 : 502, ac.signal.aborted ? { error: 'timeout', message: 'Reading the photo took too long. Please try again.' } : { error: 'unreadable', message: 'The photo could not be read (unreadable answer). Try a clearer photo.' });
+      }
       const txt = j?.candidates?.[0]?.content?.parts?.[0]?.text || '';
       if (!txt.trim()) return sendJson(res, 502, { error: 'empty', message: 'The photo could not be read (empty answer). Try a clearer photo.' });
-      send(res, 200, txt.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, ''), TYPES['.json']);
+      const cleaned = txt.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+      // A cut-off or non-JSON answer would otherwise reach the browser as a 200
+      // and show up as a parser error. Answer with a plain 502 instead.
+      let ok = false;
+      try { const v = JSON.parse(cleaned); ok = !!v && typeof v === 'object' && !Array.isArray(v); } catch (e) { ok = false; }
+      if (!ok) return sendJson(res, 502, { error: 'unreadable', message: 'The photo could not be read (unreadable answer). Try a clearer photo.' });
+      send(res, 200, cleaned, TYPES['.json']);
     } catch (e) {
       console.log('[error]', String(e.message || e));
       sendJson(res, 500, { error: 'server', message: 'Something went wrong. Please try again.' });
