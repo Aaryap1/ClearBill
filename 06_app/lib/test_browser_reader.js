@@ -154,6 +154,33 @@ const STUB = `
     const lt2 = await ev(`return document.querySelector('.letter').innerText`);
     ok(!/The items listed above total/.test(lt2) && /2\. Reconsideration of any amount that is not covered/.test(lt2), 'without the listed items the letter has neither the arithmetic sentence nor a reference to them');
 
+    console.log('== guidance: photo guide, Start here, After you send it, letter summary, clear saved data');
+    await fresh(); await ev(`setLang('en');`);
+    ok(await ev(`return document.querySelectorAll('#photoGuideList li').length`) === 6, 'the photo guide has its six tips');
+    await ev(`setLang('hi');`); ok(/[ऀ-ॿ]/.test(await ev(`return document.getElementById('photoGuideSum').textContent + document.querySelector('#photoGuideList li').textContent`)), 'the photo guide follows the language switch');
+    await ev(`setLang('en'); document.getElementById('egBtn').click();`); await sleep(400);
+    const sh = await ev(`return document.querySelector('.starthere') ? document.querySelector('.starthere').textContent : ''`);
+    ok(/Ask the hospital/.test(sh) && /Ask your insurer/.test(sh) && sh.indexOf('Ask the hospital') < sh.indexOf('Ask your insurer'), '"Start here" lists what to ask the hospital first, then the insurer');
+    ok(/appear more than once/.test(sh) && /List I/.test(sh) && !/refund|recover|owe/i.test(sh), '"Start here" names the findings and makes no promise of money back');
+    { const t = await showReport([{ item: 'Bed charges', quantity: 1, total: 100 }]); ok(/Nothing in these checks needs a question/.test(t), 'a bill with nothing flagged says so and says the app cannot vouch for the rest'); }
+    await ev(`document.getElementById('egBtn').click();`); await sleep(400);
+    await ev(`switchTab('letter'); document.getElementById('genLetterTab').click();`); await sleep(300);
+    const after = await ev(`const a=document.querySelector('.aftersend'); return a ? {t: a.textContent, links: [...a.querySelectorAll('a')].map(x=>x.href)} : null`);
+    ok(after && /grievance officer/.test(after.t) && /registered post/.test(after.t) && /hospital's billing office/.test(after.t), '"After you send the letter" says where to send it, to keep proof, and to ask the hospital about its own charges');
+    ok(after && after.links.some(l => /bimabharosa\.irdai\.gov\.in/.test(l)) && after.links.some(l => /cioins\.co\.in/.test(l)), 'it links to Bima Bharosa and the Insurance Ombudsman');
+    ok(after && !/\b\d+\s*(days?|months?|years?|lakhs?)\b/i.test(after.t) && /time limits/.test(after.t), 'it states no time limits or amounts of its own; it sends people to the official rules');
+    ok(await ev(`return document.querySelector('.lsum') === null`), 'in English there is no separate summary above the letter');
+    await ev(`setLang('hi');`); await sleep(300);
+    const hs = await ev(`window.__pr=null; const op=window.print; window.print=()=>{ window.__pr=document.getElementById('printArea').textContent; }; document.getElementById('printLetter').click(); window.print=op; const s=document.querySelector('.lsum'); return {sum: s?s.textContent:'', lettertext: document.querySelector('.letter').textContent, printed: window.__pr, order: s ? (s.compareDocumentPosition(document.querySelector('.letter')) & 4) : 0}`);
+    ok(/[ऀ-ॿ]/.test(hs.sum) && /IRDAI/.test(hs.sum) && hs.order === 4, 'in Hindi a plain-language summary sits above the letter');
+    ok(!/[ऀ-ॿ]/.test(hs.printed) && !/इस पत्र में क्या/.test(hs.printed), 'the summary is not part of the text that is printed');
+    await ev(`setLang('en'); localStorage.setItem('clearbill_settlement_draft','{"total":"5"}'); localStorage.setItem('clearbill_gemini_key','KEY'); document.getElementById('ld_name').value='Someone'; document.getElementById('ld_remember').checked=true; document.getElementById('ld_name').dispatchEvent(new Event('input',{bubbles:true}));`);
+    ok(await ev(`return !!localStorage.getItem('clearbill_letter_details')`), 'letter details are remembered when the box is ticked (setup for the next check)');
+    await ev(`document.getElementById('clearSavedBtn').click();`);
+    const cleared = await ev(`return {draft: localStorage.getItem('clearbill_settlement_draft'), key: localStorage.getItem('clearbill_gemini_key'), det: localStorage.getItem('clearbill_letter_details'), sdet: sessionStorage.getItem('clearbill_letter_details'), total: document.getElementById('total').value, name: document.getElementById('ld_name').value, apik: document.getElementById('apiKey').value, note: !document.getElementById('clearedNote').classList.contains('hide'), lang: localStorage.getItem('clearbill_lang')}`);
+    ok(!cleared.draft && !cleared.key && !cleared.det && !cleared.sdet && cleared.total === '' && cleared.name === '' && cleared.apik === '', '"Clear what this app saved" removes the saved figures, letter details and key, and empties the fields');
+    ok(cleared.note && cleared.lang === 'en', 'it confirms, and keeps only the language choice');
+
     console.log('== Hindi errors');
     await fresh();
     await ev(`setLang('hi'); window.__mode='504'; addFiles([__mk('k1.jpg','image/jpeg',41)]); document.getElementById('checkPhotosBtn').click();`); await sleep(700);

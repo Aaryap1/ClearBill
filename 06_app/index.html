@@ -224,6 +224,17 @@
   .fthumb.failed{border-color:var(--ochre);opacity:.85}
   .fthumb .failbadge{background:var(--ochre)}
   #report.stale{opacity:.5}
+  .starthere{background:var(--card);border:1.5px solid var(--ink);border-radius:12px;padding:12px 14px;margin-top:14px}
+  .starthere .sh-h{font-family:"Archivo",sans-serif;font-weight:800;font-size:.9rem;margin-bottom:2px}
+  .starthere .sh-g{font-family:"Archivo",sans-serif;font-weight:700;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--soft);margin-top:10px}
+  .starthere ul{margin:4px 0 0 1.1rem;padding:0;font-size:.88rem;line-height:1.5} .starthere li{margin:4px 0}
+  .starthere p{margin:6px 0 0;font-size:.88rem;line-height:1.5}
+  .lsum{background:var(--field);border:1px solid var(--rule);border-radius:10px;padding:12px 14px;margin-bottom:10px;font-size:.9rem;line-height:1.5}
+  .lsum b{font-family:"Archivo",sans-serif} .lsum ul{margin:6px 0 0 1.1rem;padding:0} .lsum li{margin:4px 0}
+  .lsum .notez{margin-top:10px}
+  .aftersend{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:12px 14px;margin-top:14px;font-size:.88rem;line-height:1.5}
+  .aftersend h4{font-family:"Archivo",sans-serif;font-size:.9rem;margin:0 0 6px} .aftersend ol{margin:0 0 0 1.1rem;padding:0} .aftersend li{margin:6px 0}
+  .clearsaved{margin-top:12px}
   .is-reading #drop{pointer-events:none;opacity:.6}
   .is-reading .fremove{display:none}
   .btn:disabled{opacity:.6;cursor:default}
@@ -369,6 +380,9 @@
         </div>
       </details>
       <div style="margin-top:14px"><button class="link" id="egBtn">Load the worked example</button></div>
+      <div class="clearsaved"><button class="link" id="clearSavedBtn" type="button">Clear what this app saved on this device</button>
+        <p id="clearSavedHint" style="font-size:.76rem;color:var(--soft);margin:4px 0 0"></p>
+        <div class="notez hide" id="clearedNote" role="status"></div></div>
     </div>
 
     <div class="slip hide" id="settleOut">
@@ -397,6 +411,10 @@
       <p class="lead" id="billLead">Upload photos of your itemised bill (all pages, if more than one). Google Gemini reads them into rows; the checks then run in your browser against the published lists.</p>
       <div class="drop" id="drop" role="button" tabindex="0" aria-labelledby="dropText"><span id="dropText"><b>Tap to choose photos</b><br>or drag images here (JPG / PNG) &mdash; multiple pages OK</span>
         <input type="file" id="file" accept="image/*" multiple class="hide"></div>
+      <details class="findnums" id="photoGuide" style="margin-top:12px">
+        <summary id="photoGuideSum">How to photograph your bill</summary>
+        <div class="db2"><ul id="photoGuideList" style="margin:8px 0 0 1.1rem;padding:0"></ul></div>
+      </details>
       <div class="filePreview hide" id="filePreview"></div>
       <button class="btn sm hide" id="checkPhotosBtn" style="margin-top:10px">Check these photos</button>
       <button class="btn ghost sm hide" id="cancelReadBtn" type="button" style="margin-top:10px">Cancel</button>
@@ -840,6 +858,33 @@ en: {
   detail_nppa:"Above the NPPA price ceiling",
   detail_nppa_plain:"A price ceiling set by NPPA, India's drug and medical-device price regulator. The two stent ceilings were confirmed against the NPPA notification; the knee-implant ceilings were not independently re-confirmed (marked on each line).",
   notapplicable_word:"Not applicable",
+  photo_guide_sum:"How to photograph your bill",
+  photo_guide:["Lay each page flat on a table, not in the air.","Fit the whole page in the frame, with all four edges visible.","Use daylight or a bright room. Keep your own shadow and glare from lamps off the page.","Hold the phone still until the photo is taken, then zoom in and check that the numbers are sharp.","One page per photo, in page order. A 3-page bill needs 3 photos.","Photograph the itemised statement of charges, not a cover letter or a receipt."],
+  clear_saved_btn:"Clear what this app saved on this device",
+  clear_saved_hint:"Saved on this device only: your typed figures, letter details if you chose to remember them, and your Gemini key if you pasted one.",
+  cleared_note:"Cleared. Your figures, letter details and Gemini key are no longer saved on this device (your language choice is kept).",
+  as_head:"After you send the letter",
+  as_1:"Send it to your insurer's grievance officer by email or post. The address is on your policy documents, your claim letter or the insurer's website. Use a method that gives you proof (an email you can save, or registered post) and keep a copy with the date.",
+  as_2:"If a finding is about the hospital's own bill (a repeated charge, a total that doesn't match, an implant price), also ask the hospital's billing office to explain it.",
+  as_3:"If the reply does not settle it, you can complain to IRDAI through Bima Bharosa (<a href='https://bimabharosa.irdai.gov.in' target='_blank' rel='noopener'>bimabharosa.irdai.gov.in</a>) and to the Insurance Ombudsman (<a href='https://www.cioins.co.in' target='_blank' rel='noopener'>cioins.co.in</a>). Both have time limits and rules about what they accept, so read the current rules on those sites before you file.",
+  as_4:"ClearBill helps you ask questions and draft a letter. It is not legal advice.",
+  sh_head:"Start here", sh_hospital:"Ask the hospital", sh_insurer:"Ask your insurer",
+  sh_dups:n=>`${n} charge${n>1?'s appear':' appears'} more than once. Ask whether each is a separate service.`,
+  sh_recon:d=>`The bill's total is off by ${d}. Ask the billing desk to explain it.`,
+  sh_nppa:n=>`${n} implant${n>1?'s are':' is'} priced above the NPPA ceiling plus GST. Ask the hospital to justify the price.`,
+  sh_gst:n=>`${n} implant price${n>1?'s are':' is'} just above the NPPA ceiling. Check whether the price includes GST.`,
+  sh_review:(n,sum)=>`${n} charge${n>1?'s are':' is'} commonly deducted but not on the list (${sum}). Ask your insurer to confirm.`,
+  sh_exact:(n,sum)=>`${n} charge${n>1?'s are':' is'} on IRDAI's List I (${sum}), so an insurer may deduct ${n>1?'them':'it'}. Ask which lines it actually declined.`,
+  sh_none:"Nothing in these checks needs a question. The app reads English item names only, so it cannot vouch for the rest of the bill.",
+  ls_head:"What this letter says",
+  ls_settle:(counter,ded)=>`It says you paid ${counter} at the counter and asks what ${ded} of that was for.`,
+  ls_irdai:(n,sum)=>`It lists ${n} charge${n>1?'s':''} (${sum}) that appear on IRDAI's List I (Optional Items).`,
+  ls_gap:rem=>`It points out that ${rem} of the deduction is not accounted for by those charges.`,
+  ls_nppa:n=>`It mentions ${n} implant${n>1?'s':''} that look priced above the NPPA ceiling (plus GST).`,
+  ls_dup:n=>`It lists ${n} charge${n>1?'s':''} that appear more than once.`,
+  ls_recon:d=>`It says the bill's printed total differs from the sum of its lines by ${d}.`,
+  ls_asks:"It asks the insurer for a line-by-line statement, the policy clause for each amount, which of these items were actually declined, and whether your policy offers optional cover.",
+  ls_note:"The letter itself is in English. This summary is only for you and is not part of the letter.",
   settle_model_note:"This is the part of what you paid that is not your co-pay. It can include room-rent limits, sub-limits, deductibles and policy exclusions as well as non-medical items; the app cannot tell them apart.",
   settle_inconsistent_note:"Your settlement figures don't add up (see the message on the Settlement tab), so the amount \"never itemised\" is not used here and is left out of the letter.",
   nppa_skipped_note:n=>`${n} implant line${n>1?'s':''} looked like a set or package and ${n>1?'were':'was'} not compared with a single part's ceiling.`,
@@ -1046,6 +1091,33 @@ hi: {
   detail_nppa:"NPPA की मूल्य सीमा से ऊपर",
   detail_nppa_plain:"NPPA, भारत के दवा और मेडिकल डिवाइस मूल्य नियामक, द्वारा तय मूल्य सीमा। दो तरह के स्टेंट की सीमाएँ NPPA अधिसूचना से जाँची गई हैं; घुटने के इम्प्लांट की सीमाओं की स्वतंत्र रूप से दोबारा पुष्टि नहीं हुई (हर लाइन पर चिन्हित)।",
   notapplicable_word:"लागू नहीं",
+  photo_guide_sum:"अपने बिल की फ़ोटो कैसे लें",
+  photo_guide:["हर पेज़ को मेज़ पर सीधा रखें, हवा में पकड़कर नहीं।","पूरा पेज़ फ़्रेम में लाएँ, चारों किनारे दिखने चाहिए।","दिन की रोशनी या तेज़ रोशनी वाला कमरा इस्तेमाल करें। अपनी परछाईं और लैंप की चमक पेज़ पर न पड़ने दें।","फ़ोटो लेने तक फ़ोन को स्थिर रखें, फिर ज़ूम करके देखें कि अंक साफ़ हैं।","हर पेज़ की एक फ़ोटो, पेज़ के क्रम में। 3 पेज़ के बिल के लिए 3 फ़ोटो चाहिए।","ख़र्चों के विस्तृत ब्योरे (itemised statement) की फ़ोटो लें, कवर लेटर या रसीद की नहीं।"],
+  clear_saved_btn:"इस डिवाइस पर ऐप ने जो सहेजा है, मिटाएँ",
+  clear_saved_hint:"सिर्फ़ इसी डिवाइस पर सहेजा जाता है: आपके डाले हुए आँकड़े, पत्र की जानकारी (अगर आपने याद रखने को कहा हो), और आपकी Gemini key (अगर आपने डाली हो)।",
+  cleared_note:"मिटा दिया गया। आपके आँकड़े, पत्र की जानकारी और Gemini key अब इस डिवाइस पर सहेजी नहीं हैं (आपकी भाषा की पसंद रखी गई है)।",
+  as_head:"पत्र भेजने के बाद",
+  as_1:"इसे ईमेल या डाक से अपनी बीमा कंपनी के शिकायत निवारण अधिकारी को भेजें। पता आपके पॉलिसी काग़ज़ों, क्लेम पत्र या बीमा कंपनी की वेबसाइट पर होता है। ऐसा तरीक़ा चुनें जिसका सबूत रहे (सहेजा जा सकने वाला ईमेल, या रजिस्टर्ड डाक) और तारीख़ के साथ एक कॉपी रखें।",
+  as_2:"अगर कोई निष्कर्ष अस्पताल के अपने बिल के बारे में है (दोहराया चार्ज, न मिलता कुल योग, इम्प्लांट की क़ीमत), तो अस्पताल के बिलिंग विभाग से भी समझाने को कहें।",
+  as_3:"अगर जवाब से मामला नहीं सुलझता, तो आप बीमा भरोसा (<a href='https://bimabharosa.irdai.gov.in' target='_blank' rel='noopener'>bimabharosa.irdai.gov.in</a>) के ज़रिए IRDAI से और बीमा लोकपाल (<a href='https://www.cioins.co.in' target='_blank' rel='noopener'>cioins.co.in</a>) से शिकायत कर सकते हैं। दोनों की समय-सीमाएँ और स्वीकार करने के नियम हैं, इसलिए शिकायत से पहले उन साइटों पर मौजूदा नियम पढ़ें।",
+  as_4:"ClearBill आपको सवाल पूछने और पत्र का मसौदा बनाने में मदद करता है। यह क़ानूनी सलाह नहीं है।",
+  sh_head:"यहाँ से शुरू करें", sh_hospital:"अस्पताल से पूछें", sh_insurer:"अपनी बीमा कंपनी से पूछें",
+  sh_dups:n=>`${n} चार्ज एक से ज़्यादा बार दिखते हैं। पूछें कि क्या हर एक अलग सेवा है।`,
+  sh_recon:d=>`बिल का कुल योग ${d} से मेल नहीं खाता। बिलिंग डेस्क से समझाने को कहें।`,
+  sh_nppa:n=>`${n} इम्प्लांट NPPA सीमा और GST से ऊपर की क़ीमत पर है। अस्पताल से क़ीमत का औचित्य पूछें।`,
+  sh_gst:n=>`${n} इम्प्लांट की क़ीमत NPPA सीमा से थोड़ी ऊपर है। देखें कि क़ीमत में GST शामिल है या नहीं।`,
+  sh_review:(n,sum)=>`${n} चार्ज अक्सर काटे जाते हैं पर सूची में नहीं हैं (${sum})। बीमा कंपनी से पुष्टि करने को कहें।`,
+  sh_exact:(n,sum)=>`${n} चार्ज IRDAI की सूची I में हैं (${sum}), इसलिए बीमा कंपनी इन्हें काट सकती है। पूछें कि उसने असल में कौन-सी लाइनें नामंज़ूर कीं।`,
+  sh_none:"इन जाँचों में किसी सवाल की ज़रूरत नहीं दिखी। ऐप सिर्फ़ अंग्रेज़ी नाम पढ़ता है, इसलिए बाक़ी बिल की गारंटी नहीं दे सकता।",
+  ls_head:"इस पत्र में क्या लिखा है",
+  ls_settle:(counter,ded)=>`इसमें लिखा है कि आपने काउंटर पर ${counter} चुकाए और पूछा गया है कि उसमें से ${ded} किस लिए थे।`,
+  ls_irdai:(n,sum)=>`इसमें ${n} चार्ज (${sum}) गिनाए गए हैं जो IRDAI की सूची I (वैकल्पिक मदें) में दिखते हैं।`,
+  ls_gap:rem=>`इसमें बताया गया है कि कटौती के ${rem} इन चार्जों से नहीं समझाए जाते।`,
+  ls_nppa:n=>`इसमें ${n} इम्प्लांट का ज़िक्र है जिनकी क़ीमत NPPA सीमा (GST सहित) से ऊपर लगती है।`,
+  ls_dup:n=>`इसमें ${n} चार्ज हैं जो एक से ज़्यादा बार दिखते हैं।`,
+  ls_recon:d=>`इसमें बताया गया है कि बिल का छपा कुल योग उसकी लाइनों के योग से ${d} अलग है।`,
+  ls_asks:"यह बीमा कंपनी से माँगता है: हर रकम का लाइन-दर-लाइन ब्योरा, हर रकम के लिए पॉलिसी की धारा, इनमें से कौन-सी चीज़ें असल में नामंज़ूर हुईं, और क्या आपकी पॉलिसी इनके लिए वैकल्पिक कवर देती है।",
+  ls_note:"पत्र खुद अंग्रेज़ी में है। यह सारांश सिर्फ़ आपके लिए है और पत्र का हिस्सा नहीं है।",
   settle_model_note:"यह आपके भुगतान का वह हिस्सा है जो को-पे नहीं है। इसमें कमरे के किराए की सीमा, उप-सीमाएँ, डिडक्टिबल और पॉलिसी के अपवाद भी हो सकते हैं, सिर्फ़ ग़ैर-चिकित्सा चीज़ें नहीं; ऐप इनमें फ़र्क़ नहीं कर सकता।",
   settle_inconsistent_note:"आपके सेटलमेंट के आँकड़े आपस में मेल नहीं खाते (सेटलमेंट टैब का संदेश देखें), इसलिए \"कभी नहीं बताई गई\" राशि यहाँ इस्तेमाल नहीं की गई और पत्र से हटा दी गई है।",
   nppa_skipped_note:n=>`${n} इम्प्लांट लाइन सेट या पैकेज जैसी लगी और एक पुर्ज़े की सीमा से नहीं मिलाई गई।`,
@@ -1253,6 +1325,33 @@ mr: {
   detail_nppa:"NPPA च्या किंमत मर्यादेपेक्षा जास्त",
   detail_nppa_plain:"NPPA, भारताच्या औषध आणि वैद्यकीय उपकरण किंमत नियामकाने ठरवलेली किंमत मर्यादा. दोन प्रकारच्या स्टेंटच्या मर्यादा NPPA अधिसूचनेशी पडताळल्या आहेत; गुडघा इम्प्लांटच्या मर्यादांची स्वतंत्रपणे पुन्हा पुष्टी झालेली नाही (प्रत्येक ओळीवर नमूद).",
   notapplicable_word:"लागू नाही",
+  photo_guide_sum:"तुमच्या बिलाचा फोटो कसा घ्यावा",
+  photo_guide:["प्रत्येक पान टेबलावर सपाट ठेवा, हवेत धरू नका.","संपूर्ण पान फ्रेममध्ये घ्या, चारही कडा दिसल्या पाहिजेत.","दिवसाचा प्रकाश किंवा उजळ खोली वापरा. तुमची सावली आणि दिव्यांची चमक पानावर पडू देऊ नका.","फोटो काढेपर्यंत फोन स्थिर धरा, मग झूम करून आकडे स्पष्ट आहेत का ते पहा.","प्रत्येक पानाचा एक फोटो, पानांच्या क्रमाने. 3 पानी बिलासाठी 3 फोटो लागतात.","खर्चांच्या तपशीलवार विवरणाचा (itemised statement) फोटो घ्या, कव्हर लेटर किंवा पावतीचा नाही."],
+  clear_saved_btn:"या डिव्हाइसवर अ‍ॅपने जतन केलेलं पुसा",
+  clear_saved_hint:"फक्त याच डिव्हाइसवर जतन होतं: तुम्ही टाकलेले आकडे, पत्रासाठीचे तपशील (लक्षात ठेवायला सांगितलं असल्यास), आणि तुमची Gemini key (टाकली असल्यास).",
+  cleared_note:"पुसलं. तुमचे आकडे, पत्राचे तपशील आणि Gemini key आता या डिव्हाइसवर जतन केलेले नाहीत (तुमची भाषा निवड तशीच ठेवली आहे).",
+  as_head:"पत्र पाठवल्यानंतर",
+  as_1:"हे तुमच्या विमा कंपनीच्या तक्रार निवारण अधिकाऱ्याला ईमेलने किंवा पोस्टाने पाठवा. पत्ता तुमच्या पॉलिसी कागदपत्रांवर, क्लेम पत्रावर किंवा विमा कंपनीच्या वेबसाइटवर असतो. पुरावा राहील अशी पद्धत वापरा (जतन करता येणारा ईमेल, किंवा रजिस्टर्ड पोस्ट) आणि तारखेसह एक प्रत ठेवा.",
+  as_2:"एखादा निष्कर्ष रुग्णालयाच्या स्वतःच्या बिलाबद्दल असेल (पुन्हा आलेला चार्ज, न जुळणारी एकूण रक्कम, इम्प्लांटची किंमत), तर रुग्णालयाच्या बिलिंग विभागालाही ते स्पष्ट करायला सांगा.",
+  as_3:"उत्तराने प्रश्न सुटला नाही, तर तुम्ही बिमा भरोसा (<a href='https://bimabharosa.irdai.gov.in' target='_blank' rel='noopener'>bimabharosa.irdai.gov.in</a>) मार्फत IRDAI कडे आणि विमा लोकपालाकडे (<a href='https://www.cioins.co.in' target='_blank' rel='noopener'>cioins.co.in</a>) तक्रार करू शकता. दोघांच्या वेळमर्यादा आणि स्वीकारण्याचे नियम आहेत, त्यामुळे तक्रार करण्यापूर्वी त्या साइट्सवरील सध्याचे नियम वाचा.",
+  as_4:"ClearBill तुम्हाला प्रश्न विचारायला आणि पत्राचा मसुदा तयार करायला मदत करते. हा कायदेशीर सल्ला नाही.",
+  sh_head:"इथून सुरुवात करा", sh_hospital:"रुग्णालयाला विचारा", sh_insurer:"तुमच्या विमा कंपनीला विचारा",
+  sh_dups:n=>`${n} चार्जेस एकापेक्षा जास्त वेळा दिसतात. प्रत्येक वेगळी सेवा आहे का ते विचारा.`,
+  sh_recon:d=>`बिलाची एकूण रक्कम ${d} ने जुळत नाही. बिलिंग डेस्कला स्पष्टीकरण मागा.`,
+  sh_nppa:n=>`${n} इम्प्लांट NPPA मर्यादा आणि GST पेक्षा जास्त किमतीत आहे. रुग्णालयाकडून किमतीचं समर्थन मागा.`,
+  sh_gst:n=>`${n} इम्प्लांटची किंमत NPPA मर्यादेपेक्षा थोडी जास्त आहे. किमतीत GST समाविष्ट आहे का ते पहा.`,
+  sh_review:(n,sum)=>`${n} चार्जेस वारंवार कापले जातात पण यादीत नाहीत (${sum}). विमा कंपनीला खात्री करून द्यायला सांगा.`,
+  sh_exact:(n,sum)=>`${n} चार्जेस IRDAI च्या यादी I मध्ये आहेत (${sum}), त्यामुळे विमा कंपनी ते कापू शकते. तिने प्रत्यक्षात कोणत्या ओळी नाकारल्या ते विचारा.`,
+  sh_none:"या तपासण्यांत कोणताही प्रश्न विचारण्याची गरज दिसली नाही. अ‍ॅप फक्त इंग्रजी नावं वाचतं, त्यामुळे उरलेल्या बिलाची हमी देता येत नाही.",
+  ls_head:"या पत्रात काय लिहिलं आहे",
+  ls_settle:(counter,ded)=>`त्यात असं लिहिलं आहे की तुम्ही काउंटरवर ${counter} भरले आणि त्यापैकी ${ded} कशासाठी होते ते विचारलं आहे.`,
+  ls_irdai:(n,sum)=>`त्यात ${n} चार्जेस (${sum}) दिले आहेत जे IRDAI च्या यादी I (ऐच्छिक बाबी) मध्ये दिसतात.`,
+  ls_gap:rem=>`त्यात असं नमूद आहे की कपातीचे ${rem} या चार्जेसनी स्पष्ट होत नाहीत.`,
+  ls_nppa:n=>`त्यात ${n} इम्प्लांटचा उल्लेख आहे ज्यांची किंमत NPPA मर्यादेपेक्षा (GST सह) जास्त दिसते.`,
+  ls_dup:n=>`त्यात ${n} चार्जेस आहेत जे एकापेक्षा जास्त वेळा दिसतात.`,
+  ls_recon:d=>`त्यात नमूद आहे की बिलावरील छापील एकूण रक्कम ओळींच्या बेरजेपेक्षा ${d} ने वेगळी आहे.`,
+  ls_asks:"ते विमा कंपनीकडे मागतं: प्रत्येक रकमेचा ओळीनुसार तपशील, प्रत्येक रकमेसाठी पॉलिसीचं कलम, यापैकी कोणत्या गोष्टी प्रत्यक्षात नाकारल्या, आणि तुमची पॉलिसी यासाठी ऐच्छिक कव्हर देते का.",
+  ls_note:"पत्र स्वतः इंग्रजीत आहे. हा सारांश फक्त तुमच्यासाठी आहे आणि पत्राचा भाग नाही.",
   settle_model_note:"हा तुम्ही भरलेल्या रकमेतील को-पे नसलेला भाग आहे. यात खोली भाड्याची मर्यादा, उप-मर्यादा, डिडक्टिबल आणि पॉलिसीचे अपवाद हे देखील असू शकतात, फक्त बिगर-वैद्यकीय गोष्टी नाहीत; अ‍ॅप यांच्यातला फरक ओळखू शकत नाही.",
   settle_inconsistent_note:"तुमच्या सेटलमेंटचे आकडे एकमेकांशी जुळत नाहीत (सेटलमेंट टॅबवरील संदेश पहा), त्यामुळे \"स्पष्ट न केलेली\" रक्कम इथे वापरलेली नाही आणि पत्रातून वगळली आहे.",
   nppa_skipped_note:n=>`${n} इम्प्लांट ओळ सेट किंवा पॅकेजसारखी वाटली आणि एका भागाच्या मर्यादेशी जुळवली नाही.`,
@@ -1705,6 +1804,21 @@ function renderReport(data){
     <button class="btn ghost sm" id="letterShortcut" style="margin-top:12px">${T_.letter_shortcut}</button>`;
   }
 
+  // Who to ask about what, in plain order. Built only from the checks above; no amounts to recover are stated.
+  if(a.lines.length){
+    const sh=[[],[]];
+    if(a.dups.length) sh[0].push(T_.sh_dups(a.dups.length));
+    if(a.recon) sh[0].push(T_.sh_recon(inr.format(Math.abs(a.recon.diff))));
+    if(a.nppa.length) sh[0].push(T_.sh_nppa(a.nppa.length));
+    if(a.nppaGst.length) sh[0].push(T_.sh_gst(a.nppaGst.length));
+    if(a.review.length) sh[1].push(T_.sh_review(a.review.length,inr.format(a.reviewSum)));
+    if(a.exact.length) sh[1].push(T_.sh_exact(a.exact.length,inr.format(a.exactSum)));
+    h+=`<div class="starthere" role="region" aria-label="${T_.sh_head}"><div class="sh-h">${T_.sh_head}</div>`
+      +((sh[0].length||sh[1].length)
+        ? [[T_.sh_hospital,sh[0]],[T_.sh_insurer,sh[1]]].filter(g=>g[1].length).map(g=>`<div class="sh-g">${g[0]}</div><ul>${g[1].map(x=>`<li>${x}</li>`).join('')}</ul>`).join('')
+        : `<p>${T_.sh_none}</p>`)
+      +`</div>`;
+  }
   h+=`<div class="checks">`;
   const C=T_.checks;
   h+= a.exact.length
@@ -1930,11 +2044,26 @@ function buildLetter(a,include,noScroll){
   // and IRDAI actually work in — regardless of the UI language. Only the
   // note explaining that choice, and the surrounding buttons, translate.
   const langNote = LANG!=='en' ? `<div class="notez" style="margin-bottom:10px">${T_.letter_note_lang}</div>` : '';
-  $('letterWrap').innerHTML=`<div class="tearline"></div><div class="letter">${langNote}<div class="lh">${T_.letter_draft_head}</div>${esc(text)}</div>
+  // In Hindi or Marathi: what the English letter says, for the sender's own understanding. It is built
+  // from the same choices as the letter, shown ABOVE it, and is not part of the text that is printed or copied.
+  let lsum='';
+  if(LANG!=='en'){
+    const sl=[];
+    if(s&&include.settlement) sl.push(T_.ls_settle(inr.format(s.counter),inr.format(s.deduction)));
+    if(a.exact.length&&include.irdai) sl.push(T_.ls_irdai(a.exact.length,inr.format(a.exactSum)));
+    if(s&&include.settlement&&a.exact.length&&include.irdai&&a.exactSum<s.deduction) sl.push(T_.ls_gap(inr.format(money(s.deduction-a.exactSum))));
+    if(a.nppa.length&&include.nppa) sl.push(T_.ls_nppa(a.nppa.length));
+    if(a.dups.length&&include.dup) sl.push(T_.ls_dup(a.dups.length));
+    if(a.recon&&include.recon) sl.push(T_.ls_recon(inr.format(Math.abs(a.recon.diff))));
+    sl.push(T_.ls_asks);
+    lsum=`<div class="lsum"><b>${T_.ls_head}</b><ul>${sl.map(x=>`<li>${x}</li>`).join('')}</ul><div class="notez">${T_.ls_note}</div></div>`;
+  }
+  const afterSend=`<div class="aftersend"><h4>${T_.as_head}</h4><ol><li>${T_.as_1}</li><li>${T_.as_2}</li><li>${T_.as_3}</li></ol><p style="margin:8px 0 0;color:var(--soft)">${T_.as_4}</p></div>`;
+  $('letterWrap').innerHTML=`${lsum}<div class="tearline"></div><div class="letter">${langNote}<div class="lh">${T_.letter_draft_head}</div>${esc(text)}</div>
     <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn sm" id="printLetter" style="flex:1">${T_.print_btn}</button>
       <button class="btn sm ghost" id="copyLetter" style="flex:1">${T_.copy_btn}</button>
-      <button class="btn sm ghost" id="shareLetter" style="flex:1">${T_.share_btn}</button></div>`;
+      <button class="btn sm ghost" id="shareLetter" style="flex:1">${T_.share_btn}</button></div>${afterSend}`;
   $('printLetter').addEventListener('click',()=>{ $('printArea').textContent=text; window.print(); });
   $('copyLetter').addEventListener('click',()=>{ copyText(text).then(done=>{const b=$('copyLetter'); b.textContent=done?T_.copied_btn:T_.copy_failed_btn; setTimeout(()=>b.textContent=T_.copy_btn,done?1500:3500);}); });
   $('shareLetter').addEventListener('click',()=>shareText(text,'ClearBill'));
@@ -2346,6 +2475,8 @@ function applyStaticI18n(){
   $('nextBill').textContent=T_.next_bill_btn;
   if($('cancelReadBtn')){ $('cancelReadBtn').textContent=T_.cancel_btn; updateCheckBtn(); }
   if($('settleModelNote')&&window.__settle) $('settleModelNote').textContent=T_.settle_model_note;
+  if($('photoGuideSum')){ $('photoGuideSum').textContent=T_.photo_guide_sum; $('photoGuideList').innerHTML=T_.photo_guide.map(x=>'<li>'+x+'</li>').join(''); }
+  if($('clearSavedBtn')){ $('clearSavedBtn').textContent=T_.clear_saved_btn; $('clearSavedHint').textContent=T_.clear_saved_hint; if(!$('clearedNote').classList.contains('hide')) $('clearedNote').textContent=T_.cleared_note; }
   [['ldHead','ld_head'],['ldIntro','ld_intro'],['ldLblName','ld_name'],['ldLblAddress','ld_address'],['ldLblInsurer','ld_insurer'],
    ['ldLblClaim','ld_claim'],['ldLblPolicy','ld_policy'],['ldLblContact','ld_contact'],['ldLblAsked','ld_asked'],
    ['ldLblRemember','ld_remember'],['ldNote','ld_note']].forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
@@ -2409,6 +2540,14 @@ document.querySelectorAll('#letterDetails input,#letterDetails textarea').forEac
   saveLetterDetails();
   if(_letterGenerated && window.__letterA) buildLetter(window.__letterA,_lastLetterInclude,true);
 }));
+// One button that removes everything this app keeps in the browser except the language choice.
+$('clearSavedBtn').addEventListener('click',()=>{
+  try{ localStorage.removeItem(DRAFT_LS); localStorage.removeItem(LD_KEY); sessionStorage.removeItem(LD_KEY); localStorage.removeItem(KEY_LS); }catch(e){}
+  Object.values(F).forEach(el=>{ el.value=''; }); markChips(-1); $('apiKey').value='';
+  LD_FIELDS.forEach(f=>{ $('ld_'+f).value=''; }); $('ld_asked').checked=false; $('ld_remember').checked=false;
+  calc();
+  const n=$('clearedNote'); n.textContent=S().cleared_note; n.classList.remove('hide');
+});
 $('genLetterTab').addEventListener('click',()=>{
   if(!window.__lastExtraction) return;
   const a=window.__letterA || analyse(window.__lastExtraction);
