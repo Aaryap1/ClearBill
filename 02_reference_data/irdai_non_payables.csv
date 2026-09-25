@@ -1,130 +1,146 @@
-item,category,match_keywords,confidence,source_document,effective_date
-Admission/Registration Charges,administrative,admission service|registration charge|admission charge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Medical Records,administrative,medical record,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Documentation Charges / Administrative Expenses,administrative,documentation charge|administrative expense|admin charge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-TPA Charges,administrative,tpa charge|insurance processing|insurance charge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Discharge Procedure Charges,administrative,discharge procedure|discharge charge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Certificate Charges,administrative,certificate charge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Medical Certificate,administrative,medical certificate,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Birth Certificate,administrative,birth certificate,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Photocopies Charges,administrative,photocopy|photocopies|xerox,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Courier Charges,administrative,courier,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Conveyance Charges,administrative,conveyance,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Medico Legal Case Charges,administrative,medico legal|mlc charge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Maintenance Charges,administrative,maintenance charge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Surcharges,administrative,surcharge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Attendant Charges,administrative,attendant charge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Entrance Pass / Visitors Pass Charges,administrative,visitor pass|entrance pass,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Incidental Expenses / Misc. Charges,administrative,incidental|miscellaneous charge|misc charge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Daily Chart Charges,administrative,daily chart,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Diabetic Chart Charges,administrative,diabetic chart,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Preparation Charges,administrative,preparation charge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Patient Identification Band / Name Tag,administrative,identification band|name tag|id band,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Blood Reservation Charges / Ante Natal Booking,administrative,blood reservation|ante natal booking,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Service Charges Where Nursing Charge Also Charged,administrative,service charge,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Referral Doctor's Fees,administrative,referral doctor|referral fee,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Alcohol Swabs,hygiene,alco swab|alcohol swab|alcohol gauze,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Scrub Solution / Sterillium,hygiene,sterillium|scrub solution|propanol|alcorub|povidone scrub|hand rub,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Savlon,hygiene,savlon,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Hand Wash,hygiene,hand wash,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Micro Shield,hygiene,micro shield|microshield,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Washing Charges,hygiene,washing charge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Laundry Charges,hygiene,laundry,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Clean Sheet,hygiene,clean sheet,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Examination Gloves,consumable,gloves examination|examination glove|exam glove|nitrile glove|glove nitrile|examination medium nitrile,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-"Surgical Gloves (sterile, in-procedure)",consumable,surgical glove|glove size|gammex|encore,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Paper Gloves,consumable,paper glove,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Mask,consumable,face mask|flexi mask|surgical mask,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Apron,consumable,apron,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Gown,consumable,gown,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Shoe Cover,consumable,shoe cover|foot cover,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Caps,consumable,surgical cap|theatre cap,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Camera Cover,consumable,camera cover,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Trolly Cover,consumable,trolley cover|trolly cover,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Carry Bags,consumable,carry bag,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-"Band Aids, Bandages, Sterile Injections, Needles, Syringes",consumable,band aid|bandaid,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Cotton,consumable,cotton roll|absorbent cotton,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Cotton Bandage,consumable,cotton bandage,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Crepe Bandage,consumable,crepe bandage,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Hansaplast / Adhesive Bandages,consumable,hansaplast|adhesive bandage,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Gauze,consumable,gauze|gauge soft,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Cliniplast,consumable,cliniplast,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Curapore,consumable,curapore,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Blade,consumable,blade,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Tourniquet,consumable,tourniquet,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Eyelet Collar,consumable,eyelet collar,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Eye Pad,consumable,eye pad,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Eye Shield,consumable,eye shield,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Bed Pan,ward,bed pan|bedpan,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Bed Under Pad Charges,ward,under pad|underpad,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Diaper of Any Type,ward,diaper,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Blanket / Warmer Blanket,ward,blanket,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Admission Kit,ward,admission kit,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Kidney Tray,ward,kidney tray,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Ounce Glass,ward,ounce glass,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Urine Container,ward,urine container,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-"Urometer, Urine Jug",ward,urometer|urine jug,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Medicine Box,ward,medicine box,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Thermometer,ward,thermometer,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Comb,toiletries,comb,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Brush,toiletries,tooth brush|toothbrush,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Tooth Paste,toiletries,tooth paste|toothpaste,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Towel,toiletries,towel|cosy towel,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Slippers,toiletries,slipper,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Sanitary Pad,toiletries,sanitary pad,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Tissue Paper,toiletries,tissue paper,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Powder,toiletries,talcum powder,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Moisturiser / Paste / Brush,toiletries,moisturiser|moisturizer,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Eau-De-Cologne / Room Freshners,toiletries,room freshener|room freshner|cologne,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Mineral Water,toiletries,mineral water,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Buds,toiletries,ear bud|cotton bud,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Barber Charges,toiletries,barber,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Beauty Services,toiletries,beauty service,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Baby Charges,baby,baby charge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Baby Food,baby,baby food|lactogen|infant food,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Baby Utilities Charges,baby,baby utilities,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Baby Set,baby,baby set,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Baby Bottles,baby,baby bottle|feeding bottle,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Cradle Charges,baby,cradle,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Vaccine Charges for Baby,baby,baby vaccine|vaccine charges for baby,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Telephone Charges,guest,telephone charge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Email / Internet Charges,guest,internet charge|email charge|wifi,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-"DVD, CD Charges",guest,dvd charge|cd charge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Guest Services,guest,guest service,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Food Charges (Other than Patient's Diet),guest,attendant food|guest food|visitor food,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Walking Aids Charges,equipment,walking aid|walker charge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-BiPAP Machine,equipment,bipap,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Commode,equipment,commode,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Oxygen Cylinder (usage outside hospital),equipment,oxygen cylinder,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Oxygen Mask,equipment,oxygen mask,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Spacer,equipment,spacer,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-SPO2 Probe,equipment,spo2 probe|spo2 sensor,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Nebulizer Kit,equipment,nebulizer kit|nebuliser kit,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Steam Inhaler,equipment,steam inhaler,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Arm Sling,equipment,arm sling,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Cervical Collar,equipment,cervical collar,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Ambulance Collar,equipment,ambulance collar,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Ambulance Equipment,equipment,ambulance equipment,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Splint,equipment,splint,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Knee Braces,equipment,knee brace,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Knee/Shoulder Immobilizer,equipment,immobilizer|immobiliser,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Diabetic Foot Wear,equipment,diabetic footwear|diabetic foot wear,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Visco Belt Charges,equipment,visco belt,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Cold Pack / Hot Pack,equipment,cold pack|hot pack,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Hand Holder,equipment,hand holder,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Any Kit With No Details Mentioned,consumable,kit,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-CSSD / Sterilisation Charges,consumable,cssd|sterilisation charge|sterilization charge,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-ECG Electrodes / Leads,consumable,ecg lead|ecg electrode,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Dressing / Tegaderm film,consumable,tegaderm|transparent dressing,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Weight Control Programs / Supplies / Services,exclusion,weight control|obesity program,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Spectacles / Contact Lenses / Hearing Aids,exclusion,spectacle|contact lens|hearing aid,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Dental Treatment Not Requiring Hospitalisation,exclusion,dental treatment,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Hormone Replacement Therapy,exclusion,hormone replacement,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Home Visit Charges,exclusion,home visit,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Infertility / Assisted Conception,exclusion,infertility|ivf|assisted conception,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Obesity Treatment,exclusion,bariatric|obesity treatment,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Corrective Surgery for Refractive Error,exclusion,lasik|refractive error,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Donor Screening Charges,exclusion,donor screening,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Hospitalisation for Evaluation / Diagnostic Purpose,exclusion,evaluation only|diagnostic admission,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Aesthetic Treatment / Surgery,exclusion,aesthetic|cosmetic surgery,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
-Stem Cell Implantation / Surgery,exclusion,stem cell,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01
+item,category,match_keywords,confidence,source_document,effective_date,basis,not_keywords
+Admission/Registration Charges,administrative,admission service|registration charge|admission charge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Medical Records,administrative,medical record,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Documentation Charges / Administrative Expenses,administrative,documentation charge|administrative expense|admin charge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+TPA Charges,administrative,tpa charge|insurance processing|insurance charge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Discharge Procedure Charges,administrative,discharge procedure|discharge charge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Certificate Charges,administrative,certificate charge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Medical Certificate,administrative,medical certificate,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Birth Certificate,administrative,birth certificate,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Photocopies Charges,administrative,photocopy|photocopies|xerox,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Courier Charges,administrative,courier,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Conveyance Charges,administrative,conveyance,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Medico Legal Case Charges,administrative,medico legal|mlc charge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Maintenance Charges,administrative,maintenance charge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Surcharges,administrative,surcharge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Attendant Charges,administrative,attendant charge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Entrance Pass / Visitors Pass Charges,administrative,visitor pass|entrance pass,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Incidental Expenses / Misc. Charges,administrative,incidental|miscellaneous charge|misc charge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Daily Chart Charges,administrative,daily chart,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Diabetic Chart Charges,administrative,diabetic chart,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Preparation Charges,administrative,preparation charge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Patient Identification Band / Name Tag,administrative,identification band|name tag|id band,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Blood Reservation Charges / Ante Natal Booking,administrative,blood reservation|ante natal booking,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Service Charges Where Nursing Charge Also Charged,administrative,service charge,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Referral Doctor's Fees,administrative,referral doctor|referral fee,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Alcohol Swabs,hygiene,alco swab|alcohol swab|alcohol gauze,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Scrub Solution / Sterillium,hygiene,sterillium|scrub solution|propanol|alcorub|povidone scrub|hand rub,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Savlon,hygiene,savlon,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Hand Wash,hygiene,hand wash,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Micro Shield,hygiene,micro shield|microshield,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Washing Charges,hygiene,washing charge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Laundry Charges,hygiene,laundry,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Clean Sheet,hygiene,clean sheet,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Examination Gloves,consumable,gloves examination|examination glove|exam glove|nitrile glove|glove nitrile|examination medium nitrile,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+"Surgical Gloves (sterile, in-procedure)",consumable,surgical glove|glove size|gammex|encore,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Paper Gloves,consumable,paper glove,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Mask,consumable,face mask|flexi mask|surgical mask,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Apron,consumable,apron,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Gown,consumable,gown,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Shoe Cover,consumable,shoe cover|foot cover,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Caps,consumable,surgical cap|theatre cap,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Camera Cover,consumable,camera cover,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Trolly Cover,consumable,trolley cover|trolly cover,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Carry Bags,consumable,carry bag,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+"Band Aids, Bandages, Sterile Injections, Needles, Syringes",consumable,band aid|bandaid,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Cotton,consumable,cotton roll|absorbent cotton,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Cotton Bandage,consumable,cotton bandage,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Crepe Bandage,consumable,crepe bandage,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Hansaplast / Adhesive Bandages,consumable,hansaplast|adhesive bandage,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Gauze,consumable,gauze|gauge soft,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Cliniplast,consumable,cliniplast,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Curapore,consumable,curapore,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Blade,consumable,blade,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Tourniquet,consumable,tourniquet,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Eyelet Collar,consumable,eyelet collar,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Eye Pad,consumable,eye pad,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Eye Shield,consumable,eye shield,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Bed Pan,ward,bed pan|bedpan,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Bed Under Pad Charges,ward,under pad|underpad,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Diaper of Any Type,ward,diaper,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Blanket / Warmer Blanket,ward,blanket,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Admission Kit,ward,admission kit,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Kidney Tray,ward,kidney tray,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Ounce Glass,ward,ounce glass,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Urine Container,ward,urine container,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+"Urometer, Urine Jug",ward,urometer|urine jug,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Medicine Box,ward,medicine box,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Thermometer,ward,thermometer,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Comb,toiletries,comb,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Brush,toiletries,tooth brush|toothbrush,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Tooth Paste,toiletries,tooth paste|toothpaste,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Towel,toiletries,towel|cosy towel,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Slippers,toiletries,slipper,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Sanitary Pad,toiletries,sanitary pad,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Tissue Paper,toiletries,tissue paper,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Powder,toiletries,talcum powder,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Moisturiser / Paste / Brush,toiletries,moisturiser|moisturizer,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Eau-De-Cologne / Room Freshners,toiletries,room freshener|room freshner|cologne,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Mineral Water,toiletries,mineral water,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Buds,toiletries,ear bud|cotton bud|buds,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Barber Charges,toiletries,barber,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Beauty Services,toiletries,beauty service,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Baby Charges,baby,baby charge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Baby Food,baby,baby food|lactogen|infant food,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Baby Utilities Charges,baby,baby utilities,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Baby Set,baby,baby set,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Baby Bottles,baby,baby bottle|feeding bottle,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Cradle Charges,baby,cradle,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Vaccine Charges for Baby,baby,baby vaccine|vaccine charges for baby,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Telephone Charges,guest,telephone charge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Email / Internet Charges,guest,internet charge|email charge|wifi,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+"DVD, CD Charges",guest,dvd charge|cd charge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Guest Services,guest,guest service,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Food Charges (Other than Patient's Diet),guest,attendant food|guest food|visitor food,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Walking Aids Charges,equipment,walking aid|walker charge,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+BiPAP Machine,equipment,bipap,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Commode,equipment,commode,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Oxygen Cylinder (usage outside hospital),equipment,oxygen cylinder,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Oxygen Mask,equipment,oxygen mask,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Spacer,equipment,spacer,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,cage|interbody|cement|knee|hip|spine|spinal|vertebral|antibiotic|implant
+SPO2 Probe,equipment,spo2 probe|spo2 sensor,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Nebulizer Kit,equipment,nebulizer kit|nebuliser kit|nebulisation kit|nebulization kit,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Steam Inhaler,equipment,steam inhaler,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Arm Sling,equipment,arm sling|armsling,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Cervical Collar,equipment,cervical collar,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Ambulance Collar,equipment,ambulance collar,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Ambulance Equipment,equipment,ambulance equipment,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Splint,equipment,splint,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Knee Braces,equipment,knee brace,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Knee/Shoulder Immobilizer,equipment,immobilizer|immobiliser,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Diabetic Foot Wear,equipment,diabetic footwear|diabetic foot wear,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Visco Belt Charges,equipment,visco belt,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Cold Pack / Hot Pack,equipment,cold pack|hot pack,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Hand Holder,equipment,hand holder,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Any Kit With No Details Mentioned,consumable,kit,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+CSSD / Sterilisation Charges,consumable,cssd|sterilisation charge|sterilization charge,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+ECG Electrodes / Leads,consumable,ecg lead|ecg electrode,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Dressing / Tegaderm film,consumable,tegaderm|transparent dressing,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Weight Control Programs / Supplies / Services,exclusion,weight control|obesity program,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Spectacles / Contact Lenses / Hearing Aids,exclusion,spectacle|contact lens|hearing aid,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Dental Treatment Not Requiring Hospitalisation,exclusion,dental treatment,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,policy_exclusion,
+Hormone Replacement Therapy,exclusion,hormone replacement,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,policy_exclusion,
+Home Visit Charges,exclusion,home visit,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Infertility / Assisted Conception,exclusion,infertility|assisted conception|ivf treatment|ivf cycle|ivf procedure|in vitro fertilisation|in vitro fertilization,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,policy_exclusion,
+Obesity Treatment,exclusion,bariatric|obesity treatment,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,policy_exclusion,
+Corrective Surgery for Refractive Error,exclusion,lasik|refractive error,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,policy_exclusion,
+Donor Screening Charges,exclusion,donor screening,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Hospitalisation for Evaluation / Diagnostic Purpose,exclusion,evaluation only|diagnostic admission,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Aesthetic Treatment / Surgery,exclusion,aesthetic|cosmetic surgery,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,policy_exclusion,
+Stem Cell Implantation / Surgery,exclusion,stem cell,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,policy_exclusion,
+Television Charges,guest,television charge|television rent|tv charge|tv rent|cable tv,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Mortuary Charges,administrative,mortuary,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Extra Diet of Patient,guest,extra diet,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Private Nurses Charges / Special Nursing Charges,ward,private nurse|private nursing|special nurse|special nursing,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Abdominal Binder,equipment,abdominal binder,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Lumbo Sacral Belt,equipment,lumbo sacral belt|lumbosacral belt|ls belt,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Pelvic Traction Belt,equipment,pelvic traction belt,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Nimbus Bed / Water Bed / Air Bed Charges,equipment,nimbus bed|water bed|air bed,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Spirometer,equipment,spirometer|spirometre,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Sugar Free Tablets,consumable,sugar free tablet|sugar free tab,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Vasofix Safety,consumable,vasofix safety,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Leggings,equipment,legging,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Pan Can,equipment,pan can,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Blood Grouping and Cross Matching of Donors Samples,administrative,cross matching of donor|crossmatching of donor|cross match of donor,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Food Charges (only non-patient food is excluded),guest,food charge,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Ambulance (excluded unless your policy covers it),ward,ambulance,review,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,

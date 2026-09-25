@@ -59,6 +59,7 @@ function snapshot(a) {
     nppa: a.nppa.map(n => n.ref + '|' + n.grade).sort(),
     nppaGst: a.nppaGst.map(n => n.ref).sort(),
     reconCompared: a.reconCompared,
+    nppaCompared: a.nppaCompared, nppaSkipped: a.nppaSkipped, nonLatin: a.nonLatin,
   };
 }
 
@@ -99,6 +100,13 @@ console.log('== 2b. matching / duplicate / amount rules');
   const r = run(path.join(__dirname, 'test_analysis.js'), [], APP);
   const last = (r.stdout || '').trim().split('\n').pop();
   ok(r.status === 0, 'test_analysis.js — ' + last, r.status === 0 ? '' : ((r.stdout || '').split('\n').filter(l => /FAIL/.test(l)).join('\n') || r.stderr).slice(-800));
+}
+
+console.log('== 2c. IRDAI table: reference copies in step, official list covered');
+{
+  const r = run(path.join(__dirname, 'test_reference.js'), [], APP);
+  const last = (r.stdout || '').trim().split('\n').pop();
+  ok(r.status === 0, 'test_reference.js - ' + last, r.status === 0 ? '' : ((r.stdout || '').split('\n').filter(l => /FAIL/.test(l)).join('\n') || r.stderr).slice(-800));
 }
 
 console.log('== 3. Node suites (03_code)');

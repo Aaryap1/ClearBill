@@ -109,6 +109,28 @@ console.log('== mergePages: gross and section totals');
   ok(mergePages([pg(null, [1], { Room: 100 }), pg(null, [1], { Room: 100 })]).printed_subtotals.Room === 100, 'identical repeats are kept');
 }
 
+console.log('== credit lines: a refund is not a charge to explain');
+const L1 = (rows) => checks.analyse({ header: {}, line_items: rows.map(([item, total, extra]) => ({ item, quantity: 1, total, ...(extra || {}) })) });
+ok(L1([['Gloves Examination', 200], ['Gloves Examination refund', -200]]).exact.length === 0, 'a charge and its equal refund are both left out of the flagged list');
+ok(L1([['Gloves Examination', 200]]).exact.length === 1, 'the same charge without a refund is still flagged');
+ok(L1([['Gloves Examination', 200], ['Gloves Examination refund', -100]]).exact.length === 1, 'a partial refund does not hide the charge');
+{ const r = L1([['Discount on towel', -100]]); ok(r.exact.length === 0 && r.review.length === 0, 'a discount line (negative amount) is never listed as a List I charge'); }
+ok(L1([['Gloves Examination', 200], ['Gloves Examination return', -200]]).lineSum === 0, 'the bill total arithmetic still uses every line, credits included');
+
+console.log('== NPPA: sets, packages and mislabelled rates');
+const NL = (item, quantity, rate, total) => checks.analyse({ header: {}, line_items: [{ item, quantity, rate, total }] }, new Date('2026-09-25'));
+{ const r = NL('TKR SET Femoral component + Tibial component + Insert', 1, 85000, 85000); ok(r.nppa.length === 0 && r.nppaGst.length === 0 && r.nppaSkipped === 1, 'a knee set naming several parts is not compared with one part\'s ceiling (and is counted as skipped)'); }
+{ const r = NL('Total Knee Replacement Implant Package (femoral component cobalt chrome)', 1, 60000, 60000); ok(r.nppa.length === 0 && r.nppaSkipped === 1, 'a package line is not compared with a single-part ceiling'); }
+ok(NL('Knee femoral component', 1, 90000, 90000).nppa.length === 1, 'a single knee part above its ceiling is still flagged');
+ok(NL('Drug eluting stent', 1, 0, 45000).nppa.length === 1, 'a rate of 0 (the extraction placeholder) falls back to total / quantity and the overcharge is still found');
+{ const r = NL('Drug eluting stent', 2, 78372.06, 78372.06); ok(r.nppa.length === 0 && r.nppaGst.length === 0, 'a line total copied into the rate column of a 2-stent line does not create a flag'); }
+ok(NL('Drug eluting stent', 1, 39000, 39000).nppaCompared === 1 && NL('Bed charges', 1, 100, 100).nppaCompared === 0, 'the report knows whether any implant line was actually compared');
+
+console.log('== amounts and languages');
+ok(checks.analyse({ header: {}, line_items: [{ item: 'X', quantity: '2 Nos', rate: 'Rs 10/-', total: 20 }] }).unreadable === 0, 'quantity and rate text ("2 Nos", "Rs 10/-") is not counted as an unreadable amount');
+ok(checks.analyse({ header: {}, line_items: [{ item: 'X', quantity: 1, total: '(20)' }] }).unreadable === 1, 'an unreadable line TOTAL is still counted');
+ok(checks.analyse({ header: {}, line_items: [{ item: 'बेड शुल्क', total: 100 }, { item: 'Bed', total: 5 }, { item: 'IV सेट', total: 5 }] }).nonLatin === 1, 'lines written only in Hindi or Marathi are counted (they cannot be matched against the English lists)');
+
 if (old) {
   console.log('== matcher.js duplicate parity');
   const rows = (r) => r.map(([item, total]) => ({ item, quantity: 1, total }));

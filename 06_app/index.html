@@ -558,7 +558,7 @@ const NON_PAYABLE = [
   { tier:"exact", item:"Moisturiser / Paste / Brush", keywords:"moisturiser|moisturizer" },
   { tier:"exact", item:"Eau-De-Cologne / Room Freshners", keywords:"room freshener|room freshner|cologne" },
   { tier:"exact", item:"Mineral Water", keywords:"mineral water" },
-  { tier:"exact", item:"Buds", keywords:"ear bud|cotton bud" },
+  { tier:"exact", item:"Buds", keywords:"ear bud|cotton bud|buds" },
   { tier:"exact", item:"Barber Charges", keywords:"barber" },
   { tier:"exact", item:"Beauty Services", keywords:"beauty service" },
   { tier:"exact", item:"Baby Charges", keywords:"baby charge" },
@@ -580,9 +580,9 @@ const NON_PAYABLE = [
   { tier:"exact", item:"Oxygen Mask", keywords:"oxygen mask" },
   { tier:"exact", item:"Spacer", keywords:"spacer", not:"cage|interbody|cement|knee|hip|spine|spinal|vertebral|antibiotic|implant" },
   { tier:"review", item:"SPO2 Probe", keywords:"spo2 probe|spo2 sensor" },
-  { tier:"exact", item:"Nebulizer Kit", keywords:"nebulizer kit|nebuliser kit" },
+  { tier:"exact", item:"Nebulizer Kit", keywords:"nebulizer kit|nebuliser kit|nebulisation kit|nebulization kit" },
   { tier:"exact", item:"Steam Inhaler", keywords:"steam inhaler" },
-  { tier:"exact", item:"Arm Sling", keywords:"arm sling" },
+  { tier:"exact", item:"Arm Sling", keywords:"arm sling|armsling" },
   { tier:"exact", item:"Cervical Collar", keywords:"cervical collar" },
   { tier:"exact", item:"Ambulance Collar", keywords:"ambulance collar" },
   { tier:"exact", item:"Ambulance Equipment", keywords:"ambulance equipment" },
@@ -608,7 +608,30 @@ const NON_PAYABLE = [
   { tier:"exact", item:"Donor Screening Charges", keywords:"donor screening" },
   { tier:"exact", item:"Hospitalisation for Evaluation / Diagnostic Purpose", keywords:"evaluation only|diagnostic admission" },
   { tier:"exact", item:"Aesthetic Treatment / Surgery", keywords:"aesthetic|cosmetic surgery", basis:"policy_exclusion" },
-  { tier:"exact", item:"Stem Cell Implantation / Surgery", keywords:"stem cell", basis:"policy_exclusion" }
+  { tier:"exact", item:"Stem Cell Implantation / Surgery", keywords:"stem cell", basis:"policy_exclusion" },
+  // Added 25 Sep 2026. Each row below is an item of the official 68-item List I
+  // (02_reference_data/verify_against_official.py, OFFICIAL_68) that
+  // did not match even when the bill line used the list's own wording; every
+  // keyword is that item's own name or an obvious spelling of it. Deliberately
+  // NOT added: plain "gloves", "mask", "sling", "belt", "cream" (too broad:
+  // surgical gloves, implant slings and prescribed creams are payable).
+  { tier:"exact", item:"Television Charges", keywords:"television charge|television rent|tv charge|tv rent|cable tv" },
+  { tier:"exact", item:"Mortuary Charges", keywords:"mortuary" },
+  { tier:"exact", item:"Extra Diet of Patient", keywords:"extra diet" },
+  { tier:"exact", item:"Private Nurses Charges / Special Nursing Charges", keywords:"private nurse|private nursing|special nurse|special nursing" },
+  { tier:"exact", item:"Abdominal Binder", keywords:"abdominal binder" },
+  { tier:"exact", item:"Lumbo Sacral Belt", keywords:"lumbo sacral belt|lumbosacral belt|ls belt" },
+  { tier:"exact", item:"Pelvic Traction Belt", keywords:"pelvic traction belt" },
+  { tier:"exact", item:"Nimbus Bed / Water Bed / Air Bed Charges", keywords:"nimbus bed|water bed|air bed" },
+  { tier:"exact", item:"Spirometer", keywords:"spirometer|spirometre" },
+  { tier:"exact", item:"Sugar Free Tablets", keywords:"sugar free tablet|sugar free tab" },
+  { tier:"exact", item:"Vasofix Safety", keywords:"vasofix safety" },
+  { tier:"exact", item:"Leggings", keywords:"legging" },
+  { tier:"exact", item:"Pan Can", keywords:"pan can" },
+  { tier:"exact", item:"Blood Grouping and Cross Matching of Donors Samples", keywords:"cross matching of donor|crossmatching of donor|cross match of donor" },
+  // Not the same as the list: a policy may cover these, so they are only "confirm with your insurer".
+  { tier:"review", item:"Food Charges (only non-patient food is excluded)", keywords:"food charge" },
+  { tier:"review", item:"Ambulance (excluded unless your policy covers it)", keywords:"ambulance" }
 ];
 // `basis` (unset = "list_i"): these 7 rows are IRDAI's standardized *policy
 // exclusions* (Excl-series), not List I non-medical items — still non-payable,
@@ -1449,14 +1472,26 @@ function analyse(data,now){
   let unreadable=0;
   const amt=v=>{ const p=parseAmount(v); if(p.bad) unreadable++; return p.n; };
   const lines=(data.line_items||[]).map(l=>{
-    let q=amt(l.quantity); const tot=amt(l.total), rate=amt(l.rate);
+    // Only the line total (and the printed gross) feed a sum, so only those count
+    // as "amounts that could not be read". Quantity and rate text such as
+    // "2 Nos" or "500/-" is read if it can be and ignored if it cannot.
+    let q=parseAmount(l.quantity).n; const tot=amt(l.total), rate=parseAmount(l.rate).n;
     if(tot!=null&&tot<0&&q!=null&&q>0) q=-Math.abs(q);
     return {item:String(l.item||''),unit:l.unit??null,quantity:q,rate,total:tot,section:l.section||l.category||null};
   });
   const H=data.header||{};
+  // A credit line (a refund, return or discount shown as a negative amount) is
+  // not a charge, and a charge cancelled by an equal credit line is not one
+  // either: neither is matched against the lists, so a refunded item can never
+  // appear in the letter as something to explain.
+  const baseName=s=>String(s).toLowerCase().replace(/\b(refund(ed)?|return(ed)?|reversal|reversed|credit(ed)?|cancel(l?ed)?)\b/g,' ').replace(/[^a-z0-9]+/g,' ').trim();
+  const credit=new Set(), cancelled=new Set();
+  lines.forEach((l,i)=>{ if(l.total==null||l.total>=0) return; credit.add(i);
+    const j=lines.findIndex((p,pj)=>p.total>0&&!cancelled.has(pj)&&Math.abs(p.total+l.total)<0.005&&baseName(p.item)===baseName(l.item));
+    if(j>=0) cancelled.add(j); });
   const exact=[],review=[];
-  for(const l of lines){ const m=bestMatch(l.item); if(!m) continue;
-    (m.e.tier==='exact'?exact:review).push({...l,matched:m.e.item,basis:m.e.basis||'list_i'}); }
+  lines.forEach((l,i)=>{ if(credit.has(i)||cancelled.has(i)) return; const m=bestMatch(l.item); if(!m) return;
+    (m.e.tier==='exact'?exact:review).push({...l,matched:m.e.item,basis:m.e.basis||'list_i'}); });
   const sum=a=>money(a.reduce((s,r)=>s+(r.total||0),0));
   const lineSum=sum(lines);
   let recon=null; const g=amt(H.gross_amount);
@@ -1506,13 +1541,23 @@ function analyse(data,now){
     else if(k==='hospital_gstin'&&!GSTIN_RE.test(String(v).replace(/\s/g,''))) malformed.push(label);
   }
   const noUnit = lines.length>0 && lines.every(l=>l.unit==null);
-  const nppa=[], nppaGst=[]; let nppaStale=false;
+  const nppa=[], nppaGst=[]; let nppaStale=false, nppaCompared=0, nppaSkipped=0;
   const clock=(now instanceof Date?now:new Date()).getTime();
-  for(const l of lines){ const t=l.item.toLowerCase();
+  // A ceiling is for ONE part. A line that is a set, kit or package, or names
+  // two parts (femoral + tibial ...), is not comparable and is never flagged.
+  const SET_WORDS=/\b(set|kit|package|pkg|combo)\b/;
+  const FAMILIES=[/femoral/,/tibial/,/patell/,/insert|articulating/];
+  for(let i=0;i<lines.length;i++){ if(credit.has(i)||cancelled.has(i)) continue; const l=lines[i], t=l.item.toLowerCase();
     for(const c of NPPA){ if(c.kw.some(k=>t.includes(k))){
       const knee=c.item.startsWith('Knee');
       if(knee&&HIP_WORDS.test(t)) break;
-      const price=l.rate!=null?+l.rate:(l.total!=null&&l.quantity?(+l.total/Math.abs(l.quantity)):null);
+      if(SET_WORDS.test(t)||FAMILIES.filter(f=>f.test(t)).length>1){ nppaSkipped++; break; }
+      // The price per unit. A rate of 0 (the extraction template's placeholder) is
+      // "no rate". When both a rate and total/quantity exist the LOWER one is used,
+      // so a line total copied into the rate column cannot create a flag.
+      const rate=l.rate>0?+l.rate:null, per=(l.total!=null&&l.total>0&&l.quantity)?(+l.total/Math.abs(l.quantity)):null;
+      const price=(rate!=null&&per!=null)?Math.min(rate,per):(rate!=null?rate:per);
+      if(price!=null) nppaCompared++;
       // At or below the ceiling: never flagged.
       if(price!=null&&price>c.ceiling){
         const stale=knee&&clock>NPPA_KNEE_VALID_TO;
@@ -1523,11 +1568,14 @@ function analyse(data,now){
       break;
     }}
   }
+  // Lines with letters but no English letters (Hindi, Marathi ...) cannot be matched
+  // against the English lists; say so instead of implying they were checked.
+  const nonLatin=lines.filter(l=>/\p{L}/u.test(l.item)&&!/[A-Za-z]/.test(l.item)).length;
   // Structural hedges only (no invented threshold): one page uploaded, or a
   // page rejected as not-a-bill. Set by the upload flow on the merged object.
   const partial=data._pageCount===1||(data._rejected||0)>0;
   const subtotals = data.printed_subtotals && Object.keys(data.printed_subtotals).length ? data.printed_subtotals : null;
-  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,subtotals,unreadable,reconCompared,partial,rejected:data._rejected||0,pageCount:data._pageCount||null};
+  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nonLatin,subtotals,unreadable,reconCompared,partial,rejected:data._rejected||0,pageCount:data._pageCount||null};
 }
 function sectionSums(lines){
   const m={}; lines.forEach(l=>{ const k=l.section||'Uncategorised'; m[k]=(m[k]||0)+(l.total||0); });

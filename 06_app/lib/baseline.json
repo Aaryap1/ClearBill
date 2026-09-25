@@ -41,7 +41,10 @@
   "noUnit": true,
   "nppa": [],
   "nppaGst": [],
-  "reconCompared": true
+  "reconCompared": true,
+  "nppaCompared": 0,
+  "nppaSkipped": 0,
+  "nonLatin": 0
  },
  "SYN-01": {
   "lines": 23,
@@ -70,7 +73,10 @@
   "noUnit": false,
   "nppa": [],
   "nppaGst": [],
-  "reconCompared": true
+  "reconCompared": true,
+  "nppaCompared": 0,
+  "nppaSkipped": 0,
+  "nonLatin": 0
  },
  "SYN-02": {
   "lines": 19,
@@ -97,7 +103,10 @@
   "noUnit": false,
   "nppa": [],
   "nppaGst": [],
-  "reconCompared": true
+  "reconCompared": true,
+  "nppaCompared": 0,
+  "nppaSkipped": 0,
+  "nonLatin": 0
  },
  "SYN-03": {
   "lines": 34,
@@ -128,7 +137,10 @@
   "noUnit": false,
   "nppa": [],
   "nppaGst": [],
-  "reconCompared": true
+  "reconCompared": true,
+  "nppaCompared": 0,
+  "nppaSkipped": 0,
+  "nonLatin": 0
  },
  "SYN-04": {
   "lines": 25,
@@ -159,7 +171,10 @@
   "noUnit": false,
   "nppa": [],
   "nppaGst": [],
-  "reconCompared": true
+  "reconCompared": true,
+  "nppaCompared": 0,
+  "nppaSkipped": 0,
+  "nonLatin": 0
  },
  "SYN-05": {
   "lines": 19,
@@ -189,7 +204,10 @@
   "noUnit": false,
   "nppa": [],
   "nppaGst": [],
-  "reconCompared": true
+  "reconCompared": true,
+  "nppaCompared": 0,
+  "nppaSkipped": 0,
+  "nonLatin": 0
  },
  "SYN-06": {
   "lines": 26,
@@ -220,7 +238,10 @@
   "noUnit": true,
   "nppa": [],
   "nppaGst": [],
-  "reconCompared": true
+  "reconCompared": true,
+  "nppaCompared": 0,
+  "nppaSkipped": 0,
+  "nonLatin": 0
  },
  "SYN-08": {
   "lines": 24,
@@ -252,7 +273,10 @@
   "noUnit": false,
   "nppa": [],
   "nppaGst": [],
-  "reconCompared": true
+  "reconCompared": true,
+  "nppaCompared": 0,
+  "nppaSkipped": 0,
+  "nonLatin": 0
  },
  "SYN-09": {
   "lines": 30,
@@ -281,7 +305,10 @@
   "noUnit": false,
   "nppa": [],
   "nppaGst": [],
-  "reconCompared": true
+  "reconCompared": true,
+  "nppaCompared": 0,
+  "nppaSkipped": 0,
+  "nonLatin": 0
  },
  "SYN-10": {
   "lines": 25,
@@ -312,6 +339,9 @@
   "noUnit": true,
   "nppa": [],
   "nppaGst": [],
-  "reconCompared": true
+  "reconCompared": true,
+  "nppaCompared": 0,
+  "nppaSkipped": 0,
+  "nonLatin": 0
  }
 }
