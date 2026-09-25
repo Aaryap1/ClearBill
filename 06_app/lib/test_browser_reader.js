@@ -1,0 +1,121 @@
+/* Screen-level tests for the reading flow: double tap, snapshot, report kept on
+ * failure, cancel, cold-start race, empty-type files, Hindi errors.
+ * Runs the REAL index.html in headless Chrome with fetch replaced by a stub, so
+ * there is no network, no Gemini call and no cost.
+ *    node --experimental-websocket lib/test_browser_reader.js
+ * Skipped (loudly) when Chrome or Edge is not installed.
+ */
+const http = require('http'), fs = require('fs'), path = require('path'), os = require('os');
+const { spawn } = require('child_process');
+const chrome = ['C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+  '/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser'].find(fs.existsSync);
+if (!chrome) { console.log('  SKIPPED - no Chrome/Edge found; the screen-level reading tests did not run'); process.exit(0); }
+if (typeof WebSocket === 'undefined') { console.log('  SKIPPED - run with: node --experimental-websocket lib/test_browser_reader.js'); process.exit(0); }
+
+let pass = 0, fail = 0;
+const ok = (c, m, extra) => { if (c) { pass++; console.log('  ok   ' + m); } else { fail++; console.log('  FAIL ' + m + (extra ? '  -> ' + extra : '')); } };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const HTML = fs.readFileSync(path.join(__dirname, '..', 'index.html'));
+const srv = http.createServer((q, r) => { if (q.url.split('?')[0] === '/') { r.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); r.end(HTML); } else { r.writeHead(404); r.end(); } }).listen(0);
+
+// Installed before the app's own script runs.
+const STUB = `
+  window.__calls = []; window.__cfgDelay = 0; window.__mode = 'ok'; window.__delay = 0;
+  const realFetch = window.fetch; const wait = ms => new Promise(r => setTimeout(r, ms));
+  const GOOD = JSON.stringify({ is_hospital_bill: true, header: {}, line_items: [{ item: 'BED CHARGES', quantity: 1, rate: 100, total: 100 }] });
+  window.fetch = async (u, o) => {
+    u = String(u);
+    if (u.includes('api/config')) { await wait(window.__cfgDelay); return new Response(JSON.stringify({ proxy: true }), { status: 200 }); }
+    if (u.includes('api/read-bill')) {
+      window.__calls.push(o && o.body ? JSON.parse(o.body).mime_type : '?');
+      if (window.__delay) await wait(window.__delay);
+      if (window.__mode === 'hang') return new Promise((_, rej) => o.signal.addEventListener('abort', () => rej(Object.assign(new Error('aborted'), { name: 'AbortError' }))));
+      if (window.__mode === '504') return new Response(JSON.stringify({ error: 'timeout' }), { status: 504 });
+      return new Response(GOOD, { status: 200 });
+    }
+    return realFetch(u, o);
+  };
+  window.__mk = (name, type, lm) => new File([new Blob(['x'])], name, { type, lastModified: lm || 1 });
+`;
+
+(async () => {
+  const port = srv.address().port;
+  const p = spawn(chrome, ['--headless=new', '--disable-gpu', '--remote-debugging-port=9341', '--user-data-dir=' + path.join(os.tmpdir(), 'reader_test_profile'), 'about:blank'], { stdio: 'ignore' });
+  await sleep(3000);
+  const tabs = await (await fetch('http://127.0.0.1:9341/json')).json();
+  const ws = new WebSocket(tabs.find(t => t.type === 'page').webSocketDebuggerUrl);
+  await new Promise(r => ws.onopen = r);
+  let id = 0; const pend = {}; const errs = [];
+  ws.onmessage = e => { const m = JSON.parse(e.data); if (m.id && pend[m.id]) { pend[m.id](m.result || m.error); delete pend[m.id]; } else if (m.method === 'Runtime.exceptionThrown') errs.push(m.params.exceptionDetails.exception?.description || m.params.exceptionDetails.text); };
+  const send = (method, params = {}) => new Promise(r => { const i = ++id; pend[i] = r; ws.send(JSON.stringify({ id: i, method, params })); });
+  const ev = async js => { const r = await send('Runtime.evaluate', { expression: '(async()=>{' + js + '})()', awaitPromise: true, returnByValue: true }); if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description || r.exceptionDetails.text); return r.result?.value; };
+  await send('Page.enable'); await send('Runtime.enable');
+  await send('Page.addScriptToEvaluateOnNewDocument', { source: STUB });
+  const fresh = async () => { await send('Page.navigate', { url: `http://127.0.0.1:${port}/` }); await sleep(1200); await ev(`localStorage.clear(); sessionStorage.clear();`); };
+  const status = () => ev(`return document.getElementById('status').textContent`);
+  const btn = () => ev(`const b=document.getElementById('checkPhotosBtn'); return {text:b.textContent, disabled:b.disabled, hidden:b.classList.contains('hide')}`);
+
+  try {
+    console.log('== double tap and snapshot');
+    await fresh();
+    await ev(`window.__delay = 150; addFiles([__mk('a.jpg','image/jpeg',1), __mk('b.jpg','image/jpeg',2)]);`);
+    await ev(`const b=document.getElementById('checkPhotosBtn'); b.click(); b.click(); b.click();`);
+    await sleep(120);
+    const midBtn = await btn();
+    ok(midBtn.disabled && /Reading/.test(midBtn.text), 'while reading the button is disabled and says "Reading…"');
+    await ev(`removeFile(0); addFiles([__mk('c.jpg','image/jpeg',3)]);`);
+    ok(/wait/i.test(await status()), 'removing or adding a photo mid-read is refused with a plain message');
+    await sleep(700);
+    const calls1 = await ev(`return window.__calls.length`);
+    ok(calls1 === 2, 'three taps on Check read the two pages once (' + calls1 + ' calls, not 6)');
+    ok(await ev(`return _pendingFiles.length`) === 2, 'the queue was not changed during the read');
+    ok(/Read 2 line items across 2 pages/.test(await status()), 'the read finishes and reports: "' + (await status()) + '"');
+
+    console.log('== duplicates and file types');
+    await fresh();
+    await ev(`addFiles([__mk('a.jpg','image/jpeg',1)]); addFiles([__mk('a.jpg','image/jpeg',1)]);`);
+    ok(await ev(`return _pendingFiles.length`) === 1 && /already in the list/.test(await status()), 'adding the same photo twice keeps one and says so');
+    await fresh();
+    await ev(`addFiles([__mk('IMG_9.HEIC','',5), __mk('bill.pdf','application/pdf',6), __mk('b.png','image/png',7)]);`);
+    ok(await ev(`return _pendingFiles.map(f=>f.name).join()`) === 'IMG_9.HEIC,b.png' && /1 file skipped/.test(await status()), 'a photo with an empty type is kept, the PDF is skipped, the rest of the selection survives');
+    await ev(`document.getElementById('checkPhotosBtn').click();`); await sleep(500);
+    ok((await ev(`return window.__calls.join()`)) === 'image/heic,image/png', 'the empty-type photo is sent with a real image type');
+
+    console.log('== a failed read never wipes the report');
+    await fresh();
+    await ev(`document.getElementById('egBtn').click();`); await sleep(400);
+    const hadReport = await ev(`return document.getElementById('report').innerText.length`);
+    await ev(`window.__mode='504'; addFiles([__mk('n1.jpg','image/jpeg',11), __mk('n2.jpg','image/jpeg',12), __mk('n3.jpg','image/jpeg',13)]); document.getElementById('checkPhotosBtn').click();`);
+    await sleep(700);
+    const st = await status(), rep = await ev(`return {len: document.getElementById('report').innerText.length, stale: document.getElementById('report').classList.contains('stale')}`);
+    ok(hadReport > 500 && rep.len === hadReport && rep.stale, 'the earlier report is still there (dimmed) after every page fails');
+    ok(/Pages 1, 2 could not be read/.test(st) && /not tried yet/.test(st) && /earlier results/.test(st), 'the message is plain and says the earlier results are still shown: "' + st.slice(0, 90) + '"');
+    const b2 = await btn(); ok(/Try again/.test(b2.text) && !b2.disabled, 'the button now says "Try again (n pages)" (' + b2.text + ')');
+    ok(await ev(`return window.__calls.length`) === 2, 'two failed pages in a row stopped the run: 2 calls, not 3');
+    await ev(`window.__mode='ok'; document.getElementById('checkPhotosBtn').click();`); await sleep(700);
+    ok(/Read \d+ line items/.test(await status()) && !(await ev(`return document.getElementById('report').classList.contains('stale')`)), 'the retry succeeds, the report is replaced and no longer dimmed');
+
+    console.log('== cancel');
+    await fresh();
+    await ev(`window.__mode='hang'; addFiles([__mk('h1.jpg','image/jpeg',21), __mk('h2.jpg','image/jpeg',22)]); document.getElementById('checkPhotosBtn').click();`);
+    await sleep(300);
+    ok(!(await ev(`return document.getElementById('cancelReadBtn').classList.contains('hide')`)), 'a Cancel button appears while reading');
+    await ev(`document.getElementById('cancelReadBtn').click();`); await sleep(300);
+    ok(/Cancelled/.test(await status()) && (await btn()).disabled === false && await ev(`return window.__calls.length`) === 1, 'Cancel stops at once, sends no further page and frees the button');
+
+    console.log('== cold start: config answers late');
+    await send('Page.navigate', { url: 'about:blank' });
+    await send('Page.addScriptToEvaluateOnNewDocument', { source: 'window.__cfgDelay = 600;' });
+    await send('Page.navigate', { url: `http://127.0.0.1:${port}/` }); await sleep(900);
+    await ev(`localStorage.clear(); addFiles([__mk('c1.jpg','image/jpeg',31)]); document.getElementById('checkPhotosBtn').click();`); await sleep(1300);
+    ok(!/Gemini key/.test(await status()) && (await ev(`return window.__calls.length`)) === 1, 'tapping Check before /api/config answers waits for it and uses the free service (no "needs a key" prompt)');
+
+    console.log('== Hindi errors');
+    await fresh();
+    await ev(`setLang('hi'); window.__mode='504'; addFiles([__mk('k1.jpg','image/jpeg',41)]); document.getElementById('checkPhotosBtn').click();`); await sleep(700);
+    const hi = await status(); ok(/[\u0900-\u097F]/.test(hi) && !/Failed to fetch|Server 5|took too long/.test(hi), 'in Hindi the error is Hindi, never a raw English message: "' + hi.slice(0, 60) + '"');
+    ok(errs.length === 0, 'no uncaught page errors during any of this', errs.join(' | ').slice(0, 200));
+  } finally { ws.close(); p.kill(); srv.close(); }
+  console.log(`\n${pass} passed, ${fail} failed`);
+  process.exit(fail ? 1 : 0);
+})().catch(e => { console.error(e); process.exit(2); });

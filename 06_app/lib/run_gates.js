@@ -9,6 +9,8 @@
  *     and the diff must be explained in the commit message.
  *  3. the Node suites in 03_code (skipped, loudly, if the private fixture is absent)
  *  4. lib/test_server.js (server protections)
+ *  5. lib/test_reader.js (photo-reading logic, mock fetch) and lib/test_browser_reader.js
+ *     (the same flow in a real page with a stubbed network; skipped if no Chrome/Edge)
  *
  * The baseline stores aggregates and item names only — never patient data.
  */
@@ -63,7 +65,7 @@ function snapshot(a) {
 console.log('== 1. generated module in sync');
 {
   const r = run(path.join(__dirname, 'build_checks.js'), ['--check'], APP);
-  ok(r.status === 0, 'lib/checks.js matches index.html', (r.stderr || '').trim());
+  ok(r.status === 0, 'lib/checks.js and lib/reader.js match index.html', (r.stderr || '').trim());
 }
 
 console.log('== 2. analysis regression (frozen fixtures)');
@@ -109,6 +111,21 @@ console.log('== 3. Node suites (03_code)');
     const n = ((r.stdout || '').match(/^\s+ok\s/gm) || []).length;
     ok(!bad, t + ' (' + n + ' assertions)', bad ? (r.stdout || r.stderr).slice(-400) : '');
   }
+}
+
+console.log('== 5. photo-reading logic (mock fetch)');
+{
+  const r = run(path.join(__dirname, 'test_reader.js'), [], APP);
+  const last = (r.stdout || '').trim().split('\n').pop();
+  ok(r.status === 0, 'test_reader.js - ' + last, r.status === 0 ? '' : ((r.stdout || '').split('\n').filter(l => /FAIL/.test(l)).join('\n') || r.stderr).slice(-800));
+}
+
+console.log('== 5b. reading flow on screen (real page, stubbed network)');
+{
+  const r = spawnSync(process.execPath, ['--experimental-websocket', path.join(__dirname, 'test_browser_reader.js')], { cwd: APP, encoding: 'utf8', timeout: 240000 });
+  const out = (r.stdout || '').trim(), last = out.split('\n').pop();
+  if (/SKIPPED/.test(out)) console.log('  ' + last);
+  else ok(r.status === 0, 'test_browser_reader.js - ' + last, r.status === 0 ? '' : (out.split('\n').filter(l => /FAIL/.test(l)).join('\n') || r.stderr).slice(-800));
 }
 
 console.log('== 4. server protections');

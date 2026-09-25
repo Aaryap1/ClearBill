@@ -221,6 +221,12 @@
     align-items:center;justify-content:center;padding:0}
   .fthumb .fremove:hover{background:var(--red)}
   .fthumb.rejected{border-color:var(--red);opacity:.8}
+  .fthumb.failed{border-color:var(--ochre);opacity:.85}
+  .fthumb .failbadge{background:var(--ochre)}
+  #report.stale{opacity:.5}
+  .is-reading #drop{pointer-events:none;opacity:.6}
+  .is-reading .fremove{display:none}
+  .btn:disabled{opacity:.6;cursor:default}
   .fthumb .rejbadge{position:absolute;left:0;right:0;bottom:0;background:var(--red);color:#fff;
     font-family:"IBM Plex Mono",monospace;font-size:.7rem;font-weight:700;text-align:center;padding:2px 1px;
     letter-spacing:.02em}
@@ -390,6 +396,7 @@
         <input type="file" id="file" accept="image/*" multiple class="hide"></div>
       <div class="filePreview hide" id="filePreview"></div>
       <button class="btn sm hide" id="checkPhotosBtn" style="margin-top:10px">Check these photos</button>
+      <button class="btn ghost sm hide" id="cancelReadBtn" type="button" style="margin-top:10px">Cancel</button>
       <div class="status" id="status" role="status" aria-live="polite"></div>
       <div id="keyRow" class="hide" style="margin-top:12px">
         <label id="apikeyLbl" for="apiKey">Gemini API key <span class="hint">&mdash; one time &middot; <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">get one here</a> &middot; saved only in this browser</span></label>
@@ -754,6 +761,26 @@ en: {
   worked_example_note: "Worked example — a real, redacted 63-line hospital bill. No live photo to show; this is stored data, not something you uploaded.",
   check_photos_btn: n=>`Check ${n} photo${n>1?'s':''}`,
   rej_badge_text: "not a bill",
+  read_err_offline:"No internet connection. Check your signal and try again. Pages already read are kept.",
+  read_err_timeout:"Reading took too long. Try again; pages already read are kept.",
+  read_err_server:"The reading service had a problem. Try again in a moment; pages already read are kept.",
+  read_err_unreadable:"That photo could not be read clearly. Try a sharper photo of the same page.",
+  read_err_toolarge:"That photo is too large. Try a smaller photo or a screenshot.",
+  read_err_unsupported:"That file type can't be read. Use a JPG, PNG or WebP photo.",
+  read_err_key:"Google did not accept that request. Check your key, or try the free reading service again later.",
+  read_err_quota:"Your Gemini key has reached its limit for now. Try again later.",
+  read_cancelled:"Cancelled. Pages already read are kept.",
+  read_kept:"Pages already read are kept.",
+  read_partial_fail:(done,total,pages,nf)=>`Read ${done} of ${total} page${total>1?'s':''}. ${nf>1?'Pages':'Page'} ${pages} could not be read.`,
+  read_not_tried:"The other pages were not tried yet.",
+  retry_btn:n=>`Try again (${n} page${n>1?'s':''})`,
+  cancel_btn:"Cancel", reading_btn:"Reading\u2026",
+  stale_note:"Your earlier results stay on screen until new ones are ready.",
+  dup_skipped:n=>`${n} photo${n>1?'s':''} already in the list, skipped.`,
+  skipped_nonphoto:n=>`${n} file${n>1?'s':''} skipped. Only photos (JPG, PNG, WebP) can be read.`,
+  wait_reading:"Please wait for the current read to finish, or tap Cancel.",
+  still_trying:"Still working. A slow connection can take a minute.",
+  failed_badge:"not read",
   letter_confirm_nppa: n=>`${n} implant${n>1?'s':''} above NPPA ceiling`,
   kpi_deducted:"Deducted", kpi_explained:"Explained", kpi_checks:"Checks run",
   verdict_head: ded=>`What the un-itemised ${ded} appears to be`,
@@ -933,6 +960,26 @@ hi: {
   worked_example_note: "उदाहरण — एक असली, संपादित (redacted) 63-लाइन अस्पताल बिल। दिखाने के लिए कोई असली फ़ोटो नहीं है; यह सुरक्षित डेटा है, आपका अपलोड नहीं।",
   check_photos_btn: n=>`${n} फ़ोटो जाँचें`,
   rej_badge_text: "बिल नहीं",
+  read_err_offline:"इंटरनेट नहीं मिला। सिग्नल जाँचें और फिर कोशिश करें। जो पेज़ पढ़े जा चुके हैं वे सुरक्षित हैं।",
+  read_err_timeout:"पढ़ने में बहुत देर लगी। फिर कोशिश करें; पढ़े जा चुके पेज़ सुरक्षित हैं।",
+  read_err_server:"पढ़ने की सेवा में दिक़्क़त आई। थोड़ी देर बाद फिर कोशिश करें; पढ़े जा चुके पेज़ सुरक्षित हैं।",
+  read_err_unreadable:"वह फ़ोटो साफ़ पढ़ी नहीं जा सकी। उसी पेज़ की ज़्यादा साफ़ फ़ोटो लें।",
+  read_err_toolarge:"वह फ़ोटो बहुत बड़ी है। छोटी फ़ोटो या स्क्रीनशॉट आज़माएँ।",
+  read_err_unsupported:"इस तरह की फ़ाइल नहीं पढ़ी जा सकती। JPG, PNG या WebP फ़ोटो इस्तेमाल करें।",
+  read_err_key:"Google ने यह अनुरोध स्वीकार नहीं किया। अपनी key जाँचें, या मुफ़्त पढ़ने की सेवा बाद में फिर आज़माएँ।",
+  read_err_quota:"आपकी Gemini key की सीमा अभी पूरी हो गई है। बाद में फिर कोशिश करें।",
+  read_cancelled:"रद्द किया गया। पढ़े जा चुके पेज़ सुरक्षित हैं।",
+  read_kept:"पढ़े जा चुके पेज़ सुरक्षित हैं।",
+  read_partial_fail:(done,total,pages,nf)=>`${total} में से ${done} पेज़ पढ़े गए। पेज़ ${pages} नहीं पढ़ा जा सका।`,
+  read_not_tried:"बाक़ी पेज़ अभी आज़माए नहीं गए।",
+  retry_btn:n=>`फिर कोशिश करें (${n} पेज़)`,
+  cancel_btn:"रद्द करें", reading_btn:"पढ़ा जा रहा है\u2026",
+  stale_note:"नए नतीजे आने तक आपके पिछले नतीजे दिख रहे हैं।",
+  dup_skipped:n=>`${n} फ़ोटो सूची में पहले से है, छोड़ दी गई।`,
+  skipped_nonphoto:n=>`${n} फ़ाइल छोड़ी गई। सिर्फ़ फ़ोटो (JPG, PNG, WebP) पढ़ी जा सकती हैं।`,
+  wait_reading:"कृपया मौजूदा पढ़ाई पूरी होने दें, या रद्द करें दबाएँ।",
+  still_trying:"अभी भी चल रहा है। धीमे कनेक्शन पर एक मिनट लग सकता है।",
+  failed_badge:"नहीं पढ़ा",
   letter_confirm_nppa: n=>`NPPA सीमा से ऊपर ${n} इम्प्लांट`,
   kpi_deducted:"कटौती", kpi_explained:"समझाया गया", kpi_checks:"जाँचें पूरी",
   verdict_head: ded=>`बिना बताई गई ${ded} की कटौती दरअसल क्या लगती है`,
@@ -1113,6 +1160,26 @@ mr: {
   worked_example_note: "उदाहरण — एक खरं, संपादित (redacted) 63-ओळींचं हॉस्पिटल बिल. दाखवायला खरा फोटो नाही; हा साठवलेला डेटा आहे, तुम्ही अपलोड केलेला नाही.",
   check_photos_btn: n=>`${n} फोटो तपासा`,
   rej_badge_text: "बिल नाही",
+  read_err_offline:"इंटरनेट मिळाले नाही. सिग्नल तपासा आणि पुन्हा प्रयत्न करा. वाचून झालेली पानं जपून ठेवली आहेत.",
+  read_err_timeout:"वाचायला खूप वेळ लागला. पुन्हा प्रयत्न करा; वाचून झालेली पानं जपून ठेवली आहेत.",
+  read_err_server:"वाचन सेवेत अडचण आली. थोड्या वेळाने पुन्हा प्रयत्न करा; वाचून झालेली पानं जपून ठेवली आहेत.",
+  read_err_unreadable:"तो फोटो नीट वाचता आला नाही. त्याच पानाचा जास्त स्पष्ट फोटो घ्या.",
+  read_err_toolarge:"तो फोटो खूप मोठा आहे. लहान फोटो किंवा स्क्रीनशॉट वापरून पहा.",
+  read_err_unsupported:"या प्रकारची फाइल वाचता येत नाही. JPG, PNG किंवा WebP फोटो वापरा.",
+  read_err_key:"Google ने ही विनंती स्वीकारली नाही. तुमची key तपासा, किंवा मोफत वाचन सेवा नंतर पुन्हा वापरून पहा.",
+  read_err_quota:"तुमच्या Gemini key ची मर्यादा सध्या संपली आहे. नंतर पुन्हा प्रयत्न करा.",
+  read_cancelled:"रद्द केलं. वाचून झालेली पानं जपून ठेवली आहेत.",
+  read_kept:"वाचून झालेली पानं जपून ठेवली आहेत.",
+  read_partial_fail:(done,total,pages,nf)=>`${total} पैकी ${done} पानं वाचली. पान ${pages} वाचता आलं नाही.`,
+  read_not_tried:"उरलेली पानं अजून वाचून पाहिली नाहीत.",
+  retry_btn:n=>`पुन्हा प्रयत्न करा (${n} पान)`,
+  cancel_btn:"रद्द करा", reading_btn:"वाचत आहे\u2026",
+  stale_note:"नवीन निकाल येईपर्यंत तुमचे आधीचे निकाल दिसत आहेत.",
+  dup_skipped:n=>`${n} फोटो यादीत आधीच आहे, वगळला.`,
+  skipped_nonphoto:n=>`${n} फाइल वगळली. फक्त फोटो (JPG, PNG, WebP) वाचता येतात.`,
+  wait_reading:"कृपया चालू वाचन पूर्ण होऊ द्या, किंवा रद्द करा दाबा.",
+  still_trying:"अजून चालू आहे. संथ कनेक्शनवर एक मिनिट लागू शकतो.",
+  failed_badge:"वाचलं नाही",
   letter_confirm_nppa: n=>`NPPA मर्यादेपेक्षा जास्त ${n} इम्प्लांट`,
   kpi_deducted:"कपात", kpi_explained:"स्पष्ट केलं", kpi_checks:"तपासण्या पूर्ण",
   verdict_head: ded=>`स्पष्ट न केलेली ${ded} ची कपात नक्की काय दिसते`,
@@ -1791,9 +1858,19 @@ const KEY_LS='clearbill_gemini_key';
 let USE_PROXY=false;
 try{ const k=localStorage.getItem(KEY_LS); if(k) $('apiKey').value=k; }catch(e){}
 $('apiKey').addEventListener('change',()=>{ try{ localStorage.setItem(KEY_LS,$('apiKey').value.trim()); }catch(e){} });
-try{
-  fetch('api/config').then(r=>r.ok?r.json():null).then(c=>{ if(c&&c.proxy) USE_PROXY=true; }).catch(()=>{});
-}catch(e){}
+// Whether the free reading service exists is answered by /api/config. The first
+// tap on "Check" waits for this (max ~8 s, one retry) instead of racing it —
+// right after a Cloud Run cold start the answer can arrive after the tap, and
+// the old code then told people they needed their own key.
+const configReady=(async()=>{
+  for(let a=0;a<2;a++){
+    try{
+      const ctl=new AbortController(), t=setTimeout(()=>ctl.abort(),4000);
+      const r=await fetch('api/config',{signal:ctl.signal}); clearTimeout(t);
+      if(r.ok){ const c=await r.json(); if(c&&c.proxy) USE_PROXY=true; return; }
+    }catch(e){}
+  }
+})();
 const drop=$('drop'), fileInput=$('file'), statusEl=$('status');
 drop.addEventListener('click',()=>fileInput.click());
 drop.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); fileInput.click(); } });
@@ -1806,35 +1883,101 @@ drop.addEventListener('drop',e=>{ if(e.dataTransfer.files.length) addFiles(e.dat
 fileInput.addEventListener('change',()=>{ if(fileInput.files.length) addFiles(fileInput.files); fileInput.value=''; });
 function setStatus(m,err){ statusEl.textContent=m; statusEl.classList.toggle('err',!!err); }
 
-// One page in, one structured object out. Multi-page just calls this once
-// per file and merges — the extraction contract per page doesn't change.
-let _proxyBusy=false;
-async function extractOnePage(file,key){
-  const b64=await toB64(file);
-  let txt;
-  // If the free service says it is busy (429), the user can paste their own
-  // free Gemini key and continue — then this page goes direct to Google.
-  if(USE_PROXY && !(_proxyBusy && key)){
-    const res=await fetch('api/read-bill',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mime_type:file.type,data:b64})});
-    txt=await res.text();
-    if(res.status===429){ _proxyBusy=true; const e=new Error('busy'); e.code='BUSY'; throw e; }
-    if(!res.ok){ let m=''; try{ m=JSON.parse(txt).message||''; }catch(e){} throw new Error(m||('Server '+res.status)); }
-  } else {
-    const body={contents:[{parts:[{text:EXTRACT_PROMPT},{inline_data:{mime_type:file.type,data:b64}}]}],generationConfig:{temperature:0,response_mime_type:"application/json"}};
-    // gemini-3.6-flash — confirmed working 9 Sep 2026 by an actual end-to-end
-    // upload through the deployed Cloud Run proxy (real image, real key, real
-    // response). The previous "gemini-3.5-flash" was never a real model id and
-    // 404'd silently; "gemini-flash-latest" (a floating alias, tried next) hit
-    // a real model but a transient 503 "high demand". Google's own 404 message
-    // when testing "gemini-2.5-flash" named this exact model as its
-    // replacement, and it's the one that actually returned real bill data.
-    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(key)}`,
-      {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    if(!res.ok){ throw new Error('Gemini '+res.status+': '+(await res.text()).slice(0,300)); }
-    const j=await res.json(); txt=j?.candidates?.[0]?.content?.parts?.[0]?.text||'';
-  }
-  return JSON.parse(stripFence(txt));
+/* reader */
+// Everything between the "reader" markers is DOM-free on purpose:
+// lib/build_checks.js copies it into lib/reader.js so the reading logic is
+// tested in Node against a mock fetch (lib/test_reader.js). Keep it free of any
+// reference to the page or browser storage — the build fails if one is added.
+const PHOTO_MIME=/^image\/(jpeg|jpg|png|webp|heic|heif)$/i;
+const EXT_MIME={jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',heic:'image/heic',heif:'image/heif'};
+// Some phones report an empty type for a real photo; only then (or the generic
+// octet-stream type) is the file extension used. A stated type such as
+// application/pdf is never overridden by the name.
+function fileMime(f){
+  const t=(f&&f.type)||'';
+  if(t&&t!=='application/octet-stream') return PHOTO_MIME.test(t)?t:null;
+  const m=/\.([a-z0-9]+)$/i.exec((f&&f.name)||'');
+  return (m&&EXT_MIME[m[1].toLowerCase()])||null;
 }
+const isPhoto=f=>!!fileMime(f);
+// The same photo picked twice has the same name, size and modified time.
+const fileKey=f=>[f.name||'',f.size||0,f.lastModified||0].join('|');
+function mkErr(kind,status){ const e=new Error(kind); e.kind=kind; if(status) e.status=status; return e; }
+// Turn an HTTP status into a stable "kind"; the screen turns the kind into a
+// plain sentence in the user's language. code = the proxy's error code, if any.
+function kindForStatus(status,direct,code){
+  if(status===429) return direct?'quota':'busy';
+  if(direct){ if(status===400||status===401||status===403) return 'key'; return status>=500?'server':'unreadable'; }
+  if(status===413) return 'toolarge';
+  if(status===415) return 'unsupported';
+  if(status===504) return 'timeout';
+  if(status===502&&(code==='empty'||code==='unreadable')) return 'unreadable';
+  return 'server';
+}
+// One page in, one structured object out; a failure is an Error with .kind.
+// o: {key,useProxy,proxyState,fetchFn,toB64,stripFence,directRequest,signal,timeoutMs,isOffline}
+async function readOnePage(file,o){
+  const mime=fileMime(file);
+  const b64=await o.toB64(file);
+  const ac=new AbortController(); let timedOut=false;
+  const onAbort=()=>ac.abort();
+  if(o.signal){ if(o.signal.aborted) throw mkErr('cancelled'); o.signal.addEventListener('abort',onAbort); }
+  const t=setTimeout(()=>{ timedOut=true; ac.abort(); },o.timeoutMs||100000);
+  try{
+    let txt;
+    // If the free service says it is busy (429), the user can paste their own
+    // free Gemini key and continue — then this page goes direct to Google.
+    if(o.useProxy && !(o.proxyState.busy && o.key)){
+      const res=await o.fetchFn('api/read-bill',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mime_type:mime,data:b64}),signal:ac.signal});
+      txt=await res.text();
+      if(!res.ok){ let code=''; try{ code=JSON.parse(txt).error||''; }catch(e){}
+        const kind=kindForStatus(res.status,false,code); if(kind==='busy') o.proxyState.busy=true; throw mkErr(kind,res.status); }
+    } else {
+      const dr=o.directRequest(o.key,mime,b64);
+      const res=await o.fetchFn(dr.url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dr.body),signal:ac.signal});
+      if(!res.ok) throw mkErr(kindForStatus(res.status,true),res.status);
+      const j=await res.json(); txt=j&&j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts&&j.candidates[0].content.parts[0]&&j.candidates[0].content.parts[0].text||'';
+    }
+    let page; try{ page=JSON.parse(o.stripFence(txt)); }catch(e){ throw mkErr('unreadable'); }
+    if(!page||typeof page!=='object'||Array.isArray(page)) throw mkErr('unreadable');
+    return page;
+  }catch(e){
+    if(e&&e.kind) throw e;
+    if(o.signal&&o.signal.aborted) throw mkErr('cancelled');
+    if(timedOut) throw mkErr('timeout');
+    throw mkErr('offline');   // fetch itself failed: no signal, DNS, dropped connection
+  }finally{ clearTimeout(t); if(o.signal) o.signal.removeEventListener('abort',onAbort); }
+}
+// Reads every page in order and returns one result per file:
+//   {status:'ok',page,cached?} | {status:'dup',of} | {status:'failed',kind} | {status:'skipped',kind}
+// Pages already read (o.cache, keyed by fileKey) are not sent again, an
+// identical file is read once, and a failure never discards the pages that
+// worked. Nothing here retries by itself: every call is one the user asked for.
+async function readPages(files,o){
+  const results=new Array(files.length).fill(null), seen=new Map(); let streak=0;
+  for(let i=0;i<files.length;i++){
+    const k=fileKey(files[i]);
+    if(seen.has(k)){ results[i]={status:'dup',of:seen.get(k)}; continue; }
+    seen.set(k,i);
+    if(o.cache&&o.cache.has(k)){ results[i]={status:'ok',page:o.cache.get(k),cached:true}; continue; }
+    if(o.signal&&o.signal.aborted){ results[i]={status:'skipped',kind:'cancelled'}; continue; }
+    if(o.onProgress) o.onProgress(i,files.length);
+    try{ const page=await readOnePage(files[i],o); if(o.cache) o.cache.set(k,page); results[i]={status:'ok',page}; streak=0; }
+    catch(e){
+      const kind=(e&&e.kind)||'server'; results[i]={status:'failed',kind};
+      streak=(kind==='timeout'||kind==='server')?streak+1:0;
+      // Stop early when going on cannot help: cancelled, offline, busy, a bad key,
+      // or two slow/failed pages in a row (do not make someone wait 100 s per page).
+      if(kind==='cancelled'||kind==='offline'||kind==='busy'||kind==='key'||kind==='quota'||streak>=2){
+        for(let j=i+1;j<files.length;j++) if(!results[j]) results[j]={status:'skipped',kind};
+        break;
+      }
+    }
+  }
+  for(let i=0;i<results.length;i++) if(!results[i]) results[i]={status:'skipped',kind:'server'};
+  return results;
+}
+/* /reader */
 
 // header: first non-null value per field wins (a later page rarely repeats
 // the masthead). line_items: concatenated in page order, so reconciliation
@@ -1891,7 +2034,7 @@ let _lastLetterInclude=null;  // the include-checkbox state it was generated wit
                                // or silently re-checking boxes the user had unchecked
 
 function resetUploadState(){
-  _pendingFiles=[];
+  _pendingFiles=[]; _pageCache.clear(); _failedNow=0;
   _usingWorkedExample=false;
   _letterGenerated=false; _lastLetterInclude=null;
   renderFilePreview();
@@ -1916,25 +2059,41 @@ function renderFilePreview(){
   el.classList.toggle('hide',_pendingFiles.length===0);
   el.querySelectorAll('.fremove').forEach(b=>b.addEventListener('click',()=>removeFile(+b.dataset.i)));
   $('checkPhotosBtn').classList.toggle('hide',_pendingFiles.length===0);
-  $('checkPhotosBtn').textContent=T_.check_photos_btn(_pendingFiles.length);
+  updateCheckBtn();
+}
+// The main button says what tapping it will do right now.
+function updateCheckBtn(){
+  const T_=S(), b=$('checkPhotosBtn');
+  b.textContent=_reading?T_.reading_btn:(_failedNow>0?T_.retry_btn(_failedNow):T_.check_photos_btn(_pendingFiles.length));
+  b.disabled=_reading;
 }
 
 // Removing one file re-renders the whole grid rather than hiding the tile
 // in place — thumbnail indices (and the page-order badges) have to stay
 // contiguous, since they're also the order pages get merged in.
 function removeFile(i){
-  _pendingFiles.splice(i,1);
+  if(_reading){ setStatus(S().wait_reading,true); return; }
+  _pendingFiles.splice(i,1); _failedNow=0;
   renderFilePreview();
 }
 
 function addFiles(fileList){
   const T_=S();
+  if(_reading){ setStatus(T_.wait_reading,true); return; }
   const incoming=[...fileList];
   if(!incoming.length) return;
-  if(incoming.some(f=>!f.type.startsWith('image/'))){ setStatus(T_.choose_image,true); return; }
+  // One unreadable file no longer rejects the whole selection: keep the photos,
+  // say how many files were skipped. The same photo twice is skipped too — it
+  // would otherwise be read twice and show every charge as a duplicate.
+  const photos=incoming.filter(isPhoto), notPhoto=incoming.length-photos.length;
+  const have=new Set(_pendingFiles.map(fileKey)); const fresh=[]; let dupN=0;
+  for(const f of photos){ const k=fileKey(f); if(have.has(k)){ dupN++; continue; } have.add(k); fresh.push(f); }
+  const notes=[]; if(notPhoto) notes.push(fresh.length||dupN?T_.skipped_nonphoto(notPhoto):T_.choose_image); if(dupN) notes.push(T_.dup_skipped(dupN));
+  if(!fresh.length){ setStatus(notes.join(' '),true); return; }
   _usingWorkedExample=false;
-  _pendingFiles=_pendingFiles.concat(incoming); // additive — a second pick adds to the set, it doesn't replace it
-  setStatus('');
+  _pendingFiles=_pendingFiles.concat(fresh); // additive — a second pick adds to the set, it doesn't replace it
+  _failedNow=0;
+  setStatus(notes.join(' '),false);
   renderFilePreview();
 }
 
@@ -1945,45 +2104,113 @@ function markThumbRejected(i){
     t.insertAdjacentHTML('beforeend',`<div class="rejbadge">${S().rej_badge_text}</div>`);
   }
 }
-
-async function processQueuedFiles(){
-  const T_=S();
-  const key=$('apiKey').value.trim();
-  if(!USE_PROXY && !key){
-    $('keyRow').classList.remove('hide'); $('apiKey').focus();
-    setStatus(T_.need_key,true);
-    return;
-  }
-  const files=_pendingFiles;
-  if(!files.length) return;
-  $('report').innerHTML=`<div class="reading">READING YOUR BILL</div><div class="rdots">&#9679; &#9679; &#9679; &#9675; &#9675;</div>`;
-  try{
-    const pages=[], rejected=[];
-    for(let i=0;i<files.length;i++){
-      setStatus(T_.reading_page(i+1,files.length));
-      const p=await extractOnePage(files[i],key);
-      // is_hospital_bill===false is an explicit "no" from the model. Treat a
-      // missing/undefined flag as accepted — an older prompt or a proxy that
-      // hasn't picked up this change yet must not start rejecting bills it
-      // used to accept.
-      if(p.is_hospital_bill===false){ rejected.push(i+1); markThumbRejected(i); }
-      else pages.push(p);
-    }
-    if(!pages.length) throw new Error(T_.no_bill_pages);
-    const merged=mergePages(pages);
-    merged._rejected=rejected.length;
-    if(!merged.line_items.length) throw new Error(T_.no_lines_found);
-    setStatus(rejected.length
-      ? T_.read_lines_partial(merged.line_items.length,files.length,rejected.length)
-      : T_.read_lines(merged.line_items.length,files.length));
-    renderReport(merged);
-  }catch(err){
-    console.error(err); $('report').innerHTML='';
-    if(err.code==='BUSY'){ $('keyRow').classList.remove('hide'); $('apiKey').focus(); setStatus(T_.busy_byo,true); return; }
-    setStatus(String(err.message||err),true);
+function markThumbFailed(i){
+  const t=$('fthumb-'+i);
+  if(t && !t.classList.contains('failed')){
+    t.classList.add('failed');
+    t.insertAdjacentHTML('beforeend',`<div class="rejbadge failbadge">${S().failed_badge}</div>`);
   }
 }
+
+let _reading=false, _readAbort=null, _readTimer=null, _failedNow=0;
+const _pageCache=new Map(), _proxyState={busy:false};
+const READ_TIMEOUT_MS=100000;   // a little over the server's 90 s, so the server answers first
+function directRequest(key,mime,b64){
+  // gemini-3.6-flash — confirmed working 9 Sep 2026 by an actual end-to-end
+  // upload through the deployed Cloud Run proxy (real image, real key, real
+  // response). The previous "gemini-3.5-flash" was never a real model id and
+  // 404'd silently; "gemini-flash-latest" (a floating alias, tried next) hit
+  // a real model but a transient 503 "high demand". Google's own 404 message
+  // when testing "gemini-2.5-flash" named this exact model as its
+  // replacement, and it's the one that actually returned real bill data.
+  return {
+    url:`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(key)}`,
+    body:{contents:[{parts:[{text:EXTRACT_PROMPT},{inline_data:{mime_type:mime,data:b64}}]}],generationConfig:{temperature:0,response_mime_type:"application/json"}}
+  };
+}
+function setReadingUi(on){
+  document.body.classList.toggle('is-reading',on);
+  $('cancelReadBtn').classList.toggle('hide',!on);
+  updateCheckBtn();
+}
+const READ_ERR_KEYS={offline:'read_err_offline',timeout:'read_err_timeout',server:'read_err_server',unreadable:'read_err_unreadable',toolarge:'read_err_toolarge',unsupported:'read_err_unsupported',key:'read_err_key',quota:'read_err_quota',cancelled:'read_cancelled'};
+
+async function processQueuedFiles(){
+  if(_reading) return;                  // a double tap must not read every page twice
+  const files=_pendingFiles.slice();    // a snapshot: removing a thumbnail mid-read cannot shift the pages
+  if(!files.length) return;
+  _reading=true; _readAbort=new AbortController(); setReadingUi(true);
+  let pos={i:0,n:files.length,t:Date.now()};
+  const report=$('report');
+  try{
+    await configReady;
+    const T_=S(), key=$('apiKey').value.trim();
+    if(!USE_PROXY && !key){
+      $('keyRow').classList.remove('hide'); $('apiKey').focus();
+      setStatus(T_.need_key,true);
+      return;
+    }
+    // An earlier report stays on screen (dimmed) until the new one is ready, so a
+    // failed read never destroys it.
+    const hadReport=report.children.length>0 && !report.querySelector('.reading');
+    if(hadReport) report.classList.add('stale'); else report.innerHTML=`<div class="reading">READING YOUR BILL</div><div class="rdots">&#9679; &#9679; &#9679; &#9675; &#9675;</div>`;
+    renderFilePreview();                // clears the marks from an earlier attempt
+    setReadingUi(true);
+    _readTimer=setInterval(()=>{
+      const s=Math.round((Date.now()-pos.t)/1000), TT=S();
+      setStatus(TT.reading_page(pos.i+1,pos.n)+(s>=20?' '+TT.still_trying:''));
+    },1000);
+    const results=await readPages(files,{
+      key,useProxy:USE_PROXY,proxyState:_proxyState,fetchFn:(u,o)=>fetch(u,o),toB64,stripFence,directRequest,
+      cache:_pageCache,signal:_readAbort.signal,timeoutMs:READ_TIMEOUT_MS,
+      onProgress:(i,n)=>{ pos={i,n,t:Date.now()}; setStatus(S().reading_page(i+1,n)); }
+    });
+    const T2=S();
+    const okPages=[], rejected=[], failed=[]; let skippedKind=null, readCount=0;
+    results.forEach((r,i)=>{
+      if(r.status==='ok'){ readCount++;
+        // is_hospital_bill===false is an explicit "no" from the model. Treat a
+        // missing/undefined flag as accepted — an older prompt or a proxy that
+        // hasn't picked up this change yet must not start rejecting bills it
+        // used to accept.
+        if(r.page.is_hospital_bill===false){ rejected.push(i+1); markThumbRejected(i); } else okPages.push(r.page);
+      } else if(r.status==='failed'){ failed.push({n:i+1,kind:r.kind}); markThumbFailed(i); }
+      else if(r.status==='skipped'){ skippedKind=skippedKind||r.kind; }
+    });
+    const notRead=results.filter(r=>r.status==='failed'||r.status==='skipped').length;
+    if(notRead){
+      _failedNow=notRead;
+      const kind=(failed[0]&&failed[0].kind)||skippedKind||'server';
+      if(kind==='busy'){ $('keyRow').classList.remove('hide'); $('apiKey').focus(); setStatus(T2.busy_byo+(readCount?' '+T2.read_kept:''),true); }
+      else if(kind==='cancelled') setStatus(T2.read_cancelled,true);
+      else setStatus((failed.length?T2.read_partial_fail(readCount,files.length,failed.map(f=>f.n).join(', '),failed.length)+' ':'')+T2[READ_ERR_KEYS[kind]||'read_err_server']+(results.some(r=>r.status==='skipped')?' '+T2.read_not_tried:''),true);
+      if(!hadReport) report.innerHTML=''; else setStatus(status_with(T2.stale_note),true);
+      return;
+    }
+    _failedNow=0;
+    if(!okPages.length){ setStatus(T2.no_bill_pages,true); if(!hadReport) report.innerHTML=''; return; }
+    const merged=mergePages(okPages);
+    merged._rejected=rejected.length;
+    if(!merged.line_items.length){ setStatus(T2.no_lines_found,true); if(!hadReport) report.innerHTML=''; return; }
+    setStatus(rejected.length
+      ? T2.read_lines_partial(merged.line_items.length,files.length,rejected.length)
+      : T2.read_lines(merged.line_items.length,files.length));
+    report.classList.remove('stale');
+    renderReport(merged);
+  }catch(err){
+    // Anything unexpected: say so plainly, keep whatever was on screen.
+    console.error(err);
+    setStatus(S().read_err_server,true);
+    if(!report.children.length||report.querySelector('.reading')) report.innerHTML='';
+  }finally{
+    clearInterval(_readTimer); _readTimer=null;
+    _reading=false; _readAbort=null; setReadingUi(false);
+  }
+}
+// Adds a note to the message already on the status line.
+function status_with(note){ return (statusEl.textContent?statusEl.textContent+' ':'')+note; }
 $('checkPhotosBtn').addEventListener('click',processQueuedFiles);
+$('cancelReadBtn').addEventListener('click',()=>{ if(_readAbort) _readAbort.abort(); });
 const toB64=file=>new Promise((ok,no)=>{ const r=new FileReader(); r.onload=()=>ok(String(r.result).split(',')[1]); r.onerror=no; r.readAsDataURL(file); });
 const stripFence=s=>s.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');
 
@@ -2029,6 +2256,7 @@ function applyStaticI18n(){
   $('letterConfirmHead').textContent=T_.letter_confirm_head;
   $('genLetterTab').textContent=T_.gen_letter_btn;
   $('nextBill').textContent=T_.next_bill_btn;
+  if($('cancelReadBtn')){ $('cancelReadBtn').textContent=T_.cancel_btn; updateCheckBtn(); }
   [['ldHead','ld_head'],['ldIntro','ld_intro'],['ldLblName','ld_name'],['ldLblAddress','ld_address'],['ldLblInsurer','ld_insurer'],
    ['ldLblClaim','ld_claim'],['ldLblPolicy','ld_policy'],['ldLblContact','ld_contact'],['ldLblAsked','ld_asked'],
    ['ldLblRemember','ld_remember'],['ldNote','ld_note']].forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
