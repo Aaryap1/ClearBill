@@ -131,7 +131,7 @@ Stem Cell Implantation / Surgery,exclusion,stem cell,exact,IRDAI List of Non-Med
 Television Charges,guest,television charge|television rent|tv charge|tv rent|cable tv,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
 Mortuary Charges,administrative,mortuary,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
 Extra Diet of Patient,guest,extra diet,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
-Private Nurses Charges / Special Nursing Charges,ward,private nurse|private nursing|special nurse|special nursing,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
+Private Nurses Charges,ward,private nurse|private nursing,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
 Abdominal Binder,equipment,abdominal binder,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
 Lumbo Sacral Belt,equipment,lumbo sacral belt|lumbosacral belt|ls belt,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,
 Pelvic Traction Belt,equipment,pelvic traction belt,exact,IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers),2017-01-01,,

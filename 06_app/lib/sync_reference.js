@@ -27,7 +27,7 @@ const key = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 // Category for rows added after the CSV was first built (existing rows keep theirs).
 const NEW_CATEGORY = {
   'television charges': 'guest', 'mortuary charges': 'administrative', 'extra diet of patient': 'guest',
-  'private nurses charges special nursing charges': 'ward', 'abdominal binder': 'equipment', 'lumbo sacral belt': 'equipment',
+  'private nurses charges': 'ward', 'abdominal binder': 'equipment', 'lumbo sacral belt': 'equipment',
   'pelvic traction belt': 'equipment', 'nimbus bed water bed air bed charges': 'equipment', 'spirometer': 'equipment',
   'sugar free tablets': 'consumable', 'vasofix safety': 'consumable', 'leggings': 'equipment', 'pan can': 'equipment',
   'blood grouping and cross matching of donors samples': 'administrative', 'food charges only non patient food is excluded': 'guest',

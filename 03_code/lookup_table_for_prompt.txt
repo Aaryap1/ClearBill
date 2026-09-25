@@ -133,7 +133,7 @@
   { tier: "exact", item: "Television Charges", category: "guest", keywords: "television charge|television rent|tv charge|tv rent|cable tv" },
   { tier: "exact", item: "Mortuary Charges", category: "administrative", keywords: "mortuary" },
   { tier: "exact", item: "Extra Diet of Patient", category: "guest", keywords: "extra diet" },
-  { tier: "exact", item: "Private Nurses Charges / Special Nursing Charges", category: "ward", keywords: "private nurse|private nursing|special nurse|special nursing" },
+  { tier: "exact", item: "Private Nurses Charges", category: "ward", keywords: "private nurse|private nursing" },
   { tier: "exact", item: "Abdominal Binder", category: "equipment", keywords: "abdominal binder" },
   { tier: "exact", item: "Lumbo Sacral Belt", category: "equipment", keywords: "lumbo sacral belt|lumbosacral belt|ls belt" },
   { tier: "exact", item: "Pelvic Traction Belt", category: "equipment", keywords: "pelvic traction belt" },

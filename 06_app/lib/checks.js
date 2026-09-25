@@ -140,7 +140,7 @@ const NON_PAYABLE = [
   { tier:"exact", item:"Television Charges", keywords:"television charge|television rent|tv charge|tv rent|cable tv" },
   { tier:"exact", item:"Mortuary Charges", keywords:"mortuary" },
   { tier:"exact", item:"Extra Diet of Patient", keywords:"extra diet" },
-  { tier:"exact", item:"Private Nurses Charges / Special Nursing Charges", keywords:"private nurse|private nursing|special nurse|special nursing" },
+  { tier:"exact", item:"Private Nurses Charges", keywords:"private nurse|private nursing" },
   { tier:"exact", item:"Abdominal Binder", keywords:"abdominal binder" },
   { tier:"exact", item:"Lumbo Sacral Belt", keywords:"lumbo sacral belt|lumbosacral belt|ls belt" },
   { tier:"exact", item:"Pelvic Traction Belt", keywords:"pelvic traction belt" },

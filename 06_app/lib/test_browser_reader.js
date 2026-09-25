@@ -127,6 +127,33 @@ const STUB = `
     await ev(`setLang('hi');`); txt = await ev(`return document.getElementById('report').innerText`);
     ok(/नामंज़ूर/.test(txt), 'the same wording is in Hindi');
 
+    console.log('== settlement: figures that cannot be true produce no result and never reach the report or letter');
+    await fresh(); await ev(`setLang('en');`);
+    const setF = (idd, v) => ev(`const e=document.getElementById('${idd}'); e.value='${v}'; e.dispatchEvent(new Event('input',{bubbles:true}));`);
+    await setF('total', '1000'); await setF('counter', '1200'); await setF('discount', '0'); await setF('copay', '10');
+    ok(await ev(`return document.getElementById('settleOut').classList.contains('inconsistent') && document.getElementById('mysteryAmt').offsetParent === null`), 'paid more than the bill: only the warning is shown, the "never itemised" amount is hidden');
+    ok(await ev(`return settleOk() === null`), 'the inconsistent figures are not offered to the report or the letter');
+    await ev(`window.__lastExtraction={header:{},line_items:[{item:'TV CHARGES',quantity:1,total:300}]}; renderReport(window.__lastExtraction); switchTab('letter'); document.getElementById('genLetterTab').click();`); await sleep(300);
+    const bad = await ev(`return {rep: document.getElementById('report').textContent, letter: document.querySelector('.letter').textContent}`);
+    ok(/don.t add up/.test(bad.rep) && !/UN-ITEMISED/i.test(bad.rep), 'the report says the figures do not add up and shows no "un-itemised" headline', JSON.stringify(bad.rep.slice(0, 260)));
+    ok(!/By my calculation/.test(bad.letter) && !/not itemised/.test(bad.letter), 'the letter leaves the settlement figures out');
+    await setF('counter', '9349'); await setF('total', '41396'); await setF('discount', '1572'); await setF('copay', '100');
+    ok(await ev(`return document.getElementById('settleOut').classList.contains('inconsistent') && document.getElementById('rCounter').offsetParent === null`), '100% co-pay: no result panel (it used to show a counter payment the user never typed)');
+    await ev(`document.getElementById('egBtn').click();`); await sleep(400);
+    ok(await ev(`return !document.getElementById('settleOut').classList.contains('inconsistent') && settleOk() !== null`), 'the worked example figures are consistent and used');
+    { const mn = await ev(`return document.getElementById('settleModelNote').textContent`); ok(/room-rent limits/.test(mn), 'the result says the amount can include room-rent limits, deductibles and other exclusions', JSON.stringify(mn)); }
+
+    console.log('== letter: coherent requests and a checkable citation');
+    await ev(`switchTab('letter'); document.getElementById('genLetterTab').click();`); await sleep(300);
+    const lt = await ev(`return document.querySelector('.letter').innerText`);
+    ok(/List I \(Optional Items\)/.test(lt) && /27 September 2019/.test(lt), 'the letter names the list the way IRDAI does, with the date of the guidelines');
+    ok(/The items listed above total .1,992\.5\. The remaining .3,970\.39 of the amount recorded as non-payable is not accounted for by those items\./.test(lt), 'the letter states the arithmetic gap between the listed items and the deduction');
+    ok(/with the policy clause relied on for each/.test(lt) && /whether my policy offers optional cover/.test(lt), 'the requests ask for the policy clause and for optional cover');
+    ok(!/Reconsideration of any amount above that/.test(lt), 'the letter no longer asks for reconsideration of the items it has just listed');
+    await ev(`document.querySelector('[data-inc=irdai]').checked=false; document.getElementById('genLetterTab').click();`); await sleep(300);
+    const lt2 = await ev(`return document.querySelector('.letter').innerText`);
+    ok(!/The items listed above total/.test(lt2) && /2\. Reconsideration of any amount that is not covered/.test(lt2), 'without the listed items the letter has neither the arithmetic sentence nor a reference to them');
+
     console.log('== Hindi errors');
     await fresh();
     await ev(`setLang('hi'); window.__mode='504'; addFiles([__mk('k1.jpg','image/jpeg',41)]); document.getElementById('checkPhotosBtn').click();`); await sleep(700);

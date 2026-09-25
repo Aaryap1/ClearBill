@@ -73,3 +73,15 @@ reasonable next step.
 3. Re-grade the ~17 rows above from `exact` to `review` unless a specific clause
    is found.
 4. Track List II/III/IV as a separate table for a later release.
+
+## Primary-source check, 25 Sep 2026
+
+The section above compared the table with an insurer's reproduction of the list. On 25 Sep 2026 the list was also read on IRDAI's own site:
+
+- **Document:** "Modification Guidelines on Standardization in Health Insurance", 27 September 2019 (the page shows reference IRDAI/HLT/REG/CIR/176/09/2019), https://irdai.gov.in/document-detail?documentId=392476. It replaces the 2016 lists.
+- **IRDAI's own heading is "List I - Optional Items"**, described as "the Optional Items to which Insurers may offer coverage". Standard policies do not cover them; a policy may offer cover for them as an option. The app's phrase "non-payable list" is the common description; the letter and the IRDAI card now use IRDAI's wording and ask whether the policy offers optional cover.
+- **The 68 item names match** `OFFICIAL_68` in verify_against_official.py one for one, with one wording difference: IRDAI's page reads "Private Nurses Charges", while the insurer copy reads "Private nurses charges- special nursing charges". The app matches only "private nurse" and "private nursing".
+- **Lists II, III and IV** (items to be subsumed into room charges, procedure charges and treatment costs, which an insurer should not deduct separately) are NOT covered by the app.
+- **Bima Bharosa:** https://bimabharosa.irdai.gov.in is IRDAI's grievance management portal (operated by IRDAI, per the site).
+
+Limits of this check: the page was read through a fetch tool that summarises it, not from the original PDF. Before quoting the circular in anything formal, open the PDF on irdai.gov.in and confirm the heading, date and reference number.

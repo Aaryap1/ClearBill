@@ -39,7 +39,7 @@ else {
 }
 
 console.log('== the newer keywords match real wording...');
-const MUST = ['TV CHARGES', 'CABLE TV', 'TELEVISION CHARGES', 'MORTUARY CHARGES', 'EXTRA DIET', 'PRIVATE NURSING CHARGES', 'SPECIAL NURSE', 'ABDOMINAL BINDER',
+const MUST = ['TV CHARGES', 'CABLE TV', 'TELEVISION CHARGES', 'MORTUARY CHARGES', 'EXTRA DIET', 'PRIVATE NURSING CHARGES', 'ABDOMINAL BINDER',
   'LUMBOSACRAL BELT', 'PELVIC TRACTION BELT', 'NIMBUS BED', 'AIR BED CHARGES', 'SPIROMETER', 'SUGAR FREE TABLETS', 'VASOFIX SAFETY 20G', 'LEGGINGS', 'PAN CAN',
   'CROSS MATCHING OF DONORS SAMPLES', 'ARMSLING', 'NEBULISATION KIT', 'COTTON BUDS'];
 for (const s of MUST) { const m = c.bestMatch(s); ok(!!m && m.e.tier === 'exact', '"' + s + '" is matched as a List I item', m ? m.e.tier + ': ' + m.e.item : 'no match'); }
