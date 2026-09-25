@@ -110,6 +110,23 @@ const STUB = `
     await ev(`localStorage.clear(); addFiles([__mk('c1.jpg','image/jpeg',31)]); document.getElementById('checkPhotosBtn').click();`); await sleep(1300);
     ok(!/Gemini key/.test(await status()) && (await ev(`return window.__calls.length`)) === 1, 'tapping Check before /api/config answers waits for it and uses the free service (no "needs a key" prompt)');
 
+    console.log('== report wording: not applicable / compared / sets / non-English lines');
+    await fresh();
+    const showReport = async (items) => { await ev(`window.__lastExtraction=${JSON.stringify({ header: {}, line_items: items })}; renderReport(window.__lastExtraction);`); return ev(`return document.getElementById('report').innerText`); };
+    let txt = await showReport([{ item: 'Bed charges', quantity: 1, total: 100 }]);
+    ok(/No stent or knee-implant line found/.test(txt) && /NOT APPLICABLE/i.test(txt), 'a bill with no implant line says "Not applicable", not a green "Clear"');
+    txt = await showReport([{ item: 'Drug eluting stent', quantity: 1, rate: 39000, total: 39000 }]);
+    ok(/1 implant line compared; none above the ceiling/.test(txt), 'a stent priced at its ceiling says it was compared and is not above it');
+    txt = await showReport([{ item: 'TKR SET Femoral component + Tibial component + Insert', quantity: 1, rate: 85000, total: 85000 }]);
+    ok(/looked like a set or package/.test(txt) && !/above the NPPA ceiling plus GST/.test(txt), 'a knee set is not flagged and the report says it was not compared');
+    txt = await showReport([{ item: 'बेड शुल्क', quantity: 1, total: 100 }, { item: 'Bed', quantity: 1, total: 5 }]);
+    ok(/1 line is not written in English/.test(txt), 'a line written only in Hindi is reported as not checked');
+    txt = await showReport([{ item: 'Television charges', quantity: 1, total: 300 }]);
+    ok(/matched by English item name only|TV|television/i.test(txt) && /This app cannot see which lines your insurer actually declined/.test(txt), 'the IRDAI card says the app cannot see what the insurer declined');
+    ok(!/legitimate deduction|Nothing extra needed here/.test(txt), 'the old "a legitimate deduction, nothing extra needed" claim is gone');
+    await ev(`setLang('hi');`); txt = await ev(`return document.getElementById('report').innerText`);
+    ok(/नामंज़ूर/.test(txt), 'the same wording is in Hindi');
+
     console.log('== Hindi errors');
     await fresh();
     await ev(`setLang('hi'); window.__mode='504'; addFiles([__mk('k1.jpg','image/jpeg',41)]); document.getElementById('checkPhotosBtn').click();`); await sleep(700);

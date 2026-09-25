@@ -834,8 +834,11 @@ en: {
   nppa_stale_note:"Knee-implant ceilings were published as valid until 15 November 2026. Check whether a newer NPPA notification applies before relying on this.",
   notcompared_word:"Not compared",
   partial_note:(one,rej)=>[one?"Only one page was read. If your bill has more pages, add them &mdash; these checks cover only what was uploaded.":"",rej?`${rej} photo${rej>1?'s':''} didn&rsquo;t look like a bill page and ${rej>1?'were':'was'} skipped, so these checks may not cover the whole bill.`:""].filter(Boolean).join(" "),
-  detail_nppa:"Above the statutory price cap (NPPA)",
-  detail_nppa_plain:"A legal ceiling set by NPPA, India's drug and medical-device price regulator &mdash; not an opinion.",
+  detail_nppa:"Above the NPPA price ceiling",
+  detail_nppa_plain:"A price ceiling set by NPPA, India's drug and medical-device price regulator. The two stent ceilings were confirmed against the NPPA notification; the knee-implant ceilings were not independently re-confirmed (marked on each line).",
+  notapplicable_word:"Not applicable",
+  nppa_skipped_note:n=>`${n} implant line${n>1?'s':''} looked like a set or package and ${n>1?'were':'was'} not compared with a single part's ceiling.`,
+  nonlatin_note:n=>`${n} line${n>1?'s are':' is'} not written in English and could not be checked against the English lists.`,
   detail_nppa_src:(ref,ceiling,gst)=>`NPPA ceiling for ${ref}: ${ceiling} (${gst})`,
   detail_recon:"Reconciliation",
   detail_recon_body:(gross,lineSum,diff)=>`The bill's printed total (${gross}) differs from the sum of its own lines (${lineSum}) by <strong>${diff}</strong>. This may be the hospital's arithmetic, not a reading error.`,
@@ -900,9 +903,9 @@ en: {
   checks: {
     irdai_exact: { label:"IRDAI List I",
       found:n=>`${n} charge${n>1?'s':''} match the published non-payable list`, sub:sum=>`${sum} &middot; IRDAI List I`,
-      foundClear:"No charge matches an item named in IRDAI List I", subClear:"nothing to flag here",
-      money:(dedRaw,dedFmt,pc)=>dedRaw>0?`Explains ${pc}% of the ${dedFmt} deducted &mdash; a legitimate deduction, not an error.`:`A legitimate deduction under IRDAI's published list, not an error.`,
-      doText:"Nothing extra needed here. Use it as the explained part when you ask the insurer about the rest." },
+      foundClear:"No charge matches an item named in IRDAI List I", subClear:"matched by English item name only",
+      money:(dedRaw,dedFmt,pc)=>dedRaw>0?`These items are on the published non-payable list, so an insurer may deduct them. If it deducted all of them they would account for ${pc}% of the ${dedFmt}. This app cannot see which lines your insurer actually declined.`:`These items are on the published non-payable list, so an insurer may deduct them. This app cannot see which lines your insurer actually declined.`,
+      doText:"Ask your insurer for its line-by-line list of what it declined, then compare it with these items." },
     irdai_review: { label:"Confirm",
       found:n=>`${n} charge${n>1?'s':''} commonly deducted, not on the list`, sub:sum=>`${sum} &middot; confirm with your insurer`,
       foundClear:'No "commonly deducted but unlisted" charges', subClear:"",
@@ -918,6 +921,8 @@ en: {
       sub:()=>"price cap set by NPPA, India's price regulator",
       subUnverified:()=>"ceiling not independently re-confirmed &mdash; see below",
       foundClear:"No implant priced above an NPPA ceiling", subClear:"stents / knee implants checked",
+      foundClearN:n=>`${n} implant line${n>1?'s':''} compared; none above the ceiling`, subClearN:"stents / knee implants only",
+      foundNA:"No stent or knee-implant line found", subNA:"only these two implant types are checked",
       money:()=>"This is a price ceiling set by NPPA, not a guideline. A price above the ceiling plus GST is worth asking the hospital to explain.",
       moneyUnverified:()=>"This is a real NPPA notification, but this app has not independently re-confirmed it is still the current ceiling &mdash; confirm before treating it as settled.",
       doText:"Ask the hospital to justify the price against the NPPA notification, or request a refund of the difference.",
@@ -1033,8 +1038,11 @@ hi: {
   nppa_stale_note:"घुटने के इम्प्लांट की सीमाएँ 15 नवंबर 2026 तक मान्य प्रकाशित थीं। इन पर भरोसा करने से पहले जाँचें कि कोई नई NPPA अधिसूचना लागू है या नहीं।",
   notcompared_word:"जाँचा नहीं गया",
   partial_note:(one,rej)=>[one?"सिर्फ़ एक पेज पढ़ा गया। अगर आपके बिल में और पेज हैं तो उन्हें जोड़ें &mdash; ये जाँचें सिर्फ़ अपलोड किए गए हिस्से पर हैं।":"",rej?`${rej} फ़ोटो बिल का पेज नहीं लगी और छोड़ दी गई, इसलिए ये जाँचें पूरे बिल पर लागू नहीं हो सकतीं।`:""].filter(Boolean).join(" "),
-  detail_nppa:"सांविधिक मूल्य सीमा से ऊपर (NPPA)",
-  detail_nppa_plain:"NPPA, भारत के दवा और मेडिकल डिवाइस मूल्य नियामक, द्वारा तय क़ानूनी सीमा &mdash; राय नहीं।",
+  detail_nppa:"NPPA की मूल्य सीमा से ऊपर",
+  detail_nppa_plain:"NPPA, भारत के दवा और मेडिकल डिवाइस मूल्य नियामक, द्वारा तय मूल्य सीमा। दो तरह के स्टेंट की सीमाएँ NPPA अधिसूचना से जाँची गई हैं; घुटने के इम्प्लांट की सीमाओं की स्वतंत्र रूप से दोबारा पुष्टि नहीं हुई (हर लाइन पर चिन्हित)।",
+  notapplicable_word:"लागू नहीं",
+  nppa_skipped_note:n=>`${n} इम्प्लांट लाइन सेट या पैकेज जैसी लगी और एक पुर्ज़े की सीमा से नहीं मिलाई गई।`,
+  nonlatin_note:n=>`${n} लाइन अंग्रेज़ी में नहीं लिखी हैं और अंग्रेज़ी सूचियों से नहीं मिलाई जा सकीं।`,
   detail_nppa_src:(ref,ceiling,gst)=>`${ref} के लिए NPPA सीमा: ${ceiling} (${gst})`,
   detail_recon:"मिलान",
   detail_recon_body:(gross,lineSum,diff)=>`बिल की छपी कुल राशि (${gross}) उसकी अपनी लाइनों के योग (${lineSum}) से <strong>${diff}</strong> अलग है। यह अस्पताल की अपनी गणना हो सकती है, पढ़ने की ग़लती नहीं।`,
@@ -1099,9 +1107,9 @@ hi: {
   checks: {
     irdai_exact: { label:"IRDAI सूची I",
       found:n=>`${n} चार्ज प्रकाशित न-भुगतान सूची से मेल खाते हैं`, sub:sum=>`${sum} &middot; IRDAI सूची I`,
-      foundClear:"IRDAI सूची I में नामित किसी चीज़ से कोई चार्ज मेल नहीं खाता", subClear:"यहाँ कुछ चिन्हित नहीं करना",
-      money:(dedRaw,dedFmt,pc)=>dedRaw>0?`${dedFmt} की कटौती का ${pc}% समझाता है &mdash; एक वैध कटौती, ग़लती नहीं।`:`IRDAI की प्रकाशित सूची के तहत एक वैध कटौती, ग़लती नहीं।`,
-      doText:"यहाँ कुछ और करने की ज़रूरत नहीं। बाक़ी के बारे में पूछते समय इसे समझाए गए हिस्से के तौर पर इस्तेमाल करें।" },
+      foundClear:"IRDAI सूची I में नामित किसी चीज़ से कोई चार्ज मेल नहीं खाता", subClear:"सिर्फ़ अंग्रेज़ी नाम से मिलान",
+      money:(dedRaw,dedFmt,pc)=>dedRaw>0?`ये चीज़ें प्रकाशित न-भुगतान सूची में हैं, इसलिए बीमा कंपनी इन्हें काट सकती है। अगर उसने सब काटी हों तो ये ${dedFmt} का ${pc}% होंगी। यह ऐप नहीं देख सकता कि आपकी बीमा कंपनी ने असल में कौन-सी लाइनें नामंज़ूर कीं।`:`ये चीज़ें प्रकाशित न-भुगतान सूची में हैं, इसलिए बीमा कंपनी इन्हें काट सकती है। यह ऐप नहीं देख सकता कि आपकी बीमा कंपनी ने असल में कौन-सी लाइनें नामंज़ूर कीं।`,
+      doText:"अपनी बीमा कंपनी से नामंज़ूर की गई चीज़ों की लाइन-दर-लाइन सूची माँगें, फिर उसे इन चीज़ों से मिलाकर देखें।" },
     irdai_review: { label:"पुष्टि करें",
       found:n=>`${n} चार्ज अक्सर काटे जाते हैं, पर सूची में नहीं हैं`, sub:sum=>`${sum} &middot; अपने बीमा कंपनी से पुष्टि करें`,
       foundClear:'"अक्सर काटी जाने वाली पर सूची में न होने वाली" कोई चार्ज नहीं', subClear:"",
@@ -1118,6 +1126,8 @@ hi: {
       sub:()=>"NPPA, भारत के मूल्य नियामक, द्वारा तय सीमा",
       subUnverified:()=>"सीमा की स्वतंत्र रूप से दोबारा पुष्टि नहीं हुई &mdash; नीचे देखें",
       foundClear:"कोई इम्प्लांट NPPA सीमा से ऊपर क़ीमत पर नहीं", subClear:"स्टेंट / घुटने के इम्प्लांट जाँचे गए",
+      foundClearN:n=>`${n} इम्प्लांट लाइन जाँची गई; कोई भी सीमा से ऊपर नहीं`, subClearN:"सिर्फ़ स्टेंट / घुटने के इम्प्लांट",
+      foundNA:"कोई स्टेंट या घुटने के इम्प्लांट की लाइन नहीं मिली", subNA:"सिर्फ़ ये दो तरह के इम्प्लांट जाँचे जाते हैं",
       money:()=>"यह NPPA द्वारा तय क़ीमत की सीमा है, सुझाव नहीं। सीमा और GST से ऊपर की क़ीमत के बारे में अस्पताल से स्पष्टीकरण माँगना उचित है।",
       moneyUnverified:()=>"यह एक असली NPPA अधिसूचना है, पर इस ऐप ने स्वतंत्र रूप से पुष्टि नहीं की है कि यही अभी की सीमा है &mdash; इसे तय मानने से पहले पुष्टि करें।",
       doText:"अस्पताल से NPPA अधिसूचना के मुक़ाबले क़ीमत का औचित्य पूछें, या अंतर की वापसी माँगें।",
@@ -1233,8 +1243,11 @@ mr: {
   nppa_stale_note:"गुडघा इम्प्लांटच्या मर्यादा 15 नोव्हेंबर 2026 पर्यंत वैध म्हणून प्रकाशित होत्या. यावर विसंबण्याआधी नवीन NPPA अधिसूचना लागू आहे का ते तपासा.",
   notcompared_word:"तपासले नाही",
   partial_note:(one,rej)=>[one?"फक्त एक पान वाचलं गेलं. तुमच्या बिलात आणखी पानं असतील तर ती जोडा &mdash; या तपासण्या फक्त अपलोड केलेल्या भागावर आहेत.":"",rej?`${rej} फोटो बिलाचं पान वाटला नाही आणि वगळला गेला, त्यामुळे या तपासण्या संपूर्ण बिलावर लागू नसू शकतात.`:""].filter(Boolean).join(" "),
-  detail_nppa:"वैधानिक किंमत मर्यादेपेक्षा जास्त (NPPA)",
-  detail_nppa_plain:"NPPA, भारताच्या औषध आणि वैद्यकीय उपकरण किंमत नियामकाने ठरवलेली कायदेशीर मर्यादा &mdash; मत नाही.",
+  detail_nppa:"NPPA च्या किंमत मर्यादेपेक्षा जास्त",
+  detail_nppa_plain:"NPPA, भारताच्या औषध आणि वैद्यकीय उपकरण किंमत नियामकाने ठरवलेली किंमत मर्यादा. दोन प्रकारच्या स्टेंटच्या मर्यादा NPPA अधिसूचनेशी पडताळल्या आहेत; गुडघा इम्प्लांटच्या मर्यादांची स्वतंत्रपणे पुन्हा पुष्टी झालेली नाही (प्रत्येक ओळीवर नमूद).",
+  notapplicable_word:"लागू नाही",
+  nppa_skipped_note:n=>`${n} इम्प्लांट ओळ सेट किंवा पॅकेजसारखी वाटली आणि एका भागाच्या मर्यादेशी जुळवली नाही.`,
+  nonlatin_note:n=>`${n} ओळी इंग्रजीत लिहिलेल्या नाहीत आणि इंग्रजी याद्यांशी जुळवता आल्या नाहीत.`,
   detail_nppa_src:(ref,ceiling,gst)=>`${ref} साठी NPPA मर्यादा: ${ceiling} (${gst})`,
   detail_recon:"ताळमेळ",
   detail_recon_body:(gross,lineSum,diff)=>`बिलाची छापील एकूण रक्कम (${gross}) त्याच्या स्वतःच्या ओळींच्या बेरजेपेक्षा (${lineSum}) <strong>${diff}</strong> ने वेगळी आहे. ही रुग्णालयाची स्वतःची गणना असू शकते, वाचण्यातली चूक नाही.`,
@@ -1299,9 +1312,9 @@ mr: {
   checks: {
     irdai_exact: { label:"IRDAI यादी I",
       found:n=>`${n} चार्जेस प्रकाशित न-भरणा यादीशी जुळतात`, sub:sum=>`${sum} &middot; IRDAI यादी I`,
-      foundClear:"IRDAI यादी I मध्ये नमूद कोणत्याही गोष्टीशी चार्ज जुळत नाही", subClear:"इथे काही नोंदवण्यासारखं नाही",
-      money:(dedRaw,dedFmt,pc)=>dedRaw>0?`${dedFmt} च्या कपातीपैकी ${pc}% स्पष्ट करतं &mdash; ही वैध कपात आहे, चूक नाही.`:`IRDAI च्या प्रकाशित यादीनुसार वैध कपात, चूक नाही.`,
-      doText:"इथे आणखी काही करण्याची गरज नाही. उरलेल्याबद्दल विचारताना हा स्पष्ट झालेला भाग म्हणून वापरा." },
+      foundClear:"IRDAI यादी I मध्ये नमूद कोणत्याही गोष्टीशी चार्ज जुळत नाही", subClear:"फक्त इंग्रजी नावाने जुळवलं",
+      money:(dedRaw,dedFmt,pc)=>dedRaw>0?`या गोष्टी प्रकाशित न-भरणा यादीत आहेत, त्यामुळे विमा कंपनी त्या कापू शकते. सर्व कापल्या असतील तर त्या ${dedFmt} च्या ${pc}% होतील. तुमच्या विमा कंपनीने प्रत्यक्षात कोणत्या ओळी नाकारल्या हे हे अ‍ॅप पाहू शकत नाही.`:`या गोष्टी प्रकाशित न-भरणा यादीत आहेत, त्यामुळे विमा कंपनी त्या कापू शकते. तुमच्या विमा कंपनीने प्रत्यक्षात कोणत्या ओळी नाकारल्या हे हे अ‍ॅप पाहू शकत नाही.`,
+      doText:"तुमच्या विमा कंपनीकडून नाकारलेल्या गोष्टींची ओळीनुसार यादी मागा, मग ती या गोष्टींशी पडताळा." },
     irdai_review: { label:"खात्री करा",
       found:n=>`${n} चार्जेस वारंवार कापले जातात, पण यादीत नाहीत`, sub:sum=>`${sum} &middot; तुमच्या विमा कंपनीकडून खात्री करा`,
       foundClear:'"वारंवार कापले जाणारे पण यादीत नसलेले" चार्ज नाहीत', subClear:"",
@@ -1318,6 +1331,8 @@ mr: {
       sub:()=>"NPPA, भारताच्या किंमत नियामकाने ठरवलेली मर्यादा",
       subUnverified:()=>"मर्यादेची स्वतंत्रपणे पुन्हा पुष्टी झालेली नाही &mdash; खाली पहा",
       foundClear:"कोणताही इम्प्लांट NPPA मर्यादेपेक्षा जास्त किमतीत नाही", subClear:"स्टेंट / गुडघा इम्प्लांट तपासले",
+      foundClearN:n=>`${n} इम्प्लांट ओळ तपासली; एकही मर्यादेपेक्षा जास्त नाही`, subClearN:"फक्त स्टेंट / गुडघा इम्प्लांट",
+      foundNA:"स्टेंट किंवा गुडघा इम्प्लांटची कोणतीही ओळ सापडली नाही", subNA:"फक्त हे दोन प्रकारचे इम्प्लांट तपासले जातात",
       money:()=>"ही NPPA ने ठरवलेली किंमत मर्यादा आहे, सूचना नाही. मर्यादा आणि GST पेक्षा जास्त किमतीबद्दल रुग्णालयाकडून स्पष्टीकरण मागणं योग्य आहे.",
       moneyUnverified:()=>"ही खरी NPPA अधिसूचना आहे, पण हे अ‍ॅप सध्याची मर्यादा हीच आहे याची स्वतंत्रपणे पुष्टी करू शकलेलं नाही &mdash; हे निश्चित मानण्याआधी पुष्टी करा.",
       doText:"रुग्णालयाला NPPA अधिसूचनेच्या तुलनेत किमतीचं समर्थन विचारा, किंवा फरकाचा परतावा मागा.",
@@ -1690,7 +1705,9 @@ function renderReport(data){
         nppaAllVerified?C.nppa.found(a.nppa.length):C.nppa.foundUnverified(a.nppa.length),
         nppaAllVerified?C.nppa.sub():C.nppa.subUnverified(),
         {money:(nppaAllVerified?C.nppa.money():C.nppa.moneyUnverified())+(a.nppaStale?' '+T_.nppa_stale_note:''), doText:nppaAllVerified?C.nppa.doText:C.nppa.doTextUnverified})
-    : (a.nppaGst.length?'':chk('green',T_.clear_word,C.nppa.foundClear,C.nppa.subClear));
+    : (a.nppaGst.length?'':(a.nppaCompared>0
+        ? chk('green',T_.clear_word,C.nppa.foundClearN(a.nppaCompared),C.nppa.subClearN)
+        : chk('grey',T_.notapplicable_word,C.nppa.foundNA,C.nppa.subNA)));
   if(a.nppaGst.length) h+=chk('ochre',C.nppa.labelGst,C.nppa.foundGst(a.nppaGst.length),C.nppa.subGst(),
         {money:C.nppa.moneyGst(), doText:C.nppa.doTextGst});
   h+= a.recon
@@ -1710,7 +1727,10 @@ function renderReport(data){
     : chk('green',T_.clear_word,C.is19493.foundClear,C.is19493.subClear);
   h+=`</div>`;
   if(a.partial) h+=`<div role="note" style="margin-top:10px;font-family:'Spectral',serif;font-size:.86rem;color:var(--soft);line-height:1.5">${T_.partial_note(a.pageCount===1,a.rejected)}</div>`;
-  if(a.unreadable>0) h+=`<div role="note" style="margin-top:10px;font-family:'Spectral',serif;font-size:.86rem;color:var(--soft);line-height:1.5">${T_.unreadable_note(a.unreadable)}</div>`;
+  const noteHtml=t=>`<div role="note" style="margin-top:10px;font-family:'Spectral',serif;font-size:.86rem;color:var(--soft);line-height:1.5">${t}</div>`;
+  if(a.unreadable>0) h+=noteHtml(T_.unreadable_note(a.unreadable));
+  if(a.nppaSkipped>0) h+=noteHtml(T_.nppa_skipped_note(a.nppaSkipped));
+  if(a.nonLatin>0) h+=noteHtml(T_.nonlatin_note(a.nonLatin));
 
   if(ded>0) h+=`<div class="flagtot"><span>${T_.flagged_so_far}</span><span class="v">${inr.format(totalFlagged)}</span></div>`;
   if(a.lines.length>0) h+=`<button class="btn ghost sm" id="shareFindingsBtn" style="margin-top:10px;width:100%">${T_.share_findings_btn}</button>`;
