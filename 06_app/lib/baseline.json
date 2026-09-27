@@ -1,20 +1,15 @@
 {
  "worked_example": {
   "lines": 63,
-  "exactSum": 1992.5,
-  "reviewSum": 1831.1,
+  "exactSum": 1310,
+  "reviewSum": 1752,
+  "subsumedSum": 689.6,
   "exact": [
-   "Admission/Registration Charges|list_i",
-   "Alcohol Swabs|list_i",
    "Examination Gloves|list_i",
    "Medical Records|list_i",
-   "Scrub Solution / Sterillium|list_i",
-   "Scrub Solution / Sterillium|list_i",
    "TPA Charges|list_i"
   ],
   "review": [
-   "Blade",
-   "Blade",
    "CSSD / Sterilisation Charges",
    "Dressing / Tegaderm film",
    "Dressing / Tegaderm film",
@@ -22,6 +17,13 @@
    "Surgical Gloves (sterile, in-procedure)",
    "Surgical Gloves (sterile, in-procedure)",
    "Surgical Gloves (sterile, in-procedure)"
+  ],
+  "subsumed": [
+   "III|Surgical Blades / Harmonic Scalpel / Shaver",
+   "IV|Admission/Registration Charges",
+   "IV|Alcohol Swabs",
+   "IV|Scrub Solution / Sterillium",
+   "IV|Scrub Solution / Sterillium"
   ],
   "recon": 10,
   "dupGroups": [
@@ -49,13 +51,15 @@
  },
  "SYN-01": {
   "lines": 23,
-  "exactSum": 350,
+  "exactSum": 0,
   "reviewSum": 78,
-  "exact": [
-   "Admission/Registration Charges|list_i"
-  ],
+  "subsumedSum": 350,
+  "exact": [],
   "review": [
    "Surgical Gloves (sterile, in-procedure)"
+  ],
+  "subsumed": [
+   "IV|Admission/Registration Charges"
   ],
   "recon": null,
   "dupGroups": [],
@@ -82,12 +86,14 @@
  },
  "SYN-02": {
   "lines": 19,
-  "exactSum": 350,
+  "exactSum": 0,
   "reviewSum": 0,
-  "exact": [
-   "Admission/Registration Charges|list_i"
-  ],
+  "subsumedSum": 350,
+  "exact": [],
   "review": [],
+  "subsumed": [
+   "IV|Admission/Registration Charges"
+  ],
   "recon": null,
   "dupGroups": [],
   "redacted": 0,
@@ -113,15 +119,18 @@
  },
  "SYN-03": {
   "lines": 34,
-  "exactSum": 382,
-  "reviewSum": 318,
+  "exactSum": 32,
+  "reviewSum": 78,
+  "subsumedSum": 590,
   "exact": [
-   "Admission/Registration Charges|list_i",
    "Examination Gloves|list_i"
   ],
   "review": [
-   "Cotton",
    "Surgical Gloves (sterile, in-procedure)"
+  ],
+  "subsumed": [
+   "III|Cotton",
+   "IV|Admission/Registration Charges"
   ],
   "recon": 10,
   "dupGroups": [],
@@ -148,13 +157,15 @@
  },
  "SYN-04": {
   "lines": 25,
-  "exactSum": 350,
+  "exactSum": 0,
   "reviewSum": 78,
-  "exact": [
-   "Admission/Registration Charges|list_i"
-  ],
+  "subsumedSum": 350,
+  "exact": [],
   "review": [
    "Surgical Gloves (sterile, in-procedure)"
+  ],
+  "subsumed": [
+   "IV|Admission/Registration Charges"
   ],
   "recon": null,
   "dupGroups": [
@@ -183,14 +194,17 @@
  },
  "SYN-05": {
   "lines": 19,
-  "exactSum": 374,
+  "exactSum": 24,
   "reviewSum": 52,
+  "subsumedSum": 350,
   "exact": [
-   "Admission/Registration Charges|list_i",
    "Examination Gloves|list_i"
   ],
   "review": [
    "Surgical Gloves (sterile, in-procedure)"
+  ],
+  "subsumed": [
+   "IV|Admission/Registration Charges"
   ],
   "recon": null,
   "dupGroups": [],
@@ -217,14 +231,17 @@
  },
  "SYN-06": {
   "lines": 26,
-  "exactSum": 382,
+  "exactSum": 32,
   "reviewSum": 78,
+  "subsumedSum": 350,
   "exact": [
-   "Admission/Registration Charges|list_i",
    "Examination Gloves|list_i"
   ],
   "review": [
    "Surgical Gloves (sterile, in-procedure)"
+  ],
+  "subsumed": [
+   "IV|Admission/Registration Charges"
   ],
   "recon": null,
   "dupGroups": [],
@@ -252,13 +269,15 @@
  },
  "SYN-08": {
   "lines": 24,
-  "exactSum": 350,
+  "exactSum": 0,
   "reviewSum": 78,
-  "exact": [
-   "Admission/Registration Charges|list_i"
-  ],
+  "subsumedSum": 350,
+  "exact": [],
   "review": [
    "Surgical Gloves (sterile, in-procedure)"
+  ],
+  "subsumed": [
+   "IV|Admission/Registration Charges"
   ],
   "recon": null,
   "dupGroups": [
@@ -288,13 +307,15 @@
  },
  "SYN-09": {
   "lines": 30,
-  "exactSum": 350,
+  "exactSum": 0,
   "reviewSum": 104,
-  "exact": [
-   "Admission/Registration Charges|list_i"
-  ],
+  "subsumedSum": 350,
+  "exact": [],
   "review": [
    "Surgical Gloves (sterile, in-procedure)"
+  ],
+  "subsumed": [
+   "IV|Admission/Registration Charges"
   ],
   "recon": null,
   "dupGroups": [],
@@ -321,13 +342,15 @@
  },
  "SYN-10": {
   "lines": 25,
-  "exactSum": 350,
+  "exactSum": 0,
   "reviewSum": 78,
-  "exact": [
-   "Admission/Registration Charges|list_i"
-  ],
+  "subsumedSum": 350,
+  "exact": [],
   "review": [
    "Surgical Gloves (sterile, in-procedure)"
+  ],
+  "subsumed": [
+   "IV|Admission/Registration Charges"
   ],
   "recon": null,
   "dupGroups": [],

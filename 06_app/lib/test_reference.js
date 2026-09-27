@@ -51,5 +51,54 @@ const MUST_NOT = ['SPIROMETRY (PFT)', 'PRIVATE ROOM CHARGES', 'SPECIAL ROOM RENT
   'IV SET', 'STV', 'EXTRA DAY ROOM RENT', 'WATER FOR INJECTION', 'BED CHARGES', 'AIR ENTRY CHECK', 'LEG CAST'];
 for (const s of MUST_NOT) { const m = c.bestMatch(s); ok(!m || m.e.tier !== 'exact', '"' + s + '" is not flagged as a List I item', m ? m.e.tier + ': ' + m.e.item : ''); }
 
+console.log('== IRDAI Lists II-IV (items that should be in another charge, not billed separately)');
+{
+  // The official item names, exactly as read from irdai.gov.in (Modification Guidelines on
+  // Standardization in Health Insurance, 27 Sep 2019) on 25 Sep 2026.
+  const L2 = ['BABY CHARGES', 'HAND WASH', 'SHOE COVER', 'CAPS', 'CRADLE CHARGES', 'COMB', 'EAU-DE-COLOGNE / ROOM FRESHNERS', 'FOOT COVER', 'GOWN', 'SLIPPERS',
+    'TISSUE PAPER', 'TOOTH PASTE', 'TOOTH BRUSH', 'BED PAN', 'FACE MASK', 'FLEXI MASK', 'HAND HOLDER', 'SPUTUM CUP', 'DISINFECTANT LOTIONS', 'LUXURY TAX', 'HVAC',
+    'HOUSE KEEPING CHARGES', 'AIR CONDITIONER CHARGES', 'IM IV INJECTION CHARGES', 'CLEAN SHEET', 'BLANKET/WARMER BLANKET', 'ADMISSION KIT', 'DIABETIC CHART CHARGES',
+    'DOCUMENTATION CHARGES / ADMINISTRATIVE EXPENSES', 'DISCHARGE PROCEDURE CHARGES', 'DAILY CHART CHARGES', 'ENTRANCE PASS / VISITORS PASS CHARGES',
+    'EXPENSES RELATED TO PRESCRIPTION ON DISCHARGE', 'FILE OPENING CHARGES', 'INCIDENTAL EXPENSES / MISC. CHARGES', 'PATIENT IDENTIFICATION BAND / NAME TAG', 'PULSEOXYMETER CHARGES'];
+  const L3 = ['HAIR REMOVAL CREAM', 'DISPOSABLES RAZORS CHARGES', 'EYE PAD', 'EYE SHEILD', 'CAMERA COVER', 'DVD, CD CHARGES', 'GAUSE SOFT', 'GAUZE',
+    'WARD AND THEATRE BOOKING CHARGES', 'ARTHROSCOPY AND ENDOSCOPY INSTRUMENTS', 'MICROSCOPE COVER', 'SURGICAL BLADES, HARMONICSCALPEL, SHAVER', 'SURGICAL DRILL',
+    'EYE KIT', 'EYE DRAPE', 'X-RAY FILM', 'BOYLES APPARATUS CHARGES', 'COTTON', 'COTTON BANDAGE', 'SURGICAL TAPE', 'APRON', 'TORNIQUET', 'ORTHOBUNDLE, GYNAEC BUNDLE'];
+  const L4 = ['ADMISSION/REGISTRATION CHARGES', 'HOSPITALISATION FOR EVALUATION/ DIAGNOSTIC PURPOSE', 'URINE CONTAINER',
+    'BLOOD RESERVATION CHARGES AND ANTE NATAL BOOKING CHARGES', 'BIPAP MACHINE', 'CPAP/ CAPD EQUIPMENTS', 'INFUSION PUMP– COST',
+    'HYDROGEN PEROXIDE\\SPIRIT\\ DISINFECTANTS ETC', 'NUTRITION PLANNING CHARGES - DIETICIAN CHARGES- DIET CHARGES', 'HIV KIT', 'ANTISEPTIC MOUTHWASH', 'LOZENGES',
+    'MOUTH PAINT', 'VACCINATION CHARGES', 'ALCOHOL SWABES', 'SCRUB SOLUTION/STERILLIUM', 'Glucometer& Strips', 'URINE BAG'];
+  const ALL_78 = [].concat(L2, L3, L4);
+  ok(L2.length === 37 && L3.length === 23 && L4.length === 18 && ALL_78.length === 78, 'Lists II/III/IV have 37/23/18 official items (78 total)');
+  // Bare "Cotton" is deliberately NOT matched on its own: List I's own "Buds" row
+  // (bare "cotton bud") must keep matching "COTTON BUDS" as a List I item, and a
+  // bare "cotton" keyword here would intercept that line first (Subsumed is
+  // matched before List I) and mis-cite it. "Cotton Roll"/"Absorbent Cotton" still
+  // match under List III. Bare "Caps" is also deliberately not matched: "Cap" is a
+  // common Indian medicine-label abbreviation for "Capsule" (e.g. "CAP D 800
+  // TABLET"), so a bare "cap" keyword would misfire on real medicine lines;
+  // "Surgical Cap"/"Theatre Cap" still match.
+  const DELIBERATE_GAP = new Set(['COTTON', 'CAPS']);
+  const unexpected = [];
+  for (const it of ALL_78) {
+    const m = c.bestMatchIn(it, c.SUBSUMED);
+    if (DELIBERATE_GAP.has(it)) { if (m) unexpected.push(it + ' (expected no match, got ' + m.e.item + ')'); continue; }
+    if (!m) unexpected.push(it + ' (no match)');
+  }
+  ok(unexpected.length === 0, 'all ' + (ALL_78.length - DELIBERATE_GAP.size) + ' of the ' + ALL_78.length + ' official Lists II-IV items match (the one deliberate gap is documented above)', unexpected.join('; '));
+  // A line already caught by Subsumed must never also register as a List I match
+  // when the same string is run through bestMatch() - analyse() relies on this
+  // (it excludes Subsumed-matched lines before running the List I pass).
+  const dual = ALL_78.filter(it => !DELIBERATE_GAP.has(it)).filter(it => { const m = c.bestMatch(it); return m && m.e.tier === 'exact'; });
+  ok(dual.length === 0, 'none of the Lists II-IV items are ALSO a List I exact match', dual.join('; '));
+}
+
+console.log('== Lists II-IV: real wording matches, payable look-alikes do not');
+const SUB_MUST = ['TOOTH-BRUSH', 'NAME-TAG', 'COMB', 'APRON', 'IDENTIFICATION BAND', 'ADMISSION KIT', 'GOWNS', 'ADMISSION SERVICES 10003', 'CAMERA COVER',
+  'X-RAY FILM', 'SURGICAL BLADE NO.15', 'EYE PAD', 'EYE SHIELD', 'GLUCOMETER STRIPS', 'HIV KIT', 'INFUSION PUMP'];
+for (const s of SUB_MUST) { const m = c.bestMatchIn(s, c.SUBSUMED); ok(!!m, '"' + s + '" matches a Lists II-IV item', m ? '' : 'no match'); }
+const SUB_MUST_NOT = ['CAP D 800 TABLET', 'CAP AMOXICLAV 625MG', 'HANDICAP RAMP CHARGE', 'BEDSIDE MONITOR', 'X-RAY CHEST PA VIEW', 'BLOOD GROUPING OF PATIENT',
+  'IV SET VENTED NOVOFUSION', 'ROOM RENT', 'PULSE RATE MONITORING'];
+for (const s of SUB_MUST_NOT) { const m = c.bestMatchIn(s, c.SUBSUMED); ok(!m, '"' + s + '" does not match a Lists II-IV item', m ? m.e.item : ''); }
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

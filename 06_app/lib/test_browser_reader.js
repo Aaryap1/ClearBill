@@ -147,12 +147,25 @@ const STUB = `
     await ev(`switchTab('letter'); document.getElementById('genLetterTab').click();`); await sleep(300);
     const lt = await ev(`return document.querySelector('.letter').innerText`);
     ok(/List I \(Optional Items\)/.test(lt) && /27 September 2019/.test(lt), 'the letter names the list the way IRDAI does, with the date of the guidelines');
-    ok(/The items listed above total .1,992\.5\. The remaining .3,970\.39 of the amount recorded as non-payable is not accounted for by those items\./.test(lt), 'the letter states the arithmetic gap between the listed items and the deduction');
+    ok(/The items listed above total .1,310\. The remaining .4,652\.89 of the amount recorded as non-payable is not accounted for by those items\./.test(lt), 'the letter states the arithmetic gap between the listed items and the deduction');
     ok(/with the policy clause relied on for each/.test(lt) && /whether my policy offers optional cover/.test(lt), 'the requests ask for the policy clause and for optional cover');
     ok(!/Reconsideration of any amount above that/.test(lt), 'the letter no longer asks for reconsideration of the items it has just listed');
     await ev(`document.querySelector('[data-inc=irdai]').checked=false; document.getElementById('genLetterTab').click();`); await sleep(300);
     const lt2 = await ev(`return document.querySelector('.letter').innerText`);
     ok(!/The items listed above total/.test(lt2) && /2\. Reconsideration of any amount that is not covered/.test(lt2), 'without the listed items the letter has neither the arithmetic sentence nor a reference to them');
+
+    console.log('== letter and report: IRDAI Lists II-IV (should be in another charge)');
+    await ev(`document.querySelector('[data-inc=irdai]').checked=true; document.getElementById('genLetterTab').click();`); await sleep(300);
+    const lt3 = await ev(`return document.querySelector('.letter').innerText`);
+    ok(/Lists II-IV/.test(lt3) && /Should be part of Treatment cost \(List IV\)/.test(lt3) && /Admission\/Registration Charges/.test(lt3), 'the letter has its own Lists II-IV paragraph, grouped by which list, with the ADMISSION SERVICES line under Treatment cost');
+    ok(/3\. Confirmation that each charge listed under IRDAI Lists II-IV was already included/.test(lt3), 'the Lists II-IV request is numbered after the IRDAI List I and NPPA requests (the worked example has no NPPA lines)');
+    const rep2 = await ev(`switchTab('findings'); return document.getElementById('report').innerText`);
+    ok(/should already be part of another charge/.test(rep2) && /IRDAI Lists II-IV/.test(rep2), 'the report has its own "should be in another charge" check card');
+    ok(/should already be part of another charge, not billed on their own/.test(await ev(`return document.querySelector('.starthere').textContent`)), '"Start here" also lists it under "Ask the hospital"');
+    ok(/6 \/ 6/.test(await ev(`return document.querySelector('.kpis').textContent`)), 'Checks run now counts 6 checks, and all 6 ran on the worked example');
+    ok(await ev(`return document.querySelector('[data-inc=subsumed]') !== null`), 'the letter checklist has its own row for this');
+    { const nonOverlap = await ev(`const a=analyse(WORKED_EXAMPLE_BILL); return a.exact.some(l=>l.matched==='Admission/Registration Charges'||l.matched==='Alcohol Swabs'||l.matched==='Scrub Solution / Sterillium')`);
+      ok(!nonOverlap, 'a line caught by Lists II-IV is never ALSO listed as a List I item (no double count)'); }
 
     console.log('== guidance: photo guide, Start here, After you send it, letter summary, clear saved data');
     await fresh(); await ev(`setLang('en');`);
@@ -173,6 +186,7 @@ const STUB = `
     await ev(`setLang('hi');`); await sleep(300);
     const hs = await ev(`window.__pr=null; const op=window.print; window.print=()=>{ window.__pr=document.getElementById('printArea').textContent; }; document.getElementById('printLetter').click(); window.print=op; const s=document.querySelector('.lsum'); return {sum: s?s.textContent:'', lettertext: document.querySelector('.letter').textContent, printed: window.__pr, order: s ? (s.compareDocumentPosition(document.querySelector('.letter')) & 4) : 0}`);
     ok(/[ऀ-ॿ]/.test(hs.sum) && /IRDAI/.test(hs.sum) && hs.order === 4, 'in Hindi a plain-language summary sits above the letter');
+    ok(/किसी और चार्ज में शामिल होना चाहिए/.test(hs.sum), 'the Hindi summary also mentions the Lists II-IV items, not just IRDAI List I');
     ok(!/[ऀ-ॿ]/.test(hs.printed) && !/इस पत्र में क्या/.test(hs.printed), 'the summary is not part of the text that is printed');
     await ev(`setLang('en'); localStorage.setItem('clearbill_settlement_draft','{"total":"5"}'); localStorage.setItem('clearbill_gemini_key','KEY'); document.getElementById('ld_name').value='Someone'; document.getElementById('ld_remember').checked=true; document.getElementById('ld_name').dispatchEvent(new Event('input',{bubbles:true}));`);
     ok(await ev(`return !!localStorage.getItem('clearbill_letter_details')`), 'letter details are remembered when the box is ticked (setup for the next check)');

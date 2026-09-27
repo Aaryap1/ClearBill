@@ -2,11 +2,8 @@
  * Re-run `node lib/build_checks.js` after changing the reference tables or
  * analyse() in index.html. `node lib/build_checks.js --check` fails if stale. */
 const NON_PAYABLE = [
-  { tier:"exact", item:"Admission/Registration Charges", keywords:"admission service|registration charge|admission charge" },
   { tier:"exact", item:"Medical Records", keywords:"medical record" },
-  { tier:"exact", item:"Documentation Charges / Administrative Expenses", keywords:"documentation charge|administrative expense|admin charge" },
   { tier:"exact", item:"TPA Charges", keywords:"tpa charge|insurance processing|insurance charge" },
-  { tier:"exact", item:"Discharge Procedure Charges", keywords:"discharge procedure|discharge charge" },
   { tier:"exact", item:"Certificate Charges", keywords:"certificate charge" },
   { tier:"exact", item:"Medical Certificate", keywords:"medical certificate" },
   { tier:"exact", item:"Birth Certificate", keywords:"birth certificate" },
@@ -17,91 +14,50 @@ const NON_PAYABLE = [
   { tier:"exact", item:"Maintenance Charges", keywords:"maintenance charge" },
   { tier:"exact", item:"Surcharges", keywords:"surcharge" },
   { tier:"exact", item:"Attendant Charges", keywords:"attendant charge" },
-  { tier:"exact", item:"Entrance Pass / Visitors Pass Charges", keywords:"visitor pass|entrance pass" },
-  { tier:"exact", item:"Incidental Expenses / Misc. Charges", keywords:"incidental|miscellaneous charge|misc charge" },
-  { tier:"exact", item:"Daily Chart Charges", keywords:"daily chart" },
-  { tier:"exact", item:"Diabetic Chart Charges", keywords:"diabetic chart" },
   { tier:"exact", item:"Preparation Charges", keywords:"preparation charge" },
-  { tier:"exact", item:"Patient Identification Band / Name Tag", keywords:"identification band|name tag|id band" },
-  { tier:"exact", item:"Blood Reservation Charges / Ante Natal Booking", keywords:"blood reservation|ante natal booking" },
   { tier:"review", item:"Service Charges Where Nursing Charge Also Charged", keywords:"service charge" },
   { tier:"review", item:"Referral Doctor's Fees", keywords:"referral doctor|referral fee" },
-  { tier:"exact", item:"Alcohol Swabs", keywords:"alco swab|alcohol swab|alcohol gauze" },
-  { tier:"exact", item:"Scrub Solution / Sterillium", keywords:"sterillium|scrub solution|propanol|alcorub|povidone scrub|hand rub" },
   { tier:"exact", item:"Savlon", keywords:"savlon" },
-  { tier:"exact", item:"Hand Wash", keywords:"hand wash" },
   { tier:"review", item:"Micro Shield", keywords:"micro shield|microshield" },
   { tier:"exact", item:"Washing Charges", keywords:"washing charge" },
   { tier:"exact", item:"Laundry Charges", keywords:"laundry" },
-  { tier:"review", item:"Clean Sheet", keywords:"clean sheet" },
   { tier:"exact", item:"Examination Gloves", keywords:"gloves examination|examination glove|exam glove|nitrile glove|glove nitrile|examination medium nitrile" },
   { tier:"review", item:"Surgical Gloves (sterile, in-procedure)", keywords:"surgical glove|glove size|gammex|encore" },
   { tier:"exact", item:"Paper Gloves", keywords:"paper glove" },
-  { tier:"exact", item:"Mask", keywords:"face mask|flexi mask|surgical mask" },
-  { tier:"exact", item:"Apron", keywords:"apron" },
-  { tier:"exact", item:"Gown", keywords:"gown" },
-  { tier:"exact", item:"Shoe Cover", keywords:"shoe cover|foot cover" },
-  { tier:"exact", item:"Caps", keywords:"surgical cap|theatre cap" },
-  { tier:"exact", item:"Camera Cover", keywords:"camera cover" },
   { tier:"exact", item:"Trolly Cover", keywords:"trolley cover|trolly cover" },
   { tier:"exact", item:"Carry Bags", keywords:"carry bag" },
   { tier:"exact", item:"Band Aids, Bandages, Sterile Injections, Needles, Syringes", keywords:"band aid|bandaid" },
-  { tier:"review", item:"Cotton", keywords:"cotton roll|absorbent cotton" },
-  { tier:"exact", item:"Cotton Bandage", keywords:"cotton bandage" },
   { tier:"exact", item:"Crepe Bandage", keywords:"crepe bandage" },
   { tier:"exact", item:"Hansaplast / Adhesive Bandages", keywords:"hansaplast|adhesive bandage" },
-  { tier:"review", item:"Gauze", keywords:"gauze|gauge soft" },
   { tier:"review", item:"Cliniplast", keywords:"cliniplast" },
   { tier:"review", item:"Curapore", keywords:"curapore" },
-  { tier:"review", item:"Blade", keywords:"blade" },
-  { tier:"review", item:"Tourniquet", keywords:"tourniquet" },
   { tier:"exact", item:"Eyelet Collar", keywords:"eyelet collar" },
-  { tier:"review", item:"Eye Pad", keywords:"eye pad" },
-  { tier:"review", item:"Eye Shield", keywords:"eye shield" },
-  { tier:"review", item:"Bed Pan", keywords:"bed pan|bedpan" },
   { tier:"exact", item:"Bed Under Pad Charges", keywords:"under pad|underpad" },
   { tier:"exact", item:"Diaper of Any Type", keywords:"diaper" },
-  { tier:"review", item:"Blanket / Warmer Blanket", keywords:"blanket" },
-  { tier:"exact", item:"Admission Kit", keywords:"admission kit" },
   { tier:"exact", item:"Kidney Tray", keywords:"kidney tray" },
   { tier:"exact", item:"Ounce Glass", keywords:"ounce glass" },
-  { tier:"exact", item:"Urine Container", keywords:"urine container" },
   { tier:"exact", item:"Urometer, Urine Jug", keywords:"urometer|urine jug" },
   { tier:"review", item:"Medicine Box", keywords:"medicine box" },
   { tier:"exact", item:"Thermometer", keywords:"thermometer" },
-  { tier:"exact", item:"Comb", keywords:"comb" },
-  { tier:"exact", item:"Brush", keywords:"tooth brush|toothbrush" },
-  { tier:"exact", item:"Tooth Paste", keywords:"tooth paste|toothpaste" },
   { tier:"exact", item:"Towel", keywords:"towel|cosy towel" },
-  { tier:"exact", item:"Slippers", keywords:"slipper" },
   { tier:"exact", item:"Sanitary Pad", keywords:"sanitary pad" },
-  { tier:"exact", item:"Tissue Paper", keywords:"tissue paper" },
   { tier:"exact", item:"Powder", keywords:"talcum powder" },
   { tier:"exact", item:"Moisturiser / Paste / Brush", keywords:"moisturiser|moisturizer" },
-  { tier:"exact", item:"Eau-De-Cologne / Room Freshners", keywords:"room freshener|room freshner|cologne" },
   { tier:"exact", item:"Mineral Water", keywords:"mineral water" },
   { tier:"exact", item:"Buds", keywords:"ear bud|cotton bud|buds" },
   { tier:"exact", item:"Barber Charges", keywords:"barber" },
   { tier:"exact", item:"Beauty Services", keywords:"beauty service" },
-  { tier:"exact", item:"Baby Charges", keywords:"baby charge" },
   { tier:"exact", item:"Baby Food", keywords:"baby food|lactogen|infant food" },
   { tier:"exact", item:"Baby Utilities Charges", keywords:"baby utilities" },
-  { tier:"exact", item:"Baby Set", keywords:"baby set" },
-  { tier:"exact", item:"Baby Bottles", keywords:"baby bottle|feeding bottle" },
-  { tier:"exact", item:"Cradle Charges", keywords:"cradle" },
-  { tier:"exact", item:"Vaccine Charges for Baby", keywords:"baby vaccine|vaccine charges for baby" },
   { tier:"exact", item:"Telephone Charges", keywords:"telephone charge" },
   { tier:"exact", item:"Email / Internet Charges", keywords:"internet charge|email charge|wifi" },
-  { tier:"exact", item:"DVD, CD Charges", keywords:"dvd charge|cd charge" },
   { tier:"exact", item:"Guest Services", keywords:"guest service" },
   { tier:"exact", item:"Food Charges (Other than Patient's Diet)", keywords:"attendant food|guest food|visitor food" },
   { tier:"exact", item:"Walking Aids Charges", keywords:"walking aid|walker charge" },
-  { tier:"review", item:"BiPAP Machine", keywords:"bipap" },
   { tier:"review", item:"Commode", keywords:"commode" },
   { tier:"review", item:"Oxygen Cylinder (usage outside hospital)", keywords:"oxygen cylinder" },
   { tier:"exact", item:"Oxygen Mask", keywords:"oxygen mask" },
   { tier:"exact", item:"Spacer", keywords:"spacer", not:"cage|interbody|cement|knee|hip|spine|spinal|vertebral|antibiotic|implant" },
-  { tier:"review", item:"SPO2 Probe", keywords:"spo2 probe|spo2 sensor" },
   { tier:"exact", item:"Nebulizer Kit", keywords:"nebulizer kit|nebuliser kit|nebulisation kit|nebulization kit" },
   { tier:"exact", item:"Steam Inhaler", keywords:"steam inhaler" },
   { tier:"exact", item:"Arm Sling", keywords:"arm sling|armsling" },
@@ -114,7 +70,6 @@ const NON_PAYABLE = [
   { tier:"exact", item:"Diabetic Foot Wear", keywords:"diabetic footwear|diabetic foot wear" },
   { tier:"exact", item:"Visco Belt Charges", keywords:"visco belt" },
   { tier:"exact", item:"Cold Pack / Hot Pack", keywords:"cold pack|hot pack" },
-  { tier:"review", item:"Hand Holder", keywords:"hand holder" },
   { tier:"review", item:"Any Kit With No Details Mentioned", keywords:"kit" },
   { tier:"review", item:"CSSD / Sterilisation Charges", keywords:"cssd|sterilisation charge|sterilization charge" },
   { tier:"review", item:"ECG Electrodes / Leads", keywords:"ecg lead|ecg electrode" },
@@ -128,7 +83,6 @@ const NON_PAYABLE = [
   { tier:"exact", item:"Obesity Treatment", keywords:"bariatric|obesity treatment", basis:"policy_exclusion" },
   { tier:"exact", item:"Corrective Surgery for Refractive Error", keywords:"lasik|refractive error", basis:"policy_exclusion" },
   { tier:"exact", item:"Donor Screening Charges", keywords:"donor screening" },
-  { tier:"exact", item:"Hospitalisation for Evaluation / Diagnostic Purpose", keywords:"evaluation only|diagnostic admission" },
   { tier:"exact", item:"Aesthetic Treatment / Surgery", keywords:"aesthetic|cosmetic surgery", basis:"policy_exclusion" },
   { tier:"exact", item:"Stem Cell Implantation / Surgery", keywords:"stem cell", basis:"policy_exclusion" },
   // Added 25 Sep 2026. Each row below is an item of the official 68-item List I
@@ -191,6 +145,100 @@ const NPPA = [
 // to Nov 2026 per 02_reference_data/nppa_ceilings.csv) but this project has not
 // independently re-confirmed it — so the app must not assert it as a settled
 // "statutory violation" the way it can for the two verified stent ceilings.
+// IRDAI's Guidelines on Standardization in Health Insurance (Modification,
+// 27 September 2019) list three MORE tables besides List I (read on irdai.gov.in,
+// 27 Sep 2026): items that must already be included in another charge, not
+// billed as their own line —
+//   List II  = should be part of ROOM charges
+//   List III = should be part of the PROCEDURE/surgery charges
+//   List IV  = should be part of the overall TREATMENT cost
+// This is a different point from List I: List I is about what an insurer need
+// not pay; these are about whether the hospital should have billed the item as
+// a separate line at all. All 78 official item names are covered here, in one
+// table since the matching logic is identical; `list` records which of the
+// three it came from for the citation. A few rows fold more than one official
+// name together (the Baby Charges group, Urine Container/Bag, Shoe/Foot Cover,
+// Face/Flexi Mask, Gauze/Gauze Soft) the same way NON_PAYABLE already does.
+// Generated into 02_reference_data/irdai_subsumed_lists_ii_iv.csv by
+// lib/sync_reference.js; lib/test_reference.js checks the two agree and that
+// every official item is covered.
+const SUBSUMED = [
+  { list:"II", item:"Baby Charges", keywords:"baby charge|baby set|baby bottle|feeding bottle|baby vaccine|vaccine charges for baby" },
+  { list:"II", item:"Hand Wash", keywords:"hand wash" },
+  { list:"II", item:"Shoe Cover / Foot Cover", keywords:"shoe cover|foot cover" },
+  { list:"II", item:"Caps", keywords:"surgical cap|theatre cap" },
+  { list:"II", item:"Cradle Charges", keywords:"cradle" },
+  { list:"II", item:"Comb", keywords:"comb" },
+  { list:"II", item:"Eau-De-Cologne / Room Freshners", keywords:"room freshener|room freshner|cologne" },
+  { list:"II", item:"Gown", keywords:"gown" },
+  { list:"II", item:"Slippers", keywords:"slipper" },
+  { list:"II", item:"Tissue Paper", keywords:"tissue paper" },
+  { list:"II", item:"Tooth Paste", keywords:"tooth paste|toothpaste" },
+  { list:"II", item:"Tooth Brush", keywords:"tooth brush|toothbrush" },
+  { list:"II", item:"Bed Pan", keywords:"bed pan|bedpan" },
+  { list:"II", item:"Face Mask / Flexi Mask", keywords:"face mask|flexi mask|surgical mask" },
+  { list:"II", item:"Hand Holder", keywords:"hand holder" },
+  { list:"II", item:"Sputum Cup", keywords:"sputum cup" },
+  { list:"II", item:"Disinfectant Lotions", keywords:"disinfectant lotion" },
+  { list:"II", item:"Luxury Tax", keywords:"luxury tax" },
+  { list:"II", item:"HVAC Charges", keywords:"hvac" },
+  { list:"II", item:"House Keeping Charges", keywords:"house keeping|housekeeping" },
+  { list:"II", item:"Air Conditioner Charges", keywords:"air conditioner charge|ac charge" },
+  { list:"II", item:"IM/IV Injection Charges", keywords:"im injection charge|iv injection charge|injection administration charge" },
+  { list:"II", item:"Clean Sheet", keywords:"clean sheet" },
+  { list:"II", item:"Blanket / Warmer Blanket", keywords:"blanket" },
+  { list:"II", item:"Admission Kit", keywords:"admission kit" },
+  { list:"II", item:"Diabetic Chart Charges", keywords:"diabetic chart" },
+  { list:"II", item:"Documentation Charges / Administrative Expenses", keywords:"documentation charge|administrative expense|admin charge" },
+  { list:"II", item:"Discharge Procedure Charges", keywords:"discharge procedure|discharge charge" },
+  { list:"II", item:"Daily Chart Charges", keywords:"daily chart" },
+  { list:"II", item:"Entrance Pass / Visitors Pass Charges", keywords:"visitor pass|entrance pass" },
+  { list:"II", item:"Expenses Related to Prescription on Discharge", keywords:"prescription on discharge|discharge prescription charge" },
+  { list:"II", item:"File Opening Charges", keywords:"file opening charge" },
+  { list:"II", item:"Incidental Expenses / Misc. Charges", keywords:"incidental expense|miscellaneous charge|misc charge" },
+  { list:"II", item:"Patient Identification Band / Name Tag", keywords:"identification band|name tag|id band" },
+  { list:"II", item:"Pulseoxymeter Charges", keywords:"pulseoxymeter|pulse oximeter charge|spo2 probe|spo2 sensor" },
+  { list:"III", item:"Hair Removal Cream", keywords:"hair removal cream" },
+  { list:"III", item:"Disposable Razor Charges", keywords:"disposable razor|disposable razors|disposables razors|razor charge" },
+  { list:"III", item:"Eye Pad", keywords:"eye pad" },
+  { list:"III", item:"Eye Shield", keywords:"eye shield|eye sheild" },
+  { list:"III", item:"Camera Cover", keywords:"camera cover" },
+  { list:"III", item:"DVD, CD Charges", keywords:"dvd charge|cd charge" },
+  { list:"III", item:"Gauze / Gauze Soft", keywords:"gauze|gauze soft|gauge soft|gause soft" },
+  { list:"III", item:"Ward and Theatre Booking Charges", keywords:"ward booking charge|theatre booking charge|ot booking charge" },
+  { list:"III", item:"Arthroscopy and Endoscopy Instruments", keywords:"arthroscopy instrument|endoscopy instrument" },
+  { list:"III", item:"Microscope Cover", keywords:"microscope cover" },
+  { list:"III", item:"Surgical Blades / Harmonic Scalpel / Shaver", keywords:"surgical blade|harmonic scalpel|shaver blade" },
+  { list:"III", item:"Surgical Drill", keywords:"surgical drill" },
+  { list:"III", item:"Eye Kit", keywords:"eye kit" },
+  { list:"III", item:"Eye Drape", keywords:"eye drape" },
+  { list:"III", item:"X-Ray Film", keywords:"x ray film|xray film" },
+  { list:"III", item:"Boyles Apparatus Charges", keywords:"boyles apparatus" },
+  { list:"III", item:"Cotton", keywords:"cotton roll|absorbent cotton" },
+  { list:"III", item:"Cotton Bandage", keywords:"cotton bandage" },
+  { list:"III", item:"Surgical Tape", keywords:"surgical tape" },
+  { list:"III", item:"Apron", keywords:"apron" },
+  { list:"III", item:"Tourniquet", keywords:"tourniquet|torniquet" },
+  { list:"III", item:"Orthobundle / Gynaec Bundle", keywords:"orthobundle|ortho bundle|gynaec bundle|gynaecology bundle" },
+  { list:"IV", item:"Admission/Registration Charges", keywords:"admission service|registration charge|admission charge" },
+  { list:"IV", item:"Hospitalisation for Evaluation / Diagnostic Purpose", keywords:"evaluation only|diagnostic admission|hospitalisation for evaluation|diagnostic purpose" },
+  { list:"IV", item:"Urine Container / Urine Bag", keywords:"urine container|urine bag" },
+  { list:"IV", item:"Blood Reservation Charges / Ante Natal Booking", keywords:"blood reservation|ante natal booking" },
+  { list:"IV", item:"BiPAP Machine", keywords:"bipap" },
+  { list:"IV", item:"CPAP / CAPD Equipment", keywords:"cpap|capd equipment" },
+  { list:"IV", item:"Infusion Pump", keywords:"infusion pump" },
+  { list:"IV", item:"Hydrogen Peroxide / Spirit / Disinfectants", keywords:"hydrogen peroxide" },
+  { list:"IV", item:"Nutrition Planning / Dietician Charges", keywords:"dietician charge|nutrition planning|diet counselling|diet counseling" },
+  { list:"IV", item:"HIV Kit", keywords:"hiv kit" },
+  { list:"IV", item:"Antiseptic Mouthwash", keywords:"antiseptic mouthwash" },
+  { list:"IV", item:"Lozenges", keywords:"lozenges|lozenge" },
+  { list:"IV", item:"Mouth Paint", keywords:"mouth paint" },
+  { list:"IV", item:"Vaccination Charges", keywords:"vaccination charge" },
+  { list:"IV", item:"Alcohol Swabs", keywords:"alco swab|alcohol swab|alcohol gauze" },
+  { list:"IV", item:"Scrub Solution / Sterillium", keywords:"sterillium|scrub solution|propanol|alcorub|povidone scrub|hand rub" },
+  { list:"IV", item:"Glucometer & Strips", keywords:"glucometer|glucose strip" },
+];
+
 
 // Full IS 19493:2025 header registry — matches 03_code/completeness.js's
 // HEADER_FIELDS exactly (23 mandatory + 3 conditional = 26), so the browser
@@ -238,13 +286,20 @@ const money = n => Math.round((Number(n)+Number.EPSILON)*100)/100;
 // mean the line is something else (e.g. a spinal-cage spacer is not an inhaler spacer).
 const _normTxt=s=>' '+String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()+' ';
 const _hasWord=(t,k)=>t.includes(' '+k+' ')||t.includes(' '+k+'s ')||t.includes(' '+k+'es ');
-let _matchIndex=null;
-function bestMatch(text){
-  const t=_normTxt(text); let best=null;
-  _matchIndex=_matchIndex||NON_PAYABLE.map(e=>({e,
+// Builds and caches the {entry, keywords, not-words} index for one table, the
+// first time that table is used, so repeat calls (one per bill line) don't
+// re-split every keyword string.
+const _matchIndexes=new Map();
+function _indexFor(table){
+  let idx=_matchIndexes.get(table);
+  if(!idx){ idx=table.map(e=>({e,
     kws:e.keywords.split('|').map(k=>_normTxt(k).trim()).filter(Boolean),
-    not:(e.not||'').split('|').map(k=>_normTxt(k).trim()).filter(Boolean)}));
-  for(const {e,kws,not} of _matchIndex){
+    not:(e.not||'').split('|').map(k=>_normTxt(k).trim()).filter(Boolean)})); _matchIndexes.set(table,idx); }
+  return idx;
+}
+function bestMatchIn(text,table){
+  const t=_normTxt(text); let best=null;
+  for(const {e,kws,not} of _indexFor(table)){
     if(not.some(n=>_hasWord(t,n))) continue;
     for(const k of kws){
       if(!_hasWord(t,k)) continue;
@@ -254,6 +309,7 @@ function bestMatch(text){
   }
   return best;
 }
+function bestMatch(text){ return bestMatchIn(text,NON_PAYABLE); }
 // Amounts normally arrive as JSON numbers, but a photo can yield text like
 // "1,260.00" or "₹ 500". Plain comma / rupee text is read. Anything ambiguous
 // (parentheses, CR/DR suffixes) is NOT guessed: it is counted, so the report can
@@ -324,8 +380,16 @@ function analyse(data,now){
   lines.forEach((l,i)=>{ if(l.total==null||l.total>=0) return; credit.add(i);
     const j=lines.findIndex((p,pj)=>p.total>0&&!cancelled.has(pj)&&Math.abs(p.total+l.total)<0.005&&baseName(p.item)===baseName(l.item));
     if(j>=0) cancelled.add(j); });
+  // IRDAI Lists II-IV ("should already be in another charge") are matched
+  // before List I, and a line caught here is not also offered to the List I
+  // loop below — the two describe different problems with the same line, and
+  // showing it under both would look like a double count.
+  const subsumed=[]; const subsumedIdx=new Set();
+  lines.forEach((l,i)=>{ if(credit.has(i)||cancelled.has(i)) return; const m=bestMatchIn(l.item,SUBSUMED); if(!m) return;
+    subsumedIdx.add(i); subsumed.push({...l,matched:m.e.item,list:m.e.list}); });
+  const subsumedSum=money(subsumed.reduce((s,r)=>s+(r.total||0),0));
   const exact=[],review=[];
-  lines.forEach((l,i)=>{ if(credit.has(i)||cancelled.has(i)) return; const m=bestMatch(l.item); if(!m) return;
+  lines.forEach((l,i)=>{ if(credit.has(i)||cancelled.has(i)||subsumedIdx.has(i)) return; const m=bestMatch(l.item); if(!m) return;
     (m.e.tier==='exact'?exact:review).push({...l,matched:m.e.item,basis:m.e.basis||'list_i'}); });
   const sum=a=>money(a.reduce((s,r)=>s+(r.total||0),0));
   const lineSum=sum(lines);
@@ -417,7 +481,7 @@ function analyse(data,now){
   // page rejected as not-a-bill. Set by the upload flow on the merged object.
   const partial=data._pageCount===1||(data._rejected||0)>0;
   const subtotals = data.printed_subtotals && Object.keys(data.printed_subtotals).length ? data.printed_subtotals : null;
-  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nppaDated,nonLatin,subtotals,unreadable,reconCompared,partial,rejected:data._rejected||0,pageCount:data._pageCount||null};
+  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nppaDated,nonLatin,subtotals,unreadable,reconCompared,partial,subsumed,subsumedSum,rejected:data._rejected||0,pageCount:data._pageCount||null};
 }
 
-module.exports = { NON_PAYABLE, NPPA, IS19493_HEADER, GSTIN_RE, money, bestMatch, parseAmount, billDateRange, analyse };
+module.exports = { NON_PAYABLE, SUBSUMED, NPPA, IS19493_HEADER, GSTIN_RE, money, bestMatch, bestMatchIn, parseAmount, billDateRange, analyse };

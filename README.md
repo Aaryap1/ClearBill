@@ -86,7 +86,7 @@ Three documents reconciling to the rupee. Two defects found in them:
 - The hospital's own Medicines subtotal is **₹10** higher than its printed medicine lines — it printed ₹53.27 on one line and totalled ₹63.27.
 - **"IP – SPECIALTY – FIRST VISIT" charged twice**, ₹1,260 each, on 31/05 and 01/06. There is no such thing as a second first visit.
 
-And the finding that shapes the product: matching the IRDAI list against this bill explains **₹1,992 (33%)** of the deduction. Including commonly-deducted-but-unlisted items reaches **₹3,824 (64%)**. Assuming the whole consumables category was deducted wholesale reaches **₹5,560 (93%)**.
+And the finding that shapes the product: matching IRDAI's List I against this bill explains **₹1,310 (22%)** of the deduction. A further **₹689.60** is named on IRDAI's Lists II-IV — items that should already be included in the room, procedure or treatment charge, not billed as their own line (added 27 Sep 2026, cited separately from List I since it's a different claim). Including commonly-deducted-but-unlisted items on top of List I reaches **₹3,062 (51%)**. Assuming the whole consumables category was deducted wholesale reaches **₹5,560 (93%)**.
 
 **Insurers deduct by category, not line by line against the published list.** So the honest promise is not *"we will predict your deduction"* — it is *"we will show you what it is made of."*
 

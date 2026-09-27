@@ -47,9 +47,10 @@ function fixtures() {
 function snapshot(a) {
   return {
     lines: a.lines.length,
-    exactSum: a.exactSum, reviewSum: a.reviewSum,
+    exactSum: a.exactSum, reviewSum: a.reviewSum, subsumedSum: a.subsumedSum,
     exact: a.exact.map(l => l.matched + '|' + (l.basis || '')).sort(),
     review: a.review.map(l => l.matched).sort(),
+    subsumed: a.subsumed.map(l => l.list + '|' + l.matched).sort(),
     recon: a.recon ? a.recon.diff : null,
     dupGroups: a.dups.map(d => d.item.trim().toLowerCase() + ' x' + d.n).sort(),
     redacted: a.redacted.length,
@@ -89,9 +90,9 @@ console.log('== 2. analysis regression (frozen fixtures)');
     }
   }
   const we = now['worked_example'];
-  ok(we.exactSum === 1992.5 && we.recon === 10 && we.dupGroups.length === 3 && we.redacted === 12,
-    'worked example: IRDAI exact 1,992.50 / gap 10 / 3 duplicate groups / 12 redacted (hard-coded floor)');
-  if (priv) ok(priv.exactSum === 1992.5 && priv.recon === 10 && priv.dupGroups.length === 3, 'private real bill: same headline numbers');
+  ok(we.exactSum === 1310 && we.subsumedSum === 689.6 && we.recon === 10 && we.dupGroups.length === 3 && we.redacted === 12,
+    'worked example: IRDAI List I exact 1,310 / Lists II-IV 689.60 / gap 10 / 3 duplicate groups / 12 redacted (hard-coded floor; List I total dropped from 1,992.50 when Lists II-IV were added and 5 items moved to their correct citation)');
+  if (priv) ok(priv.exactSum === 1310 && priv.subsumedSum === 689.6 && priv.recon === 10 && priv.dupGroups.length === 3, 'private real bill: same headline numbers');
   else console.log('  skip private_bill_01 (04_test_bills not on this machine)');
 }
 

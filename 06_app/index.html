@@ -501,11 +501,8 @@
 
 <script>
 const NON_PAYABLE = [
-  { tier:"exact", item:"Admission/Registration Charges", keywords:"admission service|registration charge|admission charge" },
   { tier:"exact", item:"Medical Records", keywords:"medical record" },
-  { tier:"exact", item:"Documentation Charges / Administrative Expenses", keywords:"documentation charge|administrative expense|admin charge" },
   { tier:"exact", item:"TPA Charges", keywords:"tpa charge|insurance processing|insurance charge" },
-  { tier:"exact", item:"Discharge Procedure Charges", keywords:"discharge procedure|discharge charge" },
   { tier:"exact", item:"Certificate Charges", keywords:"certificate charge" },
   { tier:"exact", item:"Medical Certificate", keywords:"medical certificate" },
   { tier:"exact", item:"Birth Certificate", keywords:"birth certificate" },
@@ -516,91 +513,50 @@ const NON_PAYABLE = [
   { tier:"exact", item:"Maintenance Charges", keywords:"maintenance charge" },
   { tier:"exact", item:"Surcharges", keywords:"surcharge" },
   { tier:"exact", item:"Attendant Charges", keywords:"attendant charge" },
-  { tier:"exact", item:"Entrance Pass / Visitors Pass Charges", keywords:"visitor pass|entrance pass" },
-  { tier:"exact", item:"Incidental Expenses / Misc. Charges", keywords:"incidental|miscellaneous charge|misc charge" },
-  { tier:"exact", item:"Daily Chart Charges", keywords:"daily chart" },
-  { tier:"exact", item:"Diabetic Chart Charges", keywords:"diabetic chart" },
   { tier:"exact", item:"Preparation Charges", keywords:"preparation charge" },
-  { tier:"exact", item:"Patient Identification Band / Name Tag", keywords:"identification band|name tag|id band" },
-  { tier:"exact", item:"Blood Reservation Charges / Ante Natal Booking", keywords:"blood reservation|ante natal booking" },
   { tier:"review", item:"Service Charges Where Nursing Charge Also Charged", keywords:"service charge" },
   { tier:"review", item:"Referral Doctor's Fees", keywords:"referral doctor|referral fee" },
-  { tier:"exact", item:"Alcohol Swabs", keywords:"alco swab|alcohol swab|alcohol gauze" },
-  { tier:"exact", item:"Scrub Solution / Sterillium", keywords:"sterillium|scrub solution|propanol|alcorub|povidone scrub|hand rub" },
   { tier:"exact", item:"Savlon", keywords:"savlon" },
-  { tier:"exact", item:"Hand Wash", keywords:"hand wash" },
   { tier:"review", item:"Micro Shield", keywords:"micro shield|microshield" },
   { tier:"exact", item:"Washing Charges", keywords:"washing charge" },
   { tier:"exact", item:"Laundry Charges", keywords:"laundry" },
-  { tier:"review", item:"Clean Sheet", keywords:"clean sheet" },
   { tier:"exact", item:"Examination Gloves", keywords:"gloves examination|examination glove|exam glove|nitrile glove|glove nitrile|examination medium nitrile" },
   { tier:"review", item:"Surgical Gloves (sterile, in-procedure)", keywords:"surgical glove|glove size|gammex|encore" },
   { tier:"exact", item:"Paper Gloves", keywords:"paper glove" },
-  { tier:"exact", item:"Mask", keywords:"face mask|flexi mask|surgical mask" },
-  { tier:"exact", item:"Apron", keywords:"apron" },
-  { tier:"exact", item:"Gown", keywords:"gown" },
-  { tier:"exact", item:"Shoe Cover", keywords:"shoe cover|foot cover" },
-  { tier:"exact", item:"Caps", keywords:"surgical cap|theatre cap" },
-  { tier:"exact", item:"Camera Cover", keywords:"camera cover" },
   { tier:"exact", item:"Trolly Cover", keywords:"trolley cover|trolly cover" },
   { tier:"exact", item:"Carry Bags", keywords:"carry bag" },
   { tier:"exact", item:"Band Aids, Bandages, Sterile Injections, Needles, Syringes", keywords:"band aid|bandaid" },
-  { tier:"review", item:"Cotton", keywords:"cotton roll|absorbent cotton" },
-  { tier:"exact", item:"Cotton Bandage", keywords:"cotton bandage" },
   { tier:"exact", item:"Crepe Bandage", keywords:"crepe bandage" },
   { tier:"exact", item:"Hansaplast / Adhesive Bandages", keywords:"hansaplast|adhesive bandage" },
-  { tier:"review", item:"Gauze", keywords:"gauze|gauge soft" },
   { tier:"review", item:"Cliniplast", keywords:"cliniplast" },
   { tier:"review", item:"Curapore", keywords:"curapore" },
-  { tier:"review", item:"Blade", keywords:"blade" },
-  { tier:"review", item:"Tourniquet", keywords:"tourniquet" },
   { tier:"exact", item:"Eyelet Collar", keywords:"eyelet collar" },
-  { tier:"review", item:"Eye Pad", keywords:"eye pad" },
-  { tier:"review", item:"Eye Shield", keywords:"eye shield" },
-  { tier:"review", item:"Bed Pan", keywords:"bed pan|bedpan" },
   { tier:"exact", item:"Bed Under Pad Charges", keywords:"under pad|underpad" },
   { tier:"exact", item:"Diaper of Any Type", keywords:"diaper" },
-  { tier:"review", item:"Blanket / Warmer Blanket", keywords:"blanket" },
-  { tier:"exact", item:"Admission Kit", keywords:"admission kit" },
   { tier:"exact", item:"Kidney Tray", keywords:"kidney tray" },
   { tier:"exact", item:"Ounce Glass", keywords:"ounce glass" },
-  { tier:"exact", item:"Urine Container", keywords:"urine container" },
   { tier:"exact", item:"Urometer, Urine Jug", keywords:"urometer|urine jug" },
   { tier:"review", item:"Medicine Box", keywords:"medicine box" },
   { tier:"exact", item:"Thermometer", keywords:"thermometer" },
-  { tier:"exact", item:"Comb", keywords:"comb" },
-  { tier:"exact", item:"Brush", keywords:"tooth brush|toothbrush" },
-  { tier:"exact", item:"Tooth Paste", keywords:"tooth paste|toothpaste" },
   { tier:"exact", item:"Towel", keywords:"towel|cosy towel" },
-  { tier:"exact", item:"Slippers", keywords:"slipper" },
   { tier:"exact", item:"Sanitary Pad", keywords:"sanitary pad" },
-  { tier:"exact", item:"Tissue Paper", keywords:"tissue paper" },
   { tier:"exact", item:"Powder", keywords:"talcum powder" },
   { tier:"exact", item:"Moisturiser / Paste / Brush", keywords:"moisturiser|moisturizer" },
-  { tier:"exact", item:"Eau-De-Cologne / Room Freshners", keywords:"room freshener|room freshner|cologne" },
   { tier:"exact", item:"Mineral Water", keywords:"mineral water" },
   { tier:"exact", item:"Buds", keywords:"ear bud|cotton bud|buds" },
   { tier:"exact", item:"Barber Charges", keywords:"barber" },
   { tier:"exact", item:"Beauty Services", keywords:"beauty service" },
-  { tier:"exact", item:"Baby Charges", keywords:"baby charge" },
   { tier:"exact", item:"Baby Food", keywords:"baby food|lactogen|infant food" },
   { tier:"exact", item:"Baby Utilities Charges", keywords:"baby utilities" },
-  { tier:"exact", item:"Baby Set", keywords:"baby set" },
-  { tier:"exact", item:"Baby Bottles", keywords:"baby bottle|feeding bottle" },
-  { tier:"exact", item:"Cradle Charges", keywords:"cradle" },
-  { tier:"exact", item:"Vaccine Charges for Baby", keywords:"baby vaccine|vaccine charges for baby" },
   { tier:"exact", item:"Telephone Charges", keywords:"telephone charge" },
   { tier:"exact", item:"Email / Internet Charges", keywords:"internet charge|email charge|wifi" },
-  { tier:"exact", item:"DVD, CD Charges", keywords:"dvd charge|cd charge" },
   { tier:"exact", item:"Guest Services", keywords:"guest service" },
   { tier:"exact", item:"Food Charges (Other than Patient's Diet)", keywords:"attendant food|guest food|visitor food" },
   { tier:"exact", item:"Walking Aids Charges", keywords:"walking aid|walker charge" },
-  { tier:"review", item:"BiPAP Machine", keywords:"bipap" },
   { tier:"review", item:"Commode", keywords:"commode" },
   { tier:"review", item:"Oxygen Cylinder (usage outside hospital)", keywords:"oxygen cylinder" },
   { tier:"exact", item:"Oxygen Mask", keywords:"oxygen mask" },
   { tier:"exact", item:"Spacer", keywords:"spacer", not:"cage|interbody|cement|knee|hip|spine|spinal|vertebral|antibiotic|implant" },
-  { tier:"review", item:"SPO2 Probe", keywords:"spo2 probe|spo2 sensor" },
   { tier:"exact", item:"Nebulizer Kit", keywords:"nebulizer kit|nebuliser kit|nebulisation kit|nebulization kit" },
   { tier:"exact", item:"Steam Inhaler", keywords:"steam inhaler" },
   { tier:"exact", item:"Arm Sling", keywords:"arm sling|armsling" },
@@ -613,7 +569,6 @@ const NON_PAYABLE = [
   { tier:"exact", item:"Diabetic Foot Wear", keywords:"diabetic footwear|diabetic foot wear" },
   { tier:"exact", item:"Visco Belt Charges", keywords:"visco belt" },
   { tier:"exact", item:"Cold Pack / Hot Pack", keywords:"cold pack|hot pack" },
-  { tier:"review", item:"Hand Holder", keywords:"hand holder" },
   { tier:"review", item:"Any Kit With No Details Mentioned", keywords:"kit" },
   { tier:"review", item:"CSSD / Sterilisation Charges", keywords:"cssd|sterilisation charge|sterilization charge" },
   { tier:"review", item:"ECG Electrodes / Leads", keywords:"ecg lead|ecg electrode" },
@@ -627,7 +582,6 @@ const NON_PAYABLE = [
   { tier:"exact", item:"Obesity Treatment", keywords:"bariatric|obesity treatment", basis:"policy_exclusion" },
   { tier:"exact", item:"Corrective Surgery for Refractive Error", keywords:"lasik|refractive error", basis:"policy_exclusion" },
   { tier:"exact", item:"Donor Screening Charges", keywords:"donor screening" },
-  { tier:"exact", item:"Hospitalisation for Evaluation / Diagnostic Purpose", keywords:"evaluation only|diagnostic admission" },
   { tier:"exact", item:"Aesthetic Treatment / Surgery", keywords:"aesthetic|cosmetic surgery", basis:"policy_exclusion" },
   { tier:"exact", item:"Stem Cell Implantation / Surgery", keywords:"stem cell", basis:"policy_exclusion" },
   // Added 25 Sep 2026. Each row below is an item of the official 68-item List I
@@ -690,6 +644,100 @@ const NPPA = [
 // to Nov 2026 per 02_reference_data/nppa_ceilings.csv) but this project has not
 // independently re-confirmed it — so the app must not assert it as a settled
 // "statutory violation" the way it can for the two verified stent ceilings.
+// IRDAI's Guidelines on Standardization in Health Insurance (Modification,
+// 27 September 2019) list three MORE tables besides List I (read on irdai.gov.in,
+// 27 Sep 2026): items that must already be included in another charge, not
+// billed as their own line —
+//   List II  = should be part of ROOM charges
+//   List III = should be part of the PROCEDURE/surgery charges
+//   List IV  = should be part of the overall TREATMENT cost
+// This is a different point from List I: List I is about what an insurer need
+// not pay; these are about whether the hospital should have billed the item as
+// a separate line at all. All 78 official item names are covered here, in one
+// table since the matching logic is identical; `list` records which of the
+// three it came from for the citation. A few rows fold more than one official
+// name together (the Baby Charges group, Urine Container/Bag, Shoe/Foot Cover,
+// Face/Flexi Mask, Gauze/Gauze Soft) the same way NON_PAYABLE already does.
+// Generated into 02_reference_data/irdai_subsumed_lists_ii_iv.csv by
+// lib/sync_reference.js; lib/test_reference.js checks the two agree and that
+// every official item is covered.
+const SUBSUMED = [
+  { list:"II", item:"Baby Charges", keywords:"baby charge|baby set|baby bottle|feeding bottle|baby vaccine|vaccine charges for baby" },
+  { list:"II", item:"Hand Wash", keywords:"hand wash" },
+  { list:"II", item:"Shoe Cover / Foot Cover", keywords:"shoe cover|foot cover" },
+  { list:"II", item:"Caps", keywords:"surgical cap|theatre cap" },
+  { list:"II", item:"Cradle Charges", keywords:"cradle" },
+  { list:"II", item:"Comb", keywords:"comb" },
+  { list:"II", item:"Eau-De-Cologne / Room Freshners", keywords:"room freshener|room freshner|cologne" },
+  { list:"II", item:"Gown", keywords:"gown" },
+  { list:"II", item:"Slippers", keywords:"slipper" },
+  { list:"II", item:"Tissue Paper", keywords:"tissue paper" },
+  { list:"II", item:"Tooth Paste", keywords:"tooth paste|toothpaste" },
+  { list:"II", item:"Tooth Brush", keywords:"tooth brush|toothbrush" },
+  { list:"II", item:"Bed Pan", keywords:"bed pan|bedpan" },
+  { list:"II", item:"Face Mask / Flexi Mask", keywords:"face mask|flexi mask|surgical mask" },
+  { list:"II", item:"Hand Holder", keywords:"hand holder" },
+  { list:"II", item:"Sputum Cup", keywords:"sputum cup" },
+  { list:"II", item:"Disinfectant Lotions", keywords:"disinfectant lotion" },
+  { list:"II", item:"Luxury Tax", keywords:"luxury tax" },
+  { list:"II", item:"HVAC Charges", keywords:"hvac" },
+  { list:"II", item:"House Keeping Charges", keywords:"house keeping|housekeeping" },
+  { list:"II", item:"Air Conditioner Charges", keywords:"air conditioner charge|ac charge" },
+  { list:"II", item:"IM/IV Injection Charges", keywords:"im injection charge|iv injection charge|injection administration charge" },
+  { list:"II", item:"Clean Sheet", keywords:"clean sheet" },
+  { list:"II", item:"Blanket / Warmer Blanket", keywords:"blanket" },
+  { list:"II", item:"Admission Kit", keywords:"admission kit" },
+  { list:"II", item:"Diabetic Chart Charges", keywords:"diabetic chart" },
+  { list:"II", item:"Documentation Charges / Administrative Expenses", keywords:"documentation charge|administrative expense|admin charge" },
+  { list:"II", item:"Discharge Procedure Charges", keywords:"discharge procedure|discharge charge" },
+  { list:"II", item:"Daily Chart Charges", keywords:"daily chart" },
+  { list:"II", item:"Entrance Pass / Visitors Pass Charges", keywords:"visitor pass|entrance pass" },
+  { list:"II", item:"Expenses Related to Prescription on Discharge", keywords:"prescription on discharge|discharge prescription charge" },
+  { list:"II", item:"File Opening Charges", keywords:"file opening charge" },
+  { list:"II", item:"Incidental Expenses / Misc. Charges", keywords:"incidental expense|miscellaneous charge|misc charge" },
+  { list:"II", item:"Patient Identification Band / Name Tag", keywords:"identification band|name tag|id band" },
+  { list:"II", item:"Pulseoxymeter Charges", keywords:"pulseoxymeter|pulse oximeter charge|spo2 probe|spo2 sensor" },
+  { list:"III", item:"Hair Removal Cream", keywords:"hair removal cream" },
+  { list:"III", item:"Disposable Razor Charges", keywords:"disposable razor|disposable razors|disposables razors|razor charge" },
+  { list:"III", item:"Eye Pad", keywords:"eye pad" },
+  { list:"III", item:"Eye Shield", keywords:"eye shield|eye sheild" },
+  { list:"III", item:"Camera Cover", keywords:"camera cover" },
+  { list:"III", item:"DVD, CD Charges", keywords:"dvd charge|cd charge" },
+  { list:"III", item:"Gauze / Gauze Soft", keywords:"gauze|gauze soft|gauge soft|gause soft" },
+  { list:"III", item:"Ward and Theatre Booking Charges", keywords:"ward booking charge|theatre booking charge|ot booking charge" },
+  { list:"III", item:"Arthroscopy and Endoscopy Instruments", keywords:"arthroscopy instrument|endoscopy instrument" },
+  { list:"III", item:"Microscope Cover", keywords:"microscope cover" },
+  { list:"III", item:"Surgical Blades / Harmonic Scalpel / Shaver", keywords:"surgical blade|harmonic scalpel|shaver blade" },
+  { list:"III", item:"Surgical Drill", keywords:"surgical drill" },
+  { list:"III", item:"Eye Kit", keywords:"eye kit" },
+  { list:"III", item:"Eye Drape", keywords:"eye drape" },
+  { list:"III", item:"X-Ray Film", keywords:"x ray film|xray film" },
+  { list:"III", item:"Boyles Apparatus Charges", keywords:"boyles apparatus" },
+  { list:"III", item:"Cotton", keywords:"cotton roll|absorbent cotton" },
+  { list:"III", item:"Cotton Bandage", keywords:"cotton bandage" },
+  { list:"III", item:"Surgical Tape", keywords:"surgical tape" },
+  { list:"III", item:"Apron", keywords:"apron" },
+  { list:"III", item:"Tourniquet", keywords:"tourniquet|torniquet" },
+  { list:"III", item:"Orthobundle / Gynaec Bundle", keywords:"orthobundle|ortho bundle|gynaec bundle|gynaecology bundle" },
+  { list:"IV", item:"Admission/Registration Charges", keywords:"admission service|registration charge|admission charge" },
+  { list:"IV", item:"Hospitalisation for Evaluation / Diagnostic Purpose", keywords:"evaluation only|diagnostic admission|hospitalisation for evaluation|diagnostic purpose" },
+  { list:"IV", item:"Urine Container / Urine Bag", keywords:"urine container|urine bag" },
+  { list:"IV", item:"Blood Reservation Charges / Ante Natal Booking", keywords:"blood reservation|ante natal booking" },
+  { list:"IV", item:"BiPAP Machine", keywords:"bipap" },
+  { list:"IV", item:"CPAP / CAPD Equipment", keywords:"cpap|capd equipment" },
+  { list:"IV", item:"Infusion Pump", keywords:"infusion pump" },
+  { list:"IV", item:"Hydrogen Peroxide / Spirit / Disinfectants", keywords:"hydrogen peroxide" },
+  { list:"IV", item:"Nutrition Planning / Dietician Charges", keywords:"dietician charge|nutrition planning|diet counselling|diet counseling" },
+  { list:"IV", item:"HIV Kit", keywords:"hiv kit" },
+  { list:"IV", item:"Antiseptic Mouthwash", keywords:"antiseptic mouthwash" },
+  { list:"IV", item:"Lozenges", keywords:"lozenges|lozenge" },
+  { list:"IV", item:"Mouth Paint", keywords:"mouth paint" },
+  { list:"IV", item:"Vaccination Charges", keywords:"vaccination charge" },
+  { list:"IV", item:"Alcohol Swabs", keywords:"alco swab|alcohol swab|alcohol gauze" },
+  { list:"IV", item:"Scrub Solution / Sterillium", keywords:"sterillium|scrub solution|propanol|alcorub|povidone scrub|hand rub" },
+  { list:"IV", item:"Glucometer & Strips", keywords:"glucometer|glucose strip" },
+];
+
 // Full IS 19493:2025 header registry — matches 03_code/completeness.js's
 // HEADER_FIELDS exactly (23 mandatory + 3 conditional = 26), so the browser
 // app and the Node test tool no longer check two different standards under
@@ -849,6 +897,9 @@ en: {
   detail_review:"Commonly deducted &mdash; not named in the list",
   detail_review_plain:"Confirm these with your insurer. Not findings.",
   detail_review_src:m=>`often deducted as: ${m}`,
+  detail_subsumed:"Should be in another charge (IRDAI Lists II-IV)",
+  detail_subsumed_plain:"IRDAI's guidelines list these as items that should already be included in your room, procedure or treatment charge — not billed as a line of their own. If you already paid that base charge, being billed for this too may be a double charge.",
+  detail_subsumed_src:(list,m)=>`IRDAI List ${list}: ${m}`,
   detail_matched_src:m=>`matches: ${m}`,
   basis_policy_exclusion_badge:"policy exclusion, not List I",
   nppa_unverified_badge:"ceiling not independently confirmed",
@@ -876,10 +927,12 @@ en: {
   sh_gst:n=>`${n} implant price${n>1?'s are':' is'} just above the NPPA ceiling. Check whether the price includes GST.`,
   sh_review:(n,sum)=>`${n} charge${n>1?'s are':' is'} commonly deducted but not on the list (${sum}). Ask your insurer to confirm.`,
   sh_exact:(n,sum)=>`${n} charge${n>1?'s are':' is'} on IRDAI's List I (${sum}), so an insurer may deduct ${n>1?'them':'it'}. Ask which lines it actually declined.`,
+  sh_subsumed:(n,sum)=>`${n} charge${n>1?'s':''} (${sum}) should already be part of another charge, not billed on ${n>1?'their':'its'} own.`,
   sh_none:"Nothing in these checks needs a question. The app reads English item names only, so it cannot vouch for the rest of the bill.",
   ls_head:"What this letter says",
   ls_settle:(counter,ded)=>`It says you paid ${counter} at the counter and asks what ${ded} of that was for.`,
   ls_irdai:(n,sum)=>`It lists ${n} charge${n>1?'s':''} (${sum}) that appear on IRDAI's List I (Optional Items).`,
+  ls_subsumed:(n,sum)=>`It lists ${n} charge${n>1?'s':''} (${sum}) that IRDAI says should already be in another charge, not billed separately.`,
   ls_gap:rem=>`It points out that ${rem} of the deduction is not accounted for by those charges.`,
   ls_nppa:n=>`It mentions ${n} implant${n>1?'s':''} that look priced above the NPPA ceiling (plus GST).`,
   ls_dup:n=>`It lists ${n} charge${n>1?'s':''} that appear more than once.`,
@@ -929,6 +982,7 @@ en: {
   letter_confirm_head:"This letter will include",
   letter_confirm_settlement:"Your settlement figures",
   letter_confirm_irdai:n=>`${n} IRDAI-listed charge${n>1?'s':''}`,
+  letter_confirm_subsumed:n=>`${n} charge${n>1?'s':''} that should be in another charge`,
   letter_confirm_dup:n=>`${n} duplicate charge${n>1?'s':''}`,
   letter_confirm_recon:"The reconciliation gap",
   letter_confirm_sent_to:"Sent to", letter_confirm_sent_to_val:"Insurer / IRDAI",
@@ -962,6 +1016,11 @@ en: {
       foundClear:'No "commonly deducted but unlisted" charges', subClear:"",
       money:()=>"These are commonly deducted in practice, but not actually named in the published list, so this is not a confirmed finding.",
       doText:"Ask your insurer to confirm these specifically. Don&rsquo;t dispute them on this basis alone." },
+    subsumed: { label:"Should be in another charge",
+      found:n=>`${n} charge${n>1?'s':''} should already be part of another charge`, sub:sum=>`${sum} &middot; IRDAI Lists II-IV`,
+      foundClear:"No charge matches an item IRDAI says must be folded into another charge", subClear:"matched by English item name only",
+      money:()=>"IRDAI's guidelines say hospitals should already include these in your room, procedure or treatment charge, not bill them as a separate line. If you already paid that base charge, this may be billing the same thing twice.",
+      doText:"Ask the hospital to confirm this was already included in another charge. If it was billed separately in error, ask for it to be removed or refunded." },
     nppa: { label:"Above NPPA cap", labelGst:"NPPA — check GST",
       found:n=>`${n} implant${n>1?'s':''} priced above the NPPA ceiling plus GST`,
       foundUnverified:n=>`${n} implant${n>1?'s':''} priced above a published NPPA ceiling plus GST`,
@@ -1084,6 +1143,9 @@ hi: {
   detail_review:"अक्सर काटी जाती हैं &mdash; सूची में नाम से नहीं",
   detail_review_plain:"इन्हें अपने बीमा कंपनी से पुष्टि करें। ये निष्कर्ष नहीं हैं।",
   detail_review_src:m=>`अक्सर इस रूप में काटा जाता है: ${m}`,
+  detail_subsumed:"किसी और चार्ज में शामिल होना चाहिए (IRDAI सूची II-IV)",
+  detail_subsumed_plain:"IRDAI की गाइडलाइंस के मुताबिक़ ये चीज़ें आपके कमरे, प्रोसीजर या इलाज के चार्ज में पहले से शामिल होनी चाहिए थीं — अलग लाइन के तौर पर नहीं। अगर आपने वह मूल चार्ज पहले ही चुकाया है, तो इसे फिर से चार्ज करना दोहरी वसूली हो सकती है।",
+  detail_subsumed_src:(list,m)=>`IRDAI सूची ${list}: ${m}`,
   detail_matched_src:m=>`मेल: ${m}`,
   basis_policy_exclusion_badge:"नीति अपवाद, IRDAI सूची I नहीं",
   nppa_unverified_badge:"सीमा की स्वतंत्र रूप से पुष्टि नहीं हुई",
@@ -1111,10 +1173,12 @@ hi: {
   sh_gst:n=>`${n} इम्प्लांट की क़ीमत NPPA सीमा से थोड़ी ऊपर है। देखें कि क़ीमत में GST शामिल है या नहीं।`,
   sh_review:(n,sum)=>`${n} चार्ज अक्सर काटे जाते हैं पर सूची में नहीं हैं (${sum})। बीमा कंपनी से पुष्टि करने को कहें।`,
   sh_exact:(n,sum)=>`${n} चार्ज IRDAI की सूची I में हैं (${sum}), इसलिए बीमा कंपनी इन्हें काट सकती है। पूछें कि उसने असल में कौन-सी लाइनें नामंज़ूर कीं।`,
+  sh_subsumed:(n,sum)=>`${n} चार्ज (${sum}) को पहले से किसी और चार्ज में शामिल होना चाहिए था, अलग से नहीं।`,
   sh_none:"इन जाँचों में किसी सवाल की ज़रूरत नहीं दिखी। ऐप सिर्फ़ अंग्रेज़ी नाम पढ़ता है, इसलिए बाक़ी बिल की गारंटी नहीं दे सकता।",
   ls_head:"इस पत्र में क्या लिखा है",
   ls_settle:(counter,ded)=>`इसमें लिखा है कि आपने काउंटर पर ${counter} चुकाए और पूछा गया है कि उसमें से ${ded} किस लिए थे।`,
   ls_irdai:(n,sum)=>`इसमें ${n} चार्ज (${sum}) गिनाए गए हैं जो IRDAI की सूची I (वैकल्पिक मदें) में दिखते हैं।`,
+  ls_subsumed:(n,sum)=>`इसमें ${n} चार्ज (${sum}) गिनाए गए हैं जिन्हें IRDAI के मुताबिक़ पहले से किसी और चार्ज में शामिल होना चाहिए था, अलग से नहीं।`,
   ls_gap:rem=>`इसमें बताया गया है कि कटौती के ${rem} इन चार्जों से नहीं समझाए जाते।`,
   ls_nppa:n=>`इसमें ${n} इम्प्लांट का ज़िक्र है जिनकी क़ीमत NPPA सीमा (GST सहित) से ऊपर लगती है।`,
   ls_dup:n=>`इसमें ${n} चार्ज हैं जो एक से ज़्यादा बार दिखते हैं।`,
@@ -1164,6 +1228,7 @@ hi: {
   letter_confirm_head:"इस पत्र में यह शामिल होगा",
   letter_confirm_settlement:"आपके सेटलमेंट के आँकड़े",
   letter_confirm_irdai:n=>`IRDAI सूची के ${n} चार्ज`,
+  letter_confirm_subsumed:n=>`किसी और चार्ज में शामिल होने चाहिए, ऐसे ${n} चार्ज`,
   letter_confirm_dup:n=>`${n} दोहरे चार्ज`,
   letter_confirm_recon:"मिलान में अंतर",
   letter_confirm_sent_to:"किसे भेजा जाएगा", letter_confirm_sent_to_val:"बीमा कंपनी / IRDAI",
@@ -1197,6 +1262,11 @@ hi: {
       foundClear:'"अक्सर काटी जाने वाली पर सूची में न होने वाली" कोई चार्ज नहीं', subClear:"",
       money:()=>"ये व्यवहार में अक्सर काटी जाती हैं, पर प्रकाशित सूची में नाम से नहीं हैं, इसलिए यह पुष्ट निष्कर्ष नहीं है।",
       doText:"अपने बीमा कंपनी से इन्हें विशेष रूप से पुष्टि करने को कहें। सिर्फ़ इसी आधार पर विवाद न करें।" },
+    subsumed: { label:"किसी और चार्ज में होना चाहिए",
+      found:n=>`${n} चार्ज को पहले से किसी और चार्ज में शामिल होना चाहिए था`, sub:sum=>`${sum} &middot; IRDAI सूची II-IV`,
+      foundClear:"कोई चार्ज ऐसी चीज़ से मेल नहीं खाता जिसे IRDAI किसी और चार्ज में शामिल बताता है", subClear:"सिर्फ़ अंग्रेज़ी नाम से मिलान",
+      money:()=>"IRDAI की गाइडलाइंस कहती हैं कि अस्पताल को ये चीज़ें आपके कमरे, प्रोसीजर या इलाज के चार्ज में पहले से शामिल करनी चाहिए थीं, अलग लाइन के तौर पर नहीं। अगर आपने वह मूल चार्ज पहले ही चुकाया है, तो यह वही चीज़ दोबारा चार्ज करना हो सकता है।",
+      doText:"अस्पताल से पूछें कि क्या यह पहले से किसी और चार्ज में शामिल था। अगर यह ग़लती से अलग से बिल किया गया है, तो इसे हटाने या वापस करने को कहें।" },
     nppa: { label:"NPPA सीमा से ऊपर",
       labelGst:"NPPA — GST जाँचें",
       found:n=>`${n} इम्प्लांट NPPA सीमा और GST से ऊपर की क़ीमत पर है`,
@@ -1320,6 +1390,9 @@ mr: {
   detail_review:"वारंवार कापले जातात &mdash; यादीत नाव नाही",
   detail_review_plain:"हे तुमच्या विमा कंपनीकडून पुष्टी करून घ्या. हे निष्कर्ष नाहीत.",
   detail_review_src:m=>`अनेकदा असं कापलं जातं: ${m}`,
+  detail_subsumed:"दुसऱ्या चार्जमध्ये समाविष्ट असायला हवं (IRDAI यादी II-IV)",
+  detail_subsumed_plain:"IRDAI च्या मार्गदर्शक तत्त्वांनुसार या गोष्टी तुमच्या खोली, प्रोसीजर किंवा उपचाराच्या चार्जमध्ये आधीच समाविष्ट असायला हव्या होत्या — वेगळी ओळ म्हणून नाही. तुम्ही तो मूळ चार्ज आधीच भरला असेल, तर हे पुन्हा आकारणं दुहेरी वसुली असू शकते.",
+  detail_subsumed_src:(list,m)=>`IRDAI यादी ${list}: ${m}`,
   detail_matched_src:m=>`जुळतं: ${m}`,
   basis_policy_exclusion_badge:"धोरण अपवाद, यादी I नाही",
   nppa_unverified_badge:"मर्यादेची स्वतंत्रपणे पुष्टी झालेली नाही",
@@ -1347,10 +1420,12 @@ mr: {
   sh_gst:n=>`${n} इम्प्लांटची किंमत NPPA मर्यादेपेक्षा थोडी जास्त आहे. किमतीत GST समाविष्ट आहे का ते पहा.`,
   sh_review:(n,sum)=>`${n} चार्जेस वारंवार कापले जातात पण यादीत नाहीत (${sum}). विमा कंपनीला खात्री करून द्यायला सांगा.`,
   sh_exact:(n,sum)=>`${n} चार्जेस IRDAI च्या यादी I मध्ये आहेत (${sum}), त्यामुळे विमा कंपनी ते कापू शकते. तिने प्रत्यक्षात कोणत्या ओळी नाकारल्या ते विचारा.`,
+  sh_subsumed:(n,sum)=>`${n} चार्जेस (${sum}) आधीच दुसऱ्या चार्जमध्ये समाविष्ट असायला हवे होते, वेगळे नाही.`,
   sh_none:"या तपासण्यांत कोणताही प्रश्न विचारण्याची गरज दिसली नाही. अ‍ॅप फक्त इंग्रजी नावं वाचतं, त्यामुळे उरलेल्या बिलाची हमी देता येत नाही.",
   ls_head:"या पत्रात काय लिहिलं आहे",
   ls_settle:(counter,ded)=>`त्यात असं लिहिलं आहे की तुम्ही काउंटरवर ${counter} भरले आणि त्यापैकी ${ded} कशासाठी होते ते विचारलं आहे.`,
   ls_irdai:(n,sum)=>`त्यात ${n} चार्जेस (${sum}) दिले आहेत जे IRDAI च्या यादी I (ऐच्छिक बाबी) मध्ये दिसतात.`,
+  ls_subsumed:(n,sum)=>`त्यात ${n} चार्जेस (${sum}) दिले आहेत जे IRDAI च्या मते आधीच दुसऱ्या चार्जमध्ये समाविष्ट असायला हवे होते, वेगळे नाही.`,
   ls_gap:rem=>`त्यात असं नमूद आहे की कपातीचे ${rem} या चार्जेसनी स्पष्ट होत नाहीत.`,
   ls_nppa:n=>`त्यात ${n} इम्प्लांटचा उल्लेख आहे ज्यांची किंमत NPPA मर्यादेपेक्षा (GST सह) जास्त दिसते.`,
   ls_dup:n=>`त्यात ${n} चार्जेस आहेत जे एकापेक्षा जास्त वेळा दिसतात.`,
@@ -1400,6 +1475,7 @@ mr: {
   letter_confirm_head:"या पत्रात हे असेल",
   letter_confirm_settlement:"तुमचे सेटलमेंट आकडे",
   letter_confirm_irdai:n=>`IRDAI यादीतील ${n} चार्जेस`,
+  letter_confirm_subsumed:n=>`दुसऱ्या चार्जमध्ये समाविष्ट असायला हवेत असे ${n} चार्जेस`,
   letter_confirm_dup:n=>`${n} डुप्लिकेट चार्जेस`,
   letter_confirm_recon:"ताळमेळातील फरक",
   letter_confirm_sent_to:"कोणाला पाठवायचं", letter_confirm_sent_to_val:"विमा कंपनी / IRDAI",
@@ -1433,6 +1509,11 @@ mr: {
       foundClear:'"वारंवार कापले जाणारे पण यादीत नसलेले" चार्ज नाहीत', subClear:"",
       money:()=>"हे प्रत्यक्षात वारंवार कापले जातात, पण प्रकाशित यादीत नावाने नाहीत, त्यामुळे हा पक्का निष्कर्ष नाही.",
       doText:"तुमच्या विमा कंपनीला हे विशेषतः खात्री करून द्यायला सांगा. फक्त याच आधारावर वाद घालू नका." },
+    subsumed: { label:"दुसऱ्या चार्जमध्ये असायला हवं",
+      found:n=>`${n} चार्ज आधीच दुसऱ्या चार्जमध्ये समाविष्ट असायला हवा होता`, sub:sum=>`${sum} &middot; IRDAI यादी II-IV`,
+      foundClear:"IRDAI दुसऱ्या चार्जमध्ये समाविष्ट करायला सांगतं अशा कोणत्याही गोष्टीशी चार्ज जुळत नाही", subClear:"फक्त इंग्रजी नावाने जुळवलं",
+      money:()=>"IRDAI च्या मार्गदर्शक तत्त्वांनुसार रुग्णालयाने या गोष्टी तुमच्या खोली, प्रोसीजर किंवा उपचाराच्या चार्जमध्ये आधीच समाविष्ट करायला हव्या होत्या, वेगळी ओळ म्हणून नाही. तुम्ही तो मूळ चार्ज आधीच भरला असेल, तर हे तीच गोष्ट पुन्हा आकारणं असू शकतं.",
+      doText:"रुग्णालयाला विचारा की हे आधीच दुसऱ्या चार्जमध्ये समाविष्ट होतं का. चुकून वेगळं बिल केलं असेल, तर ते काढून टाकायला किंवा परत करायला सांगा." },
     nppa: { label:"NPPA मर्यादेपेक्षा जास्त",
       labelGst:"NPPA — GST तपासा",
       found:n=>`${n} इम्प्लांट NPPA मर्यादा आणि GST पेक्षा जास्त किमतीत आहे`,
@@ -1563,13 +1644,20 @@ $('egBtn').addEventListener('click',()=>{
 // mean the line is something else (e.g. a spinal-cage spacer is not an inhaler spacer).
 const _normTxt=s=>' '+String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()+' ';
 const _hasWord=(t,k)=>t.includes(' '+k+' ')||t.includes(' '+k+'s ')||t.includes(' '+k+'es ');
-let _matchIndex=null;
-function bestMatch(text){
-  const t=_normTxt(text); let best=null;
-  _matchIndex=_matchIndex||NON_PAYABLE.map(e=>({e,
+// Builds and caches the {entry, keywords, not-words} index for one table, the
+// first time that table is used, so repeat calls (one per bill line) don't
+// re-split every keyword string.
+const _matchIndexes=new Map();
+function _indexFor(table){
+  let idx=_matchIndexes.get(table);
+  if(!idx){ idx=table.map(e=>({e,
     kws:e.keywords.split('|').map(k=>_normTxt(k).trim()).filter(Boolean),
-    not:(e.not||'').split('|').map(k=>_normTxt(k).trim()).filter(Boolean)}));
-  for(const {e,kws,not} of _matchIndex){
+    not:(e.not||'').split('|').map(k=>_normTxt(k).trim()).filter(Boolean)})); _matchIndexes.set(table,idx); }
+  return idx;
+}
+function bestMatchIn(text,table){
+  const t=_normTxt(text); let best=null;
+  for(const {e,kws,not} of _indexFor(table)){
     if(not.some(n=>_hasWord(t,n))) continue;
     for(const k of kws){
       if(!_hasWord(t,k)) continue;
@@ -1579,6 +1667,7 @@ function bestMatch(text){
   }
   return best;
 }
+function bestMatch(text){ return bestMatchIn(text,NON_PAYABLE); }
 // Amounts normally arrive as JSON numbers, but a photo can yield text like
 // "1,260.00" or "₹ 500". Plain comma / rupee text is read. Anything ambiguous
 // (parentheses, CR/DR suffixes) is NOT guessed: it is counted, so the report can
@@ -1649,8 +1738,16 @@ function analyse(data,now){
   lines.forEach((l,i)=>{ if(l.total==null||l.total>=0) return; credit.add(i);
     const j=lines.findIndex((p,pj)=>p.total>0&&!cancelled.has(pj)&&Math.abs(p.total+l.total)<0.005&&baseName(p.item)===baseName(l.item));
     if(j>=0) cancelled.add(j); });
+  // IRDAI Lists II-IV ("should already be in another charge") are matched
+  // before List I, and a line caught here is not also offered to the List I
+  // loop below — the two describe different problems with the same line, and
+  // showing it under both would look like a double count.
+  const subsumed=[]; const subsumedIdx=new Set();
+  lines.forEach((l,i)=>{ if(credit.has(i)||cancelled.has(i)) return; const m=bestMatchIn(l.item,SUBSUMED); if(!m) return;
+    subsumedIdx.add(i); subsumed.push({...l,matched:m.e.item,list:m.e.list}); });
+  const subsumedSum=money(subsumed.reduce((s,r)=>s+(r.total||0),0));
   const exact=[],review=[];
-  lines.forEach((l,i)=>{ if(credit.has(i)||cancelled.has(i)) return; const m=bestMatch(l.item); if(!m) return;
+  lines.forEach((l,i)=>{ if(credit.has(i)||cancelled.has(i)||subsumedIdx.has(i)) return; const m=bestMatch(l.item); if(!m) return;
     (m.e.tier==='exact'?exact:review).push({...l,matched:m.e.item,basis:m.e.basis||'list_i'}); });
   const sum=a=>money(a.reduce((s,r)=>s+(r.total||0),0));
   const lineSum=sum(lines);
@@ -1742,7 +1839,7 @@ function analyse(data,now){
   // page rejected as not-a-bill. Set by the upload flow on the merged object.
   const partial=data._pageCount===1||(data._rejected||0)>0;
   const subtotals = data.printed_subtotals && Object.keys(data.printed_subtotals).length ? data.printed_subtotals : null;
-  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nppaDated,nonLatin,subtotals,unreadable,reconCompared,partial,rejected:data._rejected||0,pageCount:data._pageCount||null};
+  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nppaDated,nonLatin,subtotals,unreadable,reconCompared,partial,subsumed,subsumedSum,rejected:data._rejected||0,pageCount:data._pageCount||null};
 }
 function sectionSums(lines){
   const m={}; lines.forEach(l=>{ const k=l.section||'Uncategorised'; m[k]=(m[k]||0)+(l.total||0); });
@@ -1832,12 +1929,12 @@ function renderReport(data){
   // The "commonly deducted" tier is a suggestion to confirm, not an explanation.
   const totalFlagged = ded>0 ? money(a.exactSum) : null;
   const pcClamped = ded>0 ? Math.min(100, Math.round(a.exactSum/ded*100)) : null;
-  const checksRan = 5-(a.reconCompared?0:1);
+  const checksRan = 6-(a.reconCompared?0:1);
   if(ded>0){
     h+=`<div class="kpis">
       <div class="kpi"><div class="l">${T_.kpi_deducted}</div><div class="v">${inr.format(ded)}</div></div>
       <div class="kpi"><div class="l">${T_.kpi_explained}</div><div class="v">${pcClamped}%</div></div>
-      <div class="kpi"><div class="l">${T_.kpi_checks}</div><div class="v">${checksRan} / 5</div></div>
+      <div class="kpi"><div class="l">${T_.kpi_checks}</div><div class="v">${checksRan} / 6</div></div>
     </div>
     <button class="btn ghost sm" id="letterShortcut" style="margin-top:12px">${T_.letter_shortcut}</button>`;
   }
@@ -1849,6 +1946,7 @@ function renderReport(data){
     if(a.recon) sh[0].push(T_.sh_recon(inr.format(Math.abs(a.recon.diff))));
     if(a.nppa.length) sh[0].push(T_.sh_nppa(a.nppa.length));
     if(a.nppaGst.length) sh[0].push(T_.sh_gst(a.nppaGst.length));
+    if(a.subsumed.length) sh[0].push(T_.sh_subsumed(a.subsumed.length,inr.format(a.subsumedSum)));
     if(a.review.length) sh[1].push(T_.sh_review(a.review.length,inr.format(a.reviewSum)));
     if(a.exact.length) sh[1].push(T_.sh_exact(a.exact.length,inr.format(a.exactSum)));
     h+=`<div class="starthere" role="region" aria-label="${T_.sh_head}"><div class="sh-h">${T_.sh_head}</div>`
@@ -1867,6 +1965,10 @@ function renderReport(data){
     ? chk('ochre',C.irdai_review.label,C.irdai_review.found(a.review.length),C.irdai_review.sub(inr.format(a.reviewSum)),
         {money:C.irdai_review.money(), doText:C.irdai_review.doText})
     : chk('green',T_.clear_word,C.irdai_review.foundClear,C.irdai_review.subClear);
+  h+= a.subsumed.length
+    ? chk('red',C.subsumed.label,C.subsumed.found(a.subsumed.length),C.subsumed.sub(inr.format(a.subsumedSum)),
+        {money:C.subsumed.money(), doText:C.subsumed.doText})
+    : chk('green',T_.clear_word,C.subsumed.foundClear,C.subsumed.subClear);
   const nppaAllVerified = a.nppa.length>0 && a.nppa.every(n=>n.grade==='verified');
   h+= a.nppa.length
     ? chk('red',C.nppa.label,
@@ -1912,6 +2014,9 @@ function renderReport(data){
   if(a.review.length) h+=det(T_.detail_review,`<span class="tag">${inr.format(a.reviewSum)}</span>`,
     `<div class="plain">${T_.detail_review_plain}</div>`+
     a.review.sort((x,y)=>y.total-x.total).map(l=>`<div class="li"><div>${esc(l.item)}<span class="src">${T_.detail_review_src(esc(l.matched))}</span></div><div class="n">${inr.format(l.total)}</div></div>`).join(''));
+  if(a.subsumed.length) h+=det(T_.detail_subsumed,`<span class="tag money">${inr.format(a.subsumedSum)}</span>`,
+    `<div class="plain">${T_.detail_subsumed_plain}</div>`+
+    a.subsumed.sort((x,y)=>y.total-x.total).map(l=>`<div class="li"><div>${esc(l.item)}<span class="src">${T_.detail_subsumed_src(l.list,esc(l.matched))}</span></div><div class="n">${inr.format(l.total)}</div></div>`).join(''), true);
   if(a.nppa.length) h+=det(T_.detail_nppa,`<span class="tag money">${a.nppa.length}</span>`,
     `<div class="plain">${T_.detail_nppa_plain}</div>`+
     a.nppa.map(n=>`<div class="li"><div>${esc(n.item)}<span class="src">${T_.detail_nppa_src(esc(n.ref),inr.format(n.ceiling),esc(n.gst))}</span>${n.grade!=='verified'?`<span class="gradebadge">${T_.nppa_unverified_badge}</span>`:''}</div><div class="n">${inr.format(n.price)}</div></div>`).join(''), true);
@@ -1995,7 +2100,7 @@ function buildLetter(a,include,noScroll){
   // built straight from the checklist's checkboxes, so unchecking "3
   // duplicate charges" in the Letter tab removes exactly that paragraph
   // here, nothing more, nothing hidden.
-  include=include||{settlement:true,irdai:true,nppa:true,dup:true,recon:true};
+  include=include||{settlement:true,irdai:true,subsumed:true,nppa:true,dup:true,recon:true};
   const s=settleOk(), H=a.header||{}, D=readLetterDetails();
   // The letter is English whatever the screen language, so its amounts use
   // English formatting too (not the screen language's).
@@ -2046,6 +2151,20 @@ function buildLetter(a,include,noScroll){
     // Only when the arithmetic supports it: the listed items do not cover the whole deduction.
     if(s&&include.settlement&&a.exactSum<s.deduction) L.push(`The items listed above total ${inr.format(a.exactSum)}. The remaining ${inr.format(money(s.deduction-a.exactSum))} of the amount recorded as non-payable is not accounted for by those items.`,``);
   }
+  if(a.subsumed.length&&include.subsumed){
+    // A different point from List I: these are named in IRDAI's Lists II-IV as
+    // items that must already be folded into the room, procedure or treatment
+    // charge, so billing them as a separate line may itself be the error —
+    // independent of what the insurer will or won't pay.
+    const bySub={II:[],III:[],IV:[]}; a.subsumed.forEach(l=>bySub[l.list].push(l));
+    L.push(`Checking the hospital's own itemised bill against IRDAI's Guidelines on Standardization in Health Insurance (as modified on 27 September 2019), the following charges appear on Lists II-IV — items that should already be included in the room, procedure or treatment charge, not billed as a separate line:`,``);
+    const subName={II:'Room charges',III:'Procedure charges',IV:'Treatment cost'};
+    ['II','III','IV'].forEach(k=>{ if(!bySub[k].length) return;
+      L.push(`  Should be part of ${subName[k]} (List ${k}):`);
+      bySub[k].sort((x,y)=>y.total-x.total).forEach(l=>L.push(`    - ${l.item} - ${inr.format(l.total)}  (IRDAI List ${k}: ${l.matched})`));
+    });
+    L.push(``,`  Subtotal: ${inr.format(a.subsumedSum)}`,``);
+  }
   if(a.nppa.length&&include.nppa){
     // Grade-aware: the two verified stent ceilings support a firm statutory
     // claim; the 12 knee-implant ceilings are real NPPA notifications this
@@ -2065,16 +2184,19 @@ function buildLetter(a,include,noScroll){
   }
   if(a.recon&&include.recon) L.push(`The bill's printed total (${inr.format(a.recon.gross)}) differs from the sum of its own printed lines (${inr.format(a.recon.lineSum)}) by ${inr.format(Math.abs(a.recon.diff))}.`,``);
   if(a.dups.length&&include.dup){ L.push(`The following charge(s) appear more than once at the same amount; please confirm whether each is a separate service or a duplicate entry:`); a.dups.forEach(d=>L.push(`  - ${d.item} - ${inr.format(d.amount)}, ${d.n} times`)); L.push(``); }
-  L.push(`I request:`,
-    `  1. A line-by-line statement of every amount recorded as non-payable or deducted, with the policy clause relied on for each.`,
+  const reqs=[
+    `A line-by-line statement of every amount recorded as non-payable or deducted, with the policy clause relied on for each.`,
     a.exact.length&&include.irdai
-      ? `  2. Confirmation of which of the items listed above were actually declined, whether my policy offers optional cover for any of them, and reconsideration of any amount that is not covered by an exclusion in my policy.`
-      : `  2. Reconsideration of any amount that is not covered by an exclusion in my policy.`);
+      ? `Confirmation of which of the items listed above were actually declined, whether my policy offers optional cover for any of them, and reconsideration of any amount that is not covered by an exclusion in my policy.`
+      : `Reconsideration of any amount that is not covered by an exclusion in my policy.`
+  ];
   if(a.nppa.length&&include.nppa){
     const hasVerified=a.nppa.some(n=>n.grade==='verified'), hasUnverified=a.nppa.some(n=>n.grade!=='verified');
-    if(hasVerified) L.push(`  3. Refund of any implant charge above the confirmed NPPA ceiling plus applicable GST.`);
-    if(hasUnverified) L.push(`  ${hasVerified?'4':'3'}. Confirmation of the current NPPA ceiling for the implant(s) above, and refund of any excess once confirmed.`);
+    if(hasVerified) reqs.push(`Refund of any implant charge above the confirmed NPPA ceiling plus applicable GST.`);
+    if(hasUnverified) reqs.push(`Confirmation of the current NPPA ceiling for the implant(s) above, and refund of any excess once confirmed.`);
   }
+  if(a.subsumed.length&&include.subsumed) reqs.push(`Confirmation that each charge listed under IRDAI Lists II-IV was already included in the relevant room, procedure or treatment charge, and removal or refund of any that was billed separately in error.`);
+  L.push(`I request:`); reqs.forEach((r,i)=>L.push(`  ${i+1}. ${r}`));
   L.push(``,`This letter was prepared with reference to published IRDAI and NPPA lists. It is a request for explanation, not an allegation.`,``,
     `Yours faithfully,`);
   const sig=[sender,D.policy?`Policy no. ${D.policy}`:'',D.contact].filter(Boolean);
@@ -2092,6 +2214,7 @@ function buildLetter(a,include,noScroll){
     const sl=[];
     if(s&&include.settlement) sl.push(T_.ls_settle(inr.format(s.counter),inr.format(s.deduction)));
     if(a.exact.length&&include.irdai) sl.push(T_.ls_irdai(a.exact.length,inr.format(a.exactSum)));
+    if(a.subsumed.length&&include.subsumed) sl.push(T_.ls_subsumed(a.subsumed.length,inr.format(a.subsumedSum)));
     if(s&&include.settlement&&a.exact.length&&include.irdai&&a.exactSum<s.deduction) sl.push(T_.ls_gap(inr.format(money(s.deduction-a.exactSum))));
     if(a.nppa.length&&include.nppa) sl.push(T_.ls_nppa(a.nppa.length));
     if(a.dups.length&&include.dup) sl.push(T_.ls_dup(a.dups.length));
@@ -2569,6 +2692,7 @@ function renderLetterTab(){
   const rows=[];
   if(s) rows.push(['settlement', T_.letter_confirm_settlement, '✓']);
   if(a.exact.length) rows.push(['irdai', T_.letter_confirm_irdai(a.exact.length), inr.format(a.exactSum)]);
+  if(a.subsumed.length) rows.push(['subsumed', T_.letter_confirm_subsumed(a.subsumed.length), inr.format(a.subsumedSum)]);
   if(a.nppa.length) rows.push(['nppa', T_.letter_confirm_nppa(a.nppa.length), '✓']);
   if(a.dups.length) rows.push(['dup', T_.letter_confirm_dup(a.dups.length), '✓']);
   if(a.recon) rows.push(['recon', T_.letter_confirm_recon, inr.format(Math.abs(a.recon.diff))]);

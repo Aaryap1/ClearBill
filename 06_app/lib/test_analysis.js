@@ -31,8 +31,10 @@ for (const s of NO) {
 }
 
 console.log('== matching: real non-payable items still match');
-const YES = ['TOOTH-BRUSH', 'NAME-TAG', 'MEDICO-LEGAL CASE CHARGES', 'COMB', 'APRON', 'AESTHETIC SURGERY',
-  'IDENTIFICATION BAND', 'ADMISSION KIT', 'IVF TREATMENT CYCLE', 'INHALER SPACER', 'GOWNS', 'ADMISSION SERVICES'];
+// Items now correctly cited under IRDAI Lists II-IV (Tooth Brush, Name Tag, Comb,
+// Apron, Identification Band, Admission Kit, Gowns, Admission Services) moved out
+// of this List-I list on 27 Sep 2026 - see the "Lists II-IV" section below.
+const YES = ['MEDICO-LEGAL CASE CHARGES', 'AESTHETIC SURGERY', 'IVF TREATMENT CYCLE', 'INHALER SPACER'];
 for (const s of YES) {
   const m = checks.bestMatch(s);
   ok(!!m, '"' + s + '" is flagged', m ? '' : 'no match');
@@ -130,6 +132,16 @@ console.log('== amounts and languages');
 ok(checks.analyse({ header: {}, line_items: [{ item: 'X', quantity: '2 Nos', rate: 'Rs 10/-', total: 20 }] }).unreadable === 0, 'quantity and rate text ("2 Nos", "Rs 10/-") is not counted as an unreadable amount');
 ok(checks.analyse({ header: {}, line_items: [{ item: 'X', quantity: 1, total: '(20)' }] }).unreadable === 1, 'an unreadable line TOTAL is still counted');
 ok(checks.analyse({ header: {}, line_items: [{ item: 'बेड शुल्क', total: 100 }, { item: 'Bed', total: 5 }, { item: 'IV सेट', total: 5 }] }).nonLatin === 1, 'lines written only in Hindi or Marathi are counted (they cannot be matched against the English lists)');
+
+console.log('== IRDAI Lists II-IV: should be in another charge, not a List I match, credit lines skipped');
+const S1 = (rows) => checks.analyse({ header: {}, line_items: rows.map(([item, total]) => ({ item, quantity: 1, total })) });
+{ const r = S1([['ADMISSION SERVICES 10003', 410]]); ok(r.subsumed.length === 1 && r.subsumed[0].list === 'IV' && r.exact.length === 0, 'an admission-service line is Subsumed (List IV), not List I'); }
+{ const r = S1([['SURGICAL BLADE NO.15', 7.1]]); ok(r.subsumed.length === 1 && r.subsumed[0].list === 'III', 'a surgical blade line is Subsumed (List III)'); }
+{ const r = S1([['TOOTH BRUSH', 5], ['MEDICAL RECORDS CHARGES', 300]]); ok(r.subsumed.length === 1 && r.exact.length === 1 && r.exact[0].matched === 'Medical Records', 'a Lists-II-IV item and a genuine List I item on the same bill are each reported once, under the right card'); }
+{ const r = S1([['ADMISSION KIT', 200], ['ADMISSION KIT refund', -200]]); ok(r.subsumed.length === 0, 'a refunded Subsumed item is left out, the same as a refunded List I item'); }
+ok(checks.SUBSUMED.length > 0, 'the Subsumed table is exported');
+ok(!checks.bestMatch('ADMISSION SERVICES 10003'), 'raw bestMatch() (List I only) no longer matches an item that moved to Lists II-IV');
+ok(checks.bestMatchIn('ADMISSION SERVICES 10003', checks.SUBSUMED).e.list === 'IV', 'bestMatchIn() finds it in the Subsumed table');
 
 console.log('== implant ceilings and the bill date');
 const D = (item, price, billDate, now, qty = 1) => checks.analyse({ header: billDate ? { bill_datetime: billDate } : {}, line_items: [{ item, quantity: qty, rate: price, total: price * qty }] }, now || new Date('2026-09-25'));
