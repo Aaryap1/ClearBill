@@ -131,6 +131,22 @@ ok(checks.analyse({ header: {}, line_items: [{ item: 'X', quantity: '2 Nos', rat
 ok(checks.analyse({ header: {}, line_items: [{ item: 'X', quantity: 1, total: '(20)' }] }).unreadable === 1, 'an unreadable line TOTAL is still counted');
 ok(checks.analyse({ header: {}, line_items: [{ item: 'बेड शुल्क', total: 100 }, { item: 'Bed', total: 5 }, { item: 'IV सेट', total: 5 }] }).nonLatin === 1, 'lines written only in Hindi or Marathi are counted (they cannot be matched against the English lists)');
 
+console.log('== implant ceilings and the bill date');
+const D = (item, price, billDate, now, qty = 1) => checks.analyse({ header: billDate ? { bill_datetime: billDate } : {}, line_items: [{ item, quantity: qty, rate: price, total: price * qty }] }, now || new Date('2026-09-25'));
+ok(D('Drug eluting stent', 45000, '01/06/2025').nppa.length === 0 && D('Drug eluting stent', 45000, '01/06/2025').nppaDated === 1, 'a stent on a bill dated before 1 April 2026 is not compared with the current ceiling (it was priced under an earlier one)');
+ok(D('Drug eluting stent', 45000, '15/05/2026').nppa.length === 1, 'the same stent on a bill dated 15 May 2026 (unambiguous) is compared and flagged');
+ok(D('Drug eluting stent', 45000, '2026-05-10').nppa.length === 1, 'an ISO date (2026-05-10) is read');
+{ const r = D('Drug eluting stent', 45000, '02/04/2026'); ok(r.nppa.length === 0 && r.nppaDated === 1, '02/04/2026 could be 2 April or 4 February, so it is treated as possibly before the change and not compared'); }
+{ const r = D('Drug eluting stent', 45000, '03/05/2026'); ok(r.nppa.length === 0 && r.nppaDated === 1, '03/05/2026 could be 3 May or 5 March; one reading is before the change, so it is not compared'); }
+ok(D('Drug eluting stent', 45000, null).nppa.length === 1, 'no bill date: the stent is compared as before');
+ok(D('Drug eluting stent', 45000, 'sometime in May').nppa.length === 1, 'an unreadable date is ignored, not guessed');
+ok(D('Knee femoral component', 90000, '10/10/2026', new Date('2027-01-01')).nppaStale === false, 'a knee bill dated inside the validity period is not "stale" just because today is later');
+ok(D('Knee femoral component', 90000, '20/11/2026', new Date('2026-09-25')).nppaStale === true, 'a knee bill dated after 15 Nov 2026 is stale even if today is earlier');
+ok(D('Knee femoral component', 90000, null, new Date('2027-01-01')).nppaStale === true, 'with no bill date the old behaviour holds (judged by today)');
+ok(D('Drug eluting stent', 45000, '05/05/2027', new Date('2027-05-06')).nppaStale === true, 'a stent bill from after 1 April 2027 asks the user to check for a newer notification');
+ok(D('Drug eluting stent', 45000, '05/05/2026', new Date('2026-09-25')).nppaStale === false, 'a stent bill from May 2026 is not stale');
+ok(checks.billDateRange({ bill_datetime: '01/06/2025 11:13' }) && checks.billDateRange({}) === null, 'the date reader reads DD/MM/YYYY with a time and returns nothing when there is no date');
+
 if (old) {
   console.log('== matcher.js duplicate parity');
   const rows = (r) => r.map(([item, total]) => ({ item, quantity: 1, total }));

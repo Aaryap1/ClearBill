@@ -791,7 +791,7 @@ en: {
   settle_warn_low:"The amount paid is smaller than your co-pay alone would be, so no hidden deduction can be worked out. Please re-check the figures you typed.",
   settle_warn_full:"With a 100% co-pay the insurer pays nothing, so a hidden deduction cannot be worked out.",
   sec_bill: "Check the itemised bill",
-  bill_lead: "Upload photos of your itemised bill (all pages, if more than one). Google Gemini reads them into rows; the checks then run in your browser against the published lists. Your photo is sent to Google's Gemini API to be read, once &mdash; ClearBill itself doesn't store it.",
+  bill_lead: "Upload photos of your itemised bill (all pages, if more than one). Google Gemini reads them into rows; the checks then run in your browser against the published lists. Your photo is sent to Google's Gemini API to be read, once &mdash; ClearBill itself doesn't store it. <span style=\"display:block;margin-top:8px;font-size:.84rem\">Google's terms differ by plan: on its free plan, Google may use what is sent to improve its products and people may read it; on a paid plan it does not. Before you photograph, you can cover or crop your name, address and ID numbers &mdash; the checks don't need them (the bill-completeness check will then list them as missing).</span>",
   drop_html: '<b>Tap to choose photos</b><br>or drag images here (JPG / PNG) &mdash; multiple pages OK',
   apikey_html: 'Gemini API key <span class="hint">&mdash; one time &middot; <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">get one here</a> &middot; saved only in this browser</span>',
   need_key: "This version needs a Gemini key once (free). Add it above, then choose the photo again.",
@@ -852,7 +852,8 @@ en: {
   detail_matched_src:m=>`matches: ${m}`,
   basis_policy_exclusion_badge:"policy exclusion, not List I",
   nppa_unverified_badge:"ceiling not independently confirmed",
-  nppa_stale_note:"Knee-implant ceilings were published as valid until 15 November 2026. Check whether a newer NPPA notification applies before relying on this.",
+  nppa_stale_note:"These ceilings may have been revised since they were published: the knee-implant ceilings were published as valid until 15 November 2026, and the stent ceilings took effect on 1 April 2026 and are revised from time to time. Check whether a newer NPPA notification applies before relying on this.",
+  nppa_dated_note:n=>`${n} stent line${n>1?'s were':' was'} not compared: the bill's date is before, or could be read as before, 1 April 2026, when the current stent ceilings took effect.`,
   notcompared_word:"Not compared",
   partial_note:(one,rej)=>[one?"Only one page was read. If your bill has more pages, add them &mdash; these checks cover only what was uploaded.":"",rej?`${rej} photo${rej>1?'s':''} didn&rsquo;t look like a bill page and ${rej>1?'were':'was'} skipped, so these checks may not cover the whole bill.`:""].filter(Boolean).join(" "),
   detail_nppa:"Above the NPPA price ceiling",
@@ -973,6 +974,7 @@ en: {
       foundClear:"No implant priced above an NPPA ceiling", subClear:"stents / knee implants checked",
       foundClearN:n=>`${n} implant line${n>1?'s':''} compared; none above the ceiling`, subClearN:"stents / knee implants only",
       foundNA:"No stent or knee-implant line found", subNA:"only these two implant types are checked",
+      foundNC:"An implant line was found but not compared", subNC:"see the note below the checks",
       money:()=>"This is a price ceiling set by NPPA, not a guideline. A price above the ceiling plus GST is worth asking the hospital to explain.",
       moneyUnverified:()=>"This is a real NPPA notification, but this app has not independently re-confirmed it is still the current ceiling &mdash; confirm before treating it as settled.",
       doText:"Ask the hospital to justify the price against the NPPA notification, or request a refund of the difference.",
@@ -1024,7 +1026,7 @@ hi: {
   settle_warn_low:"चुकाई गई राशि अकेले आपके को-पे से भी कम है, इसलिए छिपी कटौती नहीं निकाली जा सकती। कृपया डाले गए आँकड़े फिर से जाँचें।",
   settle_warn_full:"100% को-पे में बीमा कंपनी कुछ नहीं देती, इसलिए छिपी कटौती नहीं निकाली जा सकती।",
   sec_bill: "बिल की हर लाइन जाँचें",
-  bill_lead: "अपने बिल की सभी पेज़ों की फ़ोटो अपलोड करें (अगर एक से ज़्यादा हैं तो सब)। Google Gemini इन्हें पंक्तियों में पढ़ता है; फिर जाँचें आपके ब्राउज़र में ही चलती हैं। आपकी फ़ोटो पढ़ने के लिए एक बार Google के Gemini API को भेजी जाती है &mdash; ClearBill इसे ख़ुद सुरक्षित नहीं रखता।",
+  bill_lead: "अपने बिल की सभी पेज़ों की फ़ोटो अपलोड करें (अगर एक से ज़्यादा हैं तो सब)। Google Gemini इन्हें पंक्तियों में पढ़ता है; फिर जाँचें आपके ब्राउज़र में ही चलती हैं। आपकी फ़ोटो पढ़ने के लिए एक बार Google के Gemini API को भेजी जाती है &mdash; ClearBill इसे ख़ुद सुरक्षित नहीं रखता। <span style=\"display:block;margin-top:8px;font-size:.84rem\">Google की शर्तें योजना के हिसाब से अलग हैं: उसकी मुफ़्त योजना में Google भेजी गई सामग्री को अपने उत्पाद बेहतर करने में इस्तेमाल कर सकता है और लोग उसे पढ़ सकते हैं; सशुल्क योजना में ऐसा नहीं होता। फ़ोटो लेने से पहले आप अपना नाम, पता और पहचान संख्याएँ ढक या काट सकते हैं &mdash; जाँचों को इनकी ज़रूरत नहीं (बिल की पूर्णता की जाँच उन्हें ग़ायब बताएगी)।</span>",
   drop_html: '<b>फ़ोटो चुनने के लिए टैप करें</b><br>या यहाँ तस्वीरें खींचकर लाएँ (JPG / PNG) &mdash; कई पेज़ चल सकते हैं',
   apikey_html: 'Gemini API key <span class="hint">&mdash; एक बार &middot; <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">यहाँ से लें</a> &middot; सिर्फ़ इस ब्राउज़र में सुरक्षित</span>',
   need_key: "इसके लिए एक बार Gemini key चाहिए (मुफ़्त)। ऊपर डालें, फिर फ़ोटो दोबारा चुनें।",
@@ -1085,7 +1087,8 @@ hi: {
   detail_matched_src:m=>`मेल: ${m}`,
   basis_policy_exclusion_badge:"नीति अपवाद, IRDAI सूची I नहीं",
   nppa_unverified_badge:"सीमा की स्वतंत्र रूप से पुष्टि नहीं हुई",
-  nppa_stale_note:"घुटने के इम्प्लांट की सीमाएँ 15 नवंबर 2026 तक मान्य प्रकाशित थीं। इन पर भरोसा करने से पहले जाँचें कि कोई नई NPPA अधिसूचना लागू है या नहीं।",
+  nppa_stale_note:"हो सकता है ये सीमाएँ प्रकाशित होने के बाद बदली हों: घुटने के इम्प्लांट की सीमाएँ 15 नवंबर 2026 तक मान्य प्रकाशित थीं, और स्टेंट की सीमाएँ 1 अप्रैल 2026 से लागू हुईं और समय-समय पर बदलती हैं। इन पर भरोसा करने से पहले जाँचें कि कोई नई NPPA अधिसूचना लागू है या नहीं।",
+  nppa_dated_note:n=>`${n} स्टेंट लाइन नहीं मिलाई गई: बिल की तारीख़ 1 अप्रैल 2026 से पहले की है (या उसे पहले की पढ़ा जा सकता है), जब मौजूदा स्टेंट सीमाएँ लागू हुईं।`,
   notcompared_word:"जाँचा नहीं गया",
   partial_note:(one,rej)=>[one?"सिर्फ़ एक पेज पढ़ा गया। अगर आपके बिल में और पेज हैं तो उन्हें जोड़ें &mdash; ये जाँचें सिर्फ़ अपलोड किए गए हिस्से पर हैं।":"",rej?`${rej} फ़ोटो बिल का पेज नहीं लगी और छोड़ दी गई, इसलिए ये जाँचें पूरे बिल पर लागू नहीं हो सकतीं।`:""].filter(Boolean).join(" "),
   detail_nppa:"NPPA की मूल्य सीमा से ऊपर",
@@ -1207,6 +1210,7 @@ hi: {
       foundClear:"कोई इम्प्लांट NPPA सीमा से ऊपर क़ीमत पर नहीं", subClear:"स्टेंट / घुटने के इम्प्लांट जाँचे गए",
       foundClearN:n=>`${n} इम्प्लांट लाइन जाँची गई; कोई भी सीमा से ऊपर नहीं`, subClearN:"सिर्फ़ स्टेंट / घुटने के इम्प्लांट",
       foundNA:"कोई स्टेंट या घुटने के इम्प्लांट की लाइन नहीं मिली", subNA:"सिर्फ़ ये दो तरह के इम्प्लांट जाँचे जाते हैं",
+      foundNC:"इम्प्लांट की एक लाइन मिली पर मिलाई नहीं गई", subNC:"जाँचों के नीचे का नोट देखें",
       money:()=>"यह NPPA द्वारा तय क़ीमत की सीमा है, सुझाव नहीं। सीमा और GST से ऊपर की क़ीमत के बारे में अस्पताल से स्पष्टीकरण माँगना उचित है।",
       moneyUnverified:()=>"यह एक असली NPPA अधिसूचना है, पर इस ऐप ने स्वतंत्र रूप से पुष्टि नहीं की है कि यही अभी की सीमा है &mdash; इसे तय मानने से पहले पुष्टि करें।",
       doText:"अस्पताल से NPPA अधिसूचना के मुक़ाबले क़ीमत का औचित्य पूछें, या अंतर की वापसी माँगें।",
@@ -1258,7 +1262,7 @@ mr: {
   settle_warn_low:"दिलेली रक्कम फक्त तुमच्या को-पे पेक्षाही कमी आहे, त्यामुळे लपलेली कपात काढता येत नाही. कृपया टाकलेले आकडे पुन्हा तपासा.",
   settle_warn_full:"100% को-पे मध्ये विमा कंपनी काहीच देत नाही, त्यामुळे लपलेली कपात काढता येत नाही.",
   sec_bill: "तपशीलवार बिल तपासा",
-  bill_lead: "तुमच्या बिलाच्या सर्व पानांचे फोटो अपलोड करा (एकापेक्षा जास्त असल्यास सर्व). Google Gemini ते ओळींमध्ये वाचतं; मग तपासण्या तुमच्या ब्राउझरमध्येच चालतात. तुमचा फोटो वाचण्यासाठी एकदा Google च्या Gemini API ला पाठवला जातो &mdash; ClearBill स्वतः तो साठवत नाही.",
+  bill_lead: "तुमच्या बिलाच्या सर्व पानांचे फोटो अपलोड करा (एकापेक्षा जास्त असल्यास सर्व). Google Gemini ते ओळींमध्ये वाचतं; मग तपासण्या तुमच्या ब्राउझरमध्येच चालतात. तुमचा फोटो वाचण्यासाठी एकदा Google च्या Gemini API ला पाठवला जातो &mdash; ClearBill स्वतः तो साठवत नाही. <span style=\"display:block;margin-top:8px;font-size:.84rem\">Google च्या अटी योजनेनुसार वेगळ्या आहेत: त्याच्या मोफत योजनेत Google पाठवलेला मजकूर आपली उत्पादने सुधारण्यासाठी वापरू शकते आणि लोक तो वाचू शकतात; सशुल्क योजनेत असं होत नाही. फोटो काढण्यापूर्वी तुम्ही तुमचं नाव, पत्ता आणि ओळख क्रमांक झाकू किंवा कापू शकता &mdash; तपासण्यांना त्यांची गरज नाही (बिलाच्या पूर्णतेची तपासणी ते गहाळ म्हणून दाखवेल).</span>",
   drop_html: '<b>फोटो निवडण्यासाठी टॅप करा</b><br>किंवा इथे फोटो आणा (JPG / PNG) &mdash; अनेक पानं चालतील',
   apikey_html: 'Gemini API key <span class="hint">&mdash; एकदाच &middot; <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">इथून मिळवा</a> &middot; फक्त या ब्राउझरमध्ये जतन</span>',
   need_key: "यासाठी एकदा Gemini key लागते (मोफत). वर टाका, मग फोटो पुन्हा निवडा.",
@@ -1319,7 +1323,8 @@ mr: {
   detail_matched_src:m=>`जुळतं: ${m}`,
   basis_policy_exclusion_badge:"धोरण अपवाद, यादी I नाही",
   nppa_unverified_badge:"मर्यादेची स्वतंत्रपणे पुष्टी झालेली नाही",
-  nppa_stale_note:"गुडघा इम्प्लांटच्या मर्यादा 15 नोव्हेंबर 2026 पर्यंत वैध म्हणून प्रकाशित होत्या. यावर विसंबण्याआधी नवीन NPPA अधिसूचना लागू आहे का ते तपासा.",
+  nppa_stale_note:"या मर्यादा प्रकाशित झाल्यानंतर बदललेल्या असू शकतात: गुडघा इम्प्लांटच्या मर्यादा 15 नोव्हेंबर 2026 पर्यंत वैध म्हणून प्रकाशित होत्या, आणि स्टेंटच्या मर्यादा 1 एप्रिल 2026 पासून लागू झाल्या आणि वेळोवेळी बदलतात. यावर विसंबण्याआधी नवीन NPPA अधिसूचना लागू आहे का ते तपासा.",
+  nppa_dated_note:n=>`${n} स्टेंट ओळ जुळवली नाही: बिलाची तारीख 1 एप्रिल 2026 च्या आधीची आहे (किंवा तशी वाचता येते), जेव्हा सध्याच्या स्टेंट मर्यादा लागू झाल्या.`,
   notcompared_word:"तपासले नाही",
   partial_note:(one,rej)=>[one?"फक्त एक पान वाचलं गेलं. तुमच्या बिलात आणखी पानं असतील तर ती जोडा &mdash; या तपासण्या फक्त अपलोड केलेल्या भागावर आहेत.":"",rej?`${rej} फोटो बिलाचं पान वाटला नाही आणि वगळला गेला, त्यामुळे या तपासण्या संपूर्ण बिलावर लागू नसू शकतात.`:""].filter(Boolean).join(" "),
   detail_nppa:"NPPA च्या किंमत मर्यादेपेक्षा जास्त",
@@ -1441,6 +1446,7 @@ mr: {
       foundClear:"कोणताही इम्प्लांट NPPA मर्यादेपेक्षा जास्त किमतीत नाही", subClear:"स्टेंट / गुडघा इम्प्लांट तपासले",
       foundClearN:n=>`${n} इम्प्लांट ओळ तपासली; एकही मर्यादेपेक्षा जास्त नाही`, subClearN:"फक्त स्टेंट / गुडघा इम्प्लांट",
       foundNA:"स्टेंट किंवा गुडघा इम्प्लांटची कोणतीही ओळ सापडली नाही", subNA:"फक्त हे दोन प्रकारचे इम्प्लांट तपासले जातात",
+      foundNC:"इम्प्लांटची एक ओळ सापडली पण जुळवली नाही", subNC:"तपासण्यांखालील नोट पहा",
       money:()=>"ही NPPA ने ठरवलेली किंमत मर्यादा आहे, सूचना नाही. मर्यादा आणि GST पेक्षा जास्त किमतीबद्दल रुग्णालयाकडून स्पष्टीकरण मागणं योग्य आहे.",
       moneyUnverified:()=>"ही खरी NPPA अधिसूचना आहे, पण हे अ‍ॅप सध्याची मर्यादा हीच आहे याची स्वतंत्रपणे पुष्टी करू शकलेलं नाही &mdash; हे निश्चित मानण्याआधी पुष्टी करा.",
       doText:"रुग्णालयाला NPPA अधिसूचनेच्या तुलनेत किमतीचं समर्थन विचारा, किंवा फरकाचा परतावा मागा.",
@@ -1594,6 +1600,31 @@ const NPPA_GST_FACTOR=1.05;
 // (02_reference_data/nppa_ceilings.csv). After that the copy asks the user to
 // check for a newer notification instead of relying on the number.
 const NPPA_KNEE_VALID_TO=Date.UTC(2026,10,15,23,59,59);
+// Stent ceilings: the ones in this table took effect on 1 Apr 2026 (NPPA order
+// S.O. 1587(E), 02_reference_data/nppa_ceilings.csv). A bill dated earlier was
+// priced under an earlier ceiling that this app does not hold a verified
+// figure for, so such a bill is never compared. ASSUMPTION, not confirmed from a
+// primary source: the stent ceilings have been revised each 1 April (the CSV
+// lists a superseded pre-April-2026 pair), so from 1 Apr 2027 the copy asks the
+// user to check for a newer notification.
+const NPPA_STENT_FROM=Date.UTC(2026,3,1);
+const NPPA_STENT_REVIEW_FROM=Date.UTC(2027,3,1);
+// The bill's date as the earliest and latest reading of it. Indian bills write
+// DD/MM/YYYY, but 05/06/2026 could also be read month-first, so both readings are
+// kept and a check relies on the date only when every reading agrees.
+function billDateRange(H){
+  for(const k of ['bill_datetime','discharge_datetime','admission_datetime']){
+    const s=String((H&&H[k])||'');
+    let m=/\b(\d{4})-(\d{2})-(\d{2})\b/.exec(s);
+    if(m){ const t=Date.UTC(+m[1],+m[2]-1,+m[3]); if(!isNaN(t)) return {min:t,max:t}; }
+    m=/\b(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})\b/.exec(s);
+    if(m){ const a=+m[1], b=+m[2], y=+m[3], reads=[];
+      if(b>=1&&b<=12&&a>=1&&a<=31) reads.push(Date.UTC(y,b-1,a));
+      if(a>=1&&a<=12&&b>=1&&b<=31) reads.push(Date.UTC(y,a-1,b));
+      if(reads.length) return {min:Math.min(...reads),max:Math.max(...reads)}; }
+  }
+  return null;
+}
 // "femoral component" also names a HIP part; a knee ceiling must never be
 // applied to it.
 const HIP_WORDS=/\b(hip|acetabul\w*|bipolar|unipolar|thr|stem|neck|head)\b/;
@@ -1670,8 +1701,13 @@ function analyse(data,now){
     else if(k==='hospital_gstin'&&!GSTIN_RE.test(String(v).replace(/\s/g,''))) malformed.push(label);
   }
   const noUnit = lines.length>0 && lines.every(l=>l.unit==null);
-  const nppa=[], nppaGst=[]; let nppaStale=false, nppaCompared=0, nppaSkipped=0;
+  const nppa=[], nppaGst=[]; let nppaStale=false, nppaCompared=0, nppaSkipped=0, nppaDated=0;
   const clock=(now instanceof Date?now:new Date()).getTime();
+  const bd=billDateRange(H);
+  // "Past its validity" is judged at the BILL's date when it can be read (a bill from
+  // inside the validity period is not stale just because today is later); if the date
+  // is missing or ambiguous across the boundary, today's date is used.
+  const isStale=validTo=>bd?(bd.min>validTo?true:(bd.max<=validTo?false:clock>validTo)):clock>validTo;
   // A ceiling is for ONE part. A line that is a set, kit or package, or names
   // two parts (femoral + tibial ...), is not comparable and is never flagged.
   const SET_WORDS=/\b(set|kit|package|pkg|combo)\b/;
@@ -1680,6 +1716,8 @@ function analyse(data,now){
     for(const c of NPPA){ if(c.kw.some(k=>t.includes(k))){
       const knee=c.item.startsWith('Knee');
       if(knee&&HIP_WORDS.test(t)) break;
+      const stent=c.item.startsWith('Coronary stent');
+      if(stent&&bd&&bd.min<NPPA_STENT_FROM){ nppaDated++; break; }
       if(SET_WORDS.test(t)||FAMILIES.filter(f=>f.test(t)).length>1){ nppaSkipped++; break; }
       // The price per unit. A rate of 0 (the extraction template's placeholder) is
       // "no rate". When both a rate and total/quantity exist the LOWER one is used,
@@ -1689,7 +1727,7 @@ function analyse(data,now){
       if(price!=null) nppaCompared++;
       // At or below the ceiling: never flagged.
       if(price!=null&&price>c.ceiling){
-        const stale=knee&&clock>NPPA_KNEE_VALID_TO;
+        const stale=isStale(knee?NPPA_KNEE_VALID_TO:NPPA_STENT_REVIEW_FROM-1000);
         const row={item:l.item,price:money(price),ceiling:c.ceiling,ref:c.item,gst:c.gst,grade:c.grade||'verify',stale};
         if(price>c.ceiling*NPPA_GST_FACTOR){ nppa.push(row); if(stale) nppaStale=true; }
         else nppaGst.push(row);
@@ -1704,7 +1742,7 @@ function analyse(data,now){
   // page rejected as not-a-bill. Set by the upload flow on the merged object.
   const partial=data._pageCount===1||(data._rejected||0)>0;
   const subtotals = data.printed_subtotals && Object.keys(data.printed_subtotals).length ? data.printed_subtotals : null;
-  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nonLatin,subtotals,unreadable,reconCompared,partial,rejected:data._rejected||0,pageCount:data._pageCount||null};
+  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nppaDated,nonLatin,subtotals,unreadable,reconCompared,partial,rejected:data._rejected||0,pageCount:data._pageCount||null};
 }
 function sectionSums(lines){
   const m={}; lines.forEach(l=>{ const k=l.section||'Uncategorised'; m[k]=(m[k]||0)+(l.total||0); });
@@ -1837,7 +1875,9 @@ function renderReport(data){
         {money:(nppaAllVerified?C.nppa.money():C.nppa.moneyUnverified())+(a.nppaStale?' '+T_.nppa_stale_note:''), doText:nppaAllVerified?C.nppa.doText:C.nppa.doTextUnverified})
     : (a.nppaGst.length?'':(a.nppaCompared>0
         ? chk('green',T_.clear_word,C.nppa.foundClearN(a.nppaCompared),C.nppa.subClearN)
-        : chk('grey',T_.notapplicable_word,C.nppa.foundNA,C.nppa.subNA)));
+        : ((a.nppaSkipped+a.nppaDated)>0
+            ? chk('grey',T_.notcompared_word,C.nppa.foundNC,C.nppa.subNC)
+            : chk('grey',T_.notapplicable_word,C.nppa.foundNA,C.nppa.subNA))));
   if(a.nppaGst.length) h+=chk('ochre',C.nppa.labelGst,C.nppa.foundGst(a.nppaGst.length),C.nppa.subGst(),
         {money:C.nppa.moneyGst(), doText:C.nppa.doTextGst});
   h+= a.recon
@@ -1860,6 +1900,7 @@ function renderReport(data){
   const noteHtml=t=>`<div role="note" style="margin-top:10px;font-family:'Spectral',serif;font-size:.86rem;color:var(--soft);line-height:1.5">${t}</div>`;
   if(a.unreadable>0) h+=noteHtml(T_.unreadable_note(a.unreadable));
   if(a.nppaSkipped>0) h+=noteHtml(T_.nppa_skipped_note(a.nppaSkipped));
+  if(a.nppaDated>0) h+=noteHtml(T_.nppa_dated_note(a.nppaDated));
   if(a.nonLatin>0) h+=noteHtml(T_.nonlatin_note(a.nonLatin));
 
   if(ded>0) h+=`<div class="flagtot"><span>${T_.flagged_so_far}</span><span class="v">${inr.format(totalFlagged)}</span></div>`;

@@ -181,6 +181,21 @@ const STUB = `
     ok(!cleared.draft && !cleared.key && !cleared.det && !cleared.sdet && cleared.total === '' && cleared.name === '' && cleared.apik === '', '"Clear what this app saved" removes the saved figures, letter details and key, and empties the fields');
     ok(cleared.note && cleared.lang === 'en', 'it confirms, and keeps only the language choice');
 
+    console.log('== implant lines that are found but not compared; the privacy notice');
+    await fresh(); await ev(`setLang('en');`);
+    const showDated = async (billDate) => { await ev(`window.__lastExtraction=${JSON.stringify({ header: { bill_datetime: billDate }, line_items: [{ item: 'Drug eluting stent', quantity: 1, rate: 45000, total: 45000 }] })}; renderReport(window.__lastExtraction);`); return ev(`return document.getElementById('report').textContent`); };
+    let dt = await showDated('01/06/2025 11:13');
+    ok(/An implant line was found but not compared/.test(dt) && /stent line was not compared: the bill's date is before/.test(dt), 'a stent on a bill dated before 1 April 2026 is reported as found but not compared, with the reason');
+    ok(!/No stent or knee-implant line found/.test(dt) && !/above the NPPA ceiling plus GST/.test(dt), 'it is not called "not applicable" and not flagged');
+    dt = await showDated('15/05/2026');
+    ok(/above the NPPA ceiling plus GST/.test(dt) || /priced above/.test(dt), 'the same stent on a bill from May 2026 is compared and flagged');
+    { const t = await showReport([{ item: 'TKR SET Femoral component + Tibial component + Insert', quantity: 1, rate: 85000, total: 85000 }]); ok(/An implant line was found but not compared/.test(t) && !/No stent or knee-implant line found/.test(t), 'a knee set is "found but not compared", no longer "no implant line found"'); }
+    const lead = await ev(`return document.getElementById('billLead').textContent`);
+    ok(/on its free plan, Google may use what is sent to improve its products and people may read it; on a paid plan it does not/.test(lead), 'the upload notice says what Google\'s free and paid plans do with a photo');
+    ok(/cover or crop your name, address and ID numbers/.test(lead) && /list them as missing/.test(lead), 'it says the personal details can be covered, and what that does to the completeness check');
+    await ev(`setLang('hi');`); ok(/मुफ़्त योजना/.test(await ev(`return document.getElementById('billLead').textContent`)), 'the notice is in Hindi too');
+    await ev(`setLang('en');`);
+
     console.log('== Hindi errors');
     await fresh();
     await ev(`setLang('hi'); window.__mode='504'; addFiles([__mk('k1.jpg','image/jpeg',41)]); document.getElementById('checkPhotosBtn').click();`); await sleep(700);

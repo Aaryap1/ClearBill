@@ -44,6 +44,7 @@
   "reconCompared": true,
   "nppaCompared": 0,
   "nppaSkipped": 0,
+  "nppaDated": 0,
   "nonLatin": 0
  },
  "SYN-01": {
@@ -76,6 +77,7 @@
   "reconCompared": true,
   "nppaCompared": 0,
   "nppaSkipped": 0,
+  "nppaDated": 0,
   "nonLatin": 0
  },
  "SYN-02": {
@@ -106,6 +108,7 @@
   "reconCompared": true,
   "nppaCompared": 0,
   "nppaSkipped": 0,
+  "nppaDated": 0,
   "nonLatin": 0
  },
  "SYN-03": {
@@ -140,6 +143,7 @@
   "reconCompared": true,
   "nppaCompared": 0,
   "nppaSkipped": 0,
+  "nppaDated": 0,
   "nonLatin": 0
  },
  "SYN-04": {
@@ -174,6 +178,7 @@
   "reconCompared": true,
   "nppaCompared": 0,
   "nppaSkipped": 0,
+  "nppaDated": 0,
   "nonLatin": 0
  },
  "SYN-05": {
@@ -207,6 +212,7 @@
   "reconCompared": true,
   "nppaCompared": 0,
   "nppaSkipped": 0,
+  "nppaDated": 0,
   "nonLatin": 0
  },
  "SYN-06": {
@@ -241,6 +247,7 @@
   "reconCompared": true,
   "nppaCompared": 0,
   "nppaSkipped": 0,
+  "nppaDated": 0,
   "nonLatin": 0
  },
  "SYN-08": {
@@ -276,6 +283,7 @@
   "reconCompared": true,
   "nppaCompared": 0,
   "nppaSkipped": 0,
+  "nppaDated": 0,
   "nonLatin": 0
  },
  "SYN-09": {
@@ -308,6 +316,7 @@
   "reconCompared": true,
   "nppaCompared": 0,
   "nppaSkipped": 0,
+  "nppaDated": 0,
   "nonLatin": 0
  },
  "SYN-10": {
@@ -342,6 +351,7 @@
   "reconCompared": true,
   "nppaCompared": 0,
   "nppaSkipped": 0,
+  "nppaDated": 0,
   "nonLatin": 0
  }
 }

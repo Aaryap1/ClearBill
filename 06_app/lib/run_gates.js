@@ -59,7 +59,7 @@ function snapshot(a) {
     nppa: a.nppa.map(n => n.ref + '|' + n.grade).sort(),
     nppaGst: a.nppaGst.map(n => n.ref).sort(),
     reconCompared: a.reconCompared,
-    nppaCompared: a.nppaCompared, nppaSkipped: a.nppaSkipped, nonLatin: a.nonLatin,
+    nppaCompared: a.nppaCompared, nppaSkipped: a.nppaSkipped, nppaDated: a.nppaDated, nonLatin: a.nonLatin,
   };
 }
 

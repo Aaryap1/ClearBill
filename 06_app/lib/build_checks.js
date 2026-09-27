@@ -41,7 +41,7 @@ function build() {
     ' * Re-run `node lib/build_checks.js` after changing the reference tables or\n' +
     ' * analyse() in index.html. `node lib/build_checks.js --check` fails if stale. */\n' +
     parts.join('\n') + '\n' +
-    'module.exports = { NON_PAYABLE, NPPA, IS19493_HEADER, GSTIN_RE, money, bestMatch, parseAmount, analyse };\n'
+    'module.exports = { NON_PAYABLE, NPPA, IS19493_HEADER, GSTIN_RE, money, bestMatch, parseAmount, billDateRange, analyse };\n'
   );
 }
 

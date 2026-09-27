@@ -275,6 +275,31 @@ const NPPA_GST_FACTOR=1.05;
 // (02_reference_data/nppa_ceilings.csv). After that the copy asks the user to
 // check for a newer notification instead of relying on the number.
 const NPPA_KNEE_VALID_TO=Date.UTC(2026,10,15,23,59,59);
+// Stent ceilings: the ones in this table took effect on 1 Apr 2026 (NPPA order
+// S.O. 1587(E), 02_reference_data/nppa_ceilings.csv). A bill dated earlier was
+// priced under an earlier ceiling that this app does not hold a verified
+// figure for, so such a bill is never compared. ASSUMPTION, not confirmed from a
+// primary source: the stent ceilings have been revised each 1 April (the CSV
+// lists a superseded pre-April-2026 pair), so from 1 Apr 2027 the copy asks the
+// user to check for a newer notification.
+const NPPA_STENT_FROM=Date.UTC(2026,3,1);
+const NPPA_STENT_REVIEW_FROM=Date.UTC(2027,3,1);
+// The bill's date as the earliest and latest reading of it. Indian bills write
+// DD/MM/YYYY, but 05/06/2026 could also be read month-first, so both readings are
+// kept and a check relies on the date only when every reading agrees.
+function billDateRange(H){
+  for(const k of ['bill_datetime','discharge_datetime','admission_datetime']){
+    const s=String((H&&H[k])||'');
+    let m=/\b(\d{4})-(\d{2})-(\d{2})\b/.exec(s);
+    if(m){ const t=Date.UTC(+m[1],+m[2]-1,+m[3]); if(!isNaN(t)) return {min:t,max:t}; }
+    m=/\b(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})\b/.exec(s);
+    if(m){ const a=+m[1], b=+m[2], y=+m[3], reads=[];
+      if(b>=1&&b<=12&&a>=1&&a<=31) reads.push(Date.UTC(y,b-1,a));
+      if(a>=1&&a<=12&&b>=1&&b<=31) reads.push(Date.UTC(y,a-1,b));
+      if(reads.length) return {min:Math.min(...reads),max:Math.max(...reads)}; }
+  }
+  return null;
+}
 // "femoral component" also names a HIP part; a knee ceiling must never be
 // applied to it.
 const HIP_WORDS=/\b(hip|acetabul\w*|bipolar|unipolar|thr|stem|neck|head)\b/;
@@ -351,8 +376,13 @@ function analyse(data,now){
     else if(k==='hospital_gstin'&&!GSTIN_RE.test(String(v).replace(/\s/g,''))) malformed.push(label);
   }
   const noUnit = lines.length>0 && lines.every(l=>l.unit==null);
-  const nppa=[], nppaGst=[]; let nppaStale=false, nppaCompared=0, nppaSkipped=0;
+  const nppa=[], nppaGst=[]; let nppaStale=false, nppaCompared=0, nppaSkipped=0, nppaDated=0;
   const clock=(now instanceof Date?now:new Date()).getTime();
+  const bd=billDateRange(H);
+  // "Past its validity" is judged at the BILL's date when it can be read (a bill from
+  // inside the validity period is not stale just because today is later); if the date
+  // is missing or ambiguous across the boundary, today's date is used.
+  const isStale=validTo=>bd?(bd.min>validTo?true:(bd.max<=validTo?false:clock>validTo)):clock>validTo;
   // A ceiling is for ONE part. A line that is a set, kit or package, or names
   // two parts (femoral + tibial ...), is not comparable and is never flagged.
   const SET_WORDS=/\b(set|kit|package|pkg|combo)\b/;
@@ -361,6 +391,8 @@ function analyse(data,now){
     for(const c of NPPA){ if(c.kw.some(k=>t.includes(k))){
       const knee=c.item.startsWith('Knee');
       if(knee&&HIP_WORDS.test(t)) break;
+      const stent=c.item.startsWith('Coronary stent');
+      if(stent&&bd&&bd.min<NPPA_STENT_FROM){ nppaDated++; break; }
       if(SET_WORDS.test(t)||FAMILIES.filter(f=>f.test(t)).length>1){ nppaSkipped++; break; }
       // The price per unit. A rate of 0 (the extraction template's placeholder) is
       // "no rate". When both a rate and total/quantity exist the LOWER one is used,
@@ -370,7 +402,7 @@ function analyse(data,now){
       if(price!=null) nppaCompared++;
       // At or below the ceiling: never flagged.
       if(price!=null&&price>c.ceiling){
-        const stale=knee&&clock>NPPA_KNEE_VALID_TO;
+        const stale=isStale(knee?NPPA_KNEE_VALID_TO:NPPA_STENT_REVIEW_FROM-1000);
         const row={item:l.item,price:money(price),ceiling:c.ceiling,ref:c.item,gst:c.gst,grade:c.grade||'verify',stale};
         if(price>c.ceiling*NPPA_GST_FACTOR){ nppa.push(row); if(stale) nppaStale=true; }
         else nppaGst.push(row);
@@ -385,7 +417,7 @@ function analyse(data,now){
   // page rejected as not-a-bill. Set by the upload flow on the merged object.
   const partial=data._pageCount===1||(data._rejected||0)>0;
   const subtotals = data.printed_subtotals && Object.keys(data.printed_subtotals).length ? data.printed_subtotals : null;
-  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nonLatin,subtotals,unreadable,reconCompared,partial,rejected:data._rejected||0,pageCount:data._pageCount||null};
+  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nppaDated,nonLatin,subtotals,unreadable,reconCompared,partial,rejected:data._rejected||0,pageCount:data._pageCount||null};
 }
 
-module.exports = { NON_PAYABLE, NPPA, IS19493_HEADER, GSTIN_RE, money, bestMatch, parseAmount, analyse };
+module.exports = { NON_PAYABLE, NPPA, IS19493_HEADER, GSTIN_RE, money, bestMatch, parseAmount, billDateRange, analyse };
