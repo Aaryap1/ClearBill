@@ -67,22 +67,32 @@ Scored by reconciling the extracted lines against the bill's own printed
 section subtotals (checkable by anyone holding the bill — no hand-keyed truth
 file needed).
 
+The bill prints "CLINICAL SUPPORT SERVICES" as **two separate sections in two
+different places** (Patient Dinner on its own, then CSSD / OT / records /
+insurance further down the same page), each with its own printed subtotal.
+Checked against the paper bill on 27 Sep 2026. Earlier drafts of this table
+combined them into one row and compared the combined sum (8,130.00) against a
+single "printed" figure that the bill never actually prints — that row is
+split below to match what is really on the page.
+
 | section | lines | extracted | printed | |
 |---|---|---|---|---|
 | REGISTRATION | 1 | 410.00 | 410.00 | ✓ |
-| CLINICAL SUPPORT SERVICES | 5 | 8,130.00 | 8,130.00 | ✓ (needs re-checking: the stored extraction lists this section's printed subtotal as 7,980.00) |
+| CLINICAL SUPPORT SERVICES (Patient Dinner) | 1 | 150.00 | 150.00 | ✓ |
 | CONSULTATION | 3 | 3,020.00 | 3,020.00 | ✓ |
 | BED CHARGES | 1 | 4,500.00 | 4,500.00 | ✓ |
 | LAB SERVICES | 4 | 6,130.00 | 6,130.00 | ✓ |
+| CLINICAL SUPPORT SERVICES (CSSD / OT / records / insurance) | 4 | 7,980.00 | 7,980.00 | ✓ |
 | PROCEDURE / SURGERY CHARGES | 2 | 15,050.00 | 15,050.00 | ✓ |
 | Consumables | 24 | 2,699.75 | 2,699.75 | ✓ |
 | Medicines | 23 | 1,446.17 | 1,456.17 | **−10.00** |
 
-**7 of 8 sections reconcile to the rupee.** The Medicines section is ₹10 short —
-which is the **bill's own printed arithmetic error** (its Medicine lines sum to
-₹10 less than its printed Medicines total; documented independently in the repo
-README). The extraction is faithful to what is printed; the reconciliation
-check correctly surfaces the bill's internal inconsistency.
+**8 of the bill's 9 printed section subtotals reconcile to the rupee.** The
+Medicines section is ₹10 short — which is the **bill's own printed arithmetic
+error** (its Medicine lines sum to ₹10 less than its printed Medicines total;
+documented independently in the repo README). The extraction is faithful to
+what is printed; the reconciliation check correctly surfaces the bill's
+internal inconsistency.
 
 ## Two-line statement for the submission
 
@@ -92,6 +102,7 @@ check correctly surfaces the bill's internal inconsistency.
 > positives on the 4 clean bills.
 >
 > **Real bill (1 six-page hospital bill, 63 line items):** extracted lines
-> reconcile exactly against 7 of the bill's 8 printed section subtotals. The
-> 8th differs by ₹10 — the hospital's own printed arithmetic error, which the
+> reconcile exactly against 8 of the bill's 9 printed section subtotals (the
+> bill prints "Clinical Support Services" as two separate sections). The 9th
+> differs by ₹10 — the hospital's own printed arithmetic error, which the
 > reconciliation check flags rather than hides.
