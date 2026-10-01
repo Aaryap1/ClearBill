@@ -11,6 +11,9 @@
  *  4. lib/test_server.js (server protections)
  *  5. lib/test_reader.js (photo-reading logic, mock fetch) and lib/test_browser_reader.js
  *     (the same flow in a real page with a stubbed network; skipped if no Chrome/Edge)
+ *  6. lib/test_google_auth.js and lib/test_firestore_rest.js (My Bills, R9:
+ *     Google ID-token verification and the Firestore REST client, each
+ *     against a mock — no real Google account or GCP project touched)
  *
  * The baseline stores aggregates and item names only — never patient data.
  */
@@ -142,6 +145,18 @@ console.log('== 4. server protections');
   const r = run(path.join(__dirname, 'test_server.js'), [], APP);
   const last = (r.stdout || '').trim().split('\n').pop();
   ok(r.status === 0, 'test_server.js — ' + last, r.status === 0 ? '' : (r.stdout || '').slice(-600));
+}
+
+console.log('== 6. My Bills (R9): Google sign-in verification + Firestore REST client');
+{
+  const r = run(path.join(__dirname, 'test_google_auth.js'), [], APP);
+  const last = (r.stdout || '').trim().split('\n').pop();
+  ok(r.status === 0, 'test_google_auth.js - ' + last, r.status === 0 ? '' : (r.stdout || '').slice(-600));
+}
+{
+  const r = run(path.join(__dirname, 'test_firestore_rest.js'), [], APP);
+  const last = (r.stdout || '').trim().split('\n').pop();
+  ok(r.status === 0, 'test_firestore_rest.js - ' + last, r.status === 0 ? '' : (r.stdout || '').slice(-600));
 }
 
 console.log(failed ? `\nGATE FAILED (${failed})` : '\nGATE PASSED');

@@ -100,11 +100,14 @@ Gemini's only job is turning a photograph into structured rows. Every flag after
 
 Above that line a mistake is a bug. Below it a mistake is a lie. Keep them on opposite sides and everything else in the design is negotiable.
 
+A signed-in user can optionally save a checked bill and its letter — "My Bills" (added 1 Oct 2026) — to track what the insurer said afterwards. The same rule applies there: `server.js` verifies every Google ID token itself (`06_app/lib/google_auth.js`, hand-rolled against Node's own `crypto`, no library) and every Firestore call is scoped to that verified account (`06_app/lib/firestore_rest.js`) — a user can only ever see their own saved bills, enforced server-side on every request, not by a client-side check. See `06_app/DEPLOY.md` for the (free) setup.
+
 ---
 
 ## Still open
 
 - **Live extraction and its limits** — the app runs on Cloud Run (asia-south1) with the Gemini key in Secret Manager. The server limits requests per IP and per day; when a limit is hit it says so and offers the user's own key. It is not a guaranteed-availability service.
+- **My Bills sign-in** is new (1 Oct 2026) and tested against a mocked Google/Firestore (see `06_app/lib/test_google_auth.js`, `test_firestore_rest.js`, and the `/api/bills` section of `test_server.js`) plus a live local smoke test; it has not yet been exercised through a real Google sign-in by an end user.
 - **User validation** at n=1.
 - **Test corpus** — one real six-page bill plus a synthetic set. Accuracy on real photographed bills beyond that one bill is not established.
 - **Not tested on real devices** — phone browsers, print-to-PDF output, screen readers.

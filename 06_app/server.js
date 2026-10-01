@@ -25,12 +25,26 @@ const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 const crypto = require('crypto');
+const { verifyGoogleIdToken } = require('./lib/google_auth');
+const firestore = require('./lib/firestore_rest');
 
 const PORT = process.env.PORT || 8080;
 const KEY = process.env.GEMINI_API_KEY || '';
 const MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash'; // confirmed working 9 Sep 2026 — see 06_app/index.html for the full story
 const GEMINI_BASE = process.env.GEMINI_BASE || 'https://generativelanguage.googleapis.com';
 const ROOT = __dirname;
+
+// "My Bills" (R9): save a bill + letter to the signed-in user's own account so
+// a dispute can be tracked after the letter is sent. GOOGLE_CLIENT_ID is the
+// OAuth web client ID from Google Auth Platform (not secret — it is handed to
+// the browser so it can show the Google Sign-In button); FIRESTORE_PROJECT_ID
+// is the GCP project the Firestore database lives in. Both unset = the
+// feature quietly stays off (see /api/config) rather than erroring.
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const BILLS_ON = !!(GOOGLE_CLIENT_ID && process.env.FIRESTORE_PROJECT_ID);
+const BILLS_MAX_BODY = Number(process.env.BILLS_MAX_BODY_BYTES) || 256 * 1024; // one saved bill; Firestore's own doc limit is 1 MiB
+const BILLS_IP_MAX = Number(process.env.BILLS_RATE_MAX_PER_IP) || 120; // generous — this is free Firestore reads/writes, not a paid call
+const BILLS_IP_WINDOW_MS = Number(process.env.BILLS_RATE_WINDOW_MS) || 10 * 60 * 1000;
 
 // Limits. Generous on purpose: many phones share one carrier IP, and a
 // 6-page bill is 6 calls. Kept at the previous 20 MB body limit until the app
@@ -98,6 +112,94 @@ function admit(req, count) {
   return { ok: true };
 }
 const BUSY = { error: 'busy', message: 'The free reading service is busy right now. Try again in a few minutes, or use your own free Gemini key.' };
+
+/* ---- My Bills: auth + rate limit + body reading (separate counters from
+   the Gemini proxy above — saving a bill costs nothing, so it gets its own,
+   more generous limit rather than competing with photo-reads for the cap) */
+const billHits = new Map();
+function admitBills(req) {
+  const now = Date.now(), ip = clientIp(req);
+  const recent = (billHits.get(ip) || []).filter(t => now - t < BILLS_IP_WINDOW_MS);
+  if (recent.length >= BILLS_IP_MAX) return false;
+  recent.push(now); billHits.set(ip, recent);
+  if (billHits.size > 5000) for (const [k, v] of billHits) if (!v.some(t => now - t < BILLS_IP_WINDOW_MS)) billHits.delete(k);
+  return true;
+}
+// Verifies the Authorization: Bearer <Google ID token> header and returns the
+// caller's stable Google account id (uid). Sends the error response itself
+// and returns null on any failure, so callers can just `if (!uid) return;`.
+async function requireUid(req, res) {
+  if (!BILLS_ON) { sendJson(res, 501, { error: 'not_configured', message: 'This server has no Google sign-in configured.' }); return null; }
+  if (!admitBills(req)) { sendJson(res, 429, { error: 'busy', message: 'Too many requests. Try again in a few minutes.' }, { 'Retry-After': '300' }); return null; }
+  const h = String(req.headers['authorization'] || '');
+  const m = /^Bearer\s+(.+)$/.exec(h);
+  if (!m) { sendJson(res, 401, { error: 'unauthorized', message: 'Sign in with Google to use My Bills.' }); return null; }
+  try {
+    const claims = await verifyGoogleIdToken(m[1], GOOGLE_CLIENT_ID);
+    return claims.sub;
+  } catch (e) {
+    sendJson(res, e.status === 502 ? 502 : 401, { error: e.code || 'unauthorized', message: e.status === 502 ? 'Could not verify your sign-in right now. Please try again.' : 'Your sign-in has expired. Please sign in again.' });
+    return null;
+  }
+}
+function readJsonBody(req, res, maxBytes, onBody) {
+  const chunks = []; let size = 0, tooBig = false;
+  req.on('data', c => {
+    if (tooBig) return;
+    size += c.length;
+    if (size > maxBytes) { tooBig = true; chunks.length = 0; sendJson(res, 413, { error: 'too_large', message: 'That is too large to save.' }, { Connection: 'close' }); req.resume(); return; }
+    chunks.push(c);
+  });
+  req.on('end', () => {
+    if (tooBig) return;
+    let parsed;
+    try { parsed = JSON.parse(Buffer.concat(chunks).toString('utf8')); }
+    catch (e) { return sendJson(res, 400, { error: 'bad_request', message: 'Request was not valid JSON.' }); }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return sendJson(res, 400, { error: 'bad_request', message: 'Request body must be an object.' });
+    onBody(parsed);
+  });
+}
+// Only these fields are ever written. savedAt is set by the server, never
+// trusted from the client, so bills always sort by when THIS server saved
+// them. summary/letter/flags are free-form strings/numbers the browser
+// builds from its own (already-tested) analyse() output — the server does
+// not interpret them, only stores and returns them for this same uid.
+const BILL_CREATE_FIELDS = ['hospitalName', 'billDate', 'netPayable', 'explainedPct', 'explainedAmt', 'deduction', 'flagCounts', 'letter', 'status', 'note'];
+const BILL_PATCH_FIELDS = ['status', 'note'];
+function pick(obj, allowed) { const o = {}; for (const k of allowed) if (Object.prototype.hasOwnProperty.call(obj, k)) o[k] = obj[k]; return o; }
+
+async function listBillsHandler(req, res) {
+  const uid = await requireUid(req, res); if (!uid) return;
+  try {
+    const bills = await firestore.listBills(uid);
+    bills.sort((a, b) => String(b.savedAt || '').localeCompare(String(a.savedAt || '')));
+    sendJson(res, 200, { bills });
+  } catch (e) { console.log('[bills] list error', String(e.message || e)); sendJson(res, e.status || 500, { error: 'server', message: 'Could not load your saved bills right now.' }); }
+}
+async function createBillHandler(req, res) {
+  const uid = await requireUid(req, res); if (!uid) return;
+  readJsonBody(req, res, BILLS_MAX_BODY, async (body) => {
+    const data = pick(body, BILL_CREATE_FIELDS);
+    data.savedAt = new Date().toISOString();
+    if (!data.status) data.status = 'sent';
+    try { const bill = await firestore.createBill(uid, data); sendJson(res, 201, { bill }); }
+    catch (e) { console.log('[bills] create error', String(e.message || e)); sendJson(res, e.status || 500, { error: 'server', message: 'Could not save that bill right now.' }); }
+  });
+}
+async function patchBillHandler(req, res, billId) {
+  const uid = await requireUid(req, res); if (!uid) return;
+  readJsonBody(req, res, BILLS_MAX_BODY, async (body) => {
+    const patch = pick(body, BILL_PATCH_FIELDS);
+    if (!Object.keys(patch).length) return sendJson(res, 400, { error: 'bad_request', message: 'Nothing to update.' });
+    try { const bill = await firestore.updateBill(uid, billId, patch); sendJson(res, 200, { bill }); }
+    catch (e) { console.log('[bills] update error', String(e.message || e)); sendJson(res, e.status || 500, { error: e.status === 404 ? 'not_found' : 'server', message: e.status === 404 ? 'That saved bill was not found.' : 'Could not update that bill right now.' }); }
+  });
+}
+async function deleteBillHandler(req, res, billId) {
+  const uid = await requireUid(req, res); if (!uid) return;
+  try { await firestore.deleteBill(uid, billId); sendJson(res, 200, { ok: true }); }
+  catch (e) { console.log('[bills] delete error', String(e.message || e)); sendJson(res, e.status || 500, { error: 'server', message: 'Could not delete that bill right now.' }); }
+}
 
 async function readBill(req, res) {
   if (!KEY) return sendJson(res, 501, { error: 'not_configured', message: 'Server has no GEMINI_API_KEY set.' });
@@ -200,12 +302,19 @@ function serveStatic(req, res, name) {
   res.writeHead(200, h); res.end(e.buf);
 }
 
+const BILL_ID_PATH = /^\/api\/bills\/([A-Za-z0-9_-]{1,80})$/;
+
 http.createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
   if (req.method === 'POST' && url.pathname === '/api/read-bill') return readBill(req, res);
-  if (url.pathname === '/api/config') return sendJson(res, 200, { proxy: !!KEY });
+  if (url.pathname === '/api/config') return sendJson(res, 200, { proxy: !!KEY, bills: BILLS_ON, googleClientId: BILLS_ON ? GOOGLE_CLIENT_ID : null });
+  if (req.method === 'GET' && url.pathname === '/api/bills') return listBillsHandler(req, res);
+  if (req.method === 'POST' && url.pathname === '/api/bills') return createBillHandler(req, res);
+  { const m = BILL_ID_PATH.exec(url.pathname);
+    if (m && req.method === 'PATCH') return patchBillHandler(req, res, m[1]);
+    if (m && req.method === 'DELETE') return deleteBillHandler(req, res, m[1]); }
   if ((req.method === 'GET' || req.method === 'HEAD') && Object.prototype.hasOwnProperty.call(STATIC, url.pathname)) {
     return serveStatic(req, res, STATIC[url.pathname]);
   }
   send(res, 404, 'not found');
-}).listen(PORT, () => console.log(`ClearBill on :${PORT} — Gemini proxy ${KEY ? 'ON' : 'OFF (client key)'}`));
+}).listen(PORT, () => console.log(`ClearBill on :${PORT} — Gemini proxy ${KEY ? 'ON' : 'OFF (client key)'} — My Bills ${BILLS_ON ? 'ON' : 'OFF'}`));

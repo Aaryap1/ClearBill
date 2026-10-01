@@ -106,6 +106,18 @@
     color:var(--paper);font-family:"Archivo",sans-serif;font-weight:700;font-size:.9rem;letter-spacing:.01em;cursor:pointer}
   .btn.sm{min-height:42px;font-size:.82rem;margin-top:0}
   .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
+  .authbox{display:flex;align-items:center;gap:8px}
+  .authed{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--soft)}
+  .authedName{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .billrow{background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:12px;margin-bottom:10px}
+  .billrow .bh{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+  .billrow .bn{font-weight:600}
+  .billrow .bd{font-size:.76rem;color:var(--soft);white-space:nowrap}
+  .billrow .bstats{display:flex;gap:14px;margin:8px 0;font-size:.82rem;color:var(--soft);flex-wrap:wrap}
+  .billrow .bstats b{color:var(--ink)}
+  .billrow select.bstatus,.billrow textarea.bnote{width:100%;margin-top:6px;border:1.5px solid var(--ctl);background:var(--field);border-radius:8px;padding:8px;font:inherit;color:var(--ink);box-sizing:border-box}
+  .billrow textarea.bnote{min-height:44px;resize:vertical}
+  .billrow .brow-actions{display:flex;justify-content:flex-end;margin-top:8px}
 
   /* the slip */
   .slip{background:var(--card);border:1px solid var(--rule);border-radius:12px;box-shadow:var(--sh);
@@ -332,6 +344,7 @@
   a{color:var(--red)}
   :focus-visible{outline:2px solid var(--red);outline-offset:2px}
 </style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -346,6 +359,10 @@
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:7px">
       <div class="langsw" id="langsw" role="group" aria-label="Language">
         <button data-lang="en" class="on">EN</button><button data-lang="hi">हिं</button><button data-lang="mr">मर</button>
+      </div>
+      <div class="authbox hide" id="authBox">
+        <div id="gsiBtnHeader"></div>
+        <div class="authed hide" id="authedBoxHeader"><span class="authedName" id="authedNameHeader"></span><button class="link" id="signOutBtnHeader" type="button">Sign out</button></div>
       </div>
       <button class="instbtn hide" id="installBtn">Install</button>
     </div>
@@ -456,6 +473,27 @@
   </div>
 
   <!-- TAB 4: ABOUT -->
+  <div class="tabpage" id="page-mybills">
+    <div class="sec-label" id="secMybills">My Bills</div>
+    <div class="card" id="mybillsOff" style="display:none"><p id="mybillsOffText">Saving bills to an account isn't available on this deployment right now.</p></div>
+    <div class="card" id="mybillsSignedOut" style="display:none">
+      <p id="mybillsSignInPrompt">Sign in with Google to save this bill and keep track of what happens after you send your letter. Saved bills are private to your account — only you can see them, and nothing is shared with anyone else.</p>
+      <div id="gsiBtnTab"></div>
+    </div>
+    <div id="mybillsSignedIn" style="display:none">
+      <div class="card">
+        <div class="k" id="mybillsCurrentHead" style="margin-bottom:8px">This bill</div>
+        <p id="mybillsCurrentHint">Save this bill and its letter to your account so you can come back later and record what the insurer said.</p>
+        <button class="btn" id="saveBillBtn" type="button">Save this bill</button>
+        <p class="hide" id="mybillsSaveMsg" style="margin:10px 0 0"></p>
+      </div>
+      <div class="k" id="mybillsListHead" style="margin:18px 0 8px">Saved bills</div>
+      <div class="card hide" id="mybillsEmpty"><p id="mybillsEmptyText" style="margin:0">No saved bills yet.</p></div>
+      <div id="mybillsList"></div>
+      <button class="btn ghost sm" id="mybillsDeleteAllBtn" type="button" style="margin-top:14px;display:none">Delete all my saved bills</button>
+      <button class="link" id="signOutBtnTab" type="button" style="margin-top:14px;display:block">Sign out</button>
+    </div>
+  </div>
   <div class="tabpage" id="page-about">
     <div class="sec-label" id="secAbout">About this check</div>
     <div class="card">
@@ -495,6 +533,7 @@
   <button class="tabbtn on" data-tab="settlement" aria-current="page"><span class="dot">&#8377;</span><span id="tabLblSettlement">Settlement</span></button>
   <button class="tabbtn" data-tab="findings"><span class="dot" id="tabDotFindings">&mdash;</span><span id="tabLblFindings">Findings</span></button>
   <button class="tabbtn" data-tab="letter"><span class="dot">&#9993;</span><span id="tabLblLetter">Letter</span></button>
+  <button class="tabbtn" data-tab="mybills"><span class="dot">&#128193;</span><span id="tabLblMybills">My Bills</span></button>
   <button class="tabbtn" data-tab="about"><span class="dot">i</span><span id="tabLblAbout">About</span></button>
 </nav>
 <div id="printArea" style="display:none"></div>
@@ -805,6 +844,7 @@ const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 const LOCALE_TAG = {en:'en-IN', hi:'hi-IN-u-nu-latn', mr:'mr-IN-u-nu-latn'};
 const makeInr = lang => new Intl.NumberFormat(LOCALE_TAG[lang]||'en-IN',{style:'currency',currency:'INR',maximumFractionDigits:2,minimumFractionDigits:0});
 let LANG = 'en';
+let _myBills=[], BILLS_ON=false, GOOGLE_CLIENT_ID=null, ID_TOKEN=null, ID_TOKEN_NAME=null;
 let inr = makeInr(LANG);
 try{ const saved=localStorage.getItem('clearbill_lang'); if(saved && LOCALE_TAG[saved]) LANG=saved; }catch(e){}
 document.documentElement.lang=LANG;
@@ -913,8 +953,23 @@ en: {
   photo_guide_sum:"How to photograph your bill",
   photo_guide:["Lay each page flat on a table, not in the air.","Fit the whole page in the frame, with all four edges visible.","Use daylight or a bright room. Keep your own shadow and glare from lamps off the page.","Hold the phone still until the photo is taken, then zoom in and check that the numbers are sharp.","One page per photo, in page order. A 3-page bill needs 3 photos.","Photograph the itemised statement of charges, not a cover letter or a receipt."],
   clear_saved_btn:"Clear what this app saved on this device",
-  clear_saved_hint:"Saved on this device only: your typed figures, letter details if you chose to remember them, and your Gemini key if you pasted one.",
+  clear_saved_hint:"Saved on this device only: your typed figures, letter details if you chose to remember them, your Gemini key if you pasted one, and your My Bills sign-in session if you were signed in.",
   cleared_note:"Cleared. Your figures, letter details and Gemini key are no longer saved on this device (your language choice is kept).",
+  tab_mybills:"My Bills", sec_mybills:"My Bills",
+  mybills_off_text:"Saving bills to an account isn't available on this deployment right now.",
+  mybills_signin_prompt:"Sign in with Google to save this bill and keep track of what happens after you send your letter. Saved bills are private to your account — only you can see them, and nothing is shared with anyone else.",
+  mybills_current_head:"This bill",
+  mybills_current_hint:"Save this bill and its letter to your account so you can come back later and record what the insurer said.",
+  mybills_save_btn:"Save this bill", mybills_saving:"Saving…",
+  mybills_saved:"Saved. You can find it below, or in My Bills next time you sign in.",
+  mybills_save_err:"Could not save that bill right now. Please try again.",
+  mybills_nothing_to_save:"Check a bill first — there's nothing to save yet.",
+  mybills_list_head:"Saved bills", mybills_empty_text:"No saved bills yet.",
+  mybills_delete_all_btn:"Delete all my saved bills", mybills_signout_btn:"Sign out",
+  mybills_unnamed:"Hospital bill", mybills_status_label:"Status",
+  mybills_note_ph:"Notes — e.g. what the insurer said, or the date you followed up",
+  mybills_delete_btn:"Delete",
+  mybills_status:{sent:"Letter sent",insurer_responded:"Insurer responded",resolved:"Resolved",no_response:"No response yet"},
   as_head:"After you send the letter",
   as_1:"Send it to your insurer's grievance officer by email or post. The address is on your policy documents, your claim letter or the insurer's website. Use a method that gives you proof (an email you can save, or registered post) and keep a copy with the date.",
   as_2:"If a finding is about the hospital's own bill (a repeated charge, a total that doesn't match, an implant price), also ask the hospital's billing office to explain it.",
@@ -1159,8 +1214,23 @@ hi: {
   photo_guide_sum:"अपने बिल की फ़ोटो कैसे लें",
   photo_guide:["हर पेज़ को मेज़ पर सीधा रखें, हवा में पकड़कर नहीं।","पूरा पेज़ फ़्रेम में लाएँ, चारों किनारे दिखने चाहिए।","दिन की रोशनी या तेज़ रोशनी वाला कमरा इस्तेमाल करें। अपनी परछाईं और लैंप की चमक पेज़ पर न पड़ने दें।","फ़ोटो लेने तक फ़ोन को स्थिर रखें, फिर ज़ूम करके देखें कि अंक साफ़ हैं।","हर पेज़ की एक फ़ोटो, पेज़ के क्रम में। 3 पेज़ के बिल के लिए 3 फ़ोटो चाहिए।","ख़र्चों के विस्तृत ब्योरे (itemised statement) की फ़ोटो लें, कवर लेटर या रसीद की नहीं।"],
   clear_saved_btn:"इस डिवाइस पर ऐप ने जो सहेजा है, मिटाएँ",
-  clear_saved_hint:"सिर्फ़ इसी डिवाइस पर सहेजा जाता है: आपके डाले हुए आँकड़े, पत्र की जानकारी (अगर आपने याद रखने को कहा हो), और आपकी Gemini key (अगर आपने डाली हो)।",
+  clear_saved_hint:"सिर्फ़ इसी डिवाइस पर सहेजा जाता है: आपके डाले हुए आँकड़े, पत्र की जानकारी (अगर आपने याद रखने को कहा हो), आपकी Gemini key (अगर आपने डाली हो), और My Bills का साइन-इन सेशन (अगर आप साइन इन थे)।",
   cleared_note:"मिटा दिया गया। आपके आँकड़े, पत्र की जानकारी और Gemini key अब इस डिवाइस पर सहेजी नहीं हैं (आपकी भाषा की पसंद रखी गई है)।",
+  tab_mybills:"मेरे बिल", sec_mybills:"मेरे बिल",
+  mybills_off_text:"इस डिप्लॉयमेंट पर अभी बिल खाते में सहेजना उपलब्ध नहीं है।",
+  mybills_signin_prompt:"इस बिल को सहेजने और यह याद रखने के लिए कि पत्र भेजने के बाद क्या हुआ, Google से साइन इन करें। सहेजे गए बिल आपके खाते के लिए निजी हैं — सिर्फ़ आप उन्हें देख सकते हैं, और किसी और के साथ कुछ साझा नहीं किया जाता।",
+  mybills_current_head:"यह बिल",
+  mybills_current_hint:"इस बिल और इसके पत्र को अपने खाते में सहेजें ताकि आप बाद में आकर दर्ज कर सकें कि बीमा कंपनी ने क्या कहा।",
+  mybills_save_btn:"यह बिल सहेजें", mybills_saving:"सहेजा जा रहा है…",
+  mybills_saved:"सहेज लिया गया। इसे नीचे देखें, या अगली बार साइन इन करने पर My Bills में।",
+  mybills_save_err:"अभी वह बिल सहेजा नहीं जा सका। कृपया फिर से कोशिश करें।",
+  mybills_nothing_to_save:"पहले एक बिल जाँचें — अभी सहेजने के लिए कुछ नहीं है।",
+  mybills_list_head:"सहेजे गए बिल", mybills_empty_text:"अभी तक कोई बिल सहेजा नहीं गया।",
+  mybills_delete_all_btn:"मेरे सभी सहेजे गए बिल मिटाएँ", mybills_signout_btn:"साइन आउट करें",
+  mybills_unnamed:"अस्पताल का बिल", mybills_status_label:"स्थिति",
+  mybills_note_ph:"नोट्स — जैसे बीमा कंपनी ने क्या कहा, या आपने कब फॉलो-अप किया",
+  mybills_delete_btn:"मिटाएँ",
+  mybills_status:{sent:"पत्र भेजा गया",insurer_responded:"बीमा कंपनी ने जवाब दिया",resolved:"सुलझ गया",no_response:"अभी तक कोई जवाब नहीं"},
   as_head:"पत्र भेजने के बाद",
   as_1:"इसे ईमेल या डाक से अपनी बीमा कंपनी के शिकायत निवारण अधिकारी को भेजें। पता आपके पॉलिसी काग़ज़ों, क्लेम पत्र या बीमा कंपनी की वेबसाइट पर होता है। ऐसा तरीक़ा चुनें जिसका सबूत रहे (सहेजा जा सकने वाला ईमेल, या रजिस्टर्ड डाक) और तारीख़ के साथ एक कॉपी रखें।",
   as_2:"अगर कोई निष्कर्ष अस्पताल के अपने बिल के बारे में है (दोहराया चार्ज, न मिलता कुल योग, इम्प्लांट की क़ीमत), तो अस्पताल के बिलिंग विभाग से भी समझाने को कहें।",
@@ -1406,8 +1476,23 @@ mr: {
   photo_guide_sum:"तुमच्या बिलाचा फोटो कसा घ्यावा",
   photo_guide:["प्रत्येक पान टेबलावर सपाट ठेवा, हवेत धरू नका.","संपूर्ण पान फ्रेममध्ये घ्या, चारही कडा दिसल्या पाहिजेत.","दिवसाचा प्रकाश किंवा उजळ खोली वापरा. तुमची सावली आणि दिव्यांची चमक पानावर पडू देऊ नका.","फोटो काढेपर्यंत फोन स्थिर धरा, मग झूम करून आकडे स्पष्ट आहेत का ते पहा.","प्रत्येक पानाचा एक फोटो, पानांच्या क्रमाने. 3 पानी बिलासाठी 3 फोटो लागतात.","खर्चांच्या तपशीलवार विवरणाचा (itemised statement) फोटो घ्या, कव्हर लेटर किंवा पावतीचा नाही."],
   clear_saved_btn:"या डिव्हाइसवर अ‍ॅपने जतन केलेलं पुसा",
-  clear_saved_hint:"फक्त याच डिव्हाइसवर जतन होतं: तुम्ही टाकलेले आकडे, पत्रासाठीचे तपशील (लक्षात ठेवायला सांगितलं असल्यास), आणि तुमची Gemini key (टाकली असल्यास).",
+  clear_saved_hint:"फक्त याच डिव्हाइसवर जतन होतं: तुम्ही टाकलेले आकडे, पत्रासाठीचे तपशील (लक्षात ठेवायला सांगितलं असल्यास), तुमची Gemini key (टाकली असल्यास), आणि My Bills चं साइन-इन सेशन (तुम्ही साइन इन असल्यास).",
   cleared_note:"पुसलं. तुमचे आकडे, पत्राचे तपशील आणि Gemini key आता या डिव्हाइसवर जतन केलेले नाहीत (तुमची भाषा निवड तशीच ठेवली आहे).",
+  tab_mybills:"माझी बिले", sec_mybills:"माझी बिले",
+  mybills_off_text:"या डिप्लॉयमेंटवर सध्या बिल खात्यात जतन करणं उपलब्ध नाही.",
+  mybills_signin_prompt:"हे बिल जतन करण्यासाठी आणि पत्र पाठवल्यानंतर काय झालं हे लक्षात ठेवण्यासाठी Google ने साइन इन करा. जतन केलेली बिले तुमच्या खात्यासाठी खाजगी आहेत — फक्त तुम्हीच ती पाहू शकता, आणि कुणाशीही काही शेअर केलं जात नाही.",
+  mybills_current_head:"हे बिल",
+  mybills_current_hint:"हे बिल आणि त्याचं पत्र तुमच्या खात्यात जतन करा, म्हणजे नंतर येऊन विमा कंपनीने काय सांगितलं ते नोंदवता येईल.",
+  mybills_save_btn:"हे बिल जतन करा", mybills_saving:"जतन होत आहे…",
+  mybills_saved:"जतन झालं. ते खाली पाहा, किंवा पुढच्या वेळी साइन इन केल्यावर My Bills मध्ये.",
+  mybills_save_err:"ते बिल आत्ता जतन करता आलं नाही. कृपया पुन्हा प्रयत्न करा.",
+  mybills_nothing_to_save:"आधी एक बिल तपासा — आत्ता जतन करण्यासाठी काही नाही.",
+  mybills_list_head:"जतन केलेली बिले", mybills_empty_text:"अजून कोणतंही बिल जतन केलेलं नाही.",
+  mybills_delete_all_btn:"माझी सर्व जतन केलेली बिले पुसा", mybills_signout_btn:"साइन आउट करा",
+  mybills_unnamed:"रुग्णालयाचं बिल", mybills_status_label:"स्थिती",
+  mybills_note_ph:"नोंदी — उदा. विमा कंपनीने काय सांगितलं, किंवा तुम्ही कधी पाठपुरावा केला",
+  mybills_delete_btn:"पुसा",
+  mybills_status:{sent:"पत्र पाठवलं",insurer_responded:"विमा कंपनीने उत्तर दिलं",resolved:"निकाली निघालं",no_response:"अजून उत्तर नाही"},
   as_head:"पत्र पाठवल्यानंतर",
   as_1:"हे तुमच्या विमा कंपनीच्या तक्रार निवारण अधिकाऱ्याला ईमेलने किंवा पोस्टाने पाठवा. पत्ता तुमच्या पॉलिसी कागदपत्रांवर, क्लेम पत्रावर किंवा विमा कंपनीच्या वेबसाइटवर असतो. पुरावा राहील अशी पद्धत वापरा (जतन करता येणारा ईमेल, किंवा रजिस्टर्ड पोस्ट) आणि तारखेसह एक प्रत ठेवा.",
   as_2:"एखादा निष्कर्ष रुग्णालयाच्या स्वतःच्या बिलाबद्दल असेल (पुन्हा आलेला चार्ज, न जुळणारी एकूण रक्कम, इम्प्लांटची किंमत), तर रुग्णालयाच्या बिलिंग विभागालाही ते स्पष्ट करायला सांगा.",
@@ -2202,6 +2287,7 @@ function buildLetter(a,include,noScroll){
   const sig=[sender,D.policy?`Policy no. ${D.policy}`:'',D.contact].filter(Boolean);
   if(sig.length) L.push(sig.join('  -  '));
   const text=L.join('\n');
+  window.__lastLetterText=text; // so My Bills can save exactly what the letter tab shows, without rebuilding it
   const T_=S();
   // The letter itself always drafts in English — the register your insurer
   // and IRDAI actually work in — regardless of the UI language. Only the
@@ -2248,7 +2334,7 @@ const configReady=(async()=>{
     try{
       const ctl=new AbortController(), t=setTimeout(()=>ctl.abort(),4000);
       const r=await fetch('api/config',{signal:ctl.signal}); clearTimeout(t);
-      if(r.ok){ const c=await r.json(); if(c&&c.proxy) USE_PROXY=true; return; }
+      if(r.ok){ const c=await r.json(); if(c&&c.proxy) USE_PROXY=true; if(c&&c.bills){ BILLS_ON=true; GOOGLE_CLIENT_ID=c.googleClientId||null; } return; }
     }catch(e){}
   }
 })();
@@ -2657,6 +2743,19 @@ function applyStaticI18n(){
   if($('scenariosNote')) $('scenariosNote').textContent=Sv('scenarios_note');
   if($('gcloudHead')) $('gcloudHead').textContent=Sv('gcloud_head');
   if($('gcloudIntro')) $('gcloudIntro').textContent=Sv('gcloud_intro');
+  if($('tabLblMybills')) $('tabLblMybills').textContent=T_.tab_mybills;
+  if($('secMybills')) $('secMybills').textContent=T_.sec_mybills;
+  if($('mybillsOffText')) $('mybillsOffText').textContent=T_.mybills_off_text;
+  if($('mybillsSignInPrompt')) $('mybillsSignInPrompt').textContent=T_.mybills_signin_prompt;
+  if($('mybillsCurrentHead')) $('mybillsCurrentHead').textContent=T_.mybills_current_head;
+  if($('mybillsCurrentHint')) $('mybillsCurrentHint').textContent=T_.mybills_current_hint;
+  if($('saveBillBtn')) $('saveBillBtn').textContent=T_.mybills_save_btn;
+  if($('mybillsListHead')) $('mybillsListHead').textContent=T_.mybills_list_head;
+  if($('mybillsEmptyText')) $('mybillsEmptyText').textContent=T_.mybills_empty_text;
+  if($('mybillsDeleteAllBtn')) $('mybillsDeleteAllBtn').textContent=T_.mybills_delete_all_btn;
+  if($('signOutBtnHeader')) $('signOutBtnHeader').textContent=T_.mybills_signout_btn;
+  if($('signOutBtnTab')) $('signOutBtnTab').textContent=T_.mybills_signout_btn;
+  if(typeof renderMyBillsList==='function') renderMyBillsList(_myBills);
   const gcr=$('gcloudRows');
   if(gcr){
     const rows=Sv('gcloud_rows')||[];
@@ -2670,6 +2769,7 @@ function switchTab(name){
   document.querySelectorAll('.tabbtn').forEach(b=>{ const on=b.dataset.tab===name; b.classList.toggle('on',on); if(on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
   document.querySelectorAll('.tabpage').forEach(p=>p.classList.toggle('on', p.id==='page-'+name));
   window.scrollTo(0,0);
+  if(name==='mybills' && typeof onMyBillsTabOpen==='function') onMyBillsTabOpen();
 }
 document.querySelectorAll('.tabbtn').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
 if($('skipToFindingsBtn')) $('skipToFindingsBtn').addEventListener('click',()=>switchTab('findings'));
@@ -2710,6 +2810,7 @@ $('clearSavedBtn').addEventListener('click',()=>{
   try{ localStorage.removeItem(DRAFT_LS); localStorage.removeItem(LD_KEY); sessionStorage.removeItem(LD_KEY); localStorage.removeItem(KEY_LS); }catch(e){}
   Object.values(F).forEach(el=>{ el.value=''; }); markChips(-1); $('apiKey').value='';
   LD_FIELDS.forEach(f=>{ $('ld_'+f).value=''; }); $('ld_asked').checked=false; $('ld_remember').checked=false;
+  if(typeof signOut==='function') signOut(); // the My Bills sign-in session is also "saved on this device"
   calc();
   const n=$('clearedNote'); n.textContent=S().cleared_note; n.classList.remove('hide');
 });
@@ -2760,6 +2861,165 @@ try{
   window.addEventListener('appinstalled',()=>installBtn&&installBtn.classList.add('hide'));
   if(iosHint && /iphone|ipad|ipod/i.test(navigator.userAgent) && !standalone) iosHint.classList.remove('hide');
 }catch(e){}
+
+/* ---- My Bills (R9): sign in with Google, save this bill, track what
+   happened after the letter was sent. Server-verified — lib/google_auth.js
+   checks every ID token fresh on every /api/bills call, and lib/firestore_rest.js
+   scopes every document to that verified uid. Nothing here trusts the
+   browser alone; signing in only lets you see and edit YOUR OWN saved
+   bills, never anyone else's. */
+const STATUS_KEYS=['sent','insurer_responded','resolved','no_response'];
+try{ const saved=sessionStorage.getItem('clearbill_idtoken'); if(saved) ID_TOKEN=saved; }catch(e){}
+
+function authFetch(path,opts){
+  opts=opts||{};
+  const headers={...(opts.headers||{})};
+  if(ID_TOKEN) headers.Authorization='Bearer '+ID_TOKEN;
+  return fetch(path,{...opts,headers});
+}
+function decodeIdTokenPayload(tok){
+  try{ return JSON.parse(decodeURIComponent(atob(tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')).split('').map(c=>'%'+('00'+c.charCodeAt(0).toString(16)).slice(-2)).join(''))); }
+  catch(e){ return null; }
+}
+function setSignedIn(tok){
+  ID_TOKEN=tok;
+  const p=decodeIdTokenPayload(tok);
+  ID_TOKEN_NAME=(p&&(p.name||p.email))||null;
+  try{ sessionStorage.setItem('clearbill_idtoken',tok); }catch(e){}
+  renderAuthUI(); refreshMyBills();
+}
+function signOut(){
+  ID_TOKEN=null; ID_TOKEN_NAME=null; _myBills=[];
+  try{ sessionStorage.removeItem('clearbill_idtoken'); }catch(e){}
+  try{ if(window.google&&google.accounts&&google.accounts.id) google.accounts.id.disableAutoSelect(); }catch(e){}
+  renderAuthUI(); renderMyBillsList([]);
+}
+function renderAuthUI(){
+  const signedIn=!!ID_TOKEN;
+  ['Header'].forEach(suf=>{
+    const gsi=$('gsiBtn'+suf), authed=$('authedBox'+suf);
+    if(gsi) gsi.classList.toggle('hide',signedIn);
+    if(authed) authed.classList.toggle('hide',!signedIn);
+  });
+  if($('authedNameHeader')) $('authedNameHeader').textContent=ID_TOKEN_NAME||'';
+  if($('mybillsOff')) $('mybillsOff').style.display=BILLS_ON?'none':'';
+  if($('mybillsSignedOut')) $('mybillsSignedOut').style.display=(BILLS_ON&&!signedIn)?'':'none';
+  if($('mybillsSignedIn')) $('mybillsSignedIn').style.display=(BILLS_ON&&signedIn)?'':'none';
+  if($('authBox')) $('authBox').classList.toggle('hide',!BILLS_ON);
+}
+function onGoogleCredential(resp){ if(resp&&resp.credential) setSignedIn(resp.credential); }
+function renderGsiTabButton(){
+  if(window.google&&google.accounts&&google.accounts.id&&$('gsiBtnTab')&&!ID_TOKEN) google.accounts.id.renderButton($('gsiBtnTab'),{theme:'outline',size:'medium',text:'signin_with'});
+}
+function onMyBillsTabOpen(){
+  if(!BILLS_ON) return;
+  if(!ID_TOKEN) renderGsiTabButton(); else refreshMyBills();
+}
+function initGoogleSignIn(){
+  if(!BILLS_ON||!GOOGLE_CLIENT_ID||!window.google||!google.accounts||!google.accounts.id) return;
+  renderAuthUI(); // unhide the containers first so Google's button has a visible box to measure
+  google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID, callback:onGoogleCredential, auto_select:false});
+  if($('gsiBtnHeader')) google.accounts.id.renderButton($('gsiBtnHeader'),{theme:'outline',size:'medium',text:'signin_with'});
+  if(document.getElementById('page-mybills').classList.contains('on')) renderGsiTabButton();
+  if(ID_TOKEN) refreshMyBills();
+}
+configReady.then(()=>{
+  if(!BILLS_ON){ renderAuthUI(); return; }
+  if(window.google&&google.accounts&&google.accounts.id) initGoogleSignIn();
+  else { const t=setInterval(()=>{ if(window.google&&google.accounts&&google.accounts.id){ clearInterval(t); initGoogleSignIn(); } },200); setTimeout(()=>clearInterval(t),10000); }
+});
+if($('signOutBtnHeader')) $('signOutBtnHeader').addEventListener('click',signOut);
+if($('signOutBtnTab')) $('signOutBtnTab').addEventListener('click',signOut);
+
+function buildBillPayload(){
+  const data=window.__lastExtraction; if(!data) return null;
+  const a=window.__letterA || (typeof analyse==='function'?analyse(data):null); if(!a) return null;
+  const st=window.__settle; const ded=st?st.deduction:0;
+  const H=data.header||{};
+  return {
+    hospitalName:(typeof H.hospital_name==='string'&&H.hospital_name.trim())?H.hospital_name.trim():null,
+    billDate:H.bill_datetime||null,
+    netPayable:(H.net_payable!=null?H.net_payable:(st?st.total:null)),
+    deduction:ded||null,
+    explainedPct:ded>0?Math.min(100,Math.round((a.exactSum||0)/ded*100)):null,
+    explainedAmt:a.exactSum||0,
+    flagCounts:{listI:a.exact.length,listIIIV:a.subsumed.length,nppa:a.nppa.length,duplicates:(a.dup||[]).length},
+    letter:window.__lastLetterText||'',
+    status:'sent', note:''
+  };
+}
+async function saveBill(){
+  const T_=S(), btn=$('saveBillBtn'), msg=$('mybillsSaveMsg');
+  const payload=buildBillPayload();
+  if(!payload){ if(msg){ msg.textContent=T_.mybills_nothing_to_save; msg.classList.remove('hide'); } return; }
+  btn.disabled=true; const orig=btn.textContent; btn.textContent=T_.mybills_saving;
+  try{
+    const r=await authFetch('api/bills',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    if(r.status===401){ signOut(); throw new Error('unauthorized'); }
+    if(!r.ok) throw new Error('save failed');
+    if(msg){ msg.textContent=T_.mybills_saved; msg.classList.remove('hide'); }
+    refreshMyBills();
+  }catch(e){ if(msg){ msg.textContent=T_.mybills_save_err; msg.classList.remove('hide'); } }
+  finally{ btn.disabled=false; btn.textContent=orig; }
+}
+if($('saveBillBtn')) $('saveBillBtn').addEventListener('click',saveBill);
+
+async function refreshMyBills(){
+  if(!BILLS_ON||!ID_TOKEN) return;
+  if(!$('mybillsList')) return;
+  try{
+    const r=await authFetch('api/bills');
+    if(r.status===401){ signOut(); return; }
+    if(!r.ok) throw new Error('list failed');
+    const j=await r.json();
+    _myBills=j.bills||[];
+    renderMyBillsList(_myBills);
+  }catch(e){ /* keep the last-known list on screen rather than blanking it on a transient network error */ }
+}
+function inrFmtSafe(v){ try{ return makeInr('en').format(v); }catch(e){ return String(v); } }
+function renderMyBillsList(bills){
+  const T_=S(), list=$('mybillsList'), empty=$('mybillsEmpty'), delAll=$('mybillsDeleteAllBtn');
+  if(!list) return;
+  if(empty) empty.classList.toggle('hide', bills.length>0);
+  if(delAll) delAll.style.display = bills.length>0 ? '' : 'none';
+  list.innerHTML = bills.map(b=>{
+    const date=b.savedAt?new Date(b.savedAt).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'';
+    const pct = b.explainedPct!=null ? b.explainedPct+'%' : T_.notapplicable_word;
+    const amt = b.netPayable!=null ? inrFmtSafe(b.netPayable) : '';
+    const opts=STATUS_KEYS.map(k=>'<option value="'+k+'"'+(b.status===k?' selected':'')+'>'+esc(T_.mybills_status[k])+'</option>').join('');
+    return '<div class="billrow" data-id="'+esc(b.id)+'">'
+      +'<div class="bh"><span class="bn">'+esc(b.hospitalName||T_.mybills_unnamed)+'</span><span class="bd">'+esc(date)+'</span></div>'
+      +'<div class="bstats"><span>'+esc(T_.kpi_explained)+': <b>'+esc(pct)+'</b></span>'+(amt?'<span>'+esc(T_.lbl_total_plain)+': <b>'+esc(amt)+'</b></span>':'')+'</div>'
+      +'<select class="bstatus" aria-label="'+esc(T_.mybills_status_label)+'">'+opts+'</select>'
+      +'<textarea class="bnote" placeholder="'+esc(T_.mybills_note_ph)+'">'+esc(b.note||'')+'</textarea>'
+      +'<div class="brow-actions"><button class="link bdel" type="button">'+esc(T_.mybills_delete_btn)+'</button></div>'
+      +'</div>';
+  }).join('');
+  list.querySelectorAll('.billrow').forEach(row=>{
+    const id=row.dataset.id;
+    row.querySelector('.bstatus').addEventListener('change',e=>patchMyBill(id,{status:e.target.value}));
+    row.querySelector('.bnote').addEventListener('change',e=>patchMyBill(id,{note:e.target.value}));
+    row.querySelector('.bdel').addEventListener('click',()=>deleteMyBill(id));
+  });
+}
+async function patchMyBill(id,patch){
+  try{
+    const r=await authFetch('api/bills/'+encodeURIComponent(id),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)});
+    if(r.status===401) signOut();
+  }catch(e){ /* a failed status/note edit just doesn't persist; nothing destructive happened */ }
+}
+async function deleteMyBill(id){
+  try{
+    const r=await authFetch('api/bills/'+encodeURIComponent(id),{method:'DELETE'});
+    if(r.status===401){ signOut(); return; }
+    if(r.ok){ _myBills=_myBills.filter(b=>b.id!==id); renderMyBillsList(_myBills); }
+  }catch(e){}
+}
+if($('mybillsDeleteAllBtn')) $('mybillsDeleteAllBtn').addEventListener('click',async()=>{
+  const ids=_myBills.map(b=>b.id);
+  for(const id of ids){ try{ await authFetch('api/bills/'+encodeURIComponent(id),{method:'DELETE'}); }catch(e){} }
+  _myBills=[]; renderMyBillsList([]);
+});
 </script>
 </body>
 </html>

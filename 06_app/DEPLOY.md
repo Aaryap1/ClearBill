@@ -75,6 +75,63 @@ Model override if needed: `--set-env-vars=GEMINI_MODEL=gemini-3-flash-preview`.
 
 ---
 
+## C · My Bills (optional): save bills to a Google account
+
+Lets a signed-in user save a checked bill and its letter, and record what the
+insurer said afterwards. Entirely free — no Firebase project, no npm
+dependency, no billing account. Two GCP pieces, both one-time setup:
+
+### 1. A Firestore database (Native mode), free tier
+```
+gcloud services enable firestore.googleapis.com
+gcloud firestore databases create --location=asia-south1 --type=firestore-native
+```
+Free tier: 1 GiB storage, 50k reads / 20k writes / 20k deletes per day — far
+more than a personal project needs.
+
+### 2. Let Cloud Run's service account read/write it
+```
+PROJECT=$(gcloud config get-value project)
+SA=$(gcloud run services describe clearbill --region asia-south1 --format='value(spec.template.spec.serviceAccountName)')
+gcloud projects add-iam-policy-binding $PROJECT --member="serviceAccount:$SA" --role="roles/datastore.user"
+```
+
+### 3. An OAuth client for "Sign in with Google"
+In the Cloud Console: **APIs & Services → Google Auth Platform** (first visit
+asks you to accept the Firebase/Google API Services terms — a one-time,
+unavoidable click, not optional config) → **Clients → Create client** →
+*Web application* → add your Cloud Run URL (and `http://localhost:<port>` for
+local testing) under **Authorized JavaScript origins**. No redirect URI is
+needed — the app uses Google Identity Services' button flow, not a
+server-side redirect. Copy the generated Client ID (not secret — it is meant
+to be public, and is handed to the browser via `/api/config`).
+
+Your sign-in app starts in **Testing** mode (Audience tab), capped to the
+Google accounts you explicitly add as test users. Add your own account there
+to try it; "Publish app" lifts the cap once you're ready for others to sign
+in (no extra verification needed for this app's scopes — just email/profile).
+
+### 4. Deploy with the two extra env vars
+```
+gcloud run deploy clearbill --source . --region asia-south1 --allow-unauthenticated \
+  --set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest \
+  --update-env-vars=GOOGLE_CLIENT_ID=<your-client-id>.apps.googleusercontent.com,FIRESTORE_PROJECT_ID=<your-project-id>
+```
+`/api/config` then reports `bills:true` and the app shows the sign-in button.
+Leave either var unset and the feature quietly stays off — nothing else
+changes, and nothing errors.
+
+**How it's kept zero-dependency and zero-cost:** `lib/google_auth.js` verifies
+the browser's Google ID token by hand (fetch Google's public keys, check the
+RS256 signature with Node's own `crypto`) instead of pulling in
+`google-auth-library`; `lib/firestore_rest.js` talks to Firestore's plain
+REST API over `fetch`, authenticated with a token fetched from the Cloud Run
+instance's own metadata server — no service-account key file, nothing that
+can leak. See `lib/test_google_auth.js` and `lib/test_firestore_rest.js` for
+the (offline, mocked) tests covering both.
+
+---
+
 ## Install on a phone (PWA)
 
 Once the app is on an `https://` URL:

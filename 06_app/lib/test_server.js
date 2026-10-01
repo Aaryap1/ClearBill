@@ -166,6 +166,119 @@ async function start(port, env) {
     await start(P + 3, { GEMINI_API_KEY: '' });
     r = await post(P + 3, 'a photo'); ok(r.status === 501, 'no key: 501, and nothing is called');
     r = await req(P + 3, 'GET', '/api/config'); ok(JSON.parse(text(r)).proxy === false, '/api/config says proxy is off');
+
+    console.log('== My Bills: not configured');
+    r = await req(P + 3, 'GET', '/api/config'); ok(JSON.parse(text(r)).bills === false, '/api/config says bills is off when unset');
+    r = await req(P + 3, 'GET', '/api/bills', { headers: { Authorization: 'Bearer whatever' } });
+    ok(r.status === 501, 'GET /api/bills is 501 when Google sign-in is not configured');
+
+    console.log('== My Bills: auth + CRUD against a mock Google + mock Firestore');
+    const crypto2 = require('crypto');
+    const b64url2 = buf => Buffer.from(buf).toString('base64url');
+    const { publicKey: billsPub, privateKey: billsPriv } = crypto2.generateKeyPairSync('rsa', { modulusLength: 2048 });
+    const billsJwk = { ...billsPub.export({ format: 'jwk' }), kid: 'srv-test-key', alg: 'RS256', use: 'sig' };
+    const BILLS_CLIENT_ID = 'bills-test-client.apps.googleusercontent.com';
+    const certsSrv = http.createServer((req2, res2) => { res2.writeHead(200, { 'Content-Type': 'application/json' }); res2.end(JSON.stringify({ keys: [billsJwk] })); });
+    await new Promise(r2 => certsSrv.listen(0, '127.0.0.1', r2));
+    function mintToken(sub, extra) {
+      const now2 = Math.floor(Date.now() / 1000);
+      const header = { alg: 'RS256', typ: 'JWT', kid: 'srv-test-key' };
+      const payload = { iss: 'https://accounts.google.com', aud: BILLS_CLIENT_ID, sub, email: sub + '@example.com', email_verified: true, iat: now2 - 5, exp: now2 + 3600, ...extra };
+      const h = b64url2(JSON.stringify(header)), p = b64url2(JSON.stringify(payload));
+      const sig = crypto2.sign('RSA-SHA256', Buffer.from(h + '.' + p), billsPriv);
+      return h + '.' + p + '.' + b64url2(sig);
+    }
+    // Minimal mock Firestore REST server — same shape as lib/test_firestore_rest.js's.
+    const fsStore = new Map(); let fsNextId = 1; const FS_PROJECT = 'bills-test-project';
+    const fsSrv = http.createServer((req2, res2) => {
+      const chunks = []; req2.on('data', c => chunks.push(c));
+      req2.on('end', () => {
+        const body = chunks.length ? JSON.parse(Buffer.concat(chunks).toString()) : null;
+        const prefix = `/v1/projects/${FS_PROJECT}/databases/(default)/documents/`;
+        if (!req2.url.startsWith(prefix)) { res2.writeHead(404); return res2.end('{}'); }
+        const rest = req2.url.slice(prefix.length); const [pathPart, query] = rest.split('?');
+        if (req2.method === 'POST') {
+          const id = 'doc' + (fsNextId++); const full = pathPart + '/' + id;
+          fsStore.set(full, body.fields);
+          res2.writeHead(200, { 'Content-Type': 'application/json' });
+          return res2.end(JSON.stringify({ name: `projects/${FS_PROJECT}/databases/(default)/documents/${full}`, fields: body.fields }));
+        }
+        if (req2.method === 'GET') {
+          const collPrefix = pathPart + '/';
+          const docs = [...fsStore.entries()].filter(([k]) => k.startsWith(collPrefix) && !k.slice(collPrefix.length).includes('/')).map(([k, fields]) => ({ name: `projects/${FS_PROJECT}/databases/(default)/documents/${k}`, fields }));
+          res2.writeHead(200, { 'Content-Type': 'application/json' });
+          return res2.end(JSON.stringify({ documents: docs }));
+        }
+        if (req2.method === 'PATCH') {
+          if (!fsStore.has(pathPart)) { res2.writeHead(404); return res2.end(JSON.stringify({ error: { message: 'no doc' } })); }
+          const existing = fsStore.get(pathPart);
+          const mask = (query || '').split('&').filter(s => s.startsWith('updateMask.fieldPaths=')).map(s => decodeURIComponent(s.split('=')[1]));
+          for (const k of mask) existing[k] = body.fields[k];
+          fsStore.set(pathPart, existing);
+          res2.writeHead(200, { 'Content-Type': 'application/json' });
+          return res2.end(JSON.stringify({ name: `projects/${FS_PROJECT}/databases/(default)/documents/${pathPart}`, fields: existing }));
+        }
+        if (req2.method === 'DELETE') {
+          if (!fsStore.has(pathPart)) { res2.writeHead(404); return res2.end(JSON.stringify({ error: { message: 'not found' } })); }
+          fsStore.delete(pathPart); res2.writeHead(204); return res2.end();
+        }
+        res2.writeHead(404); res2.end('{}');
+      });
+    });
+    await new Promise(r2 => fsSrv.listen(0, '127.0.0.1', r2));
+    const billsEnv = {
+      GOOGLE_CLIENT_ID: BILLS_CLIENT_ID, FIRESTORE_PROJECT_ID: FS_PROJECT,
+      FIRESTORE_BASE: `http://127.0.0.1:${fsSrv.address().port}`,
+      GOOGLE_CERTS_URL: `http://127.0.0.1:${certsSrv.address().port}/certs`,
+      GOOGLE_ACCESS_TOKEN: 'fake-server-side-token', GEMINI_API_KEY: '',
+    };
+    await start(P + 6, billsEnv);
+    r = await req(P + 6, 'GET', '/api/config'); ok(JSON.parse(text(r)).bills === true && JSON.parse(text(r)).googleClientId === BILLS_CLIENT_ID, '/api/config reports bills on, with the (non-secret) client id');
+
+    r = await req(P + 6, 'GET', '/api/bills'); ok(r.status === 401, 'no Authorization header: 401');
+    r = await req(P + 6, 'GET', '/api/bills', { headers: { Authorization: 'Bearer not-a-real-jwt' } }); ok(r.status === 401, 'a garbage bearer token: 401');
+    r = await req(P + 6, 'GET', '/api/bills', { headers: { Authorization: 'Bearer ' + mintToken('alice', { aud: 'someone-else' }) } });
+    ok(r.status === 401, "a token minted for a DIFFERENT app's client id: 401");
+
+    const aliceAuth = { Authorization: 'Bearer ' + mintToken('alice-sub') };
+    r = await req(P + 6, 'GET', '/api/bills', { headers: aliceAuth });
+    ok(r.status === 200 && JSON.parse(text(r)).bills.length === 0, 'signed in with no saved bills yet: empty list');
+
+    r = await req(P + 6, 'POST', '/api/bills', { headers: { ...aliceAuth, 'Content-Type': 'application/json' }, body: JSON.stringify({ hospitalName: 'Test Hospital', netPayable: 41396, explainedPct: 22, status: 'sent', ignoredField: 'should not be stored' }) });
+    ok(r.status === 201, 'creating a bill while signed in: 201');
+    const created = JSON.parse(text(r)).bill;
+    ok(created.hospitalName === 'Test Hospital' && created.netPayable === 41396, 'the created bill has the fields we sent');
+    ok(created.ignoredField === undefined, 'a field outside the allow-list is silently dropped, never stored');
+    ok(typeof created.savedAt === 'string' && created.savedAt.length > 0, 'savedAt is set by the server');
+
+    const bobAuth = { Authorization: 'Bearer ' + mintToken('bob-sub') };
+    r = await req(P + 6, 'GET', '/api/bills', { headers: bobAuth });
+    ok(r.status === 200 && JSON.parse(text(r)).bills.length === 0, "a different signed-in user (bob) does not see alice's bill");
+
+    r = await req(P + 6, 'PATCH', '/api/bills/' + created.id, { headers: { ...bobAuth, 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'resolved' }) });
+    ok(r.status === 404, "bob cannot update alice's bill (scoped by uid in the Firestore path, so it's simply not found under bob's uid)");
+
+    r = await req(P + 6, 'PATCH', '/api/bills/' + created.id, { headers: { ...aliceAuth, 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'insurer_responded', note: 'Refunded ₹1,200', netPayable: 999999 }) });
+    ok(r.status === 200, 'alice can update her own bill');
+    const patched = JSON.parse(text(r)).bill;
+    ok(patched.status === 'insurer_responded' && patched.note === 'Refunded ₹1,200', 'status and note were updated');
+    ok(patched.netPayable === 41396, 'netPayable is NOT patchable (outside the allow-list) — the original saved amount is untouched even though it was sent in the request body');
+
+    r = await req(P + 6, 'DELETE', '/api/bills/' + created.id, { headers: bobAuth });
+    ok(r.status === 500 || r.status === 404, "bob deleting alice's bill id fails (not found under bob's own uid)");
+    r = await req(P + 6, 'GET', '/api/bills', { headers: aliceAuth });
+    ok(JSON.parse(text(r)).bills.length === 1, "...and alice's bill is still there");
+
+    r = await req(P + 6, 'DELETE', '/api/bills/' + created.id, { headers: aliceAuth });
+    ok(r.status === 200, 'alice deletes her own bill');
+    r = await req(P + 6, 'GET', '/api/bills', { headers: aliceAuth });
+    ok(JSON.parse(text(r)).bills.length === 0, 'it is gone');
+
+    console.log('== My Bills: payload size limit');
+    r = await req(P + 6, 'POST', '/api/bills', { headers: { ...aliceAuth, 'Content-Type': 'application/json' }, body: JSON.stringify({ letter: 'x'.repeat(300 * 1024) }) });
+    ok(r.status === 413, 'an oversized bill record is refused with 413, not silently truncated or dropped');
+
+    certsSrv.close(); fsSrv.close();
   } finally {
     servers.forEach(s => s.kill()); mock.close();
   }
