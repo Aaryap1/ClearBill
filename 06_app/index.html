@@ -2627,7 +2627,12 @@ async function processQueuedFiles(){
       const s=Math.round((Date.now()-pos.t)/1000), TT=S();
       setStatus(TT.reading_page(pos.i+1,pos.n)+(s>=20?' '+TT.still_trying:''));
     },1000);
-    const results=await readPages(files,{
+    // Downscaled copies, not the originals — same order, same length, so every
+    // index below (thumbnails, results[i], fileKey-based caching) still lines
+    // up with _pendingFiles exactly as before. _pendingFiles itself keeps the
+    // originals, so the on-screen thumbnails stay full quality.
+    const toSend=await Promise.all(files.map(downscaleImage));
+    const results=await readPages(toSend,{
       key,useProxy:USE_PROXY,proxyState:_proxyState,fetchFn:(u,o)=>fetch(u,o),toB64,stripFence,directRequest,
       cache:_pageCache,signal:_readAbort.signal,timeoutMs:READ_TIMEOUT_MS,
       onProgress:(i,n)=>{ pos={i,n,t:Date.now()}; setStatus(S().reading_page(i+1,n)); }
@@ -2680,6 +2685,40 @@ $('checkPhotosBtn').addEventListener('click',processQueuedFiles);
 $('cancelReadBtn').addEventListener('click',()=>{ if(_readAbort) _readAbort.abort(); });
 const toB64=file=>new Promise((ok,no)=>{ const r=new FileReader(); r.onload=()=>ok(String(r.result).split(',')[1]); r.onerror=no; r.readAsDataURL(file); });
 const stripFence=s=>s.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');
+
+// Resizes a photo before it's sent to be read, so a large phone photo (often
+// 8-16 MP) uploads and reads faster, especially on a slow connection — this
+// was on the project's own backlog, held back until it could be checked
+// against real bill photos. Caps the longest side at DOWNSCALE_MAX_DIM and
+// re-encodes as JPEG, comfortably above what Gemini needs to read printed or
+// handwritten bill text (checked against the real redacted test bill — see
+// the R10 change-log entry for the before/after extraction diff).
+// Falls back to the ORIGINAL, untouched file on any failure (an unsupported
+// format, no canvas support, a photo already small or already compressed
+// smaller than our output would be) — a slower upload is fine; a silently
+// broken one is not. The returned File keeps the original's name and
+// lastModified, so fileKey() (dedup, the retry cache) still works across a
+// retry of the same photo — only the bytes and the reported mime type change.
+const DOWNSCALE_MAX_DIM=1900, DOWNSCALE_QUALITY=0.86;
+async function downscaleImage(file){
+  try{
+    if(typeof createImageBitmap!=='function') return file;
+    const bitmap=await createImageBitmap(file);
+    const w=bitmap.width, h=bitmap.height, longSide=Math.max(w,h);
+    if(!longSide||longSide<=DOWNSCALE_MAX_DIM){ if(bitmap.close) bitmap.close(); return file; }
+    const scale=DOWNSCALE_MAX_DIM/longSide;
+    const nw=Math.max(1,Math.round(w*scale)), nh=Math.max(1,Math.round(h*scale));
+    const canvas=document.createElement('canvas');
+    canvas.width=nw; canvas.height=nh;
+    const ctx=canvas.getContext('2d');
+    if(!ctx){ if(bitmap.close) bitmap.close(); return file; }
+    ctx.drawImage(bitmap,0,0,nw,nh);
+    if(bitmap.close) bitmap.close();
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',DOWNSCALE_QUALITY));
+    if(!blob||blob.size>=file.size) return file; // never send something no smaller than the original
+    return new File([blob],file.name||'photo.jpg',{type:'image/jpeg',lastModified:file.lastModified||Date.now()});
+  }catch(e){ return file; }
+}
 
 /* language switch */
 function applyStaticI18n(){

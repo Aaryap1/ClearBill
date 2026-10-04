@@ -20,14 +20,16 @@ const srv = http.createServer((q, r) => { if (q.url.split('?')[0] === '/') { r.w
 
 // Installed before the app's own script runs.
 const STUB = `
-  window.__calls = []; window.__cfgDelay = 0; window.__mode = 'ok'; window.__delay = 0;
+  window.__calls = []; window.__dataLens = []; window.__cfgDelay = 0; window.__mode = 'ok'; window.__delay = 0;
   const realFetch = window.fetch; const wait = ms => new Promise(r => setTimeout(r, ms));
   const GOOD = JSON.stringify({ is_hospital_bill: true, header: {}, line_items: [{ item: 'BED CHARGES', quantity: 1, rate: 100, total: 100 }] });
   window.fetch = async (u, o) => {
     u = String(u);
     if (u.includes('api/config')) { await wait(window.__cfgDelay); return new Response(JSON.stringify({ proxy: true }), { status: 200 }); }
     if (u.includes('api/read-bill')) {
-      window.__calls.push(o && o.body ? JSON.parse(o.body).mime_type : '?');
+      const b = o && o.body ? JSON.parse(o.body) : null;
+      window.__calls.push(b ? b.mime_type : '?');
+      window.__dataLens.push(b ? b.data.length : 0); // base64 length actually sent — used by the downscale tests
       if (window.__delay) await wait(window.__delay);
       if (window.__mode === 'hang') return new Promise((_, rej) => o.signal.addEventListener('abort', () => rej(Object.assign(new Error('aborted'), { name: 'AbortError' }))));
       if (window.__mode === '504') return new Response(JSON.stringify({ error: 'timeout' }), { status: 504 });
@@ -36,6 +38,17 @@ const STUB = `
     return realFetch(u, o);
   };
   window.__mk = (name, type, lm) => new File([new Blob(['x'])], name, { type, lastModified: lm || 1 });
+  // A REAL, decodable JPEG at genuine pixel dimensions (unlike __mk's 1-byte
+  // stub) — createImageBitmap can only be exercised against real image bytes,
+  // so the downscale tests need this instead.
+  window.__mkImg = (w, h, name, lm) => new Promise(resolve => {
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#000000'; ctx.font = (Math.round(h / 20)) + 'px sans-serif';
+    ctx.fillText('TEST BILL ' + w + 'x' + h, 20, 40);
+    c.toBlob(blob => resolve(new File([blob], name || 'big.jpg', { type: 'image/jpeg', lastModified: lm || 1 })), 'image/jpeg', 0.92);
+  });
 `;
 
 (async () => {
@@ -209,6 +222,37 @@ const STUB = `
     ok(/cover or crop your name, address and ID numbers/.test(lead) && /list them as missing/.test(lead), 'it says the personal details can be covered, and what that does to the completeness check');
     await ev(`setLang('hi');`); ok(/मुफ़्त योजना/.test(await ev(`return document.getElementById('billLead').textContent`)), 'the notice is in Hindi too');
     await ev(`setLang('en');`);
+
+    console.log('== downscale: large photos are resized before upload (R10)');
+    await fresh();
+    const dimsOf = async (fileExpr) => ev(`const bmp = await createImageBitmap(${fileExpr}); const d = {w: bmp.width, h: bmp.height}; bmp.close && bmp.close(); return d;`);
+    await ev(`window.__big = await __mkImg(3000, 2000, 'orig.jpg', 101);`);
+    const bigSize = await ev(`return window.__big.size`);
+    const bigDims = await dimsOf('window.__big');
+    ok(bigDims.w === 3000 && bigDims.h === 2000, 'sanity: the synthetic test photo really is 3000x2000');
+    await ev(`window.__small_out = await downscaleImage(window.__big);`);
+    const smallOut = await dimsOf('window.__small_out');
+    const smallOutMeta = await ev(`return {type: window.__small_out.type, name: window.__small_out.name, lm: window.__small_out.lastModified, size: window.__small_out.size, sameRef: window.__small_out === window.__big}`);
+    ok(Math.max(smallOut.w, smallOut.h) <= 1900, `a photo over the cap is resized so its long side is <= 1900px (got ${smallOut.w}x${smallOut.h})`);
+    ok(Math.abs(smallOut.w / smallOut.h - 3000 / 2000) < 0.01, 'the aspect ratio is preserved');
+    ok(smallOutMeta.type === 'image/jpeg' && !smallOutMeta.sameRef, 'the result is a new JPEG file, not the original reference');
+    ok(smallOutMeta.size < bigSize, `the resized file is smaller (${smallOutMeta.size} vs ${bigSize} bytes)`);
+    ok(smallOutMeta.name === 'orig.jpg' && smallOutMeta.lm === 101, "the original file's name and lastModified are kept (so fileKey/dedup still work across a retry)");
+
+    await ev(`window.__sm = await __mkImg(800, 600, 'small.jpg', 202);`);
+    const untouched = await ev(`window.__sm_out = await downscaleImage(window.__sm); return window.__sm_out === window.__sm;`);
+    ok(untouched === true, 'a photo already under the cap is returned completely untouched (no needless re-encoding)');
+
+    console.log('== downscale: actually wired into the real upload (not just the standalone function)');
+    await fresh();
+    await ev(`window.__big2 = await __mkImg(3200, 2400, 'phone_photo.jpg', 303);`);
+    const origB64Len = await ev(`const r = await toB64(window.__big2); return r.length;`);
+    await ev(`addFiles([window.__big2]); document.getElementById('checkPhotosBtn').click();`);
+    await sleep(600);
+    const sentMime = await ev(`return window.__calls[0]`);
+    const sentLen = await ev(`return window.__dataLens[0]`);
+    ok(sentMime === 'image/jpeg', 'the real upload path sends image/jpeg for the (downscaled) photo');
+    ok(sentLen < origB64Len * 0.8, `the real upload sends meaningfully less data than the undownscaled original (${sentLen} vs ${origB64Len} base64 chars)`);
 
     console.log('== Hindi errors');
     await fresh();
