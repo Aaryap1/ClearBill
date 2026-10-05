@@ -25,6 +25,7 @@ function mkErr(kind,status){ const e=new Error(kind); e.kind=kind; if(status) e.
 function kindForStatus(status,direct,code){
   if(status===429) return direct?'quota':'busy';
   if(direct){ if(status===400||status===401||status===403) return 'key'; return status>=500?'server':'unreadable'; }
+  if(code==='broken') return 'broken';   // the free service's own key or model was refused (R16)
   if(status===413) return 'toolarge';
   if(status===415) return 'unsupported';
   if(status===504) return 'timeout';
@@ -48,7 +49,7 @@ async function readOnePage(file,o){
       const res=await o.fetchFn('api/read-bill',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mime_type:mime,data:b64}),signal:ac.signal});
       txt=await res.text();
       if(!res.ok){ let code=''; try{ code=JSON.parse(txt).error||''; }catch(e){}
-        const kind=kindForStatus(res.status,false,code); if(kind==='busy') o.proxyState.busy=true; throw mkErr(kind,res.status); }
+        const kind=kindForStatus(res.status,false,code); if(kind==='busy'||kind==='broken') o.proxyState.busy=true; throw mkErr(kind,res.status); }
     } else {
       const dr=o.directRequest(o.key,mime,b64);
       const res=await o.fetchFn(dr.url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dr.body),signal:ac.signal});
@@ -85,7 +86,7 @@ async function readPages(files,o){
       streak=(kind==='timeout'||kind==='server')?streak+1:0;
       // Stop early when going on cannot help: cancelled, offline, busy, a bad key,
       // or two slow/failed pages in a row (do not make someone wait 100 s per page).
-      if(kind==='cancelled'||kind==='offline'||kind==='busy'||kind==='key'||kind==='quota'||streak>=2){
+      if(kind==='cancelled'||kind==='offline'||kind==='busy'||kind==='broken'||kind==='key'||kind==='quota'||streak>=2){
         for(let j=i+1;j<files.length;j++) if(!results[j]) results[j]={status:'skipped',kind};
         break;
       }

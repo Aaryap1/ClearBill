@@ -358,7 +358,6 @@
   a{color:var(--red)}
   :focus-visible{outline:2px solid var(--red);outline-offset:2px}
 </style>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -1206,6 +1205,9 @@ en: {
   impact_line:(nf,n,amt,since)=>`<b>${nf}</b> bill page${n===1?'':'s'} read by the free reading service since ${since}${amt?` &middot; <b>${amt}</b> in charges matching IRDAI's published lists`:''}`,
   reader_busy:"The free reading service has reached today's limit. You can still read your bill with your own free Gemini key (paste it in the box below), or try again tomorrow.",
   reader_overloaded:"Google's reading service has been overloaded in the last few minutes, so reading a photo may fail right now. If it does, try again a little later.",
+  reader_broken:"The free reading service is not working right now (the problem is on our side, not with your photo). You can still read your bill with your own free Gemini key: paste it in the box below.",
+  broken_byo:"The free reading service is not working right now. Paste your own free Gemini key below and tap Check again.",
+  mybills_limit:n=>`You have ${n} saved bills, the most an account can keep. Delete some you no longer need, then save again.`,
   share_findings_btn:"Share findings",
   share_findings_text:(exactN,exactSum,nppaN,dupN,reconTxt,url)=>`ClearBill checked my hospital bill against India's published rules.${exactN?` ${exactN} charge(s) match the IRDAI non-payable list (${exactSum}).`:''}${nppaN?` ${nppaN} implant charge(s) flagged against NPPA ceilings.`:''}${dupN?` ${dupN} duplicate charge(s) found.`:''}${reconTxt?` ${reconTxt}`:''} Check your own bill free: ${url}`,
   share_findings_recon:diff=>`A ${diff} gap in the bill's own arithmetic.`,
@@ -1516,6 +1518,9 @@ hi: {
   impact_line:(nf,n,amt,since)=>`${since} से मुफ़्त रीडिंग सेवा ने बिल के <b>${nf}</b> पेज़ पढ़े${amt?` &middot; IRDAI की प्रकाशित सूचियों से मेल खाते चार्ज: <b>${amt}</b>`:''}`,
   reader_busy:"मुफ़्त रीडिंग सेवा आज की सीमा तक पहुँच गई है। आप अपनी मुफ़्त Gemini key से अब भी बिल पढ़ सकते हैं (नीचे दिए बॉक्स में डालें), या कल फिर कोशिश करें।",
   reader_overloaded:"पिछले कुछ मिनटों से Google की रीडिंग सेवा पर बहुत ज़्यादा भार है, इसलिए अभी फ़ोटो पढ़ना नाकाम हो सकता है। ऐसा हो तो थोड़ी देर बाद फिर कोशिश करें।",
+  reader_broken:"मुफ़्त रीडिंग सेवा अभी काम नहीं कर रही है (समस्या हमारी तरफ़ है, आपकी फ़ोटो में नहीं)। आप अपनी मुफ़्त Gemini key से अब भी बिल पढ़ सकते हैं (नीचे दिए बॉक्स में डालें)।",
+  broken_byo:"मुफ़्त पढ़ने की सेवा अभी काम नहीं कर रही है। नीचे अपनी मुफ़्त Gemini key डालकर फिर से Check दबाएँ।",
+  mybills_limit:n=>`आपके ${n} सहेजे गए बिल हैं, जो एक खाते की सीमा है। जिनकी अब ज़रूरत नहीं है उन्हें मिटाएँ, फिर दोबारा सहेजें।`,
   share_findings_btn:"जाँचें शेयर करें",
   share_findings_text:(exactN,exactSum,nppaN,dupN,reconTxt,url)=>`ClearBill ने मेरे अस्पताल के बिल की जाँच भारत के प्रकाशित नियमों से की।${exactN?` ${exactN} चार्ज IRDAI की न-भुगतान सूची से मेल खाते हैं (${exactSum}).`:''}${nppaN?` ${nppaN} इम्प्लांट चार्ज NPPA सीमा के विरुद्ध चिन्हित हुए।`:''}${dupN?` ${dupN} दोहरे चार्ज मिले।`:''}${reconTxt?` ${reconTxt}`:''} अपना बिल मुफ़्त जाँचें: ${url}`,
   share_findings_recon:diff=>`बिल की अपनी गणना में ${diff} का अंतर।`,
@@ -1827,6 +1832,9 @@ mr: {
   impact_line:(nf,n,amt,since)=>`${since} पासून मोफत वाचन सेवेने बिलाची <b>${nf}</b> पानं वाचली${amt?` &middot; IRDAI च्या प्रकाशित यादींशी जुळणारे चार्जेस: <b>${amt}</b>`:''}`,
   reader_busy:"मोफत वाचन सेवेने आजची मर्यादा गाठली आहे. तुम्ही तुमच्या मोफत Gemini key ने अजूनही बिल वाचू शकता (खालच्या बॉक्समध्ये टाका), किंवा उद्या पुन्हा प्रयत्न करा.",
   reader_overloaded:"गेल्या काही मिनिटांपासून Google च्या वाचन सेवेवर खूप भार आहे, त्यामुळे आत्ता फोटो वाचणं अयशस्वी होऊ शकतं. तसं झालं तर थोड्या वेळाने पुन्हा प्रयत्न करा.",
+  reader_broken:"मोफत वाचन सेवा सध्या काम करत नाही (अडचण आमच्या बाजूला आहे, तुमच्या फोटोमध्ये नाही). तुम्ही तुमच्या मोफत Gemini key ने अजूनही बिल वाचू शकता (खालच्या बॉक्समध्ये टाका).",
+  broken_byo:"मोफत वाचन सेवा सध्या काम करत नाही. खाली तुमची स्वतःची मोफत Gemini key टाकून पुन्हा Check दाबा.",
+  mybills_limit:n=>`तुमची ${n} बिले जतन आहेत, ही एका खात्याची मर्यादा आहे. ज्यांची आता गरज नाही ती पुसा, मग पुन्हा जतन करा.`,
   share_findings_btn:"तपासण्या शेअर करा",
   share_findings_text:(exactN,exactSum,nppaN,dupN,reconTxt,url)=>`ClearBill ने माझं रुग्णालयाचं बिल भारताच्या प्रकाशित नियमांविरुद्ध तपासलं.${exactN?` ${exactN} चार्ज IRDAI च्या न-भरपाई यादीशी जुळतात (${exactSum}).`:''}${nppaN?` ${nppaN} इम्प्लांट चार्ज NPPA मर्यादेविरुद्ध चिन्हांकित झाले.`:''}${dupN?` ${dupN} दुहेरी चार्ज सापडले.`:''}${reconTxt?` ${reconTxt}`:''} तुमचं बिल मोफत तपासा: ${url}`,
   share_findings_recon:diff=>`बिलाच्या स्वतःच्या बेरजेत ${diff} चा फरक.`,
@@ -2759,6 +2767,7 @@ function mkErr(kind,status){ const e=new Error(kind); e.kind=kind; if(status) e.
 function kindForStatus(status,direct,code){
   if(status===429) return direct?'quota':'busy';
   if(direct){ if(status===400||status===401||status===403) return 'key'; return status>=500?'server':'unreadable'; }
+  if(code==='broken') return 'broken';   // the free service's own key or model was refused (R16)
   if(status===413) return 'toolarge';
   if(status===415) return 'unsupported';
   if(status===504) return 'timeout';
@@ -2782,7 +2791,7 @@ async function readOnePage(file,o){
       const res=await o.fetchFn('api/read-bill',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mime_type:mime,data:b64}),signal:ac.signal});
       txt=await res.text();
       if(!res.ok){ let code=''; try{ code=JSON.parse(txt).error||''; }catch(e){}
-        const kind=kindForStatus(res.status,false,code); if(kind==='busy') o.proxyState.busy=true; throw mkErr(kind,res.status); }
+        const kind=kindForStatus(res.status,false,code); if(kind==='busy'||kind==='broken') o.proxyState.busy=true; throw mkErr(kind,res.status); }
     } else {
       const dr=o.directRequest(o.key,mime,b64);
       const res=await o.fetchFn(dr.url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dr.body),signal:ac.signal});
@@ -2819,7 +2828,7 @@ async function readPages(files,o){
       streak=(kind==='timeout'||kind==='server')?streak+1:0;
       // Stop early when going on cannot help: cancelled, offline, busy, a bad key,
       // or two slow/failed pages in a row (do not make someone wait 100 s per page).
-      if(kind==='cancelled'||kind==='offline'||kind==='busy'||kind==='key'||kind==='quota'||streak>=2){
+      if(kind==='cancelled'||kind==='offline'||kind==='busy'||kind==='broken'||kind==='key'||kind==='quota'||streak>=2){
         for(let j=i+1;j<files.length;j++) if(!results[j]) results[j]={status:'skipped',kind};
         break;
       }
@@ -3063,7 +3072,7 @@ async function processQueuedFiles(){
     if(notRead){
       _failedNow=notRead;
       const kind=(failed[0]&&failed[0].kind)||skippedKind||'server';
-      if(kind==='busy'){ $('keyRow').classList.remove('hide'); $('apiKey').focus(); setStatus(T2.busy_byo+(readCount?' '+T2.read_kept:''),true); }
+      if(kind==='busy'||kind==='broken'){ $('keyRow').classList.remove('hide'); $('apiKey').focus(); setStatus((kind==='broken'?T2.broken_byo:T2.busy_byo)+(readCount?' '+T2.read_kept:''),true); }
       else if(kind==='cancelled') setStatus(T2.read_cancelled,true);
       else setStatus((failed.length?T2.read_partial_fail(readCount,files.length,failed.map(f=>f.n).join(', '),failed.length)+' ':'')+T2[READ_ERR_KEYS[kind]||'read_err_server']+(results.some(r=>r.status==='skipped')?' '+T2.read_not_tried:''),true);
       if(!hadReport) report.innerHTML=''; else setStatus(status_with(T2.stale_note),true);
@@ -3383,10 +3392,14 @@ function initGoogleSignIn(){
   if(document.getElementById('page-mybills').classList.contains('on')) renderGsiTabButton();
   if(ID_TOKEN) refreshMyBills();
 }
+// Google's sign-in library is loaded only when this server has sign-in
+// switched on, and only once the page itself has finished loading, so it
+// never competes with the first view of the app (R16; it used to be a script
+// tag that every visitor downloaded).
 configReady.then(()=>{
   if(!BILLS_ON){ renderAuthUI(); return; }
-  if(window.google&&google.accounts&&google.accounts.id) initGoogleSignIn();
-  else { const t=setInterval(()=>{ if(window.google&&google.accounts&&google.accounts.id){ clearInterval(t); initGoogleSignIn(); } },200); setTimeout(()=>clearInterval(t),10000); }
+  const go=()=>{ const sc=document.createElement('script'); sc.src='https://accounts.google.com/gsi/client'; sc.async=true; sc.onload=initGoogleSignIn; document.head.appendChild(sc); };
+  if(document.readyState==='complete') go(); else window.addEventListener('load',go,{once:true});
 });
 if($('signOutBtnHeader')) $('signOutBtnHeader').addEventListener('click',signOut);
 if($('signOutBtnTab')) $('signOutBtnTab').addEventListener('click',signOut);
@@ -3397,14 +3410,16 @@ function buildBillPayload(){
   const st=window.__settle; const ded=st?st.deduction:0;
   const H=data.header||{};
   return {
-    hospitalName:(typeof H.hospital_name==='string'&&H.hospital_name.trim())?H.hospital_name.trim():null,
-    billDate:H.bill_datetime||null,
-    netPayable:(H.net_payable!=null?H.net_payable:(st?st.total:null)),
+    // Typed and sized the way the server checks them (R16): the bill's own
+    // printed amount can come back as text ("41,396.00").
+    hospitalName:(typeof H.hospital_name==='string'&&H.hospital_name.trim())?H.hospital_name.trim().slice(0,200):null,
+    billDate:(H.bill_datetime!=null&&String(H.bill_datetime).trim())?String(H.bill_datetime).trim().slice(0,60):null,
+    netPayable:(()=>{ const v=parseAmount(H.net_payable).n; return v!=null&&v>=0&&v<=1e9?v:(st?st.total:null); })(),
     deduction:ded||null,
     explainedPct:ded>0?Math.min(100,Math.round((a.exactSum||0)/ded*100)):null,
     explainedAmt:a.exactSum||0,
     flagCounts:{listI:a.exact.length,listIIIV:a.subsumed.length,nppa:a.nppa.length,duplicates:(a.dups||[]).length},
-    letter:window.__lastLetterText||'',
+    letter:(window.__lastLetterText||'').slice(0,30000),
     status:'sent', note:''
   };
 }
@@ -3416,6 +3431,7 @@ async function saveBill(){
   try{
     const r=await authFetch('api/bills',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     if(r.status===401){ signOut(); throw new Error('unauthorized'); }
+    if(r.status===409){ let j={}; try{ j=await r.json(); }catch(e){} if(msg){ msg.textContent=T_.mybills_limit(j.max||100); msg.classList.remove('hide'); } return; }
     if(!r.ok) throw new Error('save failed');
     if(msg){ msg.textContent=T_.mybills_saved; msg.classList.remove('hide'); }
     refreshMyBills();
@@ -3451,7 +3467,7 @@ function renderMyBillsList(bills){
       +'<div class="bh"><span class="bn">'+esc(b.hospitalName||T_.mybills_unnamed)+'</span><span class="bd">'+esc(date)+'</span></div>'
       +'<div class="bstats"><span>'+esc(T_.kpi_explained)+': <b>'+esc(pct)+'</b></span>'+(amt?'<span>'+esc(T_.lbl_total_plain)+': <b>'+esc(amt)+'</b></span>':'')+'</div>'
       +'<select class="bstatus" aria-label="'+esc(T_.mybills_status_label)+'">'+opts+'</select>'
-      +'<textarea class="bnote" placeholder="'+esc(T_.mybills_note_ph)+'">'+esc(b.note||'')+'</textarea>'
+      +'<textarea class="bnote" maxlength="2000" placeholder="'+esc(T_.mybills_note_ph)+'">'+esc(b.note||'')+'</textarea>'
       +sentOnHtml(b.sentOn)
       +'<div class="brow-actions"><button class="link bdel" type="button">'+esc(T_.mybills_delete_btn)+'</button></div>'
       +'</div>';
@@ -3662,11 +3678,12 @@ function renderImpact(){
 }
 function renderReaderNote(){
   const el=$('readerNote'); if(!el) return;
-  const T_=S(), msg=!USE_PROXY?'':READER_STATE==='busy'?T_.reader_busy:READER_STATE==='overloaded'?T_.reader_overloaded:'';
+  const T_=S(), msg=!USE_PROXY?'':READER_STATE==='busy'?T_.reader_busy:READER_STATE==='broken'?T_.reader_broken:READER_STATE==='overloaded'?T_.reader_overloaded:'';
   el.textContent=msg; el.classList.toggle('hide',!msg);
-  // Out of free reads today: open the own-key box now and send a pasted key
-  // straight to Google, instead of a first attempt that can only fail.
-  if(USE_PROXY&&READER_STATE==='busy'){ _proxyState.busy=true; $('keyRow').classList.remove('hide'); }
+  // Out of free reads today, or the free reader is broken (R16): open the
+  // own-key box now and send a pasted key straight to Google, instead of a
+  // first attempt that can only fail.
+  if(USE_PROXY&&(READER_STATE==='busy'||READER_STATE==='broken')){ _proxyState.busy=true; $('keyRow').classList.remove('hide'); }
 }
 (async()=>{
   try{ const r=await fetch('api/impact'); if(r.ok){ _impact=await r.json(); renderImpact(); } }catch(e){ /* no line is better than a wrong one */ }

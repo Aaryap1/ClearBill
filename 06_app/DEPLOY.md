@@ -169,6 +169,24 @@ a hanging upstream call. Defaults are generous (60 calls / 10 min / IP, 600 /
 day) and can be changed with env vars `RATE_MAX_PER_IP`, `RATE_WINDOW_MS`,
 `DAILY_CAP`, `MAX_BODY_BYTES`, `UPSTREAM_TIMEOUT_MS`.
 
+Since R16 it also:
+- caps uploads at 10 MB (`MAX_BODY_BYTES`);
+- counts every POST, valid or not, toward `ATTEMPT_MAX_PER_IP` (120 per 10 minutes);
+- reads at most `READ_INFLIGHT_MAX` photos at once per instance (4). Others wait in a queue of `READ_QUEUE_MAX` (16) for up to `READ_QUEUE_WAIT_MS` (45 s), with their upload not yet read.
+- My Bills: limits a request to 40 KB (`BILLS_MAX_BODY_BYTES`), an account to `BILLS_MAX_PER_USER` saved bills (100), and saves plus edits to `BILLS_WRITES_PER_USER` per 10 minutes (60), and checks the type and length of every field.
+
+**Health and alerts.** `GET /api/health` answers 200 `{"ok":true}` while photos can be read. It answers 503 when there is no server key, or when Google refuses the key or the model. It checks this with Google's model-metadata call: no photo, no generation quota, at most once per 5 minutes per instance. Point the Cloud Monitoring uptime check at `/api/health` with the content check `"ok":true`, and the "site is down" alert then also fires for a revoked key or a retired model.
+
+**After every deploy** run the smoke test against the live URL. It reads no photo and saves nothing:
+```
+node lib/smoke.js https://<your-service-url>
+```
+
+**Billing alert.** A budget of ₹1 on the billing account emails the billing admins the moment anything is charged. Budgets are free:
+```
+gcloud billing budgets create --billing-account=<ACCOUNT_ID> --display-name="ClearBill: any charge" --budget-amount=1INR --threshold-rule=percent=0.5 --threshold-rule=percent=1.0
+```
+
 These counters live in memory: every Cloud Run instance counts separately and
 they reset when an instance restarts. They reduce abuse; they are not a quota.
 **The hard backstop is a daily quota on the key itself** (free, set once):

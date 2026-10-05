@@ -134,10 +134,18 @@ console.log('== 5. photo-reading logic (mock fetch)');
 
 console.log('== 5b. reading flow on screen (real page, stubbed network)');
 {
+  // A skipped screen test is a failed gate (R16): it used to print SKIPPED
+  // and let the release through with none of these checks run.
   const r = spawnSync(process.execPath, ['--experimental-websocket', path.join(__dirname, 'test_browser_reader.js')], { cwd: APP, encoding: 'utf8', timeout: 240000 });
   const out = (r.stdout || '').trim(), last = out.split('\n').pop();
-  if (/SKIPPED/.test(out)) console.log('  ' + last);
-  else ok(r.status === 0, 'test_browser_reader.js - ' + last, r.status === 0 ? '' : (out.split('\n').filter(l => /FAIL/.test(l)).join('\n') || r.stderr).slice(-800));
+  ok(r.status === 0 && !/SKIPPED/.test(out), 'test_browser_reader.js - ' + last, r.status === 0 && !/SKIPPED/.test(out) ? '' : (out.split('\n').filter(l => /FAIL|SKIPPED/.test(l)).join('\n') || r.stderr).slice(-800));
+}
+
+console.log('== 5c. the page under its real security policy (real server, headless Chrome)');
+{
+  const r = spawnSync(process.execPath, ['--experimental-websocket', path.join(__dirname, 'test_browser_csp.js')], { cwd: APP, encoding: 'utf8', timeout: 180000 });
+  const out = (r.stdout || '').trim(), last = out.split('\n').pop();
+  ok(r.status === 0 && !/SKIPPED/.test(out), 'test_browser_csp.js - ' + last, r.status === 0 && !/SKIPPED/.test(out) ? '' : (out.split('\n').filter(l => /FAIL|SKIPPED/.test(l)).join('\n') || r.stderr).slice(-800));
 }
 
 console.log('== 4. server protections');

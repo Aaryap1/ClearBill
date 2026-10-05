@@ -14,7 +14,17 @@
  *  - per-IP and per-day request caps that answer with an honest 429 "busy"
  *    (the app then offers "use your own free key") — never a silent failure;
  *  - a timeout on the upstream call, and it never forwards Google's raw error
- *    bodies to the browser.
+ *    bodies to the browser;
+ *  - (R16) at most READ_INFLIGHT_MAX photos are read at once per instance;
+ *    later ones wait in a short queue with their upload not yet read, so a
+ *    burst cannot fill the instance's 512 MiB with photo bodies;
+ *  - (R16) every POST counts toward a per-IP attempts limit, including
+ *    malformed and oversized ones that never reach the paid call;
+ *  - (R16) a revoked key or retired model is detected (from real reads and
+ *    from a free metadata check at /api/health) and reported as "broken", so
+ *    the page can offer the own-key route and the uptime check can alert;
+ *  - (R16) security headers on every response, and a hash-based Content
+ *    Security Policy on the page, so only its own script can run.
  * The caps live in memory: each Cloud Run instance counts separately and the
  * counters reset when an instance restarts. They limit abuse; they are not an
  * exact quota. The hard backstop is the daily quota you can set on the key in
@@ -43,17 +53,26 @@ const ROOT = __dirname;
 // feature quietly stays off (see /api/config) rather than erroring.
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const BILLS_ON = !!(GOOGLE_CLIENT_ID && process.env.FIRESTORE_PROJECT_ID);
-const BILLS_MAX_BODY = Number(process.env.BILLS_MAX_BODY_BYTES) || 256 * 1024; // one saved bill; Firestore's own doc limit is 1 MiB
-const BILLS_IP_MAX = Number(process.env.BILLS_RATE_MAX_PER_IP) || 120; // generous — this is free Firestore reads/writes, not a paid call
+// One saved bill is about 4 KB (the worked example's 63-line bill: a 3,317-
+// character letter, 3.6 KB in all); 40 KB leaves room for a very long bill's
+// letter while keeping each request small (R16 — it was 256 KB).
+const BILLS_MAX_BODY = Number(process.env.BILLS_MAX_BODY_BYTES) || 40 * 1024;
+const BILLS_IP_MAX = Number(process.env.BILLS_RATE_MAX_PER_IP) || 240; // free Firestore reads/writes, not a paid call; "delete all" of 100 bills is 100 requests
 const BILLS_IP_WINDOW_MS = Number(process.env.BILLS_RATE_WINDOW_MS) || 10 * 60 * 1000;
+const BILLS_MAX_PER_USER = Number(process.env.BILLS_MAX_PER_USER) || 100;    // saved bills per Google account
+const UID_WRITE_MAX = Number(process.env.BILLS_WRITES_PER_USER) || 60;       // saves and edits per account per window
 
 // Limits. Generous on purpose: many phones share one carrier IP, and a
-// 6-page bill is 6 calls. Kept at the previous 20 MB body limit until the app
-// downscales photos before upload — tightening it earlier would start
-// rejecting phone photos that work today.
-const MAX_BODY = Number(process.env.MAX_BODY_BYTES) || 20 * 1024 * 1024;
+// 6-page bill is 6 calls. The app now shrinks photos to at most 1900 px
+// before upload (R10), so a page is typically well under 1 MB; 10 MB still
+// fits a photo the browser could not shrink (R16 — it was 20 MB).
+const MAX_BODY = Number(process.env.MAX_BODY_BYTES) || 10 * 1024 * 1024;
 const IP_MAX = Number(process.env.RATE_MAX_PER_IP) || 60;            // calls per window
 const IP_WINDOW_MS = Number(process.env.RATE_WINDOW_MS) || 10 * 60 * 1000;
+const ATTEMPT_MAX = Number(process.env.ATTEMPT_MAX_PER_IP) || 120;   // every POST, valid or not, per window
+const READ_INFLIGHT_MAX = Number(process.env.READ_INFLIGHT_MAX) || 4; // photos read at the same time, per instance
+const READ_QUEUE_MAX = Number(process.env.READ_QUEUE_MAX) || 16;     // photos waiting for a turn
+const READ_QUEUE_WAIT_MS = Number(process.env.READ_QUEUE_WAIT_MS) || 45 * 1000;
 const DAILY_CAP = Number(process.env.DAILY_CAP) || 600;              // calls per UTC day, per instance
 const UPSTREAM_TIMEOUT_MS = Number(process.env.UPSTREAM_TIMEOUT_MS) || 90 * 1000;
 
@@ -77,8 +96,20 @@ Use null for any field not present on the bill. Keep negative amounts negative.
 {"is_hospital_bill":true,"header":{"hospital_name":null,"hospital_address":null,"hospital_gstin":null,"hospital_contact":null,"hospital_registration":null,"hospital_accreditation":null,"bill_number":null,"bill_datetime":null,"patient_name":null,"patient_age":null,"patient_gender":null,"patient_hospital_id":null,"patient_uhid":null,"patient_address":null,"patient_gstin":null,"admission_datetime":null,"discharge_datetime":null,"admission_type":null,"gross_amount":null,"discount_amount":null,"tax_amount":null,"net_payable":null,"payment_mode":null,"insurance_info":null,"patient_signature":false,"authorised_signature":false},"line_items":[{"item":"","unit":null,"quantity":0,"rate":0,"total":0,"section":""}],"printed_subtotals":{}}
 Rules: one line_items object per charge row; "section" = the section heading it sits under; "unit" = null if the bill has no unit column; "printed_subtotals" = each "Total for <section>" figure printed on the bill, copied even if it does not match the sum of the lines. "patient_signature" / "authorised_signature" = true only if that signature block is visibly present on the page. A cover letter, TPA authorisation letter, or payment receipt that is NOT itself an itemised charge listing should also get "is_hospital_bill": false — those are valid hospital documents, just not the bill this tool checks. Numbers as numbers, no symbols, no commas.`;
 
+// On every response (R16). nosniff: a JSON or text answer is never run as a
+// script. DENY + frame-ancestors (in the CSP): the page cannot be framed by
+// another site. The referrer sent to other sites is just this origin.
+// same-origin-allow-popups keeps Google's sign-in popup working.
+const SECURITY_HEADERS = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Strict-Transport-Security': 'max-age=31536000',
+  'Permissions-Policy': 'geolocation=(), microphone=(), camera=(), payment=()',
+  'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+};
 function send(res, code, body, type, extra) {
-  res.writeHead(code, { 'Content-Type': type || 'text/plain; charset=utf-8', ...(extra || {}) });
+  res.writeHead(code, { ...SECURITY_HEADERS, 'Content-Type': type || 'text/plain; charset=utf-8', ...(extra || {}) });
   res.end(body);
 }
 function sendJson(res, code, obj, extra) { send(res, code, JSON.stringify(obj), TYPES['.json'], extra); }
@@ -112,7 +143,42 @@ function admit(req, count) {
   }
   return { ok: true };
 }
-const BUSY = { error: 'busy', message: 'The free reading service is busy right now. Try again in a few minutes, or use your own free Gemini key.' };
+// A sliding-window counter: records one hit for `key` and says whether it is
+// still within `max` hits per `windowMs`.
+function slide(map, key, max, windowMs) {
+  const now = Date.now();
+  const recent = (map.get(key) || []).filter(t => now - t < windowMs);
+  if (recent.length >= max) { map.set(key, recent); return false; }
+  recent.push(now); map.set(key, recent);
+  if (map.size > 5000) for (const [k, v] of map) if (!v.some(t => now - t < windowMs)) map.delete(k);
+  return true;
+}
+// Every POST to the reader counts here, before anything else is looked at:
+// the main cap above only counts valid photos, so a flood of malformed or
+// oversized uploads used to cost nothing to send and was never turned away.
+const ipAttempts = new Map();
+const admitAttempt = req => slide(ipAttempts, clientIp(req), ATTEMPT_MAX, IP_WINDOW_MS);
+
+// At most READ_INFLIGHT_MAX reads at once. A request waiting for a turn has
+// not had its upload read yet (the stream is paused), so waiting costs almost
+// no memory; at 4 x 10 MB plus copies, reading stays well inside 512 MiB.
+// Cloud Run accepts up to 80 requests per instance, so without this a burst
+// of large uploads could exhaust the instance.
+let inFlight = 0; const waiting = [];
+function acquireSlot() {
+  if (inFlight < READ_INFLIGHT_MAX) { inFlight++; return Promise.resolve(true); }
+  if (waiting.length >= READ_QUEUE_MAX) return Promise.resolve(false);
+  return new Promise(resolve => {
+    const w = { resolve, timer: setTimeout(() => { const i = waiting.indexOf(w); if (i >= 0) waiting.splice(i, 1); resolve(false); }, READ_QUEUE_WAIT_MS) };
+    waiting.push(w);
+  });
+}
+function releaseSlot() {
+  const w = waiting.shift();
+  if (w) { clearTimeout(w.timer); w.resolve(true); } else inFlight = Math.max(0, inFlight - 1);
+}
+
+const BUSY = { error: 'busy', message:'The free reading service is busy right now. Try again in a few minutes, or use your own free Gemini key.' };
 
 /* ---- Reader status (R14): what the upload area tells people BEFORE they
    try, instead of after a failed read. 'busy' = today's cap is used up;
@@ -121,12 +187,54 @@ const BUSY = { error: 'busy', message: 'The free reading service is busy right n
    another instance may know better; it is a hint, not a guarantee. */
 let lastUpstreamOkAt = 0, lastUpstreamOverloadAt = 0;
 const OVERLOAD_WINDOW_MS = 15 * 60 * 1000;
+// 'broken' (R16) = Google refused the KEY or the MODEL itself: the key was
+// revoked or expired, the API was switched off, or the model was retired.
+// Every read fails until someone fixes it, so the page should send people to
+// the own-key route at once, and the owner should be told. A bad photo is a
+// 400 too, so a 400 counts only when Google names the key as the reason.
+// It stays 'broken' until a read or the key check below succeeds again.
+let lastUpstreamBrokenAt = 0, lastKeyOkAt = 0;
+function isBrokenAnswer(status, bodyText) {
+  if (status === 401 || status === 403 || status === 404) return true;
+  return status === 400 && /API_KEY_INVALID|API_KEY_EXPIRED|API key (not valid|expired)/i.test(bodyText || '');
+}
+// The key check: Google's model-metadata endpoint, which reads no photo and
+// uses no generation quota. At most once per 5 minutes per instance; only
+// /api/health (the uptime check) triggers it.
+const PROBE_TTL_MS = 5 * 60 * 1000;
+let probe = { at: 0, p: null };
+function probeGemini() {
+  if (!KEY) return Promise.resolve();
+  if (probe.p && Date.now() - probe.at < PROBE_TTL_MS) return probe.p;
+  probe.at = Date.now();
+  probe.p = (async () => {
+    const ac = new AbortController(), t = setTimeout(() => ac.abort(), 8000);
+    try {
+      const r = await fetch(`${GEMINI_BASE}/v1beta/models/${MODEL}?key=${KEY}`, { signal: ac.signal });
+      if (r.ok) { lastKeyOkAt = Date.now(); return; }
+      const b = r.status === 400 ? await r.text().catch(() => '') : '';
+      if (isBrokenAnswer(r.status, b)) { lastUpstreamBrokenAt = Date.now(); console.log('[probe] key/model refused', r.status); }
+      else console.log('[probe] status', r.status);
+    } catch (e) { console.log('[probe] network', e && e.name); } // Google unreachable is not proof of a broken key
+    finally { clearTimeout(t); }
+  })();
+  return probe.p;
+}
 function readerState() {
   if (!KEY) return 'off';
+  if (lastUpstreamBrokenAt > Math.max(lastUpstreamOkAt, lastKeyOkAt)) return 'broken';
   const today = new Date().toISOString().slice(0, 10);
   if (today === day && dayCount >= DAILY_CAP) return 'busy';
   if (lastUpstreamOverloadAt > lastUpstreamOkAt && Date.now() - lastUpstreamOverloadAt < OVERLOAD_WINDOW_MS) return 'overloaded';
   return 'ok';
+}
+// For the uptime check (R16): 200 while photos can be read (including 'busy'
+// and 'overloaded', which pass on their own), 503 when the free reader is off
+// or broken, so the owner gets the "site is down" email for those too.
+async function healthHandler(req, res) {
+  await probeGemini();
+  const reader = readerState(), ok = reader !== 'off' && reader !== 'broken';
+  sendJson(res, ok ? 200 : 503, { ok, reader }, { 'Cache-Control': 'no-store' });
 }
 
 /* ---- Impact counter (R14): "N bill pages read since <date>, ₹X matching
@@ -167,15 +275,13 @@ async function impactHandler(req, res) {
 /* ---- My Bills: auth + rate limit + body reading (separate counters from
    the Gemini proxy above — saving a bill costs nothing, so it gets its own,
    more generous limit rather than competing with photo-reads for the cap) */
-const billHits = new Map();
-function admitBills(req) {
-  const now = Date.now(), ip = clientIp(req);
-  const recent = (billHits.get(ip) || []).filter(t => now - t < BILLS_IP_WINDOW_MS);
-  if (recent.length >= BILLS_IP_MAX) return false;
-  recent.push(now); billHits.set(ip, recent);
-  if (billHits.size > 5000) for (const [k, v] of billHits) if (!v.some(t => now - t < BILLS_IP_WINDOW_MS)) billHits.delete(k);
-  return true;
-}
+const billHits = new Map(), uidWrites = new Map();
+const admitBills = req => slide(billHits, clientIp(req), BILLS_IP_MAX, BILLS_IP_WINDOW_MS);
+// Saves and edits per Google account (R16): one account cannot fill
+// Firestore's free daily writes from many addresses. Deleting is not limited
+// here, so "delete all" always works.
+const admitUidWrite = uid => slide(uidWrites, uid, UID_WRITE_MAX, BILLS_IP_WINDOW_MS);
+const TOO_MANY = { error: 'busy', message: 'Too many changes in a short time. Try again in a few minutes.' };
 // Verifies the Authorization: Bearer <Google ID token> header and returns the
 // caller's stable Google account id (uid). Sends the error response itself
 // and returns null on any failure, so callers can just `if (!uid) return;`.
@@ -229,6 +335,23 @@ function validSentOn(v) {
   return t <= Date.now() + 86400000;
 }
 const BAD_SENT_ON = { error: 'bad_request', message: 'The sent-on date must be a real date (YYYY-MM-DD), not in the future.' };
+// What each stored field may hold (R16). They used to be stored as sent, so
+// one request could save any type or length of value up to the body limit.
+// Every field may be null except status. Sizes are far above what the app
+// sends (a 63-line bill's letter is 3,317 characters).
+const strOrNull = max => v => v === null || (typeof v === 'string' && v.length <= max);
+const numOrNull = (min, max) => v => v === null || (typeof v === 'number' && Number.isFinite(v) && v >= min && v <= max);
+const BILL_STATUSES = ['sent', 'insurer_responded', 'resolved', 'no_response'];
+const BILL_RULES = {
+  hospitalName: strOrNull(200), billDate: strOrNull(60), letter: strOrNull(30000), note: strOrNull(2000),
+  netPayable: numOrNull(0, 1e9), explainedAmt: numOrNull(0, 1e9), deduction: numOrNull(0, 1e9), explainedPct: numOrNull(0, 100),
+  flagCounts: v => v === null || (!!v && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length <= 8
+    && Object.entries(v).every(([k, n]) => /^[A-Za-z]{1,20}$/.test(k) && Number.isInteger(n) && n >= 0 && n <= 100000)),
+  status: v => BILL_STATUSES.includes(v),
+  sentOn: validSentOn,
+};
+const badField = data => Object.keys(data).find(k => !BILL_RULES[k](data[k])) || null;
+const badFieldMsg = k => ({ error: 'bad_request', field: k, message: k === 'sentOn' ? BAD_SENT_ON.message : `The field "${k}" has a value that cannot be saved.` });
 
 async function listBillsHandler(req, res) {
   const uid = await requireUid(req, res); if (!uid) return;
@@ -242,10 +365,17 @@ async function createBillHandler(req, res) {
   const uid = await requireUid(req, res); if (!uid) return;
   readJsonBody(req, res, BILLS_MAX_BODY, async (body) => {
     const data = pick(body, BILL_CREATE_FIELDS);
-    if ('sentOn' in data && !validSentOn(data.sentOn)) return sendJson(res, 400, BAD_SENT_ON);
-    data.savedAt = new Date().toISOString();
     if (!data.status) data.status = 'sent';
-    try { const bill = await firestore.createBill(uid, data); sendJson(res, 201, { bill }); }
+    const bad = badField(data); if (bad) return sendJson(res, 400, badFieldMsg(bad));
+    if (!admitUidWrite(uid)) return sendJson(res, 429, TOO_MANY, { 'Retry-After': '300' });
+    data.savedAt = new Date().toISOString();
+    try {
+      // One count query (Firestore bills it as a single read) keeps each
+      // account to BILLS_MAX_PER_USER saved bills.
+      if (await firestore.countBills(uid, BILLS_MAX_PER_USER + 1) >= BILLS_MAX_PER_USER)
+        return sendJson(res, 409, { error: 'limit', max: BILLS_MAX_PER_USER, message: `You have ${BILLS_MAX_PER_USER} saved bills, the most an account can keep. Delete some before saving more.` });
+      const bill = await firestore.createBill(uid, data); sendJson(res, 201, { bill });
+    }
     catch (e) { console.log('[bills] create error', String(e.message || e)); sendJson(res, e.status || 500, { error: 'server', message: 'Could not save that bill right now.' }); }
   });
 }
@@ -254,7 +384,8 @@ async function patchBillHandler(req, res, billId) {
   readJsonBody(req, res, BILLS_MAX_BODY, async (body) => {
     const patch = pick(body, BILL_PATCH_FIELDS);
     if (!Object.keys(patch).length) return sendJson(res, 400, { error: 'bad_request', message: 'Nothing to update.' });
-    if ('sentOn' in patch && !validSentOn(patch.sentOn)) return sendJson(res, 400, BAD_SENT_ON);
+    const bad = badField(patch); if (bad) return sendJson(res, 400, badFieldMsg(bad));
+    if (!admitUidWrite(uid)) return sendJson(res, 429, TOO_MANY, { 'Retry-After': '300' });
     try { const bill = await firestore.updateBill(uid, billId, patch); sendJson(res, 200, { bill }); }
     catch (e) { console.log('[bills] update error', String(e.message || e)); sendJson(res, e.status || 500, { error: e.status === 404 ? 'not_found' : 'server', message: e.status === 404 ? 'That saved bill was not found.' : 'Could not update that bill right now.' }); }
   });
@@ -267,8 +398,21 @@ async function deleteBillHandler(req, res, billId) {
 
 async function readBill(req, res) {
   if (!KEY) return sendJson(res, 501, { error: 'not_configured', message: 'Server has no GEMINI_API_KEY set.' });
+  if (!admitAttempt(req)) { console.log('[limit] attempts'); req.resume(); return sendJson(res, 429, BUSY, { 'Retry-After': '300', Connection: 'close' }); }
   const gate = admit(req, false);
   if (!gate.ok) { console.log('[limit]', gate.why); return sendJson(res, 429, BUSY, { 'Retry-After': '300' }); }
+
+  // Wait for a turn with the upload not yet read (see acquireSlot).
+  req.pause();
+  if (!await acquireSlot()) {
+    console.log('[limit] queue full');
+    req.resume(); // discard the upload instead of dropping the connection
+    return sendJson(res, 503, { error: 'overloaded', message: 'Many photos are being read right now. Please try again in a moment.' }, { 'Retry-After': '30', Connection: 'close' });
+  }
+  let released = false;
+  const release = () => { if (!released) { released = true; releaseSlot(); } };
+  res.on('close', release); res.on('finish', release);
+  if (req.destroyed || res.destroyed) return release(); // the phone left while waiting
 
   const chunks = []; let size = 0, tooBig = false;
   req.on('data', c => {
@@ -282,6 +426,7 @@ async function readBill(req, res) {
     }
     chunks.push(c);
   });
+  req.resume();
   req.on('end', async () => {
     if (tooBig) return;
     try {
@@ -319,6 +464,12 @@ async function readBill(req, res) {
       }
       if (!r.ok) {
         console.log('[upstream] status', r.status); // status only — never log or forward Google's body
+        // Google's answer is read here only to tell a refused key from a bad photo.
+        const b = r.status === 400 ? await r.text().catch(() => '') : '';
+        if (isBrokenAnswer(r.status, b)) {
+          lastUpstreamBrokenAt = Date.now(); console.log('[upstream] key/model refused');
+          return sendJson(res, 502, { error: 'broken', message: 'The free reading service is not working right now. You can still read your bill with your own free Gemini key.' });
+        }
         if (r.status === 503) lastUpstreamOverloadAt = Date.now();
         if (r.status === 429) return sendJson(res, 429, BUSY, { 'Retry-After': '300' });
         if (r.status === 503) return sendJson(res, 503, { error: 'overloaded', message: 'The reading service is overloaded. Please try again in a moment.' });
@@ -349,13 +500,40 @@ async function readBill(req, res) {
   });
 }
 
-/* ---- static files: allowlist, gzip, ETag, always revalidate ---- */
+/* ---- Content Security Policy (R16) for the page. Only the page's own
+   inline script may run, identified by its SHA-256 hash (worked out here from
+   the exact file served, so it can never go stale after an edit), plus
+   Google's sign-in library. Anything injected into the page (say, through a
+   bill's text) cannot run. Other sources are those the page really uses:
+   Google Fonts, Google sign-in, and Gemini directly when a visitor uses their
+   own key. Inline style attributes are allowed: the page uses them, and they
+   cannot run code. */
+function cspFor(html) {
+  // Browsers hash the script as parsed, after CRLF line endings become LF.
+  const hashes = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)]
+    .map(m => `'sha256-${crypto.createHash('sha256').update(m[1].replace(/\r\n?/g, '\n'), 'utf8').digest('base64')}'`);
+  return [
+    "default-src 'self'",
+    `script-src ${hashes.join(' ')} https://accounts.google.com/gsi/client`,
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style",
+    'font-src https://fonts.gstatic.com',
+    "img-src 'self' data: blob:",
+    "connect-src 'self' https://generativelanguage.googleapis.com https://accounts.google.com/gsi/",
+    'frame-src https://accounts.google.com/gsi/',
+    "object-src 'none'", "base-uri 'none'", "form-action 'none'", "frame-ancestors 'none'",
+  ].join('; ');
+}
+
+/* ---- static files: allowlist, brotli/gzip, ETag, always revalidate ---- */
 const staticCache = new Map();
 function loadStatic(name) {
   let e = staticCache.get(name);
   if (e) return e;
-  const buf = fs.readFileSync(path.join(ROOT, name));
-  e = { buf, gz: zlib.gzipSync(buf, { level: 9 }), etag: '"' + crypto.createHash('sha1').update(buf).digest('hex').slice(0, 16) + '"', type: TYPES[path.extname(name)] || 'application/octet-stream' };
+  const buf = fs.readFileSync(path.join(ROOT, name)), type = TYPES[path.extname(name)] || 'application/octet-stream';
+  e = { buf, gz: zlib.gzipSync(buf, { level: 9 }),
+    br: zlib.brotliCompressSync(buf, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 11, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: buf.length } }),
+    etag: '"' + crypto.createHash('sha1').update(buf).digest('hex').slice(0, 16) + '"', type,
+    csp: /^text\/html/.test(type) ? cspFor(buf.toString('utf8')) : null };
   staticCache.set(name, e);
   return e;
 }
@@ -363,10 +541,14 @@ function serveStatic(req, res, name) {
   let e; try { e = loadStatic(name); } catch (err) { return send(res, 404, 'not found'); }
   // no-cache = the browser may keep a copy but must revalidate every time, so
   // a redeploy is seen on the very next load (this app once served stale pages).
-  const h = { ETag: e.etag, 'Cache-Control': 'no-cache', Vary: 'Accept-Encoding', 'Content-Type': e.type };
+  const h = { ...SECURITY_HEADERS, ETag: e.etag, 'Cache-Control': 'no-cache', Vary: 'Accept-Encoding', 'Content-Type': e.type, ...(e.csp ? { 'Content-Security-Policy': e.csp } : {}) };
   if (req.headers['if-none-match'] === e.etag) { res.writeHead(304, h); return res.end(); }
-  if (/\bgzip\b/.test(String(req.headers['accept-encoding'] || ''))) { res.writeHead(200, { ...h, 'Content-Encoding': 'gzip' }); return res.end(e.gz); }
-  res.writeHead(200, h); res.end(e.buf);
+  // Brotli (R16) is about a fifth smaller than gzip for this page; every
+  // current browser asks for it over HTTPS.
+  const ae = String(req.headers['accept-encoding'] || '');
+  if (/\bbr\b/.test(ae)) { res.writeHead(200, { ...h, 'Content-Encoding': 'br' }); return res.end(req.method === 'HEAD' ? undefined : e.br); }
+  if (/\bgzip\b/.test(ae)) { res.writeHead(200, { ...h, 'Content-Encoding': 'gzip' }); return res.end(req.method === 'HEAD' ? undefined : e.gz); }
+  res.writeHead(200, h); res.end(req.method === 'HEAD' ? undefined : e.buf);
 }
 
 const BILL_ID_PATH = /^\/api\/bills\/([A-Za-z0-9_-]{1,80})$/;
@@ -376,6 +558,7 @@ http.createServer((req, res) => {
   if (req.method === 'POST' && url.pathname === '/api/read-bill') return readBill(req, res);
   if (url.pathname === '/api/config') return sendJson(res, 200, { proxy: !!KEY, reader: readerState(), bills: BILLS_ON, googleClientId: BILLS_ON ? GOOGLE_CLIENT_ID : null });
   if (req.method === 'GET' && url.pathname === '/api/impact') return impactHandler(req, res);
+  if (req.method === 'GET' && url.pathname === '/api/health') return healthHandler(req, res);
   if (req.method === 'GET' && url.pathname === '/api/bills') return listBillsHandler(req, res);
   if (req.method === 'POST' && url.pathname === '/api/bills') return createBillHandler(req, res);
   { const m = BILL_ID_PATH.exec(url.pathname);

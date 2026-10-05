@@ -34,6 +34,7 @@ const STUB = `
       if (window.__delay) await wait(window.__delay);
       if (window.__mode === 'hang') return new Promise((_, rej) => o.signal.addEventListener('abort', () => rej(Object.assign(new Error('aborted'), { name: 'AbortError' }))));
       if (window.__mode === '504') return new Response(JSON.stringify({ error: 'timeout' }), { status: 504 });
+      if (window.__mode === 'broken') return new Response(JSON.stringify({ error: 'broken' }), { status: 502 });
       // Each photo reads as a different page (two identical pages are now read once, R15);
       // __mode 'same' returns the identical page every time, to test exactly that.
       if (window.__mode === 'same') return new Response(GOOD, { status: 200 });
@@ -376,6 +377,30 @@ const STUB = `
     await ev(`setLang('mr');`); await sleep(150);
     ok(/भार/.test(await ev(`return document.getElementById('readerNote').textContent`)), 'the status note is in Marathi too');
     await ev(`setLang('en');`);
+
+    console.log('== R16: the free reader is broken');
+    rs = await loadWith('broken', { enabled: false });
+    ok(/not working right now/.test(rs.note || '') && rs.keyRow && rs.busyFlag === true, '"broken": the upload area says the free service is not working, opens the own-key box, and a pasted key goes straight to Google');
+    await ev(`setLang('hi');`); await sleep(150);
+    ok(/काम नहीं कर रही/.test(await ev(`return document.getElementById('readerNote').textContent`)), 'the "broken" note is in Hindi too');
+    await ev(`setLang('en');`);
+    await fresh(); await ev(`setLang('en');`);
+    await ev(`window.__mode='broken'; addFiles([__mk('b1.jpg','image/jpeg',71), __mk('b2.jpg','image/jpeg',72)]); document.getElementById('checkPhotosBtn').click();`); await sleep(800);
+    const bst = await status();
+    ok(/not working right now/.test(bst) && await ev(`return !document.getElementById('keyRow').classList.contains('hide') && _proxyState.busy===true && window.__calls.length===1`), 'a read answered "broken" stops at once, says so, and opens the own-key box: "' + bst.slice(0, 80) + '"');
+
+    console.log('== R16: My Bills - a full account, and values the server accepts');
+    await fresh(); await ev(`setLang('en');`);
+    const lim = await ev(`BILLS_ON=true; ID_TOKEN='h.eyJuYW1lIjoiVCJ9.s'; const of=window.fetch;
+      window.fetch=async(u,o)=>{ u=String(u); if(u.includes('api/bills')&&o&&o.method==='POST') return new Response('{"error":"limit","max":100}',{status:409});
+        if(u.includes('api/bills')) return new Response('{}',{status:503}); return of(u,o); };
+      document.getElementById('egBtn').click(); await new Promise(r=>setTimeout(r,400)); renderAuthUI(); switchTab('mybills');
+      document.getElementById('saveBillBtn').click(); await new Promise(r=>setTimeout(r,300));
+      return document.getElementById('mybillsSaveMsg').textContent;`);
+    ok(/You have 100 saved bills, the most an account can keep/.test(lim), 'a full account is told plainly what to do (not "could not save"): "' + lim.slice(0, 70) + '"');
+    const pl = await ev(`window.__lastExtraction={header:{net_payable:'41,396.00', hospital_name:'H'.repeat(260), bill_datetime:20250601},line_items:[{item:'BED',quantity:1,total:100}]}; renderReport(window.__lastExtraction);
+      const p=buildBillPayload(); return {np:p.netPayable, hn:p.hospitalName.length, bd:p.billDate};`);
+    ok(pl.np === 41396 && pl.hn === 200 && pl.bd === '20250601', 'an amount read as text ("41,396.00") is saved as a number, a long name is cut to 200 characters, and a date read as a number is saved as text');
 
     console.log('== downscale: large photos are resized before upload (R10)');
     await fresh();

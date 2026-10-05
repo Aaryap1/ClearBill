@@ -100,6 +100,11 @@ const base = (fetchFn, over = {}) => ({
   f = mockFetch([[200, geminiBody(GOOD)]]); o3.fetchFn = f; o3.key = 'MYKEY';
   res = await R.readPages([file('a'), file('b')], o3);
   ok(res.every(r => r.status === 'ok') && f.calls.every(c => c.url === 'https://google/MYKEY'), "with the user's own key the pages go straight to Google");
+  console.log('== R16: broken free service -> own key');
+  f = mockFetch([[502, JSON.stringify({ error: 'broken' })]]); const o4 = base(f);
+  res = await R.readPages([file('a'), file('b')], o4);
+  ok(res[0].kind === 'broken' && res[1].status === 'skipped' && o4.proxyState.busy === true && f.calls.length === 1, 'the free service says its key or model was refused: the run stops at once and the next try uses the own-key route');
+  ok(K(502) === 'server' && R.kindForStatus(502, false, 'broken') === 'broken' && R.kindForStatus(403, true, 'broken') === 'key', '"broken" comes only from the free service\'s own answer; a refused personal key is still a key problem');
   f = mockFetch([[403, '{}']]); res = await R.readPages([file('a')], base(f, { useProxy: false, key: 'BAD' }));
   ok(res[0].kind === 'key', 'a rejected key is reported as a key problem');
   f = mockFetch([[200, geminiBody('{"a":1}')]]); res = await R.readPages([file('a')], base(f, { useProxy: false, key: 'K' }));

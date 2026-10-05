@@ -10,12 +10,26 @@ const { spawn } = require('child_process');
 
 const OK_JSON = JSON.stringify({ is_hospital_bill: true, header: {}, line_items: [{ item: 'X', total: 1 }] });
 let upstreamCalls = 0, upstreamClosed = false;
+// R16: the key check (GET models/<model>) answers modelsStatus; reads of
+// "slow..." images take 400 ms and record how many ran at the same time.
+let modelsStatus = 200, modelsCalls = 0, active = 0, maxActive = 0;
 const mock = http.createServer((req, res) => {
   const c = []; req.on('data', d => c.push(d));
   req.on('end', () => {
+    if (req.method === 'GET') {
+      modelsCalls++; res.writeHead(modelsStatus, { 'Content-Type': 'application/json' });
+      return res.end(modelsStatus === 200 ? '{"name":"models/test"}' : '{"error":{"status":"NOT_FOUND"}}');
+    }
     upstreamCalls++;
     const j = JSON.parse(Buffer.concat(c).toString());
     const img = Buffer.from(j.contents[0].parts[1].inline_data.data, 'base64').toString();
+    if (img.startsWith('slow')) {
+      active++; maxActive = Math.max(maxActive, active);
+      return setTimeout(() => { active--; res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ candidates: [{ content: { parts: [{ text: OK_JSON }] } }] })); }, 400);
+    }
+    if (img === 'revoked') { res.writeHead(403); return res.end('{"error":{"status":"PERMISSION_DENIED"}}'); }
+    if (img === 'badkey') { res.writeHead(400); return res.end('{"error":{"code":400,"message":"API key not valid. Please pass a valid API key.","status":"INVALID_ARGUMENT","details":[{"reason":"API_KEY_INVALID"}]}}'); }
+    if (img === 'badphoto') { res.writeHead(400); return res.end('{"error":{"code":400,"message":"Unable to process input image.","status":"INVALID_ARGUMENT"}}'); }
     if (img === 'hang') return; // never answer
     if (img === 'hang2') { req.socket.on('close', () => { upstreamClosed = true; }); return; } // never answers; records whether ClearBill hung up on us
     if (img === 'badjson' || img === 'notobject') {
@@ -196,7 +210,7 @@ async function start(port, env) {
       return h + '.' + p + '.' + b64url2(sig);
     }
     // Minimal mock Firestore REST server — same shape as lib/test_firestore_rest.js's.
-    const fsStore = new Map(); let fsNextId = 1; const FS_PROJECT = 'bills-test-project';
+    const fsStore = new Map(); let fsNextId = 1, fsCounts = 0; const FS_PROJECT = 'bills-test-project';
     const fsSrv = http.createServer((req2, res2) => {
       const chunks = []; req2.on('data', c => chunks.push(c));
       req2.on('end', () => {
@@ -204,6 +218,13 @@ async function start(port, env) {
         const prefix = `/v1/projects/${FS_PROJECT}/databases/(default)/documents/`;
         if (!req2.url.startsWith(prefix)) { res2.writeHead(404); return res2.end('{}'); }
         const rest = req2.url.slice(prefix.length); const [pathPart, query] = rest.split('?');
+        if (req2.method === 'POST' && pathPart.endsWith(':runAggregationQuery')) {
+          fsCounts++;
+          const coll = pathPart.replace(':runAggregationQuery', '') + '/' + body.structuredAggregationQuery.structuredQuery.from[0].collectionId + '/';
+          const n = [...fsStore.keys()].filter(k => k.startsWith(coll) && !k.slice(coll.length).includes('/')).length;
+          res2.writeHead(200, { 'Content-Type': 'application/json' });
+          return res2.end(JSON.stringify([{ result: { aggregateFields: { n: { integerValue: String(Math.min(n, +body.structuredAggregationQuery.aggregations[0].count.upTo)) } } }, readTime: 'x' }]));
+        }
         if (req2.method === 'POST') {
           const id = 'doc' + (fsNextId++); const full = pathPart + '/' + id;
           fsStore.set(full, body.fields);
@@ -296,6 +317,45 @@ async function start(port, env) {
     r = await req(P + 6, 'POST', '/api/bills', { headers: { ...aliceAuth, 'Content-Type': 'application/json' }, body: JSON.stringify({ letter: 'x'.repeat(300 * 1024) }) });
     ok(r.status === 413, 'an oversized bill record is refused with 413, not silently truncated or dropped');
 
+    console.log('== R16: My Bills - field types and sizes');
+    const saveA = (o, auth = aliceAuth) => req(P + 6, 'POST', '/api/bills', { headers: { ...auth, 'Content-Type': 'application/json' }, body: JSON.stringify(o) });
+    r = await req(P + 6, 'POST', '/api/bills', { headers: { ...aliceAuth, 'Content-Type': 'application/json' }, body: JSON.stringify({ letter: 'x'.repeat(41 * 1024) }) });
+    ok(r.status === 413, 'the body limit is now 40 KB (a 41 KB letter is refused with 413; it used to allow 256 KB)');
+    for (const [o, field, why] of [
+      [{ netPayable: '41,396' }, 'netPayable', 'an amount sent as text'], [{ netPayable: -5 }, 'netPayable', 'a negative amount'],
+      [{ explainedPct: 140 }, 'explainedPct', 'a percentage over 100'], [{ status: 'hacked' }, 'status', 'an unknown status'],
+      [{ note: 'n'.repeat(2001) }, 'note', 'a note over 2,000 characters'], [{ letter: 'L'.repeat(30001) }, 'letter', 'a letter over 30,000 characters'],
+      [{ hospitalName: { $gt: '' } }, 'hospitalName', 'an object where a name should be'], [{ flagCounts: { listI: -1 } }, 'flagCounts', 'a negative count'],
+      [{ flagCounts: [1, 2] }, 'flagCounts', 'a list where counts should be']]) {
+      r = await saveA(o); ok(r.status === 400 && JSON.parse(text(r)).field === field, why + ' is refused (400, field "' + field + '")', r.status + ' ' + text(r).slice(0, 80));
+    }
+    r = await saveA({ hospitalName: 'Ok', netPayable: 41396.5, explainedPct: 22, explainedAmt: 1310, deduction: null, flagCounts: { listI: 3, listIIIV: 2, nppa: 0, duplicates: 1 }, letter: 'Dear Sir', note: '', billDate: '01/06/2025 11:13', sentOn: null });
+    ok(r.status === 201, 'a bill exactly like the app sends is saved');
+    const okBill = JSON.parse(text(r)).bill;
+    r = await req(P + 6, 'PATCH', '/api/bills/' + okBill.id, { headers: { ...aliceAuth, 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'hacked' }) });
+    ok(r.status === 400, 'an edit with an unknown status is refused');
+    r = await req(P + 6, 'PATCH', '/api/bills/' + okBill.id, { headers: { ...aliceAuth, 'Content-Type': 'application/json' }, body: JSON.stringify({ note: 7 }) });
+    ok(r.status === 400, 'an edit with a number for a note is refused');
+    await req(P + 6, 'DELETE', '/api/bills/' + okBill.id, { headers: aliceAuth });
+
+    console.log('== R16: My Bills - per-account limits');
+    await start(P + 13, { ...billsEnv, BILLS_MAX_PER_USER: '2' });
+    const carolAuth = { Authorization: 'Bearer ' + mintToken('carol-sub') };
+    const saveC = o => req(P + 13, 'POST', '/api/bills', { headers: { ...carolAuth, 'Content-Type': 'application/json' }, body: JSON.stringify(o) });
+    const c0 = fsCounts;
+    r = await saveC({ hospitalName: 'One' }); const r2 = await saveC({ hospitalName: 'Two' }); const r3 = await saveC({ hospitalName: 'Three' });
+    ok(r.status === 201 && r2.status === 201 && r3.status === 409 && JSON.parse(text(r3)).error === 'limit' && JSON.parse(text(r3)).max === 2, 'with a limit of 2 saved bills, the third save is refused (409 "limit")');
+    ok(fsCounts - c0 === 3, 'each save checks the count with one count query (not by listing every bill)');
+    await start(P + 14, { ...billsEnv, BILLS_WRITES_PER_USER: '2' });
+    const daveAuth = { Authorization: 'Bearer ' + mintToken('dave-sub') };
+    r = await req(P + 14, 'POST', '/api/bills', { headers: { ...daveAuth, 'Content-Type': 'application/json' }, body: JSON.stringify({ hospitalName: 'D' }) });
+    const dId = JSON.parse(text(r)).bill.id;
+    const pD = () => req(P + 14, 'PATCH', '/api/bills/' + dId, { headers: { ...daveAuth, 'Content-Type': 'application/json' }, body: JSON.stringify({ note: 'x' }) });
+    r = await pD(); const rD = await pD();
+    ok(r.status === 200 && rD.status === 429, 'with 2 saves/edits allowed per account, the third change is refused (429)');
+    r = await req(P + 14, 'DELETE', '/api/bills/' + dId, { headers: daveAuth });
+    ok(r.status === 200, '...but deleting is never blocked by that limit');
+
     certsSrv.close(); fsSrv.close();
 
     console.log('== R14: impact counter (counted by the server from pages it read)');
@@ -347,6 +407,81 @@ async function start(port, env) {
     r = await req(P + 8, 'GET', '/api/config'); ok(JSON.parse(text(r)).reader === 'busy', 'once today\'s cap is used: "busy", before anyone has to try and fail');
     r = await req(P + 3, 'GET', '/api/config'); ok(JSON.parse(text(r)).reader === 'off', 'with no server key: "off"');
     impSrv.close();
+
+    console.log('== R16: security headers and Content Security Policy');
+    const page = await req(P, 'GET', '/');
+    const csp = page.headers['content-security-policy'] || '';
+    const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+    const inline = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => require('crypto').createHash('sha256').update(m[1].replace(/\r\n?/g, '\n')).digest('base64'));
+    ok(inline.length === 1 && csp.includes("'sha256-" + inline[0] + "'"), "the page's CSP allows its one inline script by hash (worked out from the served file, line endings as the browser sees them)");
+    const scriptSrc = (/script-src ([^;]*)/.exec(csp) || [])[1] || '';
+    ok(scriptSrc && !/unsafe-inline|unsafe-eval|\*/.test(scriptSrc), 'script-src has no unsafe-inline, unsafe-eval or wildcard: an injected script cannot run', scriptSrc.slice(0, 120));
+    ok(/frame-ancestors 'none'/.test(csp) && /object-src 'none'/.test(csp) && /base-uri 'none'/.test(csp), "frame-ancestors, object-src and base-uri are all 'none'");
+    for (const [p, what] of [['/', 'the page'], ['/api/config', 'an API answer'], ['/nope', 'a 404']]) {
+      r = await req(P, 'GET', p);
+      ok(r.headers['x-content-type-options'] === 'nosniff' && r.headers['x-frame-options'] === 'DENY' && r.headers['referrer-policy'] === 'strict-origin-when-cross-origin', what + ' carries nosniff, X-Frame-Options DENY and a referrer policy');
+    }
+    ok(!(await req(P, 'GET', '/api/config')).headers['content-security-policy'], 'the CSP is sent with the page, not with JSON answers');
+    const br = await req(P, 'GET', '/', { headers: { 'Accept-Encoding': 'gzip, deflate, br' } });
+    const gz2 = await req(P, 'GET', '/', { headers: { 'Accept-Encoding': 'gzip' } });
+    ok(br.headers['content-encoding'] === 'br' && zlib.brotliDecompressSync(br.raw).equals(page.raw), 'a browser that accepts brotli gets brotli, and it decompresses to exactly the page');
+    ok(br.raw.length < gz2.raw.length, `brotli is smaller than gzip (${br.raw.length} vs ${gz2.raw.length} bytes)`);
+
+    console.log('== R16: upload size and attempts');
+    await start(P + 9, { ...common, RATE_MAX_PER_IP: '1000', DAILY_CAP: '100000' });
+    r = await post(P + 9, 'x'.repeat(Math.ceil(10.5 * 1024 * 1024 * 3 / 4))); ok(r.status === 413, 'the default upload limit is now 10 MB (a 10.5 MB upload is refused with 413)');
+    r = await post(P + 9, 'a photo'); ok(r.status === 200, 'a normal photo is still read');
+    await start(P + 10, { ...common, RATE_MAX_PER_IP: '1000', DAILY_CAP: '100000', ATTEMPT_MAX_PER_IP: '3' });
+    const u0 = upstreamCalls;
+    for (let i = 0; i < 3; i++) { r = await req(P + 10, 'POST', '/api/read-bill', { body: 'not json', headers: { 'Content-Type': 'application/json' } }); }
+    ok(r.status === 400, 'malformed requests are still answered 400 ...');
+    r = await post(P + 10, 'a photo'); ok(r.status === 429, '... but they count toward the attempts limit: after 3, even a valid photo gets 429');
+    ok(upstreamCalls === u0, 'none of it reached the paid call');
+
+    console.log('== R16: photos read at the same time');
+    await start(P + 11, { ...common, RATE_MAX_PER_IP: '1000', DAILY_CAP: '100000', READ_INFLIGHT_MAX: '2', READ_QUEUE_MAX: '1', UPSTREAM_TIMEOUT_MS: '20000' });
+    maxActive = 0;
+    let rs = await Promise.all([1, 2, 3, 4].map(i => post(P + 11, 'slow' + i)));
+    const codes = rs.map(x => x.status).sort().join(',');
+    ok(codes === '200,200,200,503', 'with 2 at a time and 1 waiting, 4 photos at once: 3 are read and 1 is told to try again in a moment (' + codes + ')');
+    ok(maxActive === 2, 'Google never had more than 2 of them at once (' + maxActive + ')');
+    ok(JSON.parse(text(rs.find(x => x.status === 503))).error === 'overloaded' && rs.find(x => x.status === 503).headers['retry-after'] === '30', 'the refusal is a plain "overloaded" with Retry-After: 30');
+    await start(P + 12, { ...common, RATE_MAX_PER_IP: '1000', DAILY_CAP: '100000', READ_INFLIGHT_MAX: '2', UPSTREAM_TIMEOUT_MS: '20000' });
+    maxActive = 0;
+    const big = i => 'slow' + i + 'z'.repeat(3 * 1024 * 1024);
+    rs = await Promise.all([1, 2, 3, 4, 5, 6].map(i => post(P + 12, big(i))));
+    ok(rs.every(x => x.status === 200) && maxActive === 2, `six 3 MB photos uploaded at once are all read, 2 at a time (${rs.map(x => x.status).join(',')}; max ${maxActive})`);
+    await start(P + 15, { ...common, RATE_MAX_PER_IP: '1000', DAILY_CAP: '100000', READ_INFLIGHT_MAX: '1', READ_QUEUE_WAIT_MS: '150', UPSTREAM_TIMEOUT_MS: '20000' });
+    rs = await Promise.all([post(P + 15, 'slowA'), post(P + 15, 'slowB')]);
+    ok(rs[0].status === 200 && rs[1].status === 503, 'a photo that waits longer than the queue allows is told to try again, not left hanging');
+    r = await post(P + 15, 'a photo'); ok(r.status === 200, 'and the slot is free again afterwards');
+
+    console.log('== R16: a refused key or retired model shows as "broken"');
+    await start(P + 16, { ...common, RATE_MAX_PER_IP: '1000', DAILY_CAP: '100000' });
+    r = await post(P + 16, 'badphoto');
+    ok(r.status === 502 && JSON.parse(text(r)).error === 'upstream', 'Google refusing one photo (400, not about the key) is an ordinary failed read');
+    r = await req(P + 16, 'GET', '/api/config'); ok(JSON.parse(text(r)).reader === 'ok', '...and does not mark the service broken');
+    r = await post(P + 16, 'revoked');
+    ok(r.status === 502 && JSON.parse(text(r)).error === 'broken' && !/PERMISSION/.test(text(r)), 'Google refusing the key (403) answers "broken", without passing on Google\'s text');
+    r = await req(P + 16, 'GET', '/api/config'); ok(JSON.parse(text(r)).reader === 'broken', '/api/config now says "broken", so the page can offer the own-key box before anyone tries');
+    r = await post(P + 16, 'a photo');
+    r = await req(P + 16, 'GET', '/api/config'); ok(JSON.parse(text(r)).reader === 'ok', 'a successful read clears it');
+    r = await post(P + 16, 'badkey'); r = await req(P + 16, 'GET', '/api/config');
+    ok(JSON.parse(text(r)).reader === 'broken', 'a 400 that names an invalid API key also counts as broken');
+
+    console.log('== R16: /api/health for the uptime check');
+    modelsStatus = 200; const m0 = modelsCalls;
+    r = await req(P + 9, 'GET', '/api/health'); const r2h = await req(P + 9, 'GET', '/api/health');
+    ok(r.status === 200 && JSON.parse(text(r)).ok === true && JSON.parse(text(r)).reader === 'ok', 'a working reader: 200 {"ok":true}');
+    ok(modelsCalls - m0 === 1 && r2h.status === 200, 'the key check is made once and then reused for 5 minutes (one free metadata call, no photo, no generation quota)');
+    await start(P + 17, { ...common });
+    modelsStatus = 404;
+    r = await req(P + 17, 'GET', '/api/health');
+    ok(r.status === 503 && JSON.parse(text(r)).reader === 'broken', 'if Google says the model does not exist (retired), health answers 503 "broken", so the uptime alert fires');
+    r = await req(P + 17, 'GET', '/api/config'); ok(JSON.parse(text(r)).reader === 'broken', '...and the page is told too');
+    modelsStatus = 200;
+    r = await req(P + 3, 'GET', '/api/health'); ok(r.status === 503 && JSON.parse(text(r)).reader === 'off', 'with no server key, health answers 503 "off"');
+    ok(/no-store/.test(r.headers['cache-control'] || ''), 'health answers are never cached');
   } finally {
     servers.forEach(s => s.kill()); mock.close();
   }

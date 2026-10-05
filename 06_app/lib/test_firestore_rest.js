@@ -11,7 +11,7 @@ const ok = (cond, name, extra) => { if (cond) { pass++; console.log('  ok   ' + 
   // (POST to create with an auto id, GET to list, PATCH with updateMask,
   // DELETE, and a Bearer-token check) for firestore_rest.js to talk to.
   const store = new Map(); // path "users/UID/bills/ID" -> {fields}
-  let nextId = 1, lastAuthHeader = null, lastCommit = null;
+  let nextId = 1, lastAuthHeader = null, lastCommit = null, lastAgg = null;
   const PROJECT = 'test-project';
   const mock = http.createServer((req, res) => {
     lastAuthHeader = req.headers['authorization'];
@@ -31,6 +31,14 @@ const ok = (cond, name, extra) => { if (cond) { pass++; console.log('  ok   ' + 
           store.set(docPath, fields);
         }
         res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end('{}');
+      }
+      // R16: count aggregation over one user's bills
+      if (req.method === 'POST' && req.url.endsWith(':runAggregationQuery')) {
+        lastAgg = { url: req.url, body };
+        const coll = decodeURIComponent(req.url.split('/documents/')[1].replace(':runAggregationQuery', '')) + '/' + body.structuredAggregationQuery.structuredQuery.from[0].collectionId + '/';
+        const n = [...store.keys()].filter(k => k.startsWith(coll) && !k.slice(coll.length).includes('/')).length;
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify([{ result: { aggregateFields: { n: { integerValue: String(Math.min(n, +body.structuredAggregationQuery.aggregations[0].count.upTo)) } } }, readTime: 't' }]));
       }
       const prefix = `/v1/projects/${PROJECT}/databases/(default)/documents/`;
       if (!req.url.startsWith(prefix)) { res.writeHead(404); return res.end('{}'); }
@@ -123,6 +131,12 @@ const ok = (cond, name, extra) => { if (cond) { pass++; console.log('  ok   ' + 
   ok(w.update.name.endsWith('/documents/stats/impact') && Array.isArray(w.updateMask.fieldPaths) && w.updateMask.fieldPaths.length === 0, 'the write is an upsert of stats/impact that touches no other field (empty update mask)');
   ok(w.updateTransforms.length === 2 && w.updateTransforms.every(t => t.increment && typeof t.increment.integerValue === 'string'), 'both totals use Firestore\'s server-side increment (no read-then-write race)');
   ok(Object.keys(store.get('stats/impact')).sort().join() === 'matchedPaise,pages', 'the counter document holds the two totals and nothing else');
+
+  console.log("== R16: counting one account's bills");
+  const nCarol = await firestore.countBills('uid-carol', 101);
+  ok(nCarol === 1, "counts only that account's bills (carol has 1)", String(nCarol));
+  ok(/users\/uid-carol:runAggregationQuery$/.test(lastAgg.url) && lastAgg.body.structuredAggregationQuery.aggregations[0].count.upTo === '101', 'it is one count query over users/<uid>/bills, capped with upTo');
+  try { await firestore.countBills('../evil', 5); ok(false, 'a bad uid is refused'); } catch (e) { ok(e.status === 400, 'a malformed uid is refused before any request'); }
 
   console.log('== updating a document that was never created');
   try { await firestore.updateBill('uid-alice', 'doc-does-not-exist', { status: 'x' }); ok(false, 'updating a missing document throws'); }

@@ -74,9 +74,21 @@ async function listBills(uid) {
   // documents are returned newest-first by the caller (server.js sorts on savedAt — Firestore's
   // REST "list" endpoint doesn't accept an orderBy without a composite index, and this collection
   // is small per user, so sorting the already-small page in Node keeps this index-free and free-tier-simple).
-  const j = await fsFetch(billPath(uid) + '?pageSize=200', { method: 'GET' });
+  // One page of 100: an account keeps at most 100 bills (server.js, R16).
+  const j = await fsFetch(billPath(uid) + '?pageSize=100', { method: 'GET' });
   const docs = j.documents || [];
   return docs.map(d => ({ id: d.name.split('/').pop(), ...fromFirestoreFields(d.fields) }));
+}
+
+// How many bills this account has, counting no further than upTo. A count
+// aggregation is billed as one document read per 1,000 counted, so checking
+// the limit before each save costs one read, not one per saved bill.
+async function countBills(uid, upTo) {
+  assertId(uid, 'uid');
+  const j = await fsFetch(`users/${uid}:runAggregationQuery`, { method: 'POST', body: JSON.stringify({
+    structuredAggregationQuery: { structuredQuery: { from: [{ collectionId: 'bills' }] }, aggregations: [{ alias: 'n', count: { upTo: String(upTo) } }] } }) });
+  const row = (Array.isArray(j) ? j : []).find(x => x && x.result);
+  return Number(row?.result?.aggregateFields?.n?.integerValue || 0);
 }
 
 async function createBill(uid, data) {
@@ -128,4 +140,4 @@ async function readImpact() {
   }
 }
 
-module.exports = { listBills, createBill, updateBill, deleteBill, toFirestoreFields, fromFirestoreFields, incrementImpact, readImpact };
+module.exports = { listBills, countBills, createBill, updateBill, deleteBill, toFirestoreFields, fromFirestoreFields, incrementImpact, readImpact };
