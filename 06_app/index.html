@@ -99,6 +99,9 @@
   .chip{flex:1;min-height:38px;border:1.5px solid var(--ctl);background:var(--field);border-radius:8px;
     font-family:"IBM Plex Mono",monospace;font-size:.82rem;font-weight:600;color:var(--soft);cursor:pointer}
   .chip.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .seg{margin:0 0 4px}
+  .seg .chip{font-family:"Archivo",sans-serif;font-size:.78rem;line-height:1.25;padding:6px 8px;min-height:44px}
+  .fbox>label:first-child{margin-top:14px}
   .link{background:none;border:none;color:var(--red);font-family:"Archivo",sans-serif;font-size:.8rem;font-weight:600;
     cursor:pointer;text-decoration:underline;text-underline-offset:2px;padding:4px 0}
   /* R4 borrow: solid filled primary button */
@@ -385,12 +388,19 @@
     <div class="sec-label" id="secSettlement">Settlement</div>
     <button class="link" id="skipToFindingsBtn" style="margin:-2px 0 12px;display:block">Have the itemised bill but not these numbers? Check it directly &rarr;</button>
     <div class="card">
+      <div class="k" id="settleModeLbl" style="margin-bottom:6px">How was the claim paid?</div>
+      <div class="chips seg" id="settleMode" role="group" aria-labelledby="settleModeLbl">
+        <button type="button" class="chip on" data-mode="cashless" aria-pressed="true" id="modeCashlessBtn">Cashless (hospital billed the insurer)</button>
+        <button type="button" class="chip" data-mode="reimb" aria-pressed="false" id="modeReimbBtn">I paid and claimed it back</button>
+      </div>
       <label id="lblTotal" for="total">Total bill amount <span class="hint">&mdash; the hospital's final bill</span></label>
       <div class="fin"><span class="pfx">&#8377;</span><input type="number" id="total" step="any" placeholder="0"></div>
-      <label id="lblCounter" for="counter">Amount paid at the discharge counter <span class="hint">&mdash; what you handed over</span></label>
-      <div class="fin"><span class="pfx">&#8377;</span><input type="number" id="counter" step="any" placeholder="0"></div>
-      <label id="lblDiscount" for="discount">Hospital discount <span class="hint">&mdash; a discount your hospital agreed with your insurer, if any (sometimes called MOU / PPN waiver)</span></label>
-      <div class="fin"><span class="pfx">&#8377;</span><input type="number" id="discount" step="any" placeholder="0"></div>
+      <div class="fbox" id="counterBox"><label id="lblCounter" for="counter">Amount paid at the discharge counter <span class="hint">&mdash; what you handed over</span></label>
+      <div class="fin"><span class="pfx">&#8377;</span><input type="number" id="counter" step="any" placeholder="0"></div></div>
+      <div class="fbox hide" id="reimbBox"><label id="lblReimb" for="reimb">Amount the insurer paid you <span class="hint">&mdash; what was credited to you for this claim</span></label>
+      <div class="fin"><span class="pfx">&#8377;</span><input type="number" id="reimb" step="any" placeholder="0"></div></div>
+      <div class="fbox" id="discountBox"><label id="lblDiscount" for="discount">Hospital discount <span class="hint">&mdash; a discount your hospital agreed with your insurer, if any (sometimes called MOU / PPN waiver)</span></label>
+      <div class="fin"><span class="pfx">&#8377;</span><input type="number" id="discount" step="any" placeholder="0"></div></div>
       <label id="lblCopay" for="copay">Co-pay percentage <span class="hint">&mdash; the % you pay yourself, even after approval</span></label>
       <div class="fin"><span class="pfx">%</span><input type="number" id="copay" step="any" min="0" max="100" placeholder="0"></div>
       <div class="chips" id="copayChips">
@@ -402,8 +412,9 @@
         <summary id="findNumsSummary">Not sure which number is which?</summary>
         <div id="findNumsBody" class="db2">
           <p><b id="findNumsTotalLbl">Total bill amount</b> <span id="findNumsTotalTxt">&mdash; look for "Final Bill", "Gross Amount" or "Total Bill Amount" on the hospital bill or the TPA settlement letter.</span></p>
-          <p><b id="findNumsCounterLbl">Amount paid at the counter</b> <span id="findNumsCounterTxt">&mdash; look for "Amount Payable by Patient" or "Net Amount Paid" on the discharge summary or payment receipt.</span></p>
-          <p><b id="findNumsDiscountLbl">Hospital discount</b> <span id="findNumsDiscountTxt">&mdash; look for "MOU Discount", "PPN Discount" or "Package Discount" on the bill. Leave as 0 if you don't see one.</span></p>
+          <p id="findNumsCounterP"><b id="findNumsCounterLbl">Amount paid at the counter</b> <span id="findNumsCounterTxt">&mdash; look for "Amount Payable by Patient" or "Net Amount Paid" on the discharge summary or payment receipt.</span></p>
+          <p id="findNumsReimbP" class="hide"><b id="findNumsReimbLbl">Amount the insurer paid you</b> <span id="findNumsReimbTxt">&mdash; look for "Claim Settled Amount" or "Amount Paid" on the insurer's settlement letter, or the credit in your bank statement.</span></p>
+          <p id="findNumsDiscountP"><b id="findNumsDiscountLbl">Hospital discount</b> <span id="findNumsDiscountTxt">&mdash; look for "MOU Discount", "PPN Discount" or "Package Discount" on the bill. Leave as 0 if you don't see one.</span></p>
           <p><b id="findNumsCopayLbl">Co-pay percentage</b> <span id="findNumsCopayTxt">&mdash; check your policy schedule, or "Co-Payment %" on the claim settlement letter. Try 0 first if you can't find it.</span></p>
           <p id="findNumsNote" class="note2">Different insurers and hospitals word these differently &mdash; this is a guide, not an exact match for every document.</p>
         </div>
@@ -500,6 +511,7 @@
       <button class="link" id="localImportBtn" type="button" style="margin-top:6px;display:block">Open a saved file</button>
     </div>
     <div class="k" id="accountHead" style="margin:18px 0 8px">In your Google account</div>
+    <p class="hide" id="mybillsDelMsg" role="status" style="margin:0 0 10px"></p>
     <div class="card" id="mybillsOff" style="display:none"><p id="mybillsOffText">Saving bills to an account isn't available on this deployment right now.</p></div>
     <div class="card" id="mybillsSignedOut" style="display:none">
       <p id="mybillsSignInPrompt">Sign in with Google to save this bill and keep track of what happens after you send your letter. Saved bills are private to your account — only you can see them, and nothing is shared with anyone else.</p>
@@ -973,6 +985,19 @@ en: {
   settle_warn_over:"The amount paid is more than the bill after discount. Please re-check the figures you typed.",
   settle_warn_low:"The amount paid is smaller than your co-pay alone would be, so no hidden deduction can be worked out. Please re-check the figures you typed.",
   settle_warn_full:"With a 100% co-pay the insurer pays nothing, so a hidden deduction cannot be worked out.",
+  settle_mode_lbl:"How was the claim paid?",
+  mode_cashless:"Cashless (hospital billed the insurer)", mode_reimb:"I paid and claimed it back",
+  lbl_reimb:'Amount the insurer paid you <span class="hint">&mdash; what was credited to you for this claim</span>',
+  lbl_reimb_plain:"Amount the insurer paid you",
+  findnums_reimb:'&mdash; look for "Claim Settled Amount" or "Amount Paid" on the insurer\'s settlement letter, or the credit in your bank statement.',
+  not_reimbursed:"Not paid back to you", insurer_paid_you:"Insurer paid you",
+  mystery_sub_reimb:(gap,copay,ded)=>`Of the ${gap} the insurer did not pay back, ${copay} was co-pay and ${ded} was never explained.`,
+  settle_model_note_reimb:"This is the part of your bill the insurer did not pay back that is not your co-pay. It can include room-rent limits, sub-limits, deductibles and policy exclusions as well as non-medical items; the app cannot tell them apart.",
+  settle_warn_paid_all:'This says you paid the whole bill at the counter, which would mean the insurer approved nothing. If you paid the hospital yourself and claimed the money back, choose "I paid and claimed it back" above.',
+  settle_warn_reimb_over:"The amount the insurer paid you is more than the total bill. Please re-check the figures you typed.",
+  settle_warn_reimb_low:"The insurer paid you more than the bill minus your co-pay would allow, so no hidden deduction can be worked out. Please re-check the co-pay percentage and the figures you typed.",
+  ls_settle_reimb:(gap,ded)=>`It says ${gap} of your bill was not paid back by the insurer and asks what ${ded} of that was for.`,
+  dup_pages_note:n=>`${n} photo${n>1?'s were exact copies':' was an exact copy'} of a page already read, so ${n>1?'they were':'it was'} counted once.`,
   sec_bill: "Check the itemised bill",
   bill_lead: "Upload photos of your itemised bill (all pages, if more than one). Google Gemini reads them into rows; the checks then run in your browser against the published lists. Your photo is sent to Google's Gemini API to be read, once &mdash; ClearBill itself doesn't store it. <span style=\"display:block;margin-top:8px;font-size:.84rem\">Google's terms differ by plan: on its free plan, Google may use what is sent to improve its products and people may read it; on a paid plan it does not. Before you photograph, you can cover or crop your name, address and ID numbers &mdash; the checks don't need them (the bill-completeness check will then list them as missing).</span>",
   drop_html: '<b>Tap to choose photos</b><br>or drag images here (JPG / PNG) &mdash; multiple pages OK',
@@ -1079,6 +1104,9 @@ en: {
   mybills_unnamed:"Hospital bill", mybills_status_label:"Status",
   mybills_note_ph:"Notes — e.g. what the insurer said, or the date you followed up",
   mybills_delete_btn:"Delete",
+  mybills_delall_confirm:n=>`Delete all ${n} saved bill${n>1?'s':''} from your Google account? This cannot be undone.`,
+  mybills_delall_done:(k,n)=>`Deleted ${k} of ${n} saved bill${n>1?'s':''}.`+(k<n?' The rest could not be deleted right now. Please try again.':''),
+  mybills_delall_expired:(k,n)=>`Your sign-in has expired, so only ${k} of ${n} saved bill${n>1?'s were':' was'} deleted. Sign in again and try once more.`,
   mybills_status:{sent:"Letter sent",insurer_responded:"Insurer responded",resolved:"Resolved",no_response:"No response yet"},
   as_head:"After you send the letter",
   as_1:"Send it to your insurer's grievance officer by email or post. The address is on your policy documents, your claim letter or the insurer's website. Use a method that gives you proof (an email you can save, or registered post) and keep a copy with the date.",
@@ -1106,7 +1134,7 @@ en: {
   ls_note:"The letter itself is in English. This summary is only for you and is not part of the letter.",
   settle_model_note:"This is the part of what you paid that is not your co-pay. It can include room-rent limits, sub-limits, deductibles and policy exclusions as well as non-medical items; the app cannot tell them apart.",
   settle_inconsistent_note:"Your settlement figures don't add up (see the message on the Settlement tab), so the amount \"never itemised\" is not used here and is left out of the letter.",
-  nppa_skipped_note:n=>`${n} implant line${n>1?'s':''} looked like a set or package and ${n>1?'were':'was'} not compared with a single part's ceiling.`,
+  nppa_skipped_note:n=>`${n} implant line${n>1?'s':''} looked like a set, package or procedure charge and ${n>1?'were':'was'} not compared with a single part's ceiling.`,
   nonlatin_note:n=>`${n} line${n>1?'s are':' is'} not written in English and could not be checked against the English lists.`,
   detail_nppa_src:(ref,ceiling,gst)=>`NPPA ceiling for ${ref}: ${ceiling} (${gst})`,
   detail_recon:"Reconciliation",
@@ -1221,7 +1249,7 @@ en: {
     recon: { label:"Check sum",
       found:diff=>`Bill total off by ${diff}`, sub:(gross,lineSum)=>`printed ${gross} vs lines ${lineSum} &mdash; may be the hospital's arithmetic`,
       foundClear:"Bill reconciles", subClear:"sum of lines matches the printed total",
-      foundNotCompared:"Bill total not compared", subNotCompared:"no printed total could be read from this bill",
+      foundNotCompared:"Bill total not compared", subNotCompared:"no printed total could be read from this bill", subNotComparedUnreadable:"some amounts on this bill could not be read, so its printed total was not compared with the lines",
       money:()=>"This is the hospital&rsquo;s own arithmetic, not yours or ours. It doesn&rsquo;t change what you owe.",
       doText:"Point the billing desk to this gap and ask them to explain it. Keep this bill as your record either way." },
     dup: { label:"Twice", labelSimilar:"Check",
@@ -1267,6 +1295,19 @@ hi: {
   settle_warn_over:"चुकाई गई राशि छूट के बाद के बिल से ज़्यादा है। कृपया डाले गए आँकड़े फिर से जाँचें।",
   settle_warn_low:"चुकाई गई राशि अकेले आपके को-पे से भी कम है, इसलिए छिपी कटौती नहीं निकाली जा सकती। कृपया डाले गए आँकड़े फिर से जाँचें।",
   settle_warn_full:"100% को-पे में बीमा कंपनी कुछ नहीं देती, इसलिए छिपी कटौती नहीं निकाली जा सकती।",
+  settle_mode_lbl:"दावे का भुगतान कैसे हुआ?",
+  mode_cashless:"कैशलेस (अस्पताल ने बीमा कंपनी को बिल भेजा)", mode_reimb:"मैंने भुगतान किया और बाद में दावा किया",
+  lbl_reimb:'बीमा कंपनी ने आपको जो राशि दी <span class="hint">&mdash; इस दावे के लिए आपके खाते में जो जमा हुआ</span>',
+  lbl_reimb_plain:"बीमा कंपनी ने आपको जो राशि दी",
+  findnums_reimb:'&mdash; बीमा कंपनी के सेटलमेंट पत्र पर "Claim Settled Amount" या "Amount Paid" देखें, या अपने बैंक स्टेटमेंट में जमा राशि।',
+  not_reimbursed:"आपको वापस नहीं मिला", insurer_paid_you:"बीमा कंपनी ने आपको दिया",
+  mystery_sub_reimb:(gap,copay,ded)=>`बीमा कंपनी ने जो ${gap} वापस नहीं दिए, उनमें से ${copay} को-पे था और ${ded} कभी नहीं समझाया गया।`,
+  settle_model_note_reimb:"यह आपके बिल का वह हिस्सा है जो बीमा कंपनी ने वापस नहीं दिया और जो को-पे नहीं है। इसमें कमरे के किराए की सीमा, उप-सीमाएँ, डिडक्टिबल और पॉलिसी के अपवाद भी हो सकते हैं, सिर्फ़ ग़ैर-चिकित्सा चीज़ें नहीं; ऐप इनमें फ़र्क़ नहीं कर सकता।",
+  settle_warn_paid_all:'इसके अनुसार आपने पूरा बिल काउंटर पर चुकाया, यानी बीमा कंपनी ने कुछ भी मंज़ूर नहीं किया। अगर आपने अस्पताल को ख़ुद भुगतान किया और बाद में पैसे का दावा किया, तो ऊपर "मैंने भुगतान किया और बाद में दावा किया" चुनें।',
+  settle_warn_reimb_over:"बीमा कंपनी ने आपको जो राशि दी वह कुल बिल से ज़्यादा है। कृपया डाले गए आँकड़े फिर से जाँचें।",
+  settle_warn_reimb_low:"बीमा कंपनी ने आपको उससे ज़्यादा दिया जितना बिल में से आपका को-पे घटाने पर बनता है, इसलिए छिपी कटौती नहीं निकाली जा सकती। कृपया को-पे प्रतिशत और डाले गए आँकड़े फिर से जाँचें।",
+  ls_settle_reimb:(gap,ded)=>`इसमें लिखा है कि आपके बिल के ${gap} बीमा कंपनी ने वापस नहीं दिए और पूछा गया है कि उसमें से ${ded} किस लिए थे।`,
+  dup_pages_note:n=>`${n} फ़ोटो पहले पढ़े गए पेज़ की हूबहू नकल थी, इसलिए उसे एक ही बार गिना गया।`,
   sec_bill: "बिल की हर लाइन जाँचें",
   bill_lead: "अपने बिल की सभी पेज़ों की फ़ोटो अपलोड करें (अगर एक से ज़्यादा हैं तो सब)। Google Gemini इन्हें पंक्तियों में पढ़ता है; फिर जाँचें आपके ब्राउज़र में ही चलती हैं। आपकी फ़ोटो पढ़ने के लिए एक बार Google के Gemini API को भेजी जाती है &mdash; ClearBill इसे ख़ुद सुरक्षित नहीं रखता। <span style=\"display:block;margin-top:8px;font-size:.84rem\">Google की शर्तें योजना के हिसाब से अलग हैं: उसकी मुफ़्त योजना में Google भेजी गई सामग्री को अपने उत्पाद बेहतर करने में इस्तेमाल कर सकता है और लोग उसे पढ़ सकते हैं; सशुल्क योजना में ऐसा नहीं होता। फ़ोटो लेने से पहले आप अपना नाम, पता और पहचान संख्याएँ ढक या काट सकते हैं &mdash; जाँचों को इनकी ज़रूरत नहीं (बिल की पूर्णता की जाँच उन्हें ग़ायब बताएगी)।</span>",
   drop_html: '<b>फ़ोटो चुनने के लिए टैप करें</b><br>या यहाँ तस्वीरें खींचकर लाएँ (JPG / PNG) &mdash; कई पेज़ चल सकते हैं',
@@ -1373,6 +1414,9 @@ hi: {
   mybills_unnamed:"अस्पताल का बिल", mybills_status_label:"स्थिति",
   mybills_note_ph:"नोट्स — जैसे बीमा कंपनी ने क्या कहा, या आपने कब फॉलो-अप किया",
   mybills_delete_btn:"मिटाएँ",
+  mybills_delall_confirm:n=>`अपने Google खाते से सभी ${n} सहेजे गए बिल मिटाएँ? यह वापस नहीं हो सकता।`,
+  mybills_delall_done:(k,n)=>`${n} में से ${k} सहेजे गए बिल मिटाए गए।`+(k<n?' बाकी अभी नहीं मिटाए जा सके। कृपया फिर से कोशिश करें।':''),
+  mybills_delall_expired:(k,n)=>`आपका साइन-इन समाप्त हो गया है, इसलिए ${n} में से सिर्फ़ ${k} सहेजे गए बिल मिटाए गए। फिर से साइन इन करें और दोबारा कोशिश करें।`,
   mybills_status:{sent:"पत्र भेजा गया",insurer_responded:"बीमा कंपनी ने जवाब दिया",resolved:"सुलझ गया",no_response:"अभी तक कोई जवाब नहीं"},
   as_head:"पत्र भेजने के बाद",
   as_1:"इसे ईमेल या डाक से अपनी बीमा कंपनी के शिकायत निवारण अधिकारी को भेजें। पता आपके पॉलिसी काग़ज़ों, क्लेम पत्र या बीमा कंपनी की वेबसाइट पर होता है। ऐसा तरीक़ा चुनें जिसका सबूत रहे (सहेजा जा सकने वाला ईमेल, या रजिस्टर्ड डाक) और तारीख़ के साथ एक कॉपी रखें।",
@@ -1400,7 +1444,7 @@ hi: {
   ls_note:"पत्र खुद अंग्रेज़ी में है। यह सारांश सिर्फ़ आपके लिए है और पत्र का हिस्सा नहीं है।",
   settle_model_note:"यह आपके भुगतान का वह हिस्सा है जो को-पे नहीं है। इसमें कमरे के किराए की सीमा, उप-सीमाएँ, डिडक्टिबल और पॉलिसी के अपवाद भी हो सकते हैं, सिर्फ़ ग़ैर-चिकित्सा चीज़ें नहीं; ऐप इनमें फ़र्क़ नहीं कर सकता।",
   settle_inconsistent_note:"आपके सेटलमेंट के आँकड़े आपस में मेल नहीं खाते (सेटलमेंट टैब का संदेश देखें), इसलिए \"कभी नहीं बताई गई\" राशि यहाँ इस्तेमाल नहीं की गई और पत्र से हटा दी गई है।",
-  nppa_skipped_note:n=>`${n} इम्प्लांट लाइन सेट या पैकेज जैसी लगी और एक पुर्ज़े की सीमा से नहीं मिलाई गई।`,
+  nppa_skipped_note:n=>`${n} इम्प्लांट लाइन सेट, पैकेज या प्रक्रिया (प्रोसीजर) शुल्क जैसी लगी और एक पुर्ज़े की सीमा से नहीं मिलाई गई।`,
   nonlatin_note:n=>`${n} लाइन अंग्रेज़ी में नहीं लिखी हैं और अंग्रेज़ी सूचियों से नहीं मिलाई जा सकीं।`,
   detail_nppa_src:(ref,ceiling,gst)=>`${ref} के लिए NPPA सीमा: ${ceiling} (${gst})`,
   detail_recon:"मिलान",
@@ -1516,7 +1560,7 @@ hi: {
     recon: { label:"योग जाँच",
       found:diff=>`बिल का योग ${diff} से गड़बड़ है`, sub:(gross,lineSum)=>`छपा ${gross} बनाम लाइनों का योग ${lineSum} &mdash; शायद अस्पताल की अपनी गणना`,
       foundClear:"बिल का मिलान सही है", subClear:"लाइनों का योग छपी कुल राशि से मेल खाता है",
-      foundNotCompared:"बिल का कुल योग मिलाया नहीं गया", subNotCompared:"इस बिल से छपी कुल राशि पढ़ी नहीं जा सकी",
+      foundNotCompared:"बिल का कुल योग मिलाया नहीं गया", subNotCompared:"इस बिल से छपी कुल राशि पढ़ी नहीं जा सकी", subNotComparedUnreadable:"इस बिल की कुछ राशियाँ पढ़ी नहीं जा सकीं, इसलिए छपी कुल राशि को लाइनों के जोड़ से नहीं मिलाया गया",
       money:()=>"यह अस्पताल की अपनी गणना है, आपकी या हमारी नहीं। इससे आपकी देय राशि नहीं बदलती।",
       doText:"बिलिंग डेस्क को यह अंतर दिखाएँ और समझाने को कहें। इस बिल को अपने रिकॉर्ड के तौर पर रखें।" },
     dup: { label:"दो बार", labelSimilar:"जाँचें",
@@ -1562,6 +1606,19 @@ mr: {
   settle_warn_over:"दिलेली रक्कम सवलतीनंतरच्या बिलापेक्षा जास्त आहे. कृपया टाकलेले आकडे पुन्हा तपासा.",
   settle_warn_low:"दिलेली रक्कम फक्त तुमच्या को-पे पेक्षाही कमी आहे, त्यामुळे लपलेली कपात काढता येत नाही. कृपया टाकलेले आकडे पुन्हा तपासा.",
   settle_warn_full:"100% को-पे मध्ये विमा कंपनी काहीच देत नाही, त्यामुळे लपलेली कपात काढता येत नाही.",
+  settle_mode_lbl:"दाव्याचं पेमेंट कसं झालं?",
+  mode_cashless:"कॅशलेस (रुग्णालयाने विमा कंपनीला बिल पाठवलं)", mode_reimb:"मी पैसे भरले आणि नंतर दावा केला",
+  lbl_reimb:'विमा कंपनीने तुम्हाला दिलेली रक्कम <span class="hint">&mdash; या दाव्यासाठी तुमच्या खात्यात जमा झालेली</span>',
+  lbl_reimb_plain:"विमा कंपनीने तुम्हाला दिलेली रक्कम",
+  findnums_reimb:'&mdash; विमा कंपनीच्या सेटलमेंट पत्रावर "Claim Settled Amount" किंवा "Amount Paid" पहा, किंवा तुमच्या बँक स्टेटमेंटमधील जमा रक्कम.',
+  not_reimbursed:"तुम्हाला परत न मिळालेली", insurer_paid_you:"विमा कंपनीने तुम्हाला दिलं",
+  mystery_sub_reimb:(gap,copay,ded)=>`विमा कंपनीने परत न दिलेल्या ${gap} पैकी ${copay} को-पे होता आणि ${ded} कधीच स्पष्ट झाला नाही.`,
+  settle_model_note_reimb:"हा तुमच्या बिलातील तो भाग आहे जो विमा कंपनीने परत दिला नाही आणि जो को-पे नाही. यात खोली भाड्याची मर्यादा, उप-मर्यादा, डिडक्टिबल आणि पॉलिसीचे अपवाद हे देखील असू शकतात, फक्त बिगर-वैद्यकीय गोष्टी नाहीत; अ‍ॅप यांच्यातला फरक ओळखू शकत नाही.",
+  settle_warn_paid_all:'यानुसार तुम्ही संपूर्ण बिल काउंटरवर भरलं, म्हणजे विमा कंपनीने काहीच मंजूर केलं नाही. जर तुम्ही रुग्णालयाला स्वतः पैसे भरले आणि नंतर दावा केला असेल, तर वर "मी पैसे भरले आणि नंतर दावा केला" निवडा.',
+  settle_warn_reimb_over:"विमा कंपनीने तुम्हाला दिलेली रक्कम एकूण बिलापेक्षा जास्त आहे. कृपया टाकलेले आकडे पुन्हा तपासा.",
+  settle_warn_reimb_low:"बिलातून तुमचा को-पे वजा केल्यावर जितकी रक्कम होते त्यापेक्षा जास्त विमा कंपनीने दिली, त्यामुळे लपलेली कपात काढता येत नाही. कृपया को-पे टक्केवारी आणि टाकलेले आकडे पुन्हा तपासा.",
+  ls_settle_reimb:(gap,ded)=>`त्यात असं लिहिलं आहे की तुमच्या बिलातील ${gap} विमा कंपनीने परत दिले नाहीत आणि त्यापैकी ${ded} कशासाठी होते ते विचारलं आहे.`,
+  dup_pages_note:n=>`${n} फोटो आधी वाचलेल्या पानाची हुबेहूब प्रत होती, त्यामुळे ती एकदाच मोजली.`,
   sec_bill: "तपशीलवार बिल तपासा",
   bill_lead: "तुमच्या बिलाच्या सर्व पानांचे फोटो अपलोड करा (एकापेक्षा जास्त असल्यास सर्व). Google Gemini ते ओळींमध्ये वाचतं; मग तपासण्या तुमच्या ब्राउझरमध्येच चालतात. तुमचा फोटो वाचण्यासाठी एकदा Google च्या Gemini API ला पाठवला जातो &mdash; ClearBill स्वतः तो साठवत नाही. <span style=\"display:block;margin-top:8px;font-size:.84rem\">Google च्या अटी योजनेनुसार वेगळ्या आहेत: त्याच्या मोफत योजनेत Google पाठवलेला मजकूर आपली उत्पादने सुधारण्यासाठी वापरू शकते आणि लोक तो वाचू शकतात; सशुल्क योजनेत असं होत नाही. फोटो काढण्यापूर्वी तुम्ही तुमचं नाव, पत्ता आणि ओळख क्रमांक झाकू किंवा कापू शकता &mdash; तपासण्यांना त्यांची गरज नाही (बिलाच्या पूर्णतेची तपासणी ते गहाळ म्हणून दाखवेल).</span>",
   drop_html: '<b>फोटो निवडण्यासाठी टॅप करा</b><br>किंवा इथे फोटो आणा (JPG / PNG) &mdash; अनेक पानं चालतील',
@@ -1668,6 +1725,9 @@ mr: {
   mybills_unnamed:"रुग्णालयाचं बिल", mybills_status_label:"स्थिती",
   mybills_note_ph:"नोंदी — उदा. विमा कंपनीने काय सांगितलं, किंवा तुम्ही कधी पाठपुरावा केला",
   mybills_delete_btn:"पुसा",
+  mybills_delall_confirm:n=>`तुमच्या Google खात्यातून सर्व ${n} जतन केलेली बिले पुसायची? हे परत आणता येणार नाही.`,
+  mybills_delall_done:(k,n)=>`${n} पैकी ${k} जतन केलेली बिले पुसली.`+(k<n?' बाकीची आत्ता पुसता आली नाहीत. कृपया पुन्हा प्रयत्न करा.':''),
+  mybills_delall_expired:(k,n)=>`तुमचं साइन-इन संपलं आहे, त्यामुळे ${n} पैकी फक्त ${k} जतन केलेली बिले पुसली. पुन्हा साइन इन करा आणि परत प्रयत्न करा.`,
   mybills_status:{sent:"पत्र पाठवलं",insurer_responded:"विमा कंपनीने उत्तर दिलं",resolved:"निकाली निघालं",no_response:"अजून उत्तर नाही"},
   as_head:"पत्र पाठवल्यानंतर",
   as_1:"हे तुमच्या विमा कंपनीच्या तक्रार निवारण अधिकाऱ्याला ईमेलने किंवा पोस्टाने पाठवा. पत्ता तुमच्या पॉलिसी कागदपत्रांवर, क्लेम पत्रावर किंवा विमा कंपनीच्या वेबसाइटवर असतो. पुरावा राहील अशी पद्धत वापरा (जतन करता येणारा ईमेल, किंवा रजिस्टर्ड पोस्ट) आणि तारखेसह एक प्रत ठेवा.",
@@ -1695,7 +1755,7 @@ mr: {
   ls_note:"पत्र स्वतः इंग्रजीत आहे. हा सारांश फक्त तुमच्यासाठी आहे आणि पत्राचा भाग नाही.",
   settle_model_note:"हा तुम्ही भरलेल्या रकमेतील को-पे नसलेला भाग आहे. यात खोली भाड्याची मर्यादा, उप-मर्यादा, डिडक्टिबल आणि पॉलिसीचे अपवाद हे देखील असू शकतात, फक्त बिगर-वैद्यकीय गोष्टी नाहीत; अ‍ॅप यांच्यातला फरक ओळखू शकत नाही.",
   settle_inconsistent_note:"तुमच्या सेटलमेंटचे आकडे एकमेकांशी जुळत नाहीत (सेटलमेंट टॅबवरील संदेश पहा), त्यामुळे \"स्पष्ट न केलेली\" रक्कम इथे वापरलेली नाही आणि पत्रातून वगळली आहे.",
-  nppa_skipped_note:n=>`${n} इम्प्लांट ओळ सेट किंवा पॅकेजसारखी वाटली आणि एका भागाच्या मर्यादेशी जुळवली नाही.`,
+  nppa_skipped_note:n=>`${n} इम्प्लांट ओळ सेट, पॅकेज किंवा प्रक्रियेच्या (प्रोसिजर) शुल्कासारखी वाटली आणि एका भागाच्या मर्यादेशी जुळवली नाही.`,
   nonlatin_note:n=>`${n} ओळी इंग्रजीत लिहिलेल्या नाहीत आणि इंग्रजी याद्यांशी जुळवता आल्या नाहीत.`,
   detail_nppa_src:(ref,ceiling,gst)=>`${ref} साठी NPPA मर्यादा: ${ceiling} (${gst})`,
   detail_recon:"ताळमेळ",
@@ -1811,7 +1871,7 @@ mr: {
     recon: { label:"बेरीज तपासा",
       found:diff=>`बिलाची बेरीज ${diff} ने चुकीची आहे`, sub:(gross,lineSum)=>`छापील ${gross} विरुद्ध ओळींची बेरीज ${lineSum} &mdash; कदाचित रुग्णालयाची स्वतःची गणना`,
       foundClear:"बिलाचा ताळमेळ बरोबर आहे", subClear:"ओळींची बेरीज छापील एकूण रकमेशी जुळते",
-      foundNotCompared:"बिलाची एकूण रक्कम जुळवली नाही", subNotCompared:"या बिलावरील छापील एकूण रक्कम वाचता आली नाही",
+      foundNotCompared:"बिलाची एकूण रक्कम जुळवली नाही", subNotCompared:"या बिलावरील छापील एकूण रक्कम वाचता आली नाही", subNotComparedUnreadable:"या बिलातील काही रकमा वाचता आल्या नाहीत, त्यामुळे छापील एकूण रक्कम ओळींच्या बेरजेशी जुळवली नाही",
       money:()=>"ही रुग्णालयाची स्वतःची गणना आहे, तुमची किंवा आमची नाही. यामुळे तुमची देय रक्कम बदलत नाही.",
       doText:"बिलिंग डेस्कला हा फरक दाखवा आणि स्पष्टीकरण मागा. हे बिल तुमच्या रेकॉर्डसाठी जपून ठेवा." },
     dup: { label:"दोनदा", labelSimilar:"तपासा",
@@ -1841,14 +1901,21 @@ function Sv(path){
 }
 
 /* settlement */
-const F = {total:$('total'),counter:$('counter'),discount:$('discount'),copay:$('copay')};
+const F = {total:$('total'),counter:$('counter'),discount:$('discount'),copay:$('copay'),reimb:$('reimb')};
+// Two ways a claim gets paid (R15). Cashless: the hospital bills the insurer
+// and you pay the rest at the discharge counter. Reimbursement: you pay the
+// whole bill yourself and the insurer pays some of it back later. The
+// calculator used to know only cashless, so someone who had paid the full
+// bill typed it as "paid at the counter" and was told the insurer approved
+// nothing and that the entire bill was "never explained".
+let SETTLE_MODE='cashless';
 // Local draft only — never sent anywhere, same as the language preference
 // already saved this way. Only what the user actually typed gets saved (the
 // worked example fills the fields programmatically and calls calc() directly,
 // never through these listeners, so loading the demo never overwrites a
 // real draft).
 const DRAFT_LS='clearbill_settlement_draft';
-function saveDraft(){ try{ localStorage.setItem(DRAFT_LS, JSON.stringify({total:F.total.value,counter:F.counter.value,discount:F.discount.value,copay:F.copay.value})); }catch(e){} }
+function saveDraft(){ try{ localStorage.setItem(DRAFT_LS, JSON.stringify({mode:SETTLE_MODE,total:F.total.value,counter:F.counter.value,discount:F.discount.value,copay:F.copay.value,reimb:F.reimb.value})); }catch(e){} }
 function restoreDraft(){
   try{
     const raw=localStorage.getItem(DRAFT_LS); if(!raw) return;
@@ -1856,42 +1923,85 @@ function restoreDraft(){
     if(d.total) F.total.value=d.total;
     if(d.counter) F.counter.value=d.counter;
     if(d.discount) F.discount.value=d.discount;
+    if(d.reimb) F.reimb.value=d.reimb;
     if(d.copay){ F.copay.value=d.copay; markChips(d.copay); }
+    setSettleMode(d.mode==='reimb'?'reimb':'cashless',true);
   }catch(e){}
+}
+// The labels on the result that depend on how the claim was paid.
+function settleLabels(){
+  const T_=S(), re=SETTLE_MODE==='reimb';
+  $('counterPaymentLbl').textContent=re?T_.not_reimbursed:T_.counter_payment;
+  $('insurerApprovedLbl').textContent=re?T_.insurer_paid_you:T_.insurer_approved;
+}
+// quiet: only show the right fields (used while restoring saved figures,
+// which recalculate once at the end themselves).
+function setSettleMode(m,quiet){
+  SETTLE_MODE=m==='reimb'?'reimb':'cashless';
+  const re=SETTLE_MODE==='reimb';
+  document.querySelectorAll('#settleMode .chip').forEach(c=>{ const on=c.dataset.mode===SETTLE_MODE; c.classList.toggle('on',on); c.setAttribute('aria-pressed',on); });
+  $('counterBox').classList.toggle('hide',re); $('discountBox').classList.toggle('hide',re); $('reimbBox').classList.toggle('hide',!re);
+  if($('findNumsCounterP')) $('findNumsCounterP').classList.toggle('hide',re);
+  if($('findNumsDiscountP')) $('findNumsDiscountP').classList.toggle('hide',re);
+  if($('findNumsReimbP')) $('findNumsReimbP').classList.toggle('hide',!re);
+  settleLabels();
+  if(!quiet){ calc(); saveDraft(); }
 }
 // The settlement figures as the rest of the app may use them: null when they are
 // missing OR cannot all be true (paid more than the bill, 100% co-pay ...), so an
 // inconsistent set never reaches the report's headline or the letter.
 const settleOk=()=>{ const s=window.__settle; return s&&!s.warn?s:null; };
 function calc(){
-  const total=Math.max(0,+F.total.value||0), counter=Math.max(0,+F.counter.value||0),
-        disc=Math.max(0,+F.discount.value||0), cp=Math.max(0,Math.min(100,+F.copay.value||0));
-  if(!total||!counter){ $('settleOut').classList.add('hide'); window.__settle=null; if(window.__lastExtraction) renderReport(window.__lastExtraction); return; }
+  const re=SETTLE_MODE==='reimb';
+  const total=Math.max(0,+F.total.value||0), cp=Math.max(0,Math.min(100,+F.copay.value||0));
+  // A reimbursement has no counter payment and no network discount: you paid
+  // the bill, and "counter" becomes the part of it you did not get back.
+  const disc=re?0:Math.max(0,+F.discount.value||0);
+  const paidBack=re?Math.max(0,+F.reimb.value||0):null;
+  const counter=re?Math.max(0,money(total-paidBack)):Math.max(0,+F.counter.value||0);
+  if(!total||!(re?paidBack:counter)){ $('settleOut').classList.add('hide'); window.__settle=null; if(window.__lastExtraction) renderReport(window.__lastExtraction); return; }
   const r=cp/100;
-  let deduction = r<1 ? (counter-(total-disc)*r)/(1-r) : 0;
-  // Figures that cannot all be true together are flagged instead of quietly
-  // clamping to zero and showing a confident-looking result.
-  const warnKey = r>=1 ? 'settle_warn_full' : counter>Math.max(0,total-disc) ? 'settle_warn_over' : deduction<0 ? 'settle_warn_low' : null;
-  deduction = Math.max(0, money(deduction));
-  const base = Math.max(0, money(total-deduction-disc));
-  const copayAmt = money(base*r);
-  const insurer = Math.max(0, money(base-copayAmt));
-  window.__settle = {total,counter,disc,cp,deduction,base,copayAmt,insurer,warn:warnKey};
+  let deduction, warnKey, base, copayAmt, insurer;
+  if(re){
+    // The insurer pays (bill - deduction) x (1 - co-pay), so the deduction is
+    // the bill minus what was paid back grossed up for the co-pay.
+    deduction = r<1 ? total-paidBack/(1-r) : 0;
+    warnKey = r>=1 ? 'settle_warn_full' : paidBack>total ? 'settle_warn_reimb_over' : deduction<-0.005 ? 'settle_warn_reimb_low' : null;
+    deduction = Math.max(0, money(deduction));
+    base = Math.max(0, money(total-deduction));
+    insurer = Math.min(paidBack,total);
+    copayAmt = Math.max(0, money(total-insurer-deduction));
+  } else {
+    deduction = r<1 ? (counter-(total-disc)*r)/(1-r) : 0;
+    // Figures that cannot all be true together are flagged instead of quietly
+    // clamping to zero and showing a confident-looking result. Paying the
+    // whole bill at the counter means the insurer approved nothing — almost
+    // always a reimbursement typed into the cashless fields (R15).
+    const due=Math.max(0,total-disc);
+    warnKey = r>=1 ? 'settle_warn_full' : counter>due ? 'settle_warn_over' : (due>0&&Math.abs(counter-due)<1) ? 'settle_warn_paid_all' : deduction<0 ? 'settle_warn_low' : null;
+    deduction = Math.max(0, money(deduction));
+    base = Math.max(0, money(total-deduction-disc));
+    copayAmt = money(base*r);
+    insurer = Math.max(0, money(base-copayAmt));
+  }
+  window.__settle = {mode:SETTLE_MODE,total,counter,disc,cp,deduction,base,copayAmt,insurer,warn:warnKey};
   $('settleOut').classList.toggle('inconsistent',!!warnKey);
-  $('settleModelNote').textContent=S().settle_model_note;
+  $('settleModelNote').textContent=re?S().settle_model_note_reimb:S().settle_model_note;
   $('mysteryAmt').textContent = inr.format(deduction);
-  $('mysterySub').textContent = S().mystery_sub(inr.format(counter),inr.format(copayAmt),inr.format(deduction));
+  $('mysterySub').textContent = (re?S().mystery_sub_reimb:S().mystery_sub)(inr.format(counter),inr.format(copayAmt),inr.format(deduction));
   $('rDed').textContent = inr.format(deduction);
   $('rCopay').textContent = inr.format(copayAmt);
   $('rCopayDesc').textContent = S().approved_base(cp);
-  $('rCounter').textContent = inr.format(deduction+copayAmt);
+  $('rCounter').textContent = inr.format(re?counter:deduction+copayAmt);
   $('sInsurer').textContent = inr.format(insurer);
   $('sBase').textContent = inr.format(base);
+  settleLabels();
   $('settleOut').classList.remove('hide');
   $('settleWarn').textContent = warnKey ? S()[warnKey] : '';
   $('settleWarn').classList.toggle('hide', !warnKey);
   if(window.__lastExtraction) renderReport(window.__lastExtraction);
 }
+document.querySelectorAll('#settleMode .chip').forEach(c=>c.addEventListener('click',()=>setSettleMode(c.dataset.mode)));
 $('nextBill').addEventListener('click',()=>switchTab('findings'));
 // Bring the result into view once a field is committed (on leaving the field),
 // not on every keystroke, so typing is never interrupted.
@@ -1901,6 +2011,7 @@ function markChips(v){ document.querySelectorAll('#copayChips .chip').forEach(c=
 document.querySelectorAll('#copayChips .chip').forEach(c=>c.addEventListener('click',()=>{ F.copay.value=c.dataset.v; markChips(c.dataset.v); calc(); saveDraft(); }));
 restoreDraft(); calc();
 $('egBtn').addEventListener('click',()=>{
+  setSettleMode('cashless',true);
   F.total.value=41396; F.counter.value=9349; F.discount.value=1572; F.copay.value=10; markChips(10);
   // The worked example used to only fill in the settlement numbers, leaving
   // Findings and Letter empty — a demo that couldn't show its own findings
@@ -2031,21 +2142,28 @@ function analyse(data,now){
   const sum=a=>money(a.reduce((s,r)=>s+(r.total||0),0));
   const lineSum=sum(lines);
   let recon=null; const g=amt(H.gross_amount);
-  const reconCompared=g!=null;   // no printed total read => "not compared", never "clear"
-  if(g!=null){ const d=money(g-lineSum); if(Math.abs(d)>=1) recon={diff:d,gross:money(g),lineSum}; }
+  // No printed total read => "not compared", never "clear". And when some
+  // amounts could not be read, the line sum is missing them: comparing it
+  // with the printed total would report a gap the hospital never made (R15).
+  const reconBlocked=g!=null&&unreadable>0;
+  const reconCompared=g!=null&&!reconBlocked;
+  if(reconCompared){ const d=money(g-lineSum); if(Math.abs(d)>=1) recon={diff:d,gross:money(g),lineSum}; }
   // Repeated charges: same item text and same amount. Ignored: blank items and
   // zero/missing amounts (a repeated 0.00 row is layout, not a double charge).
-  // A charge that was reversed (a matching negative line) is netted out — that
-  // is a correction, not a duplicate. Recurring services (room rent, daily
-  // visits) can legitimately repeat, so the wording asks the user to check.
+  // A charge that was reversed is a correction, not a duplicate: the same
+  // "cancelled" set used above (a credit line of the same amount whose name
+  // matches once words like "refund" are removed). Netting only by identical
+  // text missed "Gloves Examination refund" against "Gloves Examination" and
+  // still reported the refunded pair as a repeat (R15). Recurring services
+  // (room rent, daily visits) can legitimately repeat, so the wording asks
+  // the user to check.
   const keyOf=(item,amount)=>item.trim().toLowerCase()+'|'+amount.toFixed(2);
-  const pos={},neg={};
-  lines.forEach(l=>{ if(!l.item.trim()||l.total==null||l.total===0) return;
-    if(l.total>0) pos[keyOf(l.item,l.total)]=(pos[keyOf(l.item,l.total)]||0)+1;
-    else neg[keyOf(l.item,-l.total)]=(neg[keyOf(l.item,-l.total)]||0)+1; });
+  const pos={};
+  lines.forEach((l,i)=>{ if(!l.item.trim()||l.total==null||l.total<=0||cancelled.has(i)) return;
+    pos[keyOf(l.item,l.total)]=(pos[keyOf(l.item,l.total)]||0)+1; });
   const dups=[];
-  lines.forEach(l=>{ if(!l.item.trim()||l.total==null||l.total<=0) return;
-    const k=keyOf(l.item,l.total), net=(pos[k]||0)-(neg[k]||0);
+  lines.forEach((l,i)=>{ if(!l.item.trim()||l.total==null||l.total<=0||cancelled.has(i)) return;
+    const k=keyOf(l.item,l.total), net=pos[k]||0;
     if(net>1&&!dups.find(d=>d.k===k)) dups.push({k,item:l.item,amount:l.total,n:net}); });
   // Lines that are identical apart from a trailing reference number (many
   // hospital systems append a per-line code: "CBC COMPLETE BLOOD COUNT 10449")
@@ -2057,7 +2175,7 @@ function analyse(data,now){
   // name in brackets, a size) must match exactly.
   const coreOf=s=>s.trim().toLowerCase().replace(/\s+\d{3,}$/,'').trim();
   const simGroups=new Map();
-  Object.keys(pos).forEach(k=>{ const net=pos[k]-(neg[k]||0); if(net<1) return;
+  Object.keys(pos).forEach(k=>{ const net=pos[k]; if(net<1) return;
     const bar=k.lastIndexOf('|'), item=k.slice(0,bar), amt=k.slice(bar+1), core=coreOf(item);
     const gk=core+'|'+amt, g=simGroups.get(gk)||{core,amount:+amt,keys:[],n:0};
     g.keys.push(item); g.n+=net; simGroups.set(gk,g); });
@@ -2102,15 +2220,18 @@ function analyse(data,now){
   // inside the validity period is not stale just because today is later); if the date
   // is missing or ambiguous across the boundary, today's date is used.
   const isStale=validTo=>bd?(bd.min>validTo?true:(bd.max<=validTo?false:clock>validTo)):clock>validTo;
-  // A ceiling is for ONE part. A line that is a set, kit or package, or names
-  // two parts (femoral + tibial ...), is not comparable and is never flagged.
-  const SET_WORDS=/\b(set|kit|package|pkg|combo)\b/;
+  // A ceiling is for ONE part. A line that is a set, kit or package, a
+  // procedure (angioplasty with stenting, surgery ...), or names two parts
+  // (femoral + tibial ...), is not comparable and is never flagged.
+  const SET_WORDS=/\b(set|kit|package|pkg|combo|procedure|surgery|operation|ptca|angioplasty|stenting)\b/;
   const FAMILIES=[/femoral/,/tibial/,/patell/,/insert|articulating/];
   // Punctuation is a space here, as in every other matcher (_normTxt): the
   // standard spelling "DRUG-ELUTING STENT" used to miss the "drug eluting
   // stent" keyword entirely, and the report then said no stent was on the
-  // bill at all (R11).
-  const nppaHit=(c,t)=>{ const k=c.kw.find(k=>t.includes(k)); if(k) return k;
+  // bill at all (R11). Keywords match whole words, as everywhere else: a
+  // substring test read "CORONARY STENTING CHARGES" as a stent and "TIBIAL
+  // INSERTER" (an instrument) as a knee insert, and flagged both (R15).
+  const nppaHit=(c,t)=>{ const k=c.kw.find(k=>_hasWord(t,k)); if(k) return k;
     const r=c.req&&c.req.find(ws=>ws.every(w=>_hasWord(t,w))); return r?r.join(' '):null; };
   for(let i=0;i<lines.length;i++){ if(credit.has(i)||cancelled.has(i)) continue; const l=lines[i], t=_normTxt(l.item);
     for(const c of NPPA){ const hit=nppaHit(c,t); if(hit){
@@ -2149,7 +2270,7 @@ function analyse(data,now){
   // page rejected as not-a-bill. Set by the upload flow on the merged object.
   const partial=data._pageCount===1||(data._rejected||0)>0;
   const subtotals = data.printed_subtotals && Object.keys(data.printed_subtotals).length ? data.printed_subtotals : null;
-  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,similarDups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nppaDated,nonLatin,subtotals,unreadable,reconCompared,partial,subsumed,subsumedSum,rejected:data._rejected||0,pageCount:data._pageCount||null};
+  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,similarDups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nppaDated,nonLatin,subtotals,unreadable,reconCompared,reconBlocked,partial,subsumed,subsumedSum,rejected:data._rejected||0,pageCount:data._pageCount||null};
 }
 function sectionSums(lines){
   const m={}; lines.forEach(l=>{ const k=l.section||'Uncategorised'; m[k]=(m[k]||0)+(l.total||0); });
@@ -2195,9 +2316,9 @@ function renderReport(data){
     <div class="tvs" style="margin-top:8px">
       <div class="p"><h5>${T_.told_h5}</h5>
         <div class="tr"><span>${T_.total_bill}</span><span class="v">${inr.format(s.total)}</span></div>
-        <div class="tr"><span>${T_.insurer_approved}</span><span class="v">&minus;${inr.format(s.insurer)}</span></div>
-        <div class="tr"><span>${T_.hospital_discount}</span><span class="v">&minus;${inr.format(s.disc)}</span></div>
-        <div class="tr tot"><span>${T_.you_paid}</span><span class="v">${inr.format(s.counter)}</span></div>
+        <div class="tr"><span>${s.mode==='reimb'?T_.insurer_paid_you:T_.insurer_approved}</span><span class="v">&minus;${inr.format(s.insurer)}</span></div>
+        ${s.mode==='reimb'?'':`<div class="tr"><span>${T_.hospital_discount}</span><span class="v">&minus;${inr.format(s.disc)}</span></div>`}
+        <div class="tr tot"><span>${s.mode==='reimb'?T_.not_reimbursed:T_.you_paid}</span><span class="v">${inr.format(s.counter)}</span></div>
         <div class="tr hi"><span>&nbsp;&nbsp;${T_.never_itemised_short}</span><span class="v">${inr.format(s.deduction)}</span></div>
       </div>
       <div class="p"><h5>${T_.shown_h5}</h5>
@@ -2298,7 +2419,7 @@ function renderReport(data){
         {money:C.recon.money(), doText:C.recon.doText})
     : (a.reconCompared
         ? chk('green',T_.clear_word,C.recon.foundClear,C.recon.subClear)
-        : chk('grey',T_.notcompared_word,C.recon.foundNotCompared,C.recon.subNotCompared));
+        : chk('grey',T_.notcompared_word,C.recon.foundNotCompared,a.reconBlocked?C.recon.subNotComparedUnreadable:C.recon.subNotCompared));
   // Exact repeats lead; "look alike apart from a reference number" is added
   // as its own, softer line and never counted as an exact repeat (R11).
   h+= a.dups.length
@@ -2317,6 +2438,7 @@ function renderReport(data){
   if(a.partial) h+=`<div role="note" style="margin-top:10px;font-family:'Spectral',serif;font-size:.86rem;color:var(--soft);line-height:1.5">${T_.partial_note(a.pageCount===1,a.rejected)}</div>`;
   const noteHtml=t=>`<div role="note" style="margin-top:10px;font-family:'Spectral',serif;font-size:.86rem;color:var(--soft);line-height:1.5">${t}</div>`;
   if(a.unreadable>0) h+=noteHtml(T_.unreadable_note(a.unreadable));
+  if(data._dupPages>0) h+=noteHtml(T_.dup_pages_note(data._dupPages));
   if(a.nppaSkipped>0) h+=noteHtml(T_.nppa_skipped_note(a.nppaSkipped));
   if(a.nppaDated>0) h+=noteHtml(T_.nppa_dated_note(a.nppaDated));
   if(a.nonLatin>0) h+=noteHtml(T_.nonlatin_note(a.nonLatin));
@@ -2441,12 +2563,17 @@ function buildLetter(a,include,noScroll){
     `Subject: Request for a line-by-line explanation of deductions${D.claim?` - Claim no. ${D.claim}`:``}`,``);
   const at=H.hospital_name?` at ${H.hospital_name}`:``;
   const dt=(H.admission_datetime&&H.discharge_datetime)?` between ${H.admission_datetime} and ${H.discharge_datetime}`:``;
-  L.push(`${pname||'I'} was hospitalised${at}${dt}.`+((s&&include.settlement)?` By my calculation from the discharge figures, the cashless settlement was as follows:`:``),``);
+  const reimb=!!(s&&s.mode==='reimb');
+  L.push(`${pname||'I'} was hospitalised${at}${dt}.`+((s&&include.settlement)?(reimb?` I paid the hospital bill myself and claimed it back. By my calculation from the claim figures, the reimbursement settlement was as follows:`:` By my calculation from the discharge figures, the cashless settlement was as follows:`):``),``);
   if(s&&include.settlement){
-    L.push(`    Total bill                 ${inr.format(s.total)}`,
+    L.push(...(reimb?[
+      `    Total bill (paid by me)    ${inr.format(s.total)}`,
+      `    Reimbursed by insurer    - ${inr.format(s.insurer)}`,
+      `    Not reimbursed             ${inr.format(s.counter)}`]:[
+      `    Total bill                 ${inr.format(s.total)}`,
       `    Insurer approved         - ${inr.format(s.insurer)}`,
       `    Hospital discount        - ${inr.format(s.disc)}`,
-      `    Paid at discharge          ${inr.format(s.counter)}`,
+      `    Paid at discharge          ${inr.format(s.counter)}`]),
       `      of which co-pay          ${inr.format(s.copayAmt)}`,
       `      of which not itemised    ${inr.format(s.deduction)}`,``,
       D.asked
@@ -2535,7 +2662,7 @@ function buildLetter(a,include,noScroll){
   let lsum='';
   if(LANG!=='en'){
     const sl=[];
-    if(s&&include.settlement) sl.push(T_.ls_settle(inr.format(s.counter),inr.format(s.deduction)));
+    if(s&&include.settlement) sl.push((s.mode==='reimb'?T_.ls_settle_reimb:T_.ls_settle)(inr.format(s.counter),inr.format(s.deduction)));
     if(a.exact.length&&include.irdai) sl.push(T_.ls_irdai(a.exact.length,inr.format(a.exactSum)));
     if(a.subsumed.length&&include.subsumed) sl.push(T_.ls_subsumed(a.subsumed.length,inr.format(a.subsumedSum)));
     if(s&&include.settlement&&a.exact.length&&include.irdai&&a.exactSum<s.deduction) sl.push(T_.ls_gap(inr.format(money(s.deduction-a.exactSum))));
@@ -2704,22 +2831,39 @@ async function readPages(files,o){
 /* /reader */
 
 // header: first non-null value per field wins (a later page rarely repeats
-// the masthead). line_items: concatenated in page order, so reconciliation
-// runs against the whole bill, not one page of it. printed_subtotals:
-// first occurrence per section wins — sections don't split across pages
-// in practice, and if one ever did, silently overwriting a real figure
-// with a second one would be worse than keeping the first.
+// the masthead), except the two signature fields, which are present if ANY
+// page shows the signature: a "false" on page 1 used to win over a "true" on
+// the last page, where signatures actually are (R15). line_items:
+// concatenated in page order, so reconciliation runs against the whole bill,
+// not one page of it. printed_subtotals: first occurrence per section wins —
+// sections don't split across pages in practice, and if one ever did,
+// silently overwriting a real figure with a second one would be worse than
+// keeping the first.
+// The same page photographed twice (same rows, same amounts, same printed
+// section totals) is read once, so its charges are not counted twice and
+// then reported as repeats (R15); _dupPages says how many were skipped.
 function mergePages(pages){
   const merged={header:{},line_items:[],printed_subtotals:{}};
-  const grosses=[], ambiguous=new Set();
+  const grosses=[], ambiguous=new Set(), seen=new Set(), kept=[];
+  const SIGS=new Set(['patient_signature','authorised_signature']);
+  let dupPages=0;
   for(const p of pages){
+    const li=p.line_items||[];
+    if(li.length){
+      const sig=JSON.stringify([li.map(l=>[String(l.item||'').trim().toLowerCase(),parseAmount(l.total).n]),
+        Object.entries(p.printed_subtotals||{}).map(([k,v])=>[k,parseAmount(v).n]).sort()]);
+      if(seen.has(sig)){ dupPages++; continue; }
+      seen.add(sig);
+    }
+    kept.push(p);
     const g0=parseAmount((p.header||{}).gross_amount).n; if(g0!=null&&!grosses.includes(g0)) grosses.push(g0);
     for(const [k,v] of Object.entries(p.header||{})){
+      if(SIGS.has(k)){ merged.header[k]=merged.header[k]===true||v===true; continue; }
       const blank=v===null||v===undefined||v==='';
       const haveNone=merged.header[k]===undefined||merged.header[k]===null||merged.header[k]==='';
       if(!blank&&haveNone) merged.header[k]=v;
     }
-    merged.line_items.push(...(p.line_items||[]));
+    merged.line_items.push(...li);
     for(const [k,v] of Object.entries(p.printed_subtotals||{})){
       if(merged.printed_subtotals[k]===undefined) merged.printed_subtotals[k]=v;
       else if(parseAmount(merged.printed_subtotals[k]).n!==parseAmount(v).n) ambiguous.add(k);
@@ -2728,15 +2872,24 @@ function mergePages(pages){
   // Two different printed figures for the same section: keeping either would be
   // a guess, so drop it and let the report use the computed sum.
   ambiguous.forEach(k=>delete merged.printed_subtotals[k]);
+  const sumOf=items=>items.reduce((s,l)=>s+(parseAmount(l.total).n||0),0);
+  const total=sumOf(merged.line_items);
   // The first page's gross is not necessarily the bill's grand total. Prefer a
   // gross that reconciles with the merged lines; if several pages disagree and
   // none reconciles, use none (the check then reads "not compared").
   if(grosses.length>1){
-    const total=merged.line_items.reduce((s,l)=>s+(parseAmount(l.total).n||0),0);
     const ok=grosses.find(g=>Math.abs(g-total)<1);
     merged.header.gross_amount = ok!==undefined ? ok : null;
   }
-  merged._pageCount=pages.length;
+  // One page printed a "total" that is exactly that page's own lines: it is a
+  // page total, not the bill's. Used as the bill total it reported every
+  // other page as a gap in the hospital's arithmetic (R15).
+  else if(grosses.length===1&&kept.length>1&&Math.abs(grosses[0]-total)>=1){
+    const own=kept.find(p=>parseAmount((p.header||{}).gross_amount).n===grosses[0]);
+    if(own&&(own.line_items||[]).length&&Math.abs(grosses[0]-sumOf(own.line_items))<1) merged.header.gross_amount=null;
+  }
+  merged._pageCount=kept.length;
+  if(dupPages) merged._dupPages=dupPages;
   return merged;
 }
 
@@ -2986,6 +3139,11 @@ function applyStaticI18n(){
   $('lblCounter').innerHTML=T_.lbl_counter;
   $('lblDiscount').innerHTML=T_.lbl_discount;
   $('lblCopay').innerHTML=T_.lbl_copay;
+  $('lblReimb').innerHTML=T_.lbl_reimb;
+  $('settleModeLbl').textContent=T_.settle_mode_lbl;
+  $('modeCashlessBtn').textContent=T_.mode_cashless; $('modeReimbBtn').textContent=T_.mode_reimb;
+  if($('findNumsReimbLbl')) $('findNumsReimbLbl').textContent=T_.lbl_reimb_plain;
+  if($('findNumsReimbTxt')) $('findNumsReimbTxt').innerHTML=T_.findnums_reimb;
   $('egBtn').textContent=T_.eg_btn;
   if($('skipToFindingsBtn')) $('skipToFindingsBtn').textContent=T_.skip_to_findings;
   if($('findNumsSummary')) $('findNumsSummary').textContent=T_.findnums_summary;
@@ -3001,8 +3159,7 @@ function applyStaticI18n(){
   $('neverItemisedLbl').innerHTML=T_.never_itemised;
   $('dedAbsorbedLbl').textContent=T_.ded_absorbed;
   $('copayLbl').textContent=T_.copay_lbl;
-  $('counterPaymentLbl').textContent=T_.counter_payment;
-  $('insurerApprovedLbl').textContent=T_.insurer_approved;
+  settleLabels();
   $('secBill').textContent=T_.sec_bill;
   $('billLead').innerHTML=T_.bill_lead;
   $('dropText').innerHTML=T_.drop_html;
@@ -3020,7 +3177,7 @@ function applyStaticI18n(){
   $('genLetterTab').textContent=T_.gen_letter_btn;
   $('nextBill').textContent=T_.next_bill_btn;
   if($('cancelReadBtn')){ $('cancelReadBtn').textContent=T_.cancel_btn; updateCheckBtn(); }
-  if($('settleModelNote')&&window.__settle) $('settleModelNote').textContent=T_.settle_model_note;
+  if($('settleModelNote')&&window.__settle) $('settleModelNote').textContent=SETTLE_MODE==='reimb'?T_.settle_model_note_reimb:T_.settle_model_note;
   if($('photoGuideSum')){ $('photoGuideSum').textContent=T_.photo_guide_sum; $('photoGuideList').innerHTML=T_.photo_guide.map(x=>'<li>'+x+'</li>').join(''); }
   if($('clearSavedBtn')){ $('clearSavedBtn').textContent=T_.clear_saved_btn; $('clearSavedHint').textContent=T_.clear_saved_hint; if(!$('clearedNote').classList.contains('hide')) $('clearedNote').textContent=T_.cleared_note; }
   [['ldHead','ld_head'],['ldIntro','ld_intro'],['ldLblName','ld_name'],['ldLblAddress','ld_address'],['ldLblInsurer','ld_insurer'],
@@ -3110,7 +3267,7 @@ document.querySelectorAll('#letterDetails input,#letterDetails textarea,#letterD
 $('clearSavedBtn').addEventListener('click',()=>{
   try{ localStorage.removeItem(DRAFT_LS); localStorage.removeItem(LD_KEY); sessionStorage.removeItem(LD_KEY); localStorage.removeItem(KEY_LS); localStorage.removeItem(LOCAL_LS); }catch(e){}
   if(typeof renderLocalList==='function') renderLocalList();
-  Object.values(F).forEach(el=>{ el.value=''; }); markChips(-1); $('apiKey').value='';
+  Object.values(F).forEach(el=>{ el.value=''; }); markChips(-1); setSettleMode('cashless',true); $('apiKey').value='';
   LD_FIELDS.forEach(f=>{ $('ld_'+f).value=''; }); $('ld_asked').checked=false; $('ld_remember').checked=false;
   if(typeof signOut==='function') signOut(); // the My Bills sign-in session is also "saved on this device"
   calc();
@@ -3321,10 +3478,28 @@ async function deleteMyBill(id){
     if(r.ok){ _myBills=_myBills.filter(b=>b.id!==id); renderMyBillsList(_myBills); }
   }catch(e){}
 }
+// Deletes one at a time and removes from the list only what the server
+// confirmed. It used to ignore every answer and clear the list regardless, so
+// an expired sign-in showed "all deleted" while every bill was still saved
+// (R15). A bill already gone (404) is gone either way.
 if($('mybillsDeleteAllBtn')) $('mybillsDeleteAllBtn').addEventListener('click',async()=>{
-  const ids=_myBills.map(b=>b.id);
-  for(const id of ids){ try{ await authFetch('api/bills/'+encodeURIComponent(id),{method:'DELETE'}); }catch(e){} }
-  _myBills=[]; renderMyBillsList([]);
+  const T_=S(), btn=$('mybillsDeleteAllBtn'), msg=$('mybillsDelMsg');
+  const ids=_myBills.map(b=>b.id); if(!ids.length) return;
+  if(!window.confirm(T_.mybills_delall_confirm(ids.length))) return;
+  btn.disabled=true;
+  const gone=new Set(); let expired=false;
+  try{
+    for(const id of ids){
+      try{
+        const r=await authFetch('api/bills/'+encodeURIComponent(id),{method:'DELETE'});
+        if(r.status===401){ expired=true; break; }
+        if(r.ok||r.status===404) gone.add(id);
+      }catch(e){}
+    }
+  } finally { btn.disabled=false; }
+  _myBills=_myBills.filter(b=>!gone.has(b.id));
+  if(expired) signOut(); else renderMyBillsList(_myBills);
+  if(msg){ msg.textContent=expired?T_.mybills_delall_expired(gone.size,ids.length):T_.mybills_delall_done(gone.size,ids.length); msg.classList.remove('hide'); }
 });
 
 /* ---- On this device (R12): keep a finished check in this browser, no
@@ -3348,7 +3523,7 @@ function buildLocalCheck(){
   return { v:1, id:newLocalId(), savedAt:new Date().toISOString(),
     name:p.hospitalName||null, billDate:p.billDate||null,
     explainedPct:typeof p.explainedPct==='number'?p.explainedPct:null, netPayable:typeof p.netPayable==='number'?p.netPayable:null,
-    settle:{total:F.total.value,counter:F.counter.value,discount:F.discount.value,copay:F.copay.value},
+    settle:{mode:SETTLE_MODE,total:F.total.value,counter:F.counter.value,discount:F.discount.value,copay:F.copay.value,reimb:F.reimb.value},
     extraction:data, letter:window.__lastLetterText||'' };
 }
 function saveLocalCheck(){
@@ -3362,7 +3537,8 @@ function openLocalCheck(r){
   if(_reading) return;
   resetUploadState();
   const st=r.settle||{}, num=v=>(v===''||v==null||isNaN(+v))?'':String(+v);
-  F.total.value=num(st.total); F.counter.value=num(st.counter); F.discount.value=num(st.discount); F.copay.value=num(st.copay);
+  F.total.value=num(st.total); F.counter.value=num(st.counter); F.discount.value=num(st.discount); F.copay.value=num(st.copay); F.reimb.value=num(st.reimb);
+  setSettleMode(st.mode==='reimb'?'reimb':'cashless',true);
   markChips(F.copay.value); saveDraft();
   window.__lastExtraction=r.extraction;
   calc();                                  // renders the report from the restored extraction
@@ -3377,7 +3553,7 @@ function importLocalCheckText(text){
     savedAt:(typeof r.savedAt==='string'&&!isNaN(Date.parse(r.savedAt)))?new Date(Date.parse(r.savedAt)).toISOString():new Date().toISOString(),
     name:typeof r.name==='string'?r.name.slice(0,200):null, billDate:typeof r.billDate==='string'?r.billDate.slice(0,60):null,
     explainedPct:typeof r.explainedPct==='number'?r.explainedPct:null, netPayable:typeof r.netPayable==='number'?r.netPayable:null,
-    settle:(r.settle&&typeof r.settle==='object')?{total:r.settle.total,counter:r.settle.counter,discount:r.settle.discount,copay:r.settle.copay}:{},
+    settle:(r.settle&&typeof r.settle==='object')?{mode:r.settle.mode==='reimb'?'reimb':'cashless',total:r.settle.total,counter:r.settle.counter,discount:r.settle.discount,copay:r.settle.copay,reimb:r.settle.reimb}:{},
     extraction:r.extraction, letter:typeof r.letter==='string'?r.letter:'', sentOn:validSentOn(r.sentOn)?r.sentOn:null };
   const list=readLocalChecks(); if(list.length>=LOCAL_MAX) return 'full';
   try{ writeLocalChecks([clean,...list]); }catch(e){ return 'err'; }

@@ -462,21 +462,28 @@ function analyse(data,now){
   const sum=a=>money(a.reduce((s,r)=>s+(r.total||0),0));
   const lineSum=sum(lines);
   let recon=null; const g=amt(H.gross_amount);
-  const reconCompared=g!=null;   // no printed total read => "not compared", never "clear"
-  if(g!=null){ const d=money(g-lineSum); if(Math.abs(d)>=1) recon={diff:d,gross:money(g),lineSum}; }
+  // No printed total read => "not compared", never "clear". And when some
+  // amounts could not be read, the line sum is missing them: comparing it
+  // with the printed total would report a gap the hospital never made (R15).
+  const reconBlocked=g!=null&&unreadable>0;
+  const reconCompared=g!=null&&!reconBlocked;
+  if(reconCompared){ const d=money(g-lineSum); if(Math.abs(d)>=1) recon={diff:d,gross:money(g),lineSum}; }
   // Repeated charges: same item text and same amount. Ignored: blank items and
   // zero/missing amounts (a repeated 0.00 row is layout, not a double charge).
-  // A charge that was reversed (a matching negative line) is netted out — that
-  // is a correction, not a duplicate. Recurring services (room rent, daily
-  // visits) can legitimately repeat, so the wording asks the user to check.
+  // A charge that was reversed is a correction, not a duplicate: the same
+  // "cancelled" set used above (a credit line of the same amount whose name
+  // matches once words like "refund" are removed). Netting only by identical
+  // text missed "Gloves Examination refund" against "Gloves Examination" and
+  // still reported the refunded pair as a repeat (R15). Recurring services
+  // (room rent, daily visits) can legitimately repeat, so the wording asks
+  // the user to check.
   const keyOf=(item,amount)=>item.trim().toLowerCase()+'|'+amount.toFixed(2);
-  const pos={},neg={};
-  lines.forEach(l=>{ if(!l.item.trim()||l.total==null||l.total===0) return;
-    if(l.total>0) pos[keyOf(l.item,l.total)]=(pos[keyOf(l.item,l.total)]||0)+1;
-    else neg[keyOf(l.item,-l.total)]=(neg[keyOf(l.item,-l.total)]||0)+1; });
+  const pos={};
+  lines.forEach((l,i)=>{ if(!l.item.trim()||l.total==null||l.total<=0||cancelled.has(i)) return;
+    pos[keyOf(l.item,l.total)]=(pos[keyOf(l.item,l.total)]||0)+1; });
   const dups=[];
-  lines.forEach(l=>{ if(!l.item.trim()||l.total==null||l.total<=0) return;
-    const k=keyOf(l.item,l.total), net=(pos[k]||0)-(neg[k]||0);
+  lines.forEach((l,i)=>{ if(!l.item.trim()||l.total==null||l.total<=0||cancelled.has(i)) return;
+    const k=keyOf(l.item,l.total), net=pos[k]||0;
     if(net>1&&!dups.find(d=>d.k===k)) dups.push({k,item:l.item,amount:l.total,n:net}); });
   // Lines that are identical apart from a trailing reference number (many
   // hospital systems append a per-line code: "CBC COMPLETE BLOOD COUNT 10449")
@@ -488,7 +495,7 @@ function analyse(data,now){
   // name in brackets, a size) must match exactly.
   const coreOf=s=>s.trim().toLowerCase().replace(/\s+\d{3,}$/,'').trim();
   const simGroups=new Map();
-  Object.keys(pos).forEach(k=>{ const net=pos[k]-(neg[k]||0); if(net<1) return;
+  Object.keys(pos).forEach(k=>{ const net=pos[k]; if(net<1) return;
     const bar=k.lastIndexOf('|'), item=k.slice(0,bar), amt=k.slice(bar+1), core=coreOf(item);
     const gk=core+'|'+amt, g=simGroups.get(gk)||{core,amount:+amt,keys:[],n:0};
     g.keys.push(item); g.n+=net; simGroups.set(gk,g); });
@@ -533,15 +540,18 @@ function analyse(data,now){
   // inside the validity period is not stale just because today is later); if the date
   // is missing or ambiguous across the boundary, today's date is used.
   const isStale=validTo=>bd?(bd.min>validTo?true:(bd.max<=validTo?false:clock>validTo)):clock>validTo;
-  // A ceiling is for ONE part. A line that is a set, kit or package, or names
-  // two parts (femoral + tibial ...), is not comparable and is never flagged.
-  const SET_WORDS=/\b(set|kit|package|pkg|combo)\b/;
+  // A ceiling is for ONE part. A line that is a set, kit or package, a
+  // procedure (angioplasty with stenting, surgery ...), or names two parts
+  // (femoral + tibial ...), is not comparable and is never flagged.
+  const SET_WORDS=/\b(set|kit|package|pkg|combo|procedure|surgery|operation|ptca|angioplasty|stenting)\b/;
   const FAMILIES=[/femoral/,/tibial/,/patell/,/insert|articulating/];
   // Punctuation is a space here, as in every other matcher (_normTxt): the
   // standard spelling "DRUG-ELUTING STENT" used to miss the "drug eluting
   // stent" keyword entirely, and the report then said no stent was on the
-  // bill at all (R11).
-  const nppaHit=(c,t)=>{ const k=c.kw.find(k=>t.includes(k)); if(k) return k;
+  // bill at all (R11). Keywords match whole words, as everywhere else: a
+  // substring test read "CORONARY STENTING CHARGES" as a stent and "TIBIAL
+  // INSERTER" (an instrument) as a knee insert, and flagged both (R15).
+  const nppaHit=(c,t)=>{ const k=c.kw.find(k=>_hasWord(t,k)); if(k) return k;
     const r=c.req&&c.req.find(ws=>ws.every(w=>_hasWord(t,w))); return r?r.join(' '):null; };
   for(let i=0;i<lines.length;i++){ if(credit.has(i)||cancelled.has(i)) continue; const l=lines[i], t=_normTxt(l.item);
     for(const c of NPPA){ const hit=nppaHit(c,t); if(hit){
@@ -580,7 +590,7 @@ function analyse(data,now){
   // page rejected as not-a-bill. Set by the upload flow on the merged object.
   const partial=data._pageCount===1||(data._rejected||0)>0;
   const subtotals = data.printed_subtotals && Object.keys(data.printed_subtotals).length ? data.printed_subtotals : null;
-  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,similarDups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nppaDated,nonLatin,subtotals,unreadable,reconCompared,partial,subsumed,subsumedSum,rejected:data._rejected||0,pageCount:data._pageCount||null};
+  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,similarDups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nppaDated,nonLatin,subtotals,unreadable,reconCompared,reconBlocked,partial,subsumed,subsumedSum,rejected:data._rejected||0,pageCount:data._pageCount||null};
 }
 
 module.exports = { NON_PAYABLE, SUBSUMED, NPPA, OMBUDSMAN, OMBUDSMAN_READ_ON, INDIA_STATES, ombudsmanFor, IS19493_HEADER, GSTIN_RE, money, bestMatch, bestMatchIn, parseAmount, billDateRange, analyse };

@@ -34,7 +34,11 @@ const STUB = `
       if (window.__delay) await wait(window.__delay);
       if (window.__mode === 'hang') return new Promise((_, rej) => o.signal.addEventListener('abort', () => rej(Object.assign(new Error('aborted'), { name: 'AbortError' }))));
       if (window.__mode === '504') return new Response(JSON.stringify({ error: 'timeout' }), { status: 504 });
-      return new Response(GOOD, { status: 200 });
+      // Each photo reads as a different page (two identical pages are now read once, R15);
+      // __mode 'same' returns the identical page every time, to test exactly that.
+      if (window.__mode === 'same') return new Response(GOOD, { status: 200 });
+      const n = window.__calls.length;
+      return new Response(n > 1 ? JSON.stringify({ is_hospital_bill: true, header: {}, line_items: [{ item: 'BED CHARGES DAY ' + n, quantity: 1, rate: 100, total: 100 }] }) : GOOD, { status: 200 });
     }
     return realFetch(u, o);
   };
@@ -132,7 +136,7 @@ const STUB = `
     txt = await showReport([{ item: 'Drug eluting stent', quantity: 1, rate: 39000, total: 39000 }]);
     ok(/1 implant line compared; none above the ceiling/.test(txt), 'a stent priced at its ceiling says it was compared and is not above it');
     txt = await showReport([{ item: 'TKR SET Femoral component + Tibial component + Insert', quantity: 1, rate: 85000, total: 85000 }]);
-    ok(/looked like a set or package/.test(txt) && !/above the NPPA ceiling plus GST/.test(txt), 'a knee set is not flagged and the report says it was not compared');
+    ok(/looked like a set, package or procedure charge/.test(txt) && !/above the NPPA ceiling plus GST/.test(txt), 'a knee set is not flagged and the report says it was not compared');
     txt = await showReport([{ item: 'बेड शुल्क', quantity: 1, total: 100 }, { item: 'Bed', quantity: 1, total: 5 }]);
     ok(/1 line is not written in English/.test(txt), 'a line written only in Hindi is reported as not checked');
     txt = await showReport([{ item: 'Television charges', quantity: 1, total: 300 }]);
@@ -403,6 +407,61 @@ const STUB = `
     const sentLen = await ev(`return window.__dataLens[0]`);
     ok(sentMime === 'image/jpeg', 'the real upload path sends image/jpeg for the (downscaled) photo');
     ok(sentLen < origB64Len * 0.8, `the real upload sends meaningfully less data than the undownscaled original (${sentLen} vs ${origB64Len} base64 chars)`);
+
+    console.log('== R15: reimbursement claims');
+    await fresh(); await ev(`setLang('en');`);
+    const setV = (idd, v) => ev(`const e=document.getElementById('${idd}'); e.value='${v}'; e.dispatchEvent(new Event('input',{bubbles:true}));`);
+    // The live repro: a reimbursement typed into the cashless fields.
+    await setV('total', '41396'); await setV('counter', '41396'); await setV('discount', '0'); await setV('copay', '0');
+    const paidAll = await ev(`return {warn: document.getElementById('settleWarn').textContent, hidden: document.getElementById('settleWarn').classList.contains('hide'), ok: settleOk()}`);
+    ok(!paidAll.hidden && /I paid and claimed it back/.test(paidAll.warn) && paidAll.ok === null, 'cashless: paying the whole bill at the counter is flagged and points to the reimbursement option (it used to say the insurer approved ₹0 and the whole bill was never explained)');
+    await ev(`document.getElementById('modeReimbBtn').click();`); await sleep(100);
+    const vis = await ev(`const h=id=>document.getElementById(id).classList.contains('hide'); return {counter: h('counterBox'), discount: h('discountBox'), reimb: h('reimbBox'), pressed: document.getElementById('modeReimbBtn').getAttribute('aria-pressed')}`);
+    ok(vis.counter && vis.discount && !vis.reimb && vis.pressed === 'true', 'choosing "I paid and claimed it back" swaps the counter and discount fields for "Amount the insurer paid you"');
+    await setV('reimb', '30000'); await setV('copay', '10');
+    const rs15 = await ev(`const s=settleOk(); return s && {mode:s.mode, insurer:s.insurer, ded:s.deduction, copay:s.copayAmt, gap:s.counter, sub: document.getElementById('mysterySub').textContent, lbl: document.getElementById('counterPaymentLbl').textContent, ins: document.getElementById('insurerApprovedLbl').textContent}`);
+    ok(rs15 && rs15.mode === 'reimb' && rs15.insurer === 30000 && rs15.ded === 8062.67 && rs15.copay === 3333.33 && rs15.gap === 11396, 'bill ₹41,396, paid back ₹30,000, 10% co-pay: ₹3,333.33 co-pay and ₹8,062.67 never explained (' + JSON.stringify(rs15 && [rs15.ded, rs15.copay]) + ')');
+    ok(rs15 && /did not pay back/.test(rs15.sub) && rs15.lbl === 'Not paid back to you' && rs15.ins === 'Insurer paid you', 'the result is worded for a reimbursement, not a counter payment');
+    await ev(`window.__lastExtraction={header:{},line_items:[{item:'TV CHARGES',quantity:1,total:300}]}; renderReport(window.__lastExtraction); switchTab('letter'); document.getElementById('genLetterTab').click();`); await sleep(300);
+    const rl = await ev(`return document.querySelector('.letter').textContent`);
+    ok(/reimbursement settlement was as follows/.test(rl) && /Reimbursed by insurer/.test(rl) && /Not reimbursed/.test(rl) && !/Paid at discharge|cashless/.test(rl), 'the letter describes a reimbursement settlement, not a cashless one');
+    await setV('reimb', '50000');
+    ok(await ev(`return settleOk()===null && /more than the total bill/.test(document.getElementById('settleWarn').textContent)`), 'paid back more than the bill: flagged, and kept out of the report and letter');
+    await setV('reimb', '30000');
+    await send('Page.navigate', { url: `http://127.0.0.1:${port}/` }); await sleep(1200);
+    ok(await ev(`return SETTLE_MODE==='reimb' && document.getElementById('reimb').value==='30000' && !document.getElementById('reimbBox').classList.contains('hide')`), 'after reopening the page, the reimbursement figures and the choice are still there');
+    await ev(`setLang('hi');`);
+    ok(await ev(`return /[ऀ-ॿ]/.test(document.getElementById('modeReimbBtn').textContent + document.getElementById('counterPaymentLbl').textContent + document.getElementById('lblReimb').textContent)`), 'the switch, the new field and the result labels are in Hindi');
+    await ev(`setLang('mr');`);
+    ok(await ev(`return /परत/.test(document.getElementById('counterPaymentLbl').textContent)`), '...and in Marathi');
+    await ev(`setLang('en'); document.getElementById('egBtn').click();`); await sleep(400);
+    ok(await ev(`return SETTLE_MODE==='cashless' && !document.getElementById('counterBox').classList.contains('hide') && settleOk() && settleOk().mode==='cashless'`), 'the worked example (a cashless claim) switches back to cashless');
+
+    console.log('== R15: the same page photographed twice');
+    await fresh(); await ev(`setLang('en');`);
+    await ev(`window.__mode='same'; addFiles([__mk('s1.jpg','image/jpeg',61), __mk('s2.jpg','image/jpeg',62)]); document.getElementById('checkPhotosBtn').click();`); await sleep(900);
+    const same = await ev(`return document.getElementById('report').innerText`);
+    ok(/1 photo was an exact copy of a page already read/.test(same) && !/appear(s)? more than once/.test(same), 'two photos of one page: read once, said so, and not reported as a repeated charge');
+
+    console.log('== R15: "Delete all my saved bills" only reports what was deleted');
+    const delRun = async (codes, confirmAns) => {
+      await fresh(); await ev(`setLang('en');`);
+      return ev(`BILLS_ON=true; ID_TOKEN='h.eyJuYW1lIjoiVCJ9.s'; window.confirm=()=>${confirmAns}; window.__del=0; const codes=${JSON.stringify(codes)}; const of=window.fetch;
+        window.fetch=async(u,o)=>{ u=String(u); if(u.includes('api/bills/')&&o&&o.method==='DELETE'){ return new Response('{}',{status:codes[window.__del++]}); }
+          if(u.includes('api/bills')) return new Response('{}',{status:503}); return of(u,o); }; // a failed refresh keeps the list on screen
+        _myBills=[{id:'a',status:'sent'},{id:'b',status:'sent'},{id:'c',status:'sent'}]; renderAuthUI(); renderMyBillsList(_myBills); switchTab('mybills');
+        document.getElementById('mybillsDeleteAllBtn').click(); await new Promise(r=>setTimeout(r,300));
+        const m=document.getElementById('mybillsDelMsg');
+        return {calls:window.__del, msg:m.classList.contains('hide')?'':m.textContent, signedIn:!!ID_TOKEN, left:_myBills.map(b=>b.id).join(''), rows:document.querySelectorAll('#mybillsList .billrow').length};`);
+    };
+    let dr = await delRun([200, 401, 401], 'true');
+    ok(dr.calls === 2 && !dr.signedIn && /expired/.test(dr.msg) && /only 1 of 3/.test(dr.msg), 'an expired sign-in stops the run, signs out and says only 1 of 3 was deleted (it used to show the list as empty): "' + dr.msg + '"');
+    dr = await delRun([200, 500, 200], 'true');
+    ok(dr.left === 'b' && dr.rows === 1 && /Deleted 2 of 3/.test(dr.msg) && /could not be deleted/.test(dr.msg), 'a bill the server failed to delete stays on the list, and the message says 2 of 3');
+    dr = await delRun([200, 200, 200], 'false');
+    ok(dr.calls === 0 && dr.left === 'abc', 'saying no to "Delete all … cannot be undone" deletes nothing');
+    dr = await delRun([200, 404, 200], 'true');
+    ok(dr.left === '' && /Deleted 3 of 3/.test(dr.msg), 'a bill already gone (404) counts as deleted');
 
     console.log('== Hindi errors');
     await fresh();

@@ -198,10 +198,56 @@ ok(!checks.GSTIN_RE.test('27AABCP1361M0Z5'), 'a 0 entity number is malformed');
     ok(differ.length === 0, '03_code/completeness.js accepts and rejects exactly the same GSTINs as the app', differ.join(', '));
   } }
 
+// R15 — places where the app told users something false (council round 2),
+// each reproduced against the shipped code before it was fixed.
+console.log('== R15: NPPA keywords are whole words; procedure lines are not implant prices');
+{ const r = NL('CORONARY STENTING CHARGES', 1, 60000, 60000); ok(r.nppa.length === 0 && r.nppaGst.length === 0, '"CORONARY STENTING CHARGES" (a procedure) is not flagged as a stent above its ceiling'); }
+{ const r = NL('PTCA WITH CORONARY STENTING', 1, 150000, 150000); ok(r.nppa.length === 0 && r.nppaGst.length === 0, '"PTCA WITH CORONARY STENTING" is not flagged as a stent'); }
+{ const r = NL('PTCA WITH DES STENT', 1, 150000, 150000); ok(r.nppa.length === 0 && r.nppaSkipped === 1, 'an angioplasty line that names the stent is "not compared", never flagged at the stent ceiling'); }
+{ const r = NL('TIBIAL INSERTER', 1, 15000, 15000); ok(r.nppa.length === 0 && r.nppaCompared === 0, '"TIBIAL INSERTER" (an instrument) is not read as a knee insert'); }
+{ const r = NL('CORONARY STENTS', 1, 45000, 45000); ok(r.nppaCompared === 1 && r.nppa.length === 1, 'a plural ("CORONARY STENTS") still matches, as every other whole-word keyword does'); }
+{ const r = NL('DRUG ELUTING STENT', 1, 45000, 45000); ok(r.nppa.length === 1, 'a real drug-eluting stent above the ceiling plus GST is still flagged'); }
+
+console.log('== R15: no bill-total gap when some amounts could not be read');
+{ const r = checks.analyse({ header: { gross_amount: 4000 }, line_items: [{ item: 'Bed', quantity: 1, total: 4500 }, { item: 'Discount', quantity: 1, total: '(500)' }] });
+  ok(r.unreadable === 1 && r.recon === null && r.reconCompared === false && r.reconBlocked === true, 'a bill with an unreadable amount is "not compared" (it used to report a ₹500 gap the hospital never made)'); }
+{ const r = checks.analyse({ header: { gross_amount: 4000 }, line_items: [{ item: 'Bed', quantity: 1, total: 4500 }] });
+  ok(r.recon && r.recon.diff === -500 && r.reconBlocked === false, 'with every amount read, a real gap is still reported'); }
+
+console.log('== R15: a refund worded differently is still a refund');
+ok(A([['Gloves Examination', 200], ['Gloves Examination', 200], ['Gloves Examination refund', -200]]).dups.length === 0, 'two gloves charges and "Gloves Examination refund" are not reported as a repeat');
+ok(A([['Gloves Examination', 200], ['Gloves Examination', 200], ['Gloves Examination', 200], ['Gloves Examination - returned', -200]]).dups[0].n === 2, 'three charges and one differently-worded return leave a repeat of 2');
+ok(A([['Gloves Examination', 200], ['Gloves Examination', 200], ['Syringe refund', -200]]).dups.length === 1, 'a refund of something else does not cancel the repeat');
+{ const r = L1([['CBC 10449', 300], ['CBC 10450', 300], ['CBC 10450 refund', -300]]); ok(r.similarDups.length === 0, 'a look-alike pair where one was refunded is not reported as look-alike'); }
+
+console.log('== R15: merging pages');
+{
+  const src = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  const m = src.match(/function mergePages\(pages\)\{[\s\S]*?\r?\n\}\r?\n/);
+  const mergePages = new Function('parseAmount', m[0] + '; return mergePages;')(checks.parseAmount);
+  const page = (header, rows, sub) => ({ header, line_items: rows.map(([item, total]) => ({ item, total })), printed_subtotals: sub || {} });
+  const sigs = mergePages([page({ patient_signature: false, authorised_signature: false }, [['A', 1]]), page({}, [['B', 2]]), page({ patient_signature: true, authorised_signature: true }, [['C', 3]])]).header;
+  ok(sigs.patient_signature === true && sigs.authorised_signature === true, 'signatures on the last page count, even when page 1 said "no signature"');
+  const none = mergePages([page({ patient_signature: false }, [['A', 1]]), page({ patient_signature: null }, [['B', 2]])]).header;
+  ok(none.patient_signature === false, 'no page with a signature => still "not present", never copied as present');
+  const pt = mergePages([page({ gross_amount: 300 }, [['A', 100], ['B', 200]]), page({}, [['C', 500]])]);
+  ok(pt.header.gross_amount === null, 'a "total" on one page that equals that page\'s own lines is a page total, not the bill\'s (not compared)');
+  const real = mergePages([page({}, [['A', 100], ['B', 200]]), page({ gross_amount: 800 }, [['C', 500]])]);
+  ok(real.header.gross_amount === 800, 'a total on the last page that matches every page is kept');
+  const odd = mergePages([page({ gross_amount: 900 }, [['A', 100]]), page({}, [['C', 500]])]);
+  ok(odd.header.gross_amount === 900, 'a total that matches neither its page nor the bill is kept (the gap is then reported)');
+  const twice = mergePages([page({ gross_amount: 300 }, [['A', 100], ['B', 200]], { Room: 300 }), page({ gross_amount: 300 }, [['A', 100], ['B', 200]], { Room: 300 })]);
+  ok(twice.line_items.length === 2 && twice._dupPages === 1 && twice._pageCount === 1, 'the same page photographed twice is read once (_dupPages = 1)');
+  ok(checks.analyse(twice).dups.length === 0, '...so its charges are not reported as repeats');
+  const two = mergePages([page({}, [['Bed', 100]]), page({}, [['Bed', 100], ['Gloves', 20]])]);
+  ok(two.line_items.length === 3 && !two._dupPages, 'pages that only share some rows are both kept');
+}
+
 if (old) {
   console.log('== matcher.js duplicate parity');
   const rows = (r) => r.map(([item, total]) => ({ item, quantity: 1, total }));
-  for (const c of [[['X', 0], ['X', 0]], [['I', 100], ['I', 100]], [['I', 100], ['I', 100], ['I', -100]], [['D', -50], ['D', -50]]]) {
+  for (const c of [[['X', 0], ['X', 0]], [['I', 100], ['I', 100]], [['I', 100], ['I', 100], ['I', -100]], [['D', -50], ['D', -50]],
+    [['Gloves', 200], ['Gloves', 200], ['Gloves refund', -200]], [['Gloves', 200], ['Gloves', 200], ['Syringe refund', -200]]]) {
     ok(old.analyseBill(rows(c), null, null, oldTable).duplicates.length === A(c).dups.length, 'matcher.js and the app agree on ' + JSON.stringify(c));
   }
 }

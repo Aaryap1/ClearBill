@@ -86,19 +86,26 @@ function analyseBill(lines, printed_subtotal = null, deduction = null, table = N
 
   // duplicate check — mirrors analyse() in 06_app/index.html: same item text and
   // same amount, more than once. Blank items and zero/missing amounts are ignored
-  // (layout, not a double charge); a charge reversed by a matching negative line
-  // is netted out (a correction, not a duplicate).
+  // (layout, not a double charge); a charge reversed by a credit line of the
+  // same amount is a correction, not a duplicate. The two names are compared
+  // with words like "refund" removed, so "Gloves refund" cancels "Gloves".
+  const baseName = (s) => String(s).toLowerCase().replace(/\b(refund(ed)?|return(ed)?|reversal|reversed|credit(ed)?|cancel(l?ed)?)\b/g, " ").replace(/[^a-z0-9]+/g, " ").trim();
+  const cancelled = new Set();
+  norm.forEach((l) => {
+    if (l.total == null || l.total >= 0) return;
+    const j = norm.findIndex((p, pj) => p.total > 0 && !cancelled.has(pj) && Math.abs(p.total + l.total) < 0.005 && baseName(p.item) === baseName(l.item));
+    if (j >= 0) cancelled.add(j);
+  });
   const keyOf = (item, amount) => item.trim().toLowerCase() + "|" + amount.toFixed(2);
-  const pos = {}, neg = {};
-  for (const l of norm) {
-    if (!l.item.trim() || l.total == null || l.total === 0) continue;
-    if (l.total > 0) pos[keyOf(l.item, l.total)] = (pos[keyOf(l.item, l.total)] || 0) + 1;
-    else neg[keyOf(l.item, -l.total)] = (neg[keyOf(l.item, -l.total)] || 0) + 1;
-  }
+  const pos = {};
+  norm.forEach((l, i) => {
+    if (!l.item.trim() || l.total == null || l.total <= 0 || cancelled.has(i)) return;
+    pos[keyOf(l.item, l.total)] = (pos[keyOf(l.item, l.total)] || 0) + 1;
+  });
   const duplicates = [];
-  for (const l of norm) {
-    if (!l.item.trim() || l.total == null || l.total <= 0) continue;
-    const key = keyOf(l.item, l.total), net = (pos[key] || 0) - (neg[key] || 0);
+  for (const [i, l] of norm.entries()) {
+    if (!l.item.trim() || l.total == null || l.total <= 0 || cancelled.has(i)) continue;
+    const key = keyOf(l.item, l.total), net = pos[key] || 0;
     if (net > 1 && !duplicates.find((d) => d.key === key)) {
       duplicates.push({ key, item: l.item, amount: l.total, count: net,
         note: "This item appears more than once at the same amount. Worth asking about." });
