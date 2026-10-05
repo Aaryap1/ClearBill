@@ -475,6 +475,17 @@
   <!-- TAB 4: ABOUT -->
   <div class="tabpage" id="page-mybills">
     <div class="sec-label" id="secMybills">My Bills</div>
+    <div class="card" id="localCard">
+      <div class="k" id="localHead" style="margin-bottom:8px">On this device</div>
+      <p id="localHint">Keep this check on this phone or computer, no sign-in needed. It stays only in this browser and is not sent anywhere. Anyone who uses this browser can open it.</p>
+      <button class="btn" id="saveLocalBtn" type="button">Save this check on this device</button>
+      <p class="hide" id="localSaveMsg" style="margin:10px 0 0"></p>
+      <p class="hide" id="localEmpty" style="margin:12px 0 0;color:var(--soft)"><span id="localEmptyText">Nothing saved on this device yet.</span></p>
+      <div id="localList" style="margin-top:12px"></div>
+      <input type="file" id="localImportFile" accept=".json,application/json" class="hide">
+      <button class="link" id="localImportBtn" type="button" style="margin-top:6px;display:block">Open a saved file</button>
+    </div>
+    <div class="k" id="accountHead" style="margin:18px 0 8px">In your Google account</div>
     <div class="card" id="mybillsOff" style="display:none"><p id="mybillsOffText">Saving bills to an account isn't available on this deployment right now.</p></div>
     <div class="card" id="mybillsSignedOut" style="display:none">
       <p id="mybillsSignInPrompt">Sign in with Google to save this bill and keep track of what happens after you send your letter. Saved bills are private to your account — only you can see them, and nothing is shared with anyone else.</p>
@@ -853,6 +864,7 @@ const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 const LOCALE_TAG = {en:'en-IN', hi:'hi-IN-u-nu-latn', mr:'mr-IN-u-nu-latn'};
 const makeInr = lang => new Intl.NumberFormat(LOCALE_TAG[lang]||'en-IN',{style:'currency',currency:'INR',maximumFractionDigits:2,minimumFractionDigits:0});
 let LANG = 'en';
+const LOCAL_LS='clearbill_local_checks', LOCAL_MAX=20; // R12: checks kept on this device, no sign-in
 let _myBills=[], BILLS_ON=false, GOOGLE_CLIENT_ID=null, ID_TOKEN=null, ID_TOKEN_NAME=null;
 let inr = makeInr(LANG);
 try{ const saved=localStorage.getItem('clearbill_lang'); if(saved && LOCALE_TAG[saved]) LANG=saved; }catch(e){}
@@ -962,8 +974,23 @@ en: {
   photo_guide_sum:"How to photograph your bill",
   photo_guide:["Lay each page flat on a table, not in the air.","Fit the whole page in the frame, with all four edges visible.","Use daylight or a bright room. Keep your own shadow and glare from lamps off the page.","Hold the phone still until the photo is taken, then zoom in and check that the numbers are sharp.","One page per photo, in page order. A 3-page bill needs 3 photos.","Photograph the itemised statement of charges, not a cover letter or a receipt."],
   clear_saved_btn:"Clear what this app saved on this device",
-  clear_saved_hint:"Saved on this device only: your typed figures, letter details if you chose to remember them, your Gemini key if you pasted one, and your My Bills sign-in session if you were signed in.",
-  cleared_note:"Cleared. Your figures, letter details and Gemini key are no longer saved on this device (your language choice is kept).",
+  clear_saved_hint:"Saved on this device only: your typed figures, letter details if you chose to remember them, your Gemini key if you pasted one, checks you saved on this device, and your My Bills sign-in session if you were signed in.",
+  cleared_note:"Cleared. Your figures, letter details, Gemini key and the checks saved on this device are no longer kept here (your language choice is kept). Bills saved to a Google account are not affected.",
+  local_head:"On this device",
+  local_hint:"Keep this check on this phone or computer, no sign-in needed. It stays only in this browser and is not sent anywhere. Anyone who uses this browser can open it.",
+  local_save_btn:"Save this check on this device", local_saved:"Saved on this device.",
+  local_save_err:"Could not save on this device. The browser's storage may be full or turned off.",
+  local_full:n=>`${n} checks are already saved here. Delete one to save another.`,
+  local_empty:"Nothing saved on this device yet.",
+  local_open_btn:"Open", local_download_btn:"Download", local_import_btn:"Open a saved file",
+  local_import_ok:"Added from the file.", local_import_bad:"That file is not a check saved by ClearBill.",
+  local_opened:d=>`Opened the check saved on ${d}.`,
+  account_head:"In your Google account",
+  remind_lbl:"Remind me to check for a reply",
+  remind_1w:"In a week", remind_2w:"In 2 weeks", remind_1m:"In a month",
+  remind_done:"Downloaded. Open the file to add the reminder to your calendar.",
+  ics_summary:"ClearBill: check for a reply about your hospital bill",
+  ics_desc:(d,claim)=>`You prepared a letter about your hospital bill on ${d}${claim?` (claim no. ${claim})`:''}. If you sent it, check whether the insurer or the hospital has replied. If the reply does not settle it, read the current rules on bimabharosa.irdai.gov.in and cioins.co.in before you file a complaint.`,
   tab_mybills:"My Bills", sec_mybills:"My Bills",
   mybills_off_text:"Saving bills to an account isn't available on this deployment right now.",
   mybills_signin_prompt:"Sign in with Google to save this bill and keep track of what happens after you send your letter. Saved bills are private to your account — only you can see them, and nothing is shared with anyone else.",
@@ -1231,8 +1258,23 @@ hi: {
   photo_guide_sum:"अपने बिल की फ़ोटो कैसे लें",
   photo_guide:["हर पेज़ को मेज़ पर सीधा रखें, हवा में पकड़कर नहीं।","पूरा पेज़ फ़्रेम में लाएँ, चारों किनारे दिखने चाहिए।","दिन की रोशनी या तेज़ रोशनी वाला कमरा इस्तेमाल करें। अपनी परछाईं और लैंप की चमक पेज़ पर न पड़ने दें।","फ़ोटो लेने तक फ़ोन को स्थिर रखें, फिर ज़ूम करके देखें कि अंक साफ़ हैं।","हर पेज़ की एक फ़ोटो, पेज़ के क्रम में। 3 पेज़ के बिल के लिए 3 फ़ोटो चाहिए।","ख़र्चों के विस्तृत ब्योरे (itemised statement) की फ़ोटो लें, कवर लेटर या रसीद की नहीं।"],
   clear_saved_btn:"इस डिवाइस पर ऐप ने जो सहेजा है, मिटाएँ",
-  clear_saved_hint:"सिर्फ़ इसी डिवाइस पर सहेजा जाता है: आपके डाले हुए आँकड़े, पत्र की जानकारी (अगर आपने याद रखने को कहा हो), आपकी Gemini key (अगर आपने डाली हो), और My Bills का साइन-इन सेशन (अगर आप साइन इन थे)।",
-  cleared_note:"मिटा दिया गया। आपके आँकड़े, पत्र की जानकारी और Gemini key अब इस डिवाइस पर सहेजी नहीं हैं (आपकी भाषा की पसंद रखी गई है)।",
+  clear_saved_hint:"सिर्फ़ इसी डिवाइस पर सहेजा जाता है: आपके डाले हुए आँकड़े, पत्र की जानकारी (अगर आपने याद रखने को कहा हो), आपकी Gemini key (अगर आपने डाली हो), इस डिवाइस पर सहेजी गई जाँचें, और My Bills का साइन-इन सेशन (अगर आप साइन इन थे)।",
+  cleared_note:"मिटा दिया गया। आपके आँकड़े, पत्र की जानकारी, Gemini key और इस डिवाइस पर सहेजी गई जाँचें अब यहाँ नहीं रखी हैं (आपकी भाषा की पसंद रखी गई है)। Google खाते में सहेजे गए बिलों पर इसका असर नहीं पड़ता।",
+  local_head:"इस डिवाइस पर",
+  local_hint:"यह जाँच इसी फ़ोन या कंप्यूटर पर रखें, साइन इन की ज़रूरत नहीं। यह सिर्फ़ इसी ब्राउज़र में रहती है और कहीं भेजी नहीं जाती। जो भी इस ब्राउज़र का इस्तेमाल करता है, वह इसे खोल सकता है।",
+  local_save_btn:"यह जाँच इस डिवाइस पर सहेजें", local_saved:"इस डिवाइस पर सहेज ली गई।",
+  local_save_err:"इस डिवाइस पर सहेजा नहीं जा सका। ब्राउज़र की स्टोरेज भरी हो सकती है या बंद हो सकती है।",
+  local_full:n=>`यहाँ पहले से ${n} जाँचें सहेजी हैं। नई सहेजने के लिए एक मिटाएँ।`,
+  local_empty:"इस डिवाइस पर अभी कुछ सहेजा नहीं गया।",
+  local_open_btn:"खोलें", local_download_btn:"डाउनलोड करें", local_import_btn:"सहेजी हुई फ़ाइल खोलें",
+  local_import_ok:"फ़ाइल से जोड़ दी गई।", local_import_bad:"यह ClearBill की सहेजी हुई जाँच की फ़ाइल नहीं है।",
+  local_opened:d=>`${d} को सहेजी गई जाँच खोली गई।`,
+  account_head:"आपके Google खाते में",
+  remind_lbl:"जवाब देखने के लिए मुझे याद दिलाएँ",
+  remind_1w:"एक हफ़्ते में", remind_2w:"2 हफ़्ते में", remind_1m:"एक महीने में",
+  remind_done:"डाउनलोड हो गया। रिमाइंडर को अपने कैलेंडर में जोड़ने के लिए फ़ाइल खोलें।",
+  ics_summary:"ClearBill: अपने अस्पताल के बिल के बारे में जवाब देखें",
+  ics_desc:(d,claim)=>`आपने ${d} को अपने अस्पताल के बिल के बारे में पत्र तैयार किया था${claim?` (क्लेम नंबर ${claim})`:''}। अगर आपने उसे भेजा है, तो देखें कि बीमा कंपनी या अस्पताल ने जवाब दिया है या नहीं। अगर जवाब से बात नहीं सुलझती, तो शिकायत करने से पहले bimabharosa.irdai.gov.in और cioins.co.in पर मौजूदा नियम पढ़ें।`,
   tab_mybills:"मेरे बिल", sec_mybills:"मेरे बिल",
   mybills_off_text:"इस डिप्लॉयमेंट पर अभी बिल खाते में सहेजना उपलब्ध नहीं है।",
   mybills_signin_prompt:"इस बिल को सहेजने और यह याद रखने के लिए कि पत्र भेजने के बाद क्या हुआ, Google से साइन इन करें। सहेजे गए बिल आपके खाते के लिए निजी हैं — सिर्फ़ आप उन्हें देख सकते हैं, और किसी और के साथ कुछ साझा नहीं किया जाता।",
@@ -1501,8 +1543,23 @@ mr: {
   photo_guide_sum:"तुमच्या बिलाचा फोटो कसा घ्यावा",
   photo_guide:["प्रत्येक पान टेबलावर सपाट ठेवा, हवेत धरू नका.","संपूर्ण पान फ्रेममध्ये घ्या, चारही कडा दिसल्या पाहिजेत.","दिवसाचा प्रकाश किंवा उजळ खोली वापरा. तुमची सावली आणि दिव्यांची चमक पानावर पडू देऊ नका.","फोटो काढेपर्यंत फोन स्थिर धरा, मग झूम करून आकडे स्पष्ट आहेत का ते पहा.","प्रत्येक पानाचा एक फोटो, पानांच्या क्रमाने. 3 पानी बिलासाठी 3 फोटो लागतात.","खर्चांच्या तपशीलवार विवरणाचा (itemised statement) फोटो घ्या, कव्हर लेटर किंवा पावतीचा नाही."],
   clear_saved_btn:"या डिव्हाइसवर अ‍ॅपने जतन केलेलं पुसा",
-  clear_saved_hint:"फक्त याच डिव्हाइसवर जतन होतं: तुम्ही टाकलेले आकडे, पत्रासाठीचे तपशील (लक्षात ठेवायला सांगितलं असल्यास), तुमची Gemini key (टाकली असल्यास), आणि My Bills चं साइन-इन सेशन (तुम्ही साइन इन असल्यास).",
-  cleared_note:"पुसलं. तुमचे आकडे, पत्राचे तपशील आणि Gemini key आता या डिव्हाइसवर जतन केलेले नाहीत (तुमची भाषा निवड तशीच ठेवली आहे).",
+  clear_saved_hint:"फक्त याच डिव्हाइसवर जतन होतं: तुम्ही टाकलेले आकडे, पत्रासाठीचे तपशील (लक्षात ठेवायला सांगितलं असल्यास), तुमची Gemini key (टाकली असल्यास), या डिव्हाइसवर जतन केलेल्या तपासण्या, आणि My Bills चं साइन-इन सेशन (तुम्ही साइन इन असल्यास).",
+  cleared_note:"पुसलं. तुमचे आकडे, पत्राचे तपशील, Gemini key आणि या डिव्हाइसवर जतन केलेल्या तपासण्या आता इथे ठेवलेल्या नाहीत (तुमची भाषा निवड तशीच ठेवली आहे). Google खात्यात जतन केलेल्या बिलांवर याचा परिणाम होत नाही.",
+  local_head:"या डिव्हाइसवर",
+  local_hint:"ही तपासणी याच फोन किंवा कॉम्प्युटरवर ठेवा, साइन इनची गरज नाही. ती फक्त याच ब्राउझरमध्ये राहते आणि कुठेही पाठवली जात नाही. हा ब्राउझर वापरणारी कोणतीही व्यक्ती ती उघडू शकते.",
+  local_save_btn:"ही तपासणी या डिव्हाइसवर जतन करा", local_saved:"या डिव्हाइसवर जतन झाली.",
+  local_save_err:"या डिव्हाइसवर जतन करता आलं नाही. ब्राउझरची स्टोरेज भरली असेल किंवा बंद असेल.",
+  local_full:n=>`इथे आधीच ${n} तपासण्या जतन आहेत. नवी जतन करण्यासाठी एक पुसा.`,
+  local_empty:"या डिव्हाइसवर अजून काहीही जतन केलेलं नाही.",
+  local_open_btn:"उघडा", local_download_btn:"डाउनलोड करा", local_import_btn:"जतन केलेली फाइल उघडा",
+  local_import_ok:"फाइलमधून जोडली.", local_import_bad:"ही ClearBill ने जतन केलेल्या तपासणीची फाइल नाही.",
+  local_opened:d=>`${d} रोजी जतन केलेली तपासणी उघडली.`,
+  account_head:"तुमच्या Google खात्यात",
+  remind_lbl:"उत्तर आलं का ते पाहण्याची मला आठवण करून द्या",
+  remind_1w:"एका आठवड्यात", remind_2w:"2 आठवड्यांत", remind_1m:"एका महिन्यात",
+  remind_done:"डाउनलोड झालं. आठवण कॅलेंडरमध्ये जोडण्यासाठी फाइल उघडा.",
+  ics_summary:"ClearBill: तुमच्या रुग्णालयाच्या बिलाबद्दल उत्तर तपासा",
+  ics_desc:(d,claim)=>`तुम्ही ${d} रोजी तुमच्या रुग्णालयाच्या बिलाबद्दल पत्र तयार केलं होतं${claim?` (क्लेम क्रमांक ${claim})`:''}. ते पाठवलं असल्यास, विमा कंपनीने किंवा रुग्णालयाने उत्तर दिलं आहे का ते पाहा. उत्तरातून प्रश्न सुटला नाही, तर तक्रार करण्याआधी bimabharosa.irdai.gov.in आणि cioins.co.in वरचे सध्याचे नियम वाचा.`,
   tab_mybills:"माझी बिले", sec_mybills:"माझी बिले",
   mybills_off_text:"या डिप्लॉयमेंटवर सध्या बिल खात्यात जतन करणं उपलब्ध नाही.",
   mybills_signin_prompt:"हे बिल जतन करण्यासाठी आणि पत्र पाठवल्यानंतर काय झालं हे लक्षात ठेवण्यासाठी Google ने साइन इन करा. जतन केलेली बिले तुमच्या खात्यासाठी खाजगी आहेत — फक्त तुम्हीच ती पाहू शकता, आणि कुणाशीही काही शेअर केलं जात नाही.",
@@ -2387,10 +2444,20 @@ function buildLetter(a,include,noScroll){
     <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn sm" id="printLetter" style="flex:1">${T_.print_btn}</button>
       <button class="btn sm ghost" id="copyLetter" style="flex:1">${T_.copy_btn}</button>
-      <button class="btn sm ghost" id="shareLetter" style="flex:1">${T_.share_btn}</button></div>${afterSend}`;
+      <button class="btn sm ghost" id="shareLetter" style="flex:1">${T_.share_btn}</button></div>
+    <div id="remindRow"><div class="k" id="remindLbl" style="margin:14px 0 6px">${T_.remind_lbl}</div>
+      <div style="display:flex;gap:8px"><button class="chip" type="button" data-days="7">${T_.remind_1w}</button><button class="chip" type="button" data-days="14">${T_.remind_2w}</button><button class="chip" type="button" data-days="30">${T_.remind_1m}</button></div>
+      <p class="hide" id="remindNote" style="margin:8px 0 0;font-size:.85rem;color:var(--soft)"></p></div>${afterSend}`;
   $('printLetter').addEventListener('click',()=>{ $('printArea').textContent=text; window.print(); });
   $('copyLetter').addEventListener('click',()=>{ copyText(text).then(done=>{const b=$('copyLetter'); b.textContent=done?T_.copied_btn:T_.copy_failed_btn; setTimeout(()=>b.textContent=T_.copy_btn,done?1500:3500);}); });
   $('shareLetter').addEventListener('click',()=>shareText(text,'ClearBill'));
+  // R12: a calendar file the user adds themselves — no account, no
+  // notification service, nothing sent anywhere. The user picks the date;
+  // the app states no deadline of its own.
+  $('letterWrap').querySelectorAll('#remindRow [data-days]').forEach(b=>b.addEventListener('click',()=>{
+    downloadText(buildFollowUpIcs(+b.dataset.days,new Date(),D.claim||''),'clearbill-follow-up.ics','text/calendar;charset=utf-8');
+    const note=$('remindNote'); note.textContent=T_.remind_done; note.classList.remove('hide');
+  }));
   if(!noScroll) $('letterWrap').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
@@ -2869,6 +2936,9 @@ function applyStaticI18n(){
   if($('signOutBtnHeader')) $('signOutBtnHeader').textContent=T_.mybills_signout_btn;
   if($('signOutBtnTab')) $('signOutBtnTab').textContent=T_.mybills_signout_btn;
   if(typeof renderMyBillsList==='function') renderMyBillsList(_myBills);
+  [['localHead','local_head'],['localHint','local_hint'],['saveLocalBtn','local_save_btn'],['localEmptyText','local_empty'],
+   ['localImportBtn','local_import_btn'],['accountHead','account_head']].forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
+  if(typeof renderLocalList==='function') renderLocalList();
   const gcr=$('gcloudRows');
   if(gcr){
     const rows=Sv('gcloud_rows')||[];
@@ -2920,7 +2990,8 @@ document.querySelectorAll('#letterDetails input,#letterDetails textarea').forEac
 }));
 // One button that removes everything this app keeps in the browser except the language choice.
 $('clearSavedBtn').addEventListener('click',()=>{
-  try{ localStorage.removeItem(DRAFT_LS); localStorage.removeItem(LD_KEY); sessionStorage.removeItem(LD_KEY); localStorage.removeItem(KEY_LS); }catch(e){}
+  try{ localStorage.removeItem(DRAFT_LS); localStorage.removeItem(LD_KEY); sessionStorage.removeItem(LD_KEY); localStorage.removeItem(KEY_LS); localStorage.removeItem(LOCAL_LS); }catch(e){}
+  if(typeof renderLocalList==='function') renderLocalList();
   Object.values(F).forEach(el=>{ el.value=''; }); markChips(-1); $('apiKey').value='';
   LD_FIELDS.forEach(f=>{ $('ld_'+f).value=''; }); $('ld_asked').checked=false; $('ld_remember').checked=false;
   if(typeof signOut==='function') signOut(); // the My Bills sign-in session is also "saved on this device"
@@ -3025,6 +3096,7 @@ function renderGsiTabButton(){
   if(window.google&&google.accounts&&google.accounts.id&&$('gsiBtnTab')&&!ID_TOKEN) google.accounts.id.renderButton($('gsiBtnTab'),{theme:'outline',size:'medium',text:'signin_with'});
 }
 function onMyBillsTabOpen(){
+  renderLocalList();
   if(!BILLS_ON) return;
   if(!ID_TOKEN) renderGsiTabButton(); else refreshMyBills();
 }
@@ -3056,7 +3128,7 @@ function buildBillPayload(){
     deduction:ded||null,
     explainedPct:ded>0?Math.min(100,Math.round((a.exactSum||0)/ded*100)):null,
     explainedAmt:a.exactSum||0,
-    flagCounts:{listI:a.exact.length,listIIIV:a.subsumed.length,nppa:a.nppa.length,duplicates:(a.dup||[]).length},
+    flagCounts:{listI:a.exact.length,listIIIV:a.subsumed.length,nppa:a.nppa.length,duplicates:(a.dups||[]).length},
     letter:window.__lastLetterText||'',
     status:'sent', note:''
   };
@@ -3133,6 +3205,122 @@ if($('mybillsDeleteAllBtn')) $('mybillsDeleteAllBtn').addEventListener('click',a
   for(const id of ids){ try{ await authFetch('api/bills/'+encodeURIComponent(id),{method:'DELETE'}); }catch(e){} }
   _myBills=[]; renderMyBillsList([]);
 });
+
+/* ---- On this device (R12): keep a finished check in this browser, no
+   sign-in. localStorage only, under LOCAL_LS: the extraction (what the photos
+   were read as), the four settlement figures, and the letter text if one was
+   written — enough to reopen the same report. Never sent anywhere. "Clear
+   what this app saved" removes it. A downloaded file can be opened again on
+   another device; a file is untrusted input, so it is validated and its id
+   is never reused. */
+function readLocalChecks(){ try{ const a=JSON.parse(localStorage.getItem(LOCAL_LS)||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+function writeLocalChecks(a){ localStorage.setItem(LOCAL_LS,JSON.stringify(a)); } // throws when storage is full or off; callers handle it
+const newLocalId=()=>'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+function validLocalCheck(r){
+  return !!r&&typeof r==='object'&&r.v===1&&!!r.extraction&&typeof r.extraction==='object'
+    &&Array.isArray(r.extraction.line_items)&&r.extraction.line_items.length>0&&r.extraction.line_items.length<=3000
+    &&r.extraction.line_items.every(l=>l&&typeof l==='object'&&(l.item==null||typeof l.item==='string'));
+}
+function buildLocalCheck(){
+  const data=window.__lastExtraction; if(!data||!Array.isArray(data.line_items)||!data.line_items.length) return null;
+  const p=buildBillPayload()||{};
+  return { v:1, id:newLocalId(), savedAt:new Date().toISOString(),
+    name:p.hospitalName||null, billDate:p.billDate||null,
+    explainedPct:typeof p.explainedPct==='number'?p.explainedPct:null, netPayable:typeof p.netPayable==='number'?p.netPayable:null,
+    settle:{total:F.total.value,counter:F.counter.value,discount:F.discount.value,copay:F.copay.value},
+    extraction:data, letter:window.__lastLetterText||'' };
+}
+function saveLocalCheck(){
+  const T_=S(), msg=$('localSaveMsg'), show=t=>{ if(msg){ msg.textContent=t; msg.classList.remove('hide'); } };
+  const rec=buildLocalCheck(); if(!rec) return show(T_.mybills_nothing_to_save);
+  const list=readLocalChecks(); if(list.length>=LOCAL_MAX) return show(T_.local_full(list.length));
+  try{ writeLocalChecks([rec,...list]); }catch(e){ return show(T_.local_save_err); }
+  show(T_.local_saved); renderLocalList();
+}
+function openLocalCheck(r){
+  if(_reading) return;
+  resetUploadState();
+  const st=r.settle||{}, num=v=>(v===''||v==null||isNaN(+v))?'':String(+v);
+  F.total.value=num(st.total); F.counter.value=num(st.counter); F.discount.value=num(st.discount); F.copay.value=num(st.copay);
+  markChips(F.copay.value); saveDraft();
+  window.__lastExtraction=r.extraction;
+  calc();                                  // renders the report from the restored extraction
+  switchTab('findings');
+  const d=r.savedAt?new Date(r.savedAt).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'}):'';
+  setStatus(S().local_opened(d),false);
+}
+function importLocalCheckText(text){
+  let r; try{ r=JSON.parse(text); }catch(e){ return 'bad'; }
+  if(!validLocalCheck(r)) return 'bad';
+  const clean={ v:1, id:newLocalId(),
+    savedAt:(typeof r.savedAt==='string'&&!isNaN(Date.parse(r.savedAt)))?new Date(Date.parse(r.savedAt)).toISOString():new Date().toISOString(),
+    name:typeof r.name==='string'?r.name.slice(0,200):null, billDate:typeof r.billDate==='string'?r.billDate.slice(0,60):null,
+    explainedPct:typeof r.explainedPct==='number'?r.explainedPct:null, netPayable:typeof r.netPayable==='number'?r.netPayable:null,
+    settle:(r.settle&&typeof r.settle==='object')?{total:r.settle.total,counter:r.settle.counter,discount:r.settle.discount,copay:r.settle.copay}:{},
+    extraction:r.extraction, letter:typeof r.letter==='string'?r.letter:'' };
+  const list=readLocalChecks(); if(list.length>=LOCAL_MAX) return 'full';
+  try{ writeLocalChecks([clean,...list]); }catch(e){ return 'err'; }
+  return 'ok';
+}
+function downloadText(text,name,type){
+  const u=URL.createObjectURL(new Blob([text],{type})), a=document.createElement('a');
+  a.href=u; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),2000);
+}
+function renderLocalList(){
+  const T_=S(), el=$('localList'), empty=$('localEmpty'); if(!el) return;
+  const list=readLocalChecks();
+  if(empty) empty.classList.toggle('hide',list.length>0);
+  el.innerHTML=list.map(r=>{
+    const date=r.savedAt?new Date(r.savedAt).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'';
+    const pct=typeof r.explainedPct==='number'?r.explainedPct+'%':T_.notapplicable_word;
+    const amt=typeof r.netPayable==='number'?inrFmtSafe(r.netPayable):'';
+    return '<div class="billrow" data-lid="'+esc(r.id)+'"><div class="bh"><span class="bn">'+esc(r.name||T_.mybills_unnamed)+'</span><span class="bd">'+esc(date)+'</span></div>'
+      +'<div class="bstats"><span>'+esc(T_.kpi_explained)+': <b>'+esc(pct)+'</b></span>'+(amt?'<span>'+esc(T_.lbl_total_plain)+': <b>'+esc(amt)+'</b></span>':'')+'</div>'
+      +'<div class="brow-actions" style="gap:16px"><button class="link lopen" type="button">'+esc(T_.local_open_btn)+'</button>'
+      +'<button class="link ldl" type="button">'+esc(T_.local_download_btn)+'</button>'
+      +'<button class="link ldel" type="button">'+esc(T_.mybills_delete_btn)+'</button></div></div>';
+  }).join('');
+  el.querySelectorAll('.billrow').forEach(row=>{
+    const id=row.dataset.lid, rec=()=>readLocalChecks().find(r=>r.id===id);
+    row.querySelector('.lopen').addEventListener('click',()=>{ const r=rec(); if(r) openLocalCheck(r); });
+    row.querySelector('.ldl').addEventListener('click',()=>{ const r=rec(); if(r) downloadText(JSON.stringify(r,null,1),'clearbill-check-'+String(r.savedAt||'').slice(0,10)+'.json','application/json'); });
+    row.querySelector('.ldel').addEventListener('click',()=>{ try{ writeLocalChecks(readLocalChecks().filter(r=>r.id!==id)); }catch(e){} renderLocalList(); });
+  });
+}
+if($('saveLocalBtn')) $('saveLocalBtn').addEventListener('click',saveLocalCheck);
+if($('localImportBtn')) $('localImportBtn').addEventListener('click',()=>$('localImportFile').click());
+if($('localImportFile')) $('localImportFile').addEventListener('change',async()=>{
+  const f=$('localImportFile').files[0]; $('localImportFile').value=''; if(!f) return;
+  const T_=S(), msg=$('localSaveMsg');
+  let res='bad'; if(f.size<=5*1024*1024){ try{ res=importLocalCheckText(await f.text()); }catch(e){ res='bad'; } }
+  msg.textContent=res==='ok'?T_.local_import_ok:res==='full'?T_.local_full(readLocalChecks().length):res==='err'?T_.local_save_err:T_.local_import_bad;
+  msg.classList.remove('hide'); renderLocalList();
+});
+
+/* ---- Follow-up reminder (R12): an iCalendar file (RFC 5545) the user adds
+   to any calendar. Floating local time (10:00 on the chosen day, whatever
+   the device's time zone); lines folded at 75 octets without splitting a
+   multi-byte character (Hindi/Marathi text). */
+const icsEsc=s=>String(s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n');
+function icsFold(line){
+  const enc=new TextEncoder(); if(enc.encode(line).length<=75) return line;
+  const out=[]; let cur='', bytes=0;
+  for(const ch of line){ const b=enc.encode(ch).length; if(bytes+b>(out.length?74:75)){ out.push(cur); cur=''; bytes=0; } cur+=ch; bytes+=b; }
+  out.push(cur); return out.join('\r\n ');
+}
+function buildFollowUpIcs(days,now,claim){
+  now=now instanceof Date?now:new Date();
+  const T_=S(), p=x=>String(x).padStart(2,'0');
+  const due=new Date(now.getFullYear(),now.getMonth(),now.getDate()+days,10,0,0), end=new Date(due.getTime()+30*60000);
+  const local=d=>d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'T'+p(d.getHours())+p(d.getMinutes())+'00';
+  const utc=d=>d.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
+  const made=now.toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+  return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//ClearBill//Follow-up reminder//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH',
+    'BEGIN:VEVENT','UID:'+now.getTime().toString(36)+'-'+days+'@clearbill','DTSTAMP:'+utc(now),'DTSTART:'+local(due),'DTEND:'+local(end),
+    'SUMMARY:'+icsEsc(T_.ics_summary),'DESCRIPTION:'+icsEsc(T_.ics_desc(made,claim)),
+    'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+icsEsc(T_.ics_summary),'TRIGGER:-PT0M','END:VALARM',
+    'END:VEVENT','END:VCALENDAR'].map(icsFold).join('\r\n')+'\r\n';
+}
 </script>
 </body>
 </html>

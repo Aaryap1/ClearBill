@@ -243,6 +243,61 @@ const STUB = `
       ok(!/No stent or knee-implant line found/.test(t), 'a hyphenated "DRUG-ELUTING STENT" is no longer reported as "no stent found"');
     }
 
+    console.log('== R12: save a check on this device (no sign-in), reopen it, file round trip');
+    await fresh(); await ev(`setLang('en');`);
+    await ev(`document.getElementById('egBtn').click();`); await sleep(500);
+    await ev(`switchTab('mybills'); document.getElementById('saveLocalBtn').click();`); await sleep(200);
+    let loc = await ev(`return {msg: document.getElementById('localSaveMsg').textContent, rows: document.querySelectorAll('#localList .billrow').length, text: document.getElementById('localList').innerText, stored: readLocalChecks().length}`);
+    ok(loc.msg === 'Saved on this device.' && loc.rows === 1 && loc.stored === 1, 'the worked example is saved on this device without signing in');
+    ok(/Explained: 22%/.test(loc.text), 'the saved row shows the explained share (22%)');
+    await send('Page.navigate', { url: `http://127.0.0.1:${port}/` }); await sleep(1200); // a reload that keeps storage
+    await ev(`switchTab('mybills');`); await sleep(200);
+    ok(await ev(`return document.querySelectorAll('#localList .billrow').length`) === 1, 'after closing and reopening the page, the saved check is still listed');
+    await ev(`document.querySelector('#localList .lopen').click();`); await sleep(600);
+    const reopened = await ev(`return {tab: document.getElementById('page-findings').classList.contains('on'), kpis: [...document.querySelectorAll('.kpi .v')].map(e=>e.textContent).join('|'), total: document.getElementById('total').value, counter: document.getElementById('counter').value, status: document.getElementById('status').textContent}`);
+    ok(reopened.tab && reopened.kpis === '₹5,962.89|22%|6 / 6', 'Open restores the same report (₹5,962.89 deducted, 22% explained, 6 of 6 checks): ' + reopened.kpis);
+    ok(reopened.total === '41396' && reopened.counter === '9349', 'the settlement figures are restored too');
+    ok(/Opened the check saved on/.test(reopened.status), 'it says which saved check was opened');
+
+    const exported = await ev(`return JSON.stringify(readLocalChecks()[0])`);
+    ok(await ev(`return importLocalCheckText(${JSON.stringify(exported)})`) === 'ok', 'a downloaded file can be opened again (import)');
+    const ids = await ev(`return readLocalChecks().map(r=>r.id)`);
+    ok(ids.length === 2 && ids[0] !== ids[1], 'the imported copy gets a new id, never the one in the file');
+    for (const [bad, why] of [['not json', 'not JSON'], [JSON.stringify({ v: 1 }), 'no extraction'], [JSON.stringify({ v: 1, extraction: { line_items: 'x' } }), 'line items not a list'], [JSON.stringify({ v: 2, extraction: { line_items: [{ item: 'X', total: 1 }] } }), 'an unknown version'], [JSON.stringify({ v: 1, extraction: { line_items: [] } }), 'no line items']]) {
+      ok(await ev(`return importLocalCheckText(${JSON.stringify(bad)})`) === 'bad', 'a file with ' + why + ' is refused');
+    }
+    await ev(`importLocalCheckText(${JSON.stringify(JSON.stringify({ v: 1, name: '<img src=x onerror="window.__xss=1">', extraction: { line_items: [{ item: 'X', total: 1 }] } }))}); renderLocalList();`); await sleep(100);
+    ok(await ev(`return !document.querySelector('#localList img') && !window.__xss && /&lt;img|<img/.test(document.getElementById('localList').innerHTML)`), 'text from an imported file is shown as text, never run as HTML');
+    const before = await ev(`return readLocalChecks().length`);
+    await ev(`document.querySelector('#localList .ldel').click();`); await sleep(100);
+    ok(await ev(`return readLocalChecks().length`) === before - 1, 'Delete removes one saved check');
+    await ev(`switchTab('settlement'); document.getElementById('clearSavedBtn').click();`); await sleep(100);
+    ok(await ev(`return readLocalChecks().length === 0 && !document.getElementById('localEmpty').classList.contains('hide')`), '"Clear what this app saved" also removes checks saved on this device');
+    await fresh();
+    await ev(`switchTab('mybills'); document.getElementById('saveLocalBtn').click();`); await sleep(100);
+    ok(/Check a bill first/.test(await ev(`return document.getElementById('localSaveMsg').textContent`)), 'with no bill checked yet, Save says so instead of saving an empty check');
+
+    console.log('== R12: follow-up reminder (calendar file)');
+    await fresh(); await ev(`setLang('en'); document.getElementById('egBtn').click();`); await sleep(500);
+    await ev(`switchTab('letter'); document.getElementById('genLetterTab').click();`); await sleep(300);
+    ok(await ev(`return buildBillPayload().flagCounts.duplicates`) === 3, 'a bill saved to My Bills records its 3 duplicate groups (it used to record 0: it read a.dup, not a.dups)');
+    ok(await ev(`return !!document.getElementById('remindRow') && document.querySelectorAll('#remindRow [data-days]').length === 3`), 'the letter offers three reminder choices');
+    ok(await ev(`return !document.querySelector('.aftersend #remindRow')`), 'the reminder sits outside the "After you send" card (which states no time limits of its own)');
+    const ics = await ev(`return buildFollowUpIcs(14, new Date(2026, 9, 5, 15, 30), 'CLM/123,45; A')`);
+    const icsLines = ics.split('\r\n');
+    ok(ics.startsWith('BEGIN:VCALENDAR\r\n') && ics.endsWith('END:VCALENDAR\r\n'), 'a well-formed calendar file with CRLF line ends');
+    ok(icsLines.includes('DTSTART:20261019T100000'), 'the reminder is 14 days later at 10:00 local time');
+    ok(icsLines.every(l => Buffer.byteLength(l, 'utf8') <= 75), 'no line is longer than 75 bytes (folded)');
+    const unfolded = ics.replace(/\r\n /g, '');
+    ok(/CLM\/123\\,45\\; A/.test(unfolded), 'commas and semicolons in a claim number are escaped');
+    ok(!/\b\d+\s*(days?|months?)\b/i.test(unfolded.match(/DESCRIPTION:[^\r]*/)[0]), 'the reminder text states no deadline of its own');
+    await ev(`setLang('hi');`);
+    const icsHi = await ev(`return buildFollowUpIcs(30, new Date(2026, 9, 5, 15, 30), '')`);
+    ok(icsHi.split('\r\n').every(l => Buffer.byteLength(l, 'utf8') <= 75) && /अस्पताल के बिल/.test(icsHi.replace(/\r\n /g, '')) && !/�/.test(icsHi), 'in Hindi the lines are folded without breaking a character, and the text survives intact');
+    await ev(`setLang('en');`);
+    await ev(`document.querySelector('#remindRow [data-days="7"]').click();`); await sleep(100);
+    ok(/Open the file to add the reminder/.test(await ev(`return document.getElementById('remindNote').textContent`)), 'tapping a choice downloads the file and says what to do with it');
+
     console.log('== downscale: large photos are resized before upload (R10)');
     await fresh();
     const dimsOf = async (fileExpr) => ev(`const bmp = await createImageBitmap(${fileExpr}); const d = {w: bmp.width, h: bmp.height}; bmp.close && bmp.close(); return d;`);
