@@ -264,6 +264,17 @@ async function start(port, env) {
     ok(patched.status === 'insurer_responded' && patched.note === 'Refunded ₹1,200', 'status and note were updated');
     ok(patched.netPayable === 41396, 'netPayable is NOT patchable (outside the allow-list) — the original saved amount is untouched even though it was sent in the request body');
 
+    console.log('== My Bills (R13): the "sent on" date');
+    const patchSent = v => req(P + 6, 'PATCH', '/api/bills/' + created.id, { headers: { ...aliceAuth, 'Content-Type': 'application/json' }, body: JSON.stringify({ sentOn: v }) });
+    r = await patchSent('2026-09-20'); ok(r.status === 200 && JSON.parse(text(r)).bill.sentOn === '2026-09-20', 'a real past date is saved');
+    r = await patchSent(null); ok(r.status === 200 && JSON.parse(text(r)).bill.sentOn === null, 'null clears it');
+    const future = new Date(Date.now() + 5 * 86400000).toISOString().slice(0, 10);
+    for (const [bad, why] of [['2026-02-30', 'an impossible date'], ['20/09/2026', 'a non-ISO format'], [future, 'a date in the future'], [12345, 'a number'], ['2026-09-20T10:00', 'a date with a time']]) {
+      r = await patchSent(bad); ok(r.status === 400, why + ' is refused (400), not stored', 'status ' + r.status);
+    }
+    r = await req(P + 6, 'POST', '/api/bills', { headers: { ...aliceAuth, 'Content-Type': 'application/json' }, body: JSON.stringify({ hospitalName: 'X', sentOn: 'yesterday' }) });
+    ok(r.status === 400, 'a bad sent-on date on a NEW bill is refused too');
+
     r = await req(P + 6, 'DELETE', '/api/bills/' + created.id, { headers: bobAuth });
     ok(r.status === 500 || r.status === 404, "bob deleting alice's bill id fails (not found under bob's own uid)");
     r = await req(P + 6, 'GET', '/api/bills', { headers: aliceAuth });

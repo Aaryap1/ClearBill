@@ -100,5 +100,23 @@ const SUB_MUST_NOT = ['CAP D 800 TABLET', 'CAP AMOXICLAV 625MG', 'HANDICAP RAMP 
   'IV SET VENTED NOVOFUSION', 'ROOM RENT', 'PULSE RATE MONITORING'];
 for (const s of SUB_MUST_NOT) { const m = c.bestMatchIn(s, c.SUBSUMED); ok(!m, '"' + s + '" does not match a Lists II-IV item', m ? m.e.item : ''); }
 
+console.log('== Insurance Ombudsman offices (R13): every state and UT has an office, splits are honest');
+ok(c.OMBUDSMAN.length === 18, 'all 18 offices on the Council for Insurance Ombudsmen list are present (' + c.OMBUDSMAN.length + ')');
+ok(c.INDIA_STATES.length === 36 && new Set(c.INDIA_STATES).size === 36, 'the form offers all 28 states and 8 union territories, once each');
+{ const none = c.INDIA_STATES.filter(st => c.ombudsmanFor(st).length === 0); ok(none.length === 0, 'every state and UT resolves to at least one office', none.join(', ')); }
+{ const twice = c.INDIA_STATES.filter(st => c.OMBUDSMAN.filter(o => o.states.includes(st)).length > 1); ok(twice.length === 0, 'no state is claimed IN FULL by two offices', twice.join(', ')); }
+{ const unknown = c.OMBUDSMAN.flatMap(o => [...o.states, ...o.part]).filter(st => !c.INDIA_STATES.includes(st)); ok(unknown.length === 0, 'every state named in the table is a real entry in the form list', unknown.join(', ')); }
+{ const both = c.INDIA_STATES.filter(st => c.OMBUDSMAN.some(o => o.states.includes(st)) && c.OMBUDSMAN.some(o => o.part.includes(st))); ok(both.length === 0, 'a state is either covered in full by one office or split between several, never both', both.join(', ')); }
+const SPLIT = { 'Haryana': ['Chandigarh', 'Delhi'], 'Maharashtra': ['Mumbai', 'Pune', 'Thane'], 'Puducherry': ['Chennai', 'Hyderabad', 'Kochi'], 'Uttar Pradesh': ['Lucknow', 'Noida'] };
+for (const [st, offices] of Object.entries(SPLIT)) ok(c.ombudsmanFor(st).map(o => o.office).join() === offices.join(), st + ' is split between ' + offices.join(', ') + ' (each shown with its own jurisdiction wording)');
+ok(c.INDIA_STATES.filter(st => c.ombudsmanFor(st).length > 1).length === 4, 'exactly those four states are split');
+for (const [st, office] of [['Karnataka', 'Bengaluru'], ['Goa', 'Pune'], ['Uttarakhand', 'Noida'], ['Ladakh', 'Chandigarh'], ['Dadra and Nagar Haveli and Daman and Diu', 'Ahmedabad'], ['Lakshadweep', 'Kochi'], ['Andaman and Nicobar Islands', 'Kolkata']])
+  ok(c.ombudsmanFor(st).map(o => o.office).join() === office, st + ' -> ' + office);
+for (const o of c.OMBUDSMAN) {
+  ok(/@cioins\.co\.in$/.test(o.email) && o.address.length > 10 && o.jurisdiction.length > 3 && /\d/.test(o.tel), o.office + ' has an address, phone, cioins.co.in email and its published jurisdiction');
+}
+ok(/^\d{4}-\d{2}-\d{2}$/.test(c.OMBUDSMAN_READ_ON), 'the date the list was read is recorded (' + c.OMBUDSMAN_READ_ON + ')');
+ok(c.ombudsmanFor('') .length === 0 && c.ombudsmanFor('Atlantis').length === 0, 'no state chosen (or an unknown one) gives no office, not a guess');
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

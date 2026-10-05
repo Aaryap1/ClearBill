@@ -1,6 +1,6 @@
 # ClearBill reference data
 
-Three tables. Every row carries where it came from and when it took effect.
+Four tables. Every row carries where it came from and when it took effect (or, for the ombudsman offices, when it was read).
 
 ## irdai_non_payables.csv  (99 rows) — IRDAI List I
 Items insurers do not pay for, which the patient absorbs.
@@ -33,6 +33,11 @@ Same generation rule as the List I file above: run `node 06_app/lib/sync_referen
 | list | `II`, `III` or `IV` |
 | match_keywords | same whole-word matching rule as List I |
 | source_document / effective_date | the 27 Sep 2019 guidelines |
+
+## insurance_ombudsman_offices.csv  (18 rows) — where to complain after the insurer
+Added 5 Oct 2026. The 18 Insurance Ombudsman offices, read that day from the Council for Insurance Ombudsmen's own page (cioins.co.in/Ombudsman), using the list the page **displays**. The same page also carries a second, permanently hidden copy with different addresses and names for several offices (it still says "Orissa" and "Uttaranchal"); that copy is stale and is not used.
+
+Generated from `OMBUDSMAN` in `06_app/index.html` by `06_app/lib/sync_reference.js`, like the IRDAI tables; `06_app/lib/test_reference.js` checks every state and UT has an office and fails if this file drifts. `states_in_full` / `states_in_part` drive the app's state dropdown. Four states are split between offices (Haryana, Maharashtra, Puducherry, Uttar Pradesh): for those the app shows every candidate office with `jurisdiction_as_published`, word for word, rather than guessing a district mapping — the page's own Uttar Pradesh district lists use older names (Allahabad, Faizabad) and do not name every district. The Ombudsman's personal name is left out on purpose: it changes, and the office address is what a complaint needs. Offices move — re-read the page before relying on an address.
 
 ## nppa_ceilings.csv  (16 rows)
 NPPA price ceilings. A price above a ceiling (plus applicable GST) is worth asking the hospital to explain; whether it breaches the order depends on details the app cannot see (GST, exact device, the notification in force on the bill date). The app never calls a knee-implant line a violation.

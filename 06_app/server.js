@@ -164,9 +164,20 @@ function readJsonBody(req, res, maxBytes, onBody) {
 // them. summary/letter/flags are free-form strings/numbers the browser
 // builds from its own (already-tested) analyse() output — the server does
 // not interpret them, only stores and returns them for this same uid.
-const BILL_CREATE_FIELDS = ['hospitalName', 'billDate', 'netPayable', 'explainedPct', 'explainedAmt', 'deduction', 'flagCounts', 'letter', 'status', 'note'];
-const BILL_PATCH_FIELDS = ['status', 'note'];
+const BILL_CREATE_FIELDS = ['hospitalName', 'billDate', 'netPayable', 'explainedPct', 'explainedAmt', 'deduction', 'flagCounts', 'letter', 'status', 'note', 'sentOn'];
+const BILL_PATCH_FIELDS = ['status', 'note', 'sentOn'];
 function pick(obj, allowed) { const o = {}; for (const k of allowed) if (Object.prototype.hasOwnProperty.call(obj, k)) o[k] = obj[k]; return o; }
+// sentOn (R13): the date the user says they sent the letter — YYYY-MM-DD, a
+// real calendar date, not in the future (a day's slack for time zones), or
+// null to clear it. Anything else is refused rather than stored.
+function validSentOn(v) {
+  if (v === null) return true;
+  if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+  const y = +v.slice(0, 4), m = +v.slice(5, 7), d = +v.slice(8, 10), t = Date.UTC(y, m - 1, d), dt = new Date(t);
+  if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) return false;
+  return t <= Date.now() + 86400000;
+}
+const BAD_SENT_ON = { error: 'bad_request', message: 'The sent-on date must be a real date (YYYY-MM-DD), not in the future.' };
 
 async function listBillsHandler(req, res) {
   const uid = await requireUid(req, res); if (!uid) return;
@@ -180,6 +191,7 @@ async function createBillHandler(req, res) {
   const uid = await requireUid(req, res); if (!uid) return;
   readJsonBody(req, res, BILLS_MAX_BODY, async (body) => {
     const data = pick(body, BILL_CREATE_FIELDS);
+    if ('sentOn' in data && !validSentOn(data.sentOn)) return sendJson(res, 400, BAD_SENT_ON);
     data.savedAt = new Date().toISOString();
     if (!data.status) data.status = 'sent';
     try { const bill = await firestore.createBill(uid, data); sendJson(res, 201, { bill }); }
@@ -191,6 +203,7 @@ async function patchBillHandler(req, res, billId) {
   readJsonBody(req, res, BILLS_MAX_BODY, async (body) => {
     const patch = pick(body, BILL_PATCH_FIELDS);
     if (!Object.keys(patch).length) return sendJson(res, 400, { error: 'bad_request', message: 'Nothing to update.' });
+    if ('sentOn' in patch && !validSentOn(patch.sentOn)) return sendJson(res, 400, BAD_SENT_ON);
     try { const bill = await firestore.updateBill(uid, billId, patch); sendJson(res, 200, { bill }); }
     catch (e) { console.log('[bills] update error', String(e.message || e)); sendJson(res, e.status || 500, { error: e.status === 404 ? 'not_found' : 'server', message: e.status === 404 ? 'That saved bill was not found.' : 'Could not update that bill right now.' }); }
   });

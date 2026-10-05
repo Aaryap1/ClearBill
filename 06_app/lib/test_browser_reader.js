@@ -298,6 +298,48 @@ const STUB = `
     await ev(`document.querySelector('#remindRow [data-days="7"]').click();`); await sleep(100);
     ok(/Open the file to add the reminder/.test(await ev(`return document.getElementById('remindNote').textContent`)), 'tapping a choice downloads the file and says what to do with it');
 
+    console.log('== R13: Insurance Ombudsman office by state (in the "After you send" card, never in the letter)');
+    await fresh(); await ev(`setLang('en'); document.getElementById('egBtn').click();`); await sleep(500);
+    await ev(`switchTab('letter'); document.getElementById('genLetterTab').click();`); await sleep(300);
+    ok(await ev(`return document.getElementById('ld_state').options.length`) === 37, 'the state list offers 36 states/UTs plus "Choose your state"');
+    ok(/Choose your state under/.test(await ev(`return document.querySelector('.aftersend').innerText`)), 'with no state chosen, the card says where to choose it');
+    const pickState = st => ev(`const s=document.getElementById('ld_state'); s.value=${JSON.stringify(st)}; s.dispatchEvent(new Event('input',{bubbles:true}));`);
+    await pickState('Karnataka'); await sleep(300);
+    let aft = await ev(`return document.querySelector('.aftersend').innerText`);
+    ok(/Office of the Insurance Ombudsman, Bengaluru/.test(aft) && /oio\.bengaluru@cioins\.co\.in/.test(aft) && /JP Nagar/.test(aft), 'Karnataka shows the Bengaluru office: address, phone, email');
+    ok(/cioins\.co\.in, as read on 5 October 2026/.test(aft), 'it says where the address came from and when it was read');
+    ok(!/\b\d+\s*(days?|months?|years?|lakhs?)\b/i.test(aft), 'the card still states no time limits of its own (addresses contain numbers, but no deadlines)');
+    const letterOnly = await ev(`return document.querySelector('.letter').innerText`);
+    ok(!/Ombudsman|oio\./.test(letterOnly), 'the Ombudsman is NOT put in the letter itself (a complaint goes to the insurer first)');
+    await pickState('Maharashtra'); await sleep(300);
+    aft = await ev(`return document.querySelector('.aftersend').innerText`);
+    ok(/Mumbai/.test(aft) && /Pune/.test(aft) && /Thane/.test(aft) && (aft.match(/Covers:/g) || []).length === 3, 'Maharashtra (split) shows all three offices, each with the area it covers in its own words');
+    ok(/depends on where you live/.test(aft), 'and says plainly that which office applies depends on where you live');
+    await ev(`setLang('hi');`); await sleep(200);
+    ok(/बीमा लोकपाल/.test(await ev(`return document.querySelector('.aftersend').innerText`)), 'the office block is in Hindi too (the address stays as published)');
+    await ev(`setLang('en'); document.getElementById('ld_remember').checked=true; document.getElementById('ld_remember').dispatchEvent(new Event('input',{bubbles:true}));`); await sleep(100);
+    ok(/"state":"Maharashtra"/.test(await ev(`return localStorage.getItem('clearbill_letter_details')||''`)), 'the chosen state is remembered with the other details when "remember" is ticked');
+
+    console.log('== R13: "sent on" date and how long ago');
+    await fresh(); await ev(`setLang('en'); document.getElementById('egBtn').click();`); await sleep(500);
+    await ev(`switchTab('mybills'); document.getElementById('saveLocalBtn').click();`); await sleep(200);
+    ok(await ev(`return !!document.querySelector('#localList .bsentin')`), 'a check saved on this device has a "Sent on" date field');
+    const ago = await ev(`const d=new Date(); d.setDate(d.getDate()-3); const p=x=>String(x).padStart(2,'0'); const v=d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
+      const i=document.querySelector('#localList .bsentin'); i.value=v; i.dispatchEvent(new Event('change',{bubbles:true}));
+      return {txt: document.querySelector('#localList .bago').textContent, stored: readLocalChecks()[0].sentOn, v};`);
+    ok(ago.txt === 'sent 3 days ago' && ago.stored === ago.v, 'choosing a date 3 days ago shows "sent 3 days ago" and is saved with the check');
+    await send('Page.navigate', { url: `http://127.0.0.1:${port}/` }); await sleep(1200);
+    await ev(`switchTab('mybills');`); await sleep(200);
+    ok(await ev(`return document.querySelector('#localList .bsentin').value`) === ago.v && await ev(`return document.querySelector('#localList .bago').textContent`) === 'sent 3 days ago', 'after reopening the page, the date and the count are still there');
+    const sa = await ev(`const p=x=>String(x).padStart(2,'0'), f=d=>d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()), t=new Date(), y=new Date(); y.setDate(y.getDate()-1); const fu=new Date(); fu.setDate(fu.getDate()+5);
+      return {today: sentAgo(f(t)), yest: sentAgo(f(y)), future: validSentOn(f(fu)), bad: validSentOn('2026-02-30'), none: sentAgo(null)};`);
+    ok(sa.today === 'sent today' && sa.yest === 'sent yesterday', '"sent today" and "sent yesterday" read naturally');
+    ok(sa.future === false && sa.bad === false && sa.none === '', 'a future or impossible date is not accepted, and no date shows nothing');
+    ok(await ev(`return !/\\b\\d+\\s*days?\\b.*(limit|deadline|within)/i.test(document.getElementById('localList').innerText)`), 'the count states no deadline ("sent 3 days ago", nothing about what is due)');
+    const acct = await ev(`renderMyBillsList([{id:'b1',status:'sent',note:'',sentOn:'2026-09-20',savedAt:'2026-09-20T10:00:00Z',explainedPct:22}]);
+      return {v: document.querySelector('#mybillsList .bsentin').value, ago: document.querySelector('#mybillsList .bago').textContent};`);
+    ok(acct.v === '2026-09-20' && /^sent \d+ days ago$/.test(acct.ago), 'a bill saved to a Google account shows its sent-on date and count the same way (' + acct.ago + ')');
+
     console.log('== downscale: large photos are resized before upload (R10)');
     await fresh();
     const dimsOf = async (fileExpr) => ev(`const bmp = await createImageBitmap(${fileExpr}); const d = {w: bmp.width, h: bmp.height}; bmp.close && bmp.close(); return d;`);

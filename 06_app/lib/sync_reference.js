@@ -5,10 +5,11 @@
  *   - 02_reference_data/irdai_non_payables.csv          from NON_PAYABLE (List I)
  *   - 03_code/lookup_table_for_prompt.txt                from NON_PAYABLE (List I)
  *   - 02_reference_data/irdai_subsumed_lists_ii_iv.csv   from SUBSUMED (Lists II-IV)
+ *   - 02_reference_data/insurance_ombudsman_offices.csv  from OMBUDSMAN (R13)
  * so the copies cannot disagree (the first two had drifted once already: 17 rows
  * were "exact" in the files but "review" in the app).
  *
- *   node lib/sync_reference.js          rewrite all three files
+ *   node lib/sync_reference.js          rewrite all four files
  *   node lib/sync_reference.js --check  exit 1 if any is out of step
  *
  * Note: 02_reference_data/build_irdai.py is the original one-off builder of the
@@ -16,12 +17,14 @@
  */
 const fs = require('fs');
 const path = require('path');
-const { NON_PAYABLE, SUBSUMED } = require('./checks.js');
+const { NON_PAYABLE, SUBSUMED, OMBUDSMAN, OMBUDSMAN_READ_ON } = require('./checks.js');
 
 const REPO = path.join(__dirname, '..', '..');
 const CSV = path.join(REPO, '02_reference_data', 'irdai_non_payables.csv');
 const TXT = path.join(REPO, '03_code', 'lookup_table_for_prompt.txt');
 const SUB_CSV = path.join(REPO, '02_reference_data', 'irdai_subsumed_lists_ii_iv.csv');
+const OMB_CSV = path.join(REPO, '02_reference_data', 'insurance_ombudsman_offices.csv');
+const OMB_SOURCE = 'Council for Insurance Ombudsmen, cioins.co.in/Ombudsman (the displayed list)';
 const SUB_DATE = '2019-09-27'; // Guidelines on Standardization in Health Insurance, as modified
 const SUB_SOURCE = 'IRDAI Guidelines on Standardization in Health Insurance (Modification, 27 Sep 2019), List';
 const SOURCE = 'IRDAI List of Non-Medical / Non-Payable Items (as circulated by insurers)';
@@ -83,19 +86,26 @@ function buildSubsumed() {
   return { csv };
 }
 
+function buildOmbudsman() {
+  const csv = ['office,address,tel,email,states_in_full,states_in_part,jurisdiction_as_published,source,read_on']
+    .concat(OMBUDSMAN.map(o => [o.office, o.address, o.tel, o.email, o.states.join('|'), o.part.join('|'), o.jurisdiction, OMB_SOURCE, OMBUDSMAN_READ_ON].map(csvField).join(','))).join('\n') + '\n';
+  return { csv };
+}
+
 if (require.main === module) {
-  const out = build(), subOut = buildSubsumed();
+  const out = build(), subOut = buildSubsumed(), ombOut = buildOmbudsman();
   const norm = f => fs.existsSync(f) ? fs.readFileSync(f, 'utf8').replace(/\r\n/g, '\n') : '';
   if (process.argv.includes('--check')) {
     const bad = [];
     if (norm(CSV) !== out.csv.replace(/\r\n/g, '\n')) bad.push('02_reference_data/irdai_non_payables.csv');
     if (norm(TXT) !== out.txt.replace(/\r\n/g, '\n')) bad.push('03_code/lookup_table_for_prompt.txt');
     if (norm(SUB_CSV) !== subOut.csv.replace(/\r\n/g, '\n')) bad.push('02_reference_data/irdai_subsumed_lists_ii_iv.csv');
+    if (norm(OMB_CSV) !== ombOut.csv.replace(/\r\n/g, '\n')) bad.push('02_reference_data/insurance_ombudsman_offices.csv');
     if (bad.length) { console.error('STALE reference copies: ' + bad.join(', ') + ' - run: node lib/sync_reference.js'); process.exit(1); }
-    console.log('reference CSV and prompt table match the app (' + NON_PAYABLE.length + ' List I rows, ' + SUBSUMED.length + ' Lists II-IV rows)');
+    console.log('reference CSV and prompt table match the app (' + NON_PAYABLE.length + ' List I rows, ' + SUBSUMED.length + ' Lists II-IV rows, ' + OMBUDSMAN.length + ' ombudsman offices)');
   } else {
-    fs.writeFileSync(CSV, out.csv); fs.writeFileSync(TXT, out.txt); fs.writeFileSync(SUB_CSV, subOut.csv);
+    fs.writeFileSync(CSV, out.csv); fs.writeFileSync(TXT, out.txt); fs.writeFileSync(SUB_CSV, subOut.csv); fs.writeFileSync(OMB_CSV, ombOut.csv);
     console.log('wrote irdai_non_payables.csv, lookup_table_for_prompt.txt (' + NON_PAYABLE.length + ' rows) and irdai_subsumed_lists_ii_iv.csv (' + SUBSUMED.length + ' rows)');
   }
 }
-module.exports = { build, buildSubsumed };
+module.exports = { build, buildSubsumed, buildOmbudsman };

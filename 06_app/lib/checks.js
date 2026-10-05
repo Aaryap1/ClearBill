@@ -244,6 +244,65 @@ const SUBSUMED = [
   { list:"IV", item:"Glucometer & Strips", keywords:"glucometer|glucose strip" },
 ];
 
+// Insurance Ombudsman offices (R13). Read on 5 Oct 2026 from the Council for
+// Insurance Ombudsmen's own contact page, cioins.co.in/Ombudsman — the list that
+// page DISPLAYS. The same page also carries a second, permanently hidden copy
+// with different addresses and names for several offices (it still says
+// "Orissa" and "Uttaranchal"); that copy is stale and is not used.
+// Addresses, phone and email are copied as published (only line breaks and
+// spacing tidied). The Ombudsman's own name is left out: it changes, and
+// writing to "the Insurance Ombudsman" at the office is enough.
+// `states` = states/UTs the office covers in full. `part` = states it covers
+// only in part; for those the app shows every candidate office with the page's
+// own jurisdiction wording, word for word, rather than guessing a district
+// mapping (the page's Uttar Pradesh district lists use older names such as
+// Allahabad and Faizabad and do not name every district).
+const OMBUDSMAN_READ_ON='2026-10-05';
+const OMBUDSMAN = [
+  { office:"Ahmedabad", address:"Jeevan Prakash Building, 6th floor, Tilak Marg, Relief Road, Ahmedabad – 380 001", tel:"079 - 25501201/02", email:"oio.ahmedabad@cioins.co.in",
+    states:["Gujarat","Dadra and Nagar Haveli and Daman and Diu"], part:[], jurisdiction:"Gujarat, Dadra & Nagar Haveli, Daman and Diu." },
+  { office:"Bengaluru", address:"Jeevan Soudha Building, PID No. 57-27-N-19, Ground Floor, 19/19, 24th Main Road, JP Nagar, Ist Phase, Bengaluru – 560 078", tel:"080 - 26652048 / 26652049", email:"oio.bengaluru@cioins.co.in",
+    states:["Karnataka"], part:[], jurisdiction:"Karnataka." },
+  { office:"Bhopal", address:"1st floor, \"Jeevan Shikha\", 60-B, Hoshangabad Road, Opp. Gayatri Mandir, Arera Hills, Bhopal – 462 011", tel:"0755 - 2769201 / 2769202 / 2769203", email:"oio.bhopal@cioins.co.in",
+    states:["Madhya Pradesh","Chhattisgarh"], part:[], jurisdiction:"Madhya Pradesh, Chhattisgarh." },
+  { office:"Bhubaneswar", address:"62, Forest park, Bhubaneswar – 751 009", tel:"0674 - 2596461 / 2596455 / 2596429 / 2596003", email:"oio.bhubaneswar@cioins.co.in",
+    states:["Odisha"], part:[], jurisdiction:"Odisha." },
+  { office:"Chandigarh", address:"Jeevan Deep Building, SCO 20-27, Ground Floor, Sector-17 A, Chandigarh – 160 017", tel:"0172-2706468", email:"oio.chandigarh@cioins.co.in",
+    states:["Punjab","Himachal Pradesh","Jammu and Kashmir","Ladakh","Chandigarh"], part:["Haryana"], jurisdiction:"Punjab, Haryana (excluding Gurugram, Faridabad, Sonepat and Bahadurgarh), Himachal Pradesh, Union Territories of Jammu & Kashmir, Ladakh & Chandigarh." },
+  { office:"Chennai", address:"Fatima Akhtar Court, 4th Floor, 453, Anna Salai, Teynampet, Chennai – 600 018", tel:"044 - 24333668 / 24333678", email:"oio.chennai@cioins.co.in",
+    states:["Tamil Nadu"], part:["Puducherry"], jurisdiction:"Tamil Nadu, Puducherry Town and Karaikal (which are part of Puducherry)." },
+  { office:"Delhi", address:"2/2 A, Universal Insurance Building, Asaf Ali Road, New Delhi – 110 002", tel:"011 - 46013992 / 23213504 / 23232481", email:"oio.delhi@cioins.co.in",
+    states:["Delhi"], part:["Haryana"], jurisdiction:"Delhi & following Districts of Haryana - Gurugram, Faridabad, Sonepat & Bahadurgarh." },
+  { office:"Guwahati", address:"Jeevan Nivesh, 5th Floor, Near Pan Bazar, S.S. Road, Guwahati – 781 001 (Assam)", tel:"0361 - 2632204 / 2602205 / 2631307", email:"oio.guwahati@cioins.co.in",
+    states:["Assam","Meghalaya","Manipur","Mizoram","Arunachal Pradesh","Nagaland","Tripura"], part:[], jurisdiction:"Assam, Meghalaya, Manipur, Mizoram, Arunachal Pradesh, Nagaland and Tripura." },
+  { office:"Hyderabad", address:"6-2-46, 1st floor, \"Moin Court\", Lane Opp. Hyundai Showroom, A. C. Guards, Lakdi-Ka-Pool, Hyderabad – 500 004", tel:"040 - 23312122 / 23376991 / 23376599 / 23328709 / 23325325", email:"oio.hyderabad@cioins.co.in",
+    states:["Andhra Pradesh","Telangana"], part:["Puducherry"], jurisdiction:"Andhra Pradesh, Telangana, Yanam and part of Union Territory of Puducherry." },
+  { office:"Jaipur", address:"Jeevan Nidhi – II Bldg., Gr. Floor, Bhawani Singh Marg, Jaipur – 302 005", tel:"0141-2740363", email:"oio.jaipur@cioins.co.in",
+    states:["Rajasthan"], part:[], jurisdiction:"Rajasthan." },
+  { office:"Kochi", address:"10th Floor, Jeevan Prakash, LIC Building, Opp. to Maharaja's College Ground, M.G. Road, Kochi – 682 011", tel:"0484 - 2358759", email:"oio.ernakulam@cioins.co.in",
+    states:["Kerala","Lakshadweep"], part:["Puducherry"], jurisdiction:"Kerala, Lakshadweep, Mahe - a part of Union Territory of Puducherry." },
+  { office:"Kolkata", address:"Hindustan Bldg. Annexe, 7th Floor, 4, C.R. Avenue, Kolkata – 700 072", tel:"033 - 22124339 / 22124341", email:"oio.kolkata@cioins.co.in",
+    states:["West Bengal","Sikkim","Andaman and Nicobar Islands"], part:[], jurisdiction:"West Bengal, Sikkim, Andaman & Nicobar Islands." },
+  { office:"Lucknow", address:"6th Floor, Jeevan Bhawan, Phase-II, Nawal Kishore Road, Hazratganj, Lucknow – 226 001", tel:"0522 - 4002082 / 3500613", email:"oio.lucknow@cioins.co.in",
+    states:[], part:["Uttar Pradesh"], jurisdiction:"Districts of Uttar Pradesh: Lalitpur, Jhansi, Mahoba, Hamirpur, Banda, Chitrakoot, Allahabad, Mirzapur, Sonbhabdra, Fatehpur, Pratapgarh, Jaunpur, Varanasi, Gazipur, Jalaun, Kanpur, Lucknow, Unnao, Sitapur, Lakhimpur, Bahraich, Barabanki, Raebareli, Sravasti, Gonda, Faizabad, Amethi, Kaushambi, Balrampur, Basti, Ambedkarnagar, Sultanpur, Maharajgang, Santkabirnagar, Azamgarh, Kushinagar, Gorkhpur, Deoria, Mau, Ghazipur, Chandauli, Ballia, Sidharathnagar." },
+  { office:"Mumbai", address:"3rd Floor, Jeevan Seva Annexe, S. V. Road, Santacruz (W), Mumbai – 400 054", tel:"022 - 69038800/27/29/31/32/33", email:"oio.mumbai@cioins.co.in",
+    states:[], part:["Maharashtra"], jurisdiction:"List of wards under Mumbai Metropolitan Region excluding wards in Mumbai – i.e. M/E, M/W, N, S and T covered under Office of Insurance Ombudsman Thane and excluding areas of Navi Mumbai." },
+  { office:"Noida", address:"Bhagwan Sahai Palace, 4th Floor, Main Road, Naya Bans, Sector 15, Distt: Gautam Buddh Nagar, U.P. – 201 301", tel:"0120-4027589", email:"oio.noida@cioins.co.in",
+    states:["Uttarakhand"], part:["Uttar Pradesh"], jurisdiction:"State of Uttarakhand and the following Districts of Uttar Pradesh: Agra, Aligarh, Bagpat, Bareilly, Bijnor, Budaun, Bulandshehar, Etah, Kannauj, Mainpuri, Mathura, Meerut, Moradabad, Muzaffarnagar, Oraiyya, Pilibhit, Etawah, Farrukhabad, Firozbad, Gautam Buddh nagar, Ghaziabad, Hardoi, Shahjahanpur, Hapur, Shamli, Rampur, Kashganj, Sambhal, Amroha, Hathras, Kanshiramnagar, Saharanpur." },
+  { office:"Patna", address:"2nd Floor, Lalit Bhawan, Bailey Road, Patna – 800 001", tel:"0612-2547068", email:"oio.patna@cioins.co.in",
+    states:["Bihar","Jharkhand"], part:[], jurisdiction:"Bihar, Jharkhand." },
+  { office:"Pune", address:"Jeevan Darshan Bldg., 3rd Floor, C.T.S. No.s. 195 to 198, N.C. Kelkar Road, Narayan Peth, Pune – 411 030", tel:"020-24471175", email:"oio.pune@cioins.co.in",
+    states:["Goa"], part:["Maharashtra"], jurisdiction:"State of Goa and State of Maharashtra excluding areas of Navi Mumbai, Thane district, Palghar District, Raigad district & Mumbai Metropolitan Region." },
+  { office:"Thane", address:"Jeevan Chintamani Building, 2nd Floor, Near New RTO Office, Louis Wadi, Vasantrao Naik Mahamarg, Thane (West) – 400 604", tel:"022-20812868/69", email:"oio.thane@cioins.co.in",
+    states:[], part:["Maharashtra"], jurisdiction:"Area of Navi Mumbai, Thane District, Raigad District, Palghar District and wards of Mumbai, M/East, M/West, N, S and T." },
+];
+// The 28 states and 8 union territories, as offered in the letter form.
+const INDIA_STATES = ["Andaman and Nicobar Islands","Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chandigarh","Chhattisgarh",
+  "Dadra and Nagar Haveli and Daman and Diu","Delhi","Goa","Gujarat","Haryana","Himachal Pradesh","Jammu and Kashmir","Jharkhand",
+  "Karnataka","Kerala","Ladakh","Lakshadweep","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha",
+  "Puducherry","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh","Uttarakhand","West Bengal"];
+const ombudsmanFor = state => state ? OMBUDSMAN.filter(o=>o.states.includes(state)||o.part.includes(state)) : [];
+
 
 // Full IS 19493:2025 header registry — matches 03_code/completeness.js's
 // HEADER_FIELDS exactly (23 mandatory + 3 conditional = 26), so the browser
@@ -524,4 +583,4 @@ function analyse(data,now){
   return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,similarDups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nppaDated,nonLatin,subtotals,unreadable,reconCompared,partial,subsumed,subsumedSum,rejected:data._rejected||0,pageCount:data._pageCount||null};
 }
 
-module.exports = { NON_PAYABLE, SUBSUMED, NPPA, IS19493_HEADER, GSTIN_RE, money, bestMatch, bestMatchIn, parseAmount, billDateRange, analyse };
+module.exports = { NON_PAYABLE, SUBSUMED, NPPA, OMBUDSMAN, OMBUDSMAN_READ_ON, INDIA_STATES, ombudsmanFor, IS19493_HEADER, GSTIN_RE, money, bestMatch, bestMatchIn, parseAmount, billDateRange, analyse };

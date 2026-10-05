@@ -118,6 +118,14 @@
   .billrow select.bstatus,.billrow textarea.bnote{width:100%;margin-top:6px;border:1.5px solid var(--ctl);background:var(--field);border-radius:8px;padding:8px;font:inherit;color:var(--ink);box-sizing:border-box}
   .billrow textarea.bnote{min-height:44px;resize:vertical}
   .billrow .brow-actions{display:flex;justify-content:flex-end;margin-top:8px}
+  .billrow .bsent{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;font-size:.82rem;color:var(--soft)}
+  .billrow .bsent input{border:1.5px solid var(--ctl);background:var(--field);border-radius:8px;padding:6px 8px;font:inherit;color:var(--ink)}
+  .billrow .bsent b{color:var(--ink)}
+  .omb{margin:10px 0 0;padding:10px 12px;border:1px solid var(--rule);border-radius:10px;background:var(--field)}
+  .omb .ombh{font-weight:600;margin-bottom:6px}
+  .omb .ombo{margin:6px 0;font-size:.88rem;line-height:1.45}
+  .omb .ombj{margin-top:4px;color:var(--soft);font-size:.8rem}
+  .omb .ombsrc,.ombnote{margin:8px 0 0;color:var(--soft);font-size:.8rem}
 
   /* the slip */
   .slip{background:var(--card);border:1px solid var(--rule);border-radius:12px;box-shadow:var(--sh);
@@ -463,6 +471,7 @@
         <label for="ld_claim" id="ldLblClaim">Claim number</label><input type="text" id="ld_claim" maxlength="60">
         <label for="ld_policy" id="ldLblPolicy">Policy number</label><input type="text" id="ld_policy" maxlength="60">
         <label for="ld_contact" id="ldLblContact">Phone or email for replies</label><input type="text" id="ld_contact" autocomplete="tel" maxlength="120">
+        <label for="ld_state" id="ldLblState">Your state (to find your Insurance Ombudsman office)</label><select id="ld_state"><option value="" id="ldStateNone">Choose your state</option></select>
         <label class="chk"><input type="checkbox" id="ld_asked"><span id="ldLblAsked">I have already asked the hospital or insurer for this breakdown</span></label>
         <label class="chk"><input type="checkbox" id="ld_remember"><span id="ldLblRemember">Remember these details on this device</span></label>
         <p class="ldnote" id="ldNote">Off by default. Details stay on this device only; they are never sent anywhere.</p>
@@ -793,6 +802,65 @@ const SUBSUMED = [
   { list:"IV", item:"Glucometer & Strips", keywords:"glucometer|glucose strip" },
 ];
 
+// Insurance Ombudsman offices (R13). Read on 5 Oct 2026 from the Council for
+// Insurance Ombudsmen's own contact page, cioins.co.in/Ombudsman — the list that
+// page DISPLAYS. The same page also carries a second, permanently hidden copy
+// with different addresses and names for several offices (it still says
+// "Orissa" and "Uttaranchal"); that copy is stale and is not used.
+// Addresses, phone and email are copied as published (only line breaks and
+// spacing tidied). The Ombudsman's own name is left out: it changes, and
+// writing to "the Insurance Ombudsman" at the office is enough.
+// `states` = states/UTs the office covers in full. `part` = states it covers
+// only in part; for those the app shows every candidate office with the page's
+// own jurisdiction wording, word for word, rather than guessing a district
+// mapping (the page's Uttar Pradesh district lists use older names such as
+// Allahabad and Faizabad and do not name every district).
+const OMBUDSMAN_READ_ON='2026-10-05';
+const OMBUDSMAN = [
+  { office:"Ahmedabad", address:"Jeevan Prakash Building, 6th floor, Tilak Marg, Relief Road, Ahmedabad – 380 001", tel:"079 - 25501201/02", email:"oio.ahmedabad@cioins.co.in",
+    states:["Gujarat","Dadra and Nagar Haveli and Daman and Diu"], part:[], jurisdiction:"Gujarat, Dadra & Nagar Haveli, Daman and Diu." },
+  { office:"Bengaluru", address:"Jeevan Soudha Building, PID No. 57-27-N-19, Ground Floor, 19/19, 24th Main Road, JP Nagar, Ist Phase, Bengaluru – 560 078", tel:"080 - 26652048 / 26652049", email:"oio.bengaluru@cioins.co.in",
+    states:["Karnataka"], part:[], jurisdiction:"Karnataka." },
+  { office:"Bhopal", address:"1st floor, \"Jeevan Shikha\", 60-B, Hoshangabad Road, Opp. Gayatri Mandir, Arera Hills, Bhopal – 462 011", tel:"0755 - 2769201 / 2769202 / 2769203", email:"oio.bhopal@cioins.co.in",
+    states:["Madhya Pradesh","Chhattisgarh"], part:[], jurisdiction:"Madhya Pradesh, Chhattisgarh." },
+  { office:"Bhubaneswar", address:"62, Forest park, Bhubaneswar – 751 009", tel:"0674 - 2596461 / 2596455 / 2596429 / 2596003", email:"oio.bhubaneswar@cioins.co.in",
+    states:["Odisha"], part:[], jurisdiction:"Odisha." },
+  { office:"Chandigarh", address:"Jeevan Deep Building, SCO 20-27, Ground Floor, Sector-17 A, Chandigarh – 160 017", tel:"0172-2706468", email:"oio.chandigarh@cioins.co.in",
+    states:["Punjab","Himachal Pradesh","Jammu and Kashmir","Ladakh","Chandigarh"], part:["Haryana"], jurisdiction:"Punjab, Haryana (excluding Gurugram, Faridabad, Sonepat and Bahadurgarh), Himachal Pradesh, Union Territories of Jammu & Kashmir, Ladakh & Chandigarh." },
+  { office:"Chennai", address:"Fatima Akhtar Court, 4th Floor, 453, Anna Salai, Teynampet, Chennai – 600 018", tel:"044 - 24333668 / 24333678", email:"oio.chennai@cioins.co.in",
+    states:["Tamil Nadu"], part:["Puducherry"], jurisdiction:"Tamil Nadu, Puducherry Town and Karaikal (which are part of Puducherry)." },
+  { office:"Delhi", address:"2/2 A, Universal Insurance Building, Asaf Ali Road, New Delhi – 110 002", tel:"011 - 46013992 / 23213504 / 23232481", email:"oio.delhi@cioins.co.in",
+    states:["Delhi"], part:["Haryana"], jurisdiction:"Delhi & following Districts of Haryana - Gurugram, Faridabad, Sonepat & Bahadurgarh." },
+  { office:"Guwahati", address:"Jeevan Nivesh, 5th Floor, Near Pan Bazar, S.S. Road, Guwahati – 781 001 (Assam)", tel:"0361 - 2632204 / 2602205 / 2631307", email:"oio.guwahati@cioins.co.in",
+    states:["Assam","Meghalaya","Manipur","Mizoram","Arunachal Pradesh","Nagaland","Tripura"], part:[], jurisdiction:"Assam, Meghalaya, Manipur, Mizoram, Arunachal Pradesh, Nagaland and Tripura." },
+  { office:"Hyderabad", address:"6-2-46, 1st floor, \"Moin Court\", Lane Opp. Hyundai Showroom, A. C. Guards, Lakdi-Ka-Pool, Hyderabad – 500 004", tel:"040 - 23312122 / 23376991 / 23376599 / 23328709 / 23325325", email:"oio.hyderabad@cioins.co.in",
+    states:["Andhra Pradesh","Telangana"], part:["Puducherry"], jurisdiction:"Andhra Pradesh, Telangana, Yanam and part of Union Territory of Puducherry." },
+  { office:"Jaipur", address:"Jeevan Nidhi – II Bldg., Gr. Floor, Bhawani Singh Marg, Jaipur – 302 005", tel:"0141-2740363", email:"oio.jaipur@cioins.co.in",
+    states:["Rajasthan"], part:[], jurisdiction:"Rajasthan." },
+  { office:"Kochi", address:"10th Floor, Jeevan Prakash, LIC Building, Opp. to Maharaja's College Ground, M.G. Road, Kochi – 682 011", tel:"0484 - 2358759", email:"oio.ernakulam@cioins.co.in",
+    states:["Kerala","Lakshadweep"], part:["Puducherry"], jurisdiction:"Kerala, Lakshadweep, Mahe - a part of Union Territory of Puducherry." },
+  { office:"Kolkata", address:"Hindustan Bldg. Annexe, 7th Floor, 4, C.R. Avenue, Kolkata – 700 072", tel:"033 - 22124339 / 22124341", email:"oio.kolkata@cioins.co.in",
+    states:["West Bengal","Sikkim","Andaman and Nicobar Islands"], part:[], jurisdiction:"West Bengal, Sikkim, Andaman & Nicobar Islands." },
+  { office:"Lucknow", address:"6th Floor, Jeevan Bhawan, Phase-II, Nawal Kishore Road, Hazratganj, Lucknow – 226 001", tel:"0522 - 4002082 / 3500613", email:"oio.lucknow@cioins.co.in",
+    states:[], part:["Uttar Pradesh"], jurisdiction:"Districts of Uttar Pradesh: Lalitpur, Jhansi, Mahoba, Hamirpur, Banda, Chitrakoot, Allahabad, Mirzapur, Sonbhabdra, Fatehpur, Pratapgarh, Jaunpur, Varanasi, Gazipur, Jalaun, Kanpur, Lucknow, Unnao, Sitapur, Lakhimpur, Bahraich, Barabanki, Raebareli, Sravasti, Gonda, Faizabad, Amethi, Kaushambi, Balrampur, Basti, Ambedkarnagar, Sultanpur, Maharajgang, Santkabirnagar, Azamgarh, Kushinagar, Gorkhpur, Deoria, Mau, Ghazipur, Chandauli, Ballia, Sidharathnagar." },
+  { office:"Mumbai", address:"3rd Floor, Jeevan Seva Annexe, S. V. Road, Santacruz (W), Mumbai – 400 054", tel:"022 - 69038800/27/29/31/32/33", email:"oio.mumbai@cioins.co.in",
+    states:[], part:["Maharashtra"], jurisdiction:"List of wards under Mumbai Metropolitan Region excluding wards in Mumbai – i.e. M/E, M/W, N, S and T covered under Office of Insurance Ombudsman Thane and excluding areas of Navi Mumbai." },
+  { office:"Noida", address:"Bhagwan Sahai Palace, 4th Floor, Main Road, Naya Bans, Sector 15, Distt: Gautam Buddh Nagar, U.P. – 201 301", tel:"0120-4027589", email:"oio.noida@cioins.co.in",
+    states:["Uttarakhand"], part:["Uttar Pradesh"], jurisdiction:"State of Uttarakhand and the following Districts of Uttar Pradesh: Agra, Aligarh, Bagpat, Bareilly, Bijnor, Budaun, Bulandshehar, Etah, Kannauj, Mainpuri, Mathura, Meerut, Moradabad, Muzaffarnagar, Oraiyya, Pilibhit, Etawah, Farrukhabad, Firozbad, Gautam Buddh nagar, Ghaziabad, Hardoi, Shahjahanpur, Hapur, Shamli, Rampur, Kashganj, Sambhal, Amroha, Hathras, Kanshiramnagar, Saharanpur." },
+  { office:"Patna", address:"2nd Floor, Lalit Bhawan, Bailey Road, Patna – 800 001", tel:"0612-2547068", email:"oio.patna@cioins.co.in",
+    states:["Bihar","Jharkhand"], part:[], jurisdiction:"Bihar, Jharkhand." },
+  { office:"Pune", address:"Jeevan Darshan Bldg., 3rd Floor, C.T.S. No.s. 195 to 198, N.C. Kelkar Road, Narayan Peth, Pune – 411 030", tel:"020-24471175", email:"oio.pune@cioins.co.in",
+    states:["Goa"], part:["Maharashtra"], jurisdiction:"State of Goa and State of Maharashtra excluding areas of Navi Mumbai, Thane district, Palghar District, Raigad district & Mumbai Metropolitan Region." },
+  { office:"Thane", address:"Jeevan Chintamani Building, 2nd Floor, Near New RTO Office, Louis Wadi, Vasantrao Naik Mahamarg, Thane (West) – 400 604", tel:"022-20812868/69", email:"oio.thane@cioins.co.in",
+    states:[], part:["Maharashtra"], jurisdiction:"Area of Navi Mumbai, Thane District, Raigad District, Palghar District and wards of Mumbai, M/East, M/West, N, S and T." },
+];
+// The 28 states and 8 union territories, as offered in the letter form.
+const INDIA_STATES = ["Andaman and Nicobar Islands","Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chandigarh","Chhattisgarh",
+  "Dadra and Nagar Haveli and Daman and Diu","Delhi","Goa","Gujarat","Haryana","Himachal Pradesh","Jammu and Kashmir","Jharkhand",
+  "Karnataka","Kerala","Ladakh","Lakshadweep","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha",
+  "Puducherry","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh","Uttarakhand","West Bengal"];
+const ombudsmanFor = state => state ? OMBUDSMAN.filter(o=>o.states.includes(state)||o.part.includes(state)) : [];
+
 // Full IS 19493:2025 header registry — matches 03_code/completeness.js's
 // HEADER_FIELDS exactly (23 mandatory + 3 conditional = 26), so the browser
 // app and the Node test tool no longer check two different standards under
@@ -1094,6 +1162,13 @@ en: {
   ld_asked:"I have already asked the hospital or insurer for this breakdown",
   ld_remember:"Remember these details on this device",
   ld_note:"Off by default. Details stay on this device only; they are never sent anywhere.",
+  ld_state:"Your state (to find your Insurance Ombudsman office)", ld_state_none:"Choose your state",
+  omb_head:st=>`Your Insurance Ombudsman office (${st})`,
+  omb_split:"In this state, which office handles a complaint depends on where you live. The offices, and the areas each one covers in its own words:",
+  omb_office:o=>`Office of the Insurance Ombudsman, ${o}`, omb_tel:"Tel.", omb_covers:"Covers:",
+  omb_pick:"Choose your state under \u201cYour details\u201d above to see your Insurance Ombudsman office here.",
+  omb_src:d=>`From the Council for Insurance Ombudsmen's list at cioins.co.in, as read on ${d}. Check it there before you post anything: offices move.`,
+  sent_on_lbl:"Sent on", sent_today:"sent today", sent_yesterday:"sent yesterday", sent_days_ago:n=>`sent ${n} days ago`,
   share_findings_btn:"Share findings",
   share_findings_text:(exactN,exactSum,nppaN,dupN,reconTxt,url)=>`ClearBill checked my hospital bill against India's published rules.${exactN?` ${exactN} charge(s) match the IRDAI non-payable list (${exactSum}).`:''}${nppaN?` ${nppaN} implant charge(s) flagged against NPPA ceilings.`:''}${dupN?` ${dupN} duplicate charge(s) found.`:''}${reconTxt?` ${reconTxt}`:''} Check your own bill free: ${url}`,
   share_findings_recon:diff=>`A ${diff} gap in the bill's own arithmetic.`,
@@ -1378,6 +1453,13 @@ hi: {
   ld_asked:"मैं अस्पताल या बीमा कंपनी से यह ब्योरा पहले माँग चुका/चुकी हूँ",
   ld_remember:"ये जानकारी इस डिवाइस पर याद रखें",
   ld_note:"डिफ़ॉल्ट रूप से बंद। जानकारी सिर्फ़ इसी डिवाइस पर रहती है; कहीं भेजी नहीं जाती।",
+  ld_state:"आपका राज्य (आपके बीमा लोकपाल का दफ़्तर जानने के लिए)", ld_state_none:"अपना राज्य चुनें",
+  omb_head:st=>`आपका बीमा लोकपाल (Insurance Ombudsman) दफ़्तर (${st})`,
+  omb_split:"इस राज्य में शिकायत कौन-सा दफ़्तर देखेगा, यह इस पर निर्भर है कि आप कहाँ रहते हैं। दफ़्तर, और हर एक किस इलाके को देखता है, उन्हीं के शब्दों में:",
+  omb_office:o=>`Office of the Insurance Ombudsman, ${o}`, omb_tel:"फ़ोन", omb_covers:"इलाका:",
+  omb_pick:"अपने बीमा लोकपाल का दफ़्तर यहाँ देखने के लिए ऊपर \u201cआपकी जानकारी\u201d में अपना राज्य चुनें।",
+  omb_src:d=>`Council for Insurance Ombudsmen की सूची (cioins.co.in) से, ${d} को पढ़ी गई। कुछ भी भेजने से पहले वहाँ जाँच लें: दफ़्तर बदलते रहते हैं।`,
+  sent_on_lbl:"भेजने की तारीख़", sent_today:"आज भेजा", sent_yesterday:"कल भेजा", sent_days_ago:n=>`${n} दिन पहले भेजा`,
   share_findings_btn:"जाँचें शेयर करें",
   share_findings_text:(exactN,exactSum,nppaN,dupN,reconTxt,url)=>`ClearBill ने मेरे अस्पताल के बिल की जाँच भारत के प्रकाशित नियमों से की।${exactN?` ${exactN} चार्ज IRDAI की न-भुगतान सूची से मेल खाते हैं (${exactSum}).`:''}${nppaN?` ${nppaN} इम्प्लांट चार्ज NPPA सीमा के विरुद्ध चिन्हित हुए।`:''}${dupN?` ${dupN} दोहरे चार्ज मिले।`:''}${reconTxt?` ${reconTxt}`:''} अपना बिल मुफ़्त जाँचें: ${url}`,
   share_findings_recon:diff=>`बिल की अपनी गणना में ${diff} का अंतर।`,
@@ -1663,6 +1745,13 @@ mr: {
   ld_asked:"मी हे तपशील रुग्णालयाकडून किंवा विमा कंपनीकडून आधीच मागितले आहेत",
   ld_remember:"हे तपशील या डिव्हाइसवर लक्षात ठेवा",
   ld_note:"डिफॉल्टने बंद. तपशील फक्त याच डिव्हाइसवर राहतात; कुठेही पाठवले जात नाहीत.",
+  ld_state:"तुमचं राज्य (तुमच्या विमा लोकपाल कार्यालयासाठी)", ld_state_none:"तुमचं राज्य निवडा",
+  omb_head:st=>`तुमचं विमा लोकपाल (Insurance Ombudsman) कार्यालय (${st})`,
+  omb_split:"या राज्यात तक्रार कोणतं कार्यालय पाहील हे तुम्ही कुठे राहता यावर अवलंबून आहे. कार्यालयं, आणि प्रत्येक कोणता भाग पाहतं, त्यांच्याच शब्दांत:",
+  omb_office:o=>`Office of the Insurance Ombudsman, ${o}`, omb_tel:"फोन", omb_covers:"भाग:",
+  omb_pick:"तुमचं विमा लोकपाल कार्यालय इथे पाहण्यासाठी वर \u201cतुमचे तपशील\u201d मध्ये तुमचं राज्य निवडा.",
+  omb_src:d=>`Council for Insurance Ombudsmen च्या यादीतून (cioins.co.in), ${d} रोजी वाचलेलं. काहीही पाठवण्याआधी तिथे तपासा: कार्यालयं बदलतात.`,
+  sent_on_lbl:"पाठवल्याची तारीख", sent_today:"आज पाठवलं", sent_yesterday:"काल पाठवलं", sent_days_ago:n=>`${n} दिवसांपूर्वी पाठवलं`,
   share_findings_btn:"तपासण्या शेअर करा",
   share_findings_text:(exactN,exactSum,nppaN,dupN,reconTxt,url)=>`ClearBill ने माझं रुग्णालयाचं बिल भारताच्या प्रकाशित नियमांविरुद्ध तपासलं.${exactN?` ${exactN} चार्ज IRDAI च्या न-भरपाई यादीशी जुळतात (${exactSum}).`:''}${nppaN?` ${nppaN} इम्प्लांट चार्ज NPPA मर्यादेविरुद्ध चिन्हांकित झाले.`:''}${dupN?` ${dupN} दुहेरी चार्ज सापडले.`:''}${reconTxt?` ${reconTxt}`:''} तुमचं बिल मोफत तपासा: ${url}`,
   share_findings_recon:diff=>`बिलाच्या स्वतःच्या बेरजेत ${diff} चा फरक.`,
@@ -2279,7 +2368,10 @@ function shareText(text,title){
 /* Details the sender types for the letter. Nothing is stored unless they tick
    "remember" (then localStorage); otherwise sessionStorage, which the browser
    discards when the tab closes. Never sent anywhere. */
-const LD_KEY='clearbill_letter_details', LD_FIELDS=['name','address','insurer','claim','policy','contact'];
+const LD_KEY='clearbill_letter_details', LD_FIELDS=['name','address','insurer','claim','policy','contact','state'];
+// R13: the state list is the option list; English names (the official spelling)
+// are both the stored value and the label.
+INDIA_STATES.forEach(st=>{ const o=document.createElement('option'); o.value=st; o.textContent=st; $('ld_state').appendChild(o); });
 function readLetterDetails(){
   const D={asked:!!$('ld_asked').checked};
   LD_FIELDS.forEach(f=>{ D[f]=($('ld_'+f).value||'').replace(/\s*\n\s*/g,', ').trim(); });
@@ -2439,7 +2531,16 @@ function buildLetter(a,include,noScroll){
     sl.push(T_.ls_asks);
     lsum=`<div class="lsum"><b>${T_.ls_head}</b><ul>${sl.map(x=>`<li>${x}</li>`).join('')}</ul><div class="notez">${T_.ls_note}</div></div>`;
   }
-  const afterSend=`<div class="aftersend"><h4>${T_.as_head}</h4><ol><li>${T_.as_1}</li><li>${T_.as_2}</li><li>${T_.as_3}</li></ol><p style="margin:8px 0 0;color:var(--soft)">${T_.as_4}</p></div>`;
+  // R13: the Insurance Ombudsman office for the state chosen in "Your
+  // details". Shown here (where the Ombudsman is already mentioned), never in
+  // the letter: a complaint goes to the insurer first, and the Ombudsman only
+  // afterwards, so copying the Ombudsman on this letter would be wrong.
+  const offices=ombudsmanFor(D.state);
+  const ombCard=(o,withArea)=>`<div class="ombo"><b>${esc(T_.omb_office(o.office))}</b><br>${esc(o.address)}<br>${esc(T_.omb_tel)} ${esc(o.tel)} &middot; <a href="mailto:${esc(o.email)}">${esc(o.email)}</a>${withArea?`<div class="ombj">${esc(T_.omb_covers)} ${esc(o.jurisdiction)}</div>`:''}</div>`;
+  const readOn=new Date(OMBUDSMAN_READ_ON+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+  const ombHtml=!D.state ? `<p class="ombnote">${T_.omb_pick}</p>`
+    : `<div class="omb" id="ombBlock"><div class="ombh">${T_.omb_head(esc(D.state))}</div>${offices.length>1?`<p style="margin:4px 0 6px">${T_.omb_split}</p>`:''}${offices.map(o=>ombCard(o,offices.length>1)).join('')}<p class="ombsrc">${T_.omb_src(readOn)}</p></div>`;
+  const afterSend=`<div class="aftersend"><h4>${T_.as_head}</h4><ol><li>${T_.as_1}</li><li>${T_.as_2}</li><li>${T_.as_3}</li></ol>${ombHtml}<p style="margin:8px 0 0;color:var(--soft)">${T_.as_4}</p></div>`;
   $('letterWrap').innerHTML=`${lsum}<div class="tearline"></div><div class="letter">${langNote}<div class="lh">${T_.letter_draft_head}</div>${esc(text)}</div>
     <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn sm" id="printLetter" style="flex:1">${T_.print_btn}</button>
@@ -2909,7 +3010,7 @@ function applyStaticI18n(){
   if($('clearSavedBtn')){ $('clearSavedBtn').textContent=T_.clear_saved_btn; $('clearSavedHint').textContent=T_.clear_saved_hint; if(!$('clearedNote').classList.contains('hide')) $('clearedNote').textContent=T_.cleared_note; }
   [['ldHead','ld_head'],['ldIntro','ld_intro'],['ldLblName','ld_name'],['ldLblAddress','ld_address'],['ldLblInsurer','ld_insurer'],
    ['ldLblClaim','ld_claim'],['ldLblPolicy','ld_policy'],['ldLblContact','ld_contact'],['ldLblAsked','ld_asked'],
-   ['ldLblRemember','ld_remember'],['ldNote','ld_note']].forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
+   ['ldLblRemember','ld_remember'],['ldNote','ld_note'],['ldLblState','ld_state'],['ldStateNone','ld_state_none']].forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
   document.querySelector('#page-about .k').textContent=T_.how_head;
   $('howStep1b').textContent=T_.how1b; $('howStep1p').innerHTML=T_.how1p;
   $('howStep2b').textContent=T_.how2b; $('howStep2p').innerHTML=T_.how2p;
@@ -2984,7 +3085,7 @@ function renderLetterTab(){
     + `<div class="inclrow static"><span class="incltext">${T_.letter_confirm_sent_to}</span><span class="v">${T_.letter_confirm_sent_to_val}</span></div>`;
 }
 // Editing a detail updates a letter that is already on screen (no scroll jump).
-document.querySelectorAll('#letterDetails input,#letterDetails textarea').forEach(el=>el.addEventListener('input',()=>{
+document.querySelectorAll('#letterDetails input,#letterDetails textarea,#letterDetails select').forEach(el=>el.addEventListener('input',()=>{
   saveLetterDetails();
   if(_letterGenerated && window.__letterA) buildLetter(window.__letterA,_lastLetterInclude,true);
 }));
@@ -3177,6 +3278,7 @@ function renderMyBillsList(bills){
       +'<div class="bstats"><span>'+esc(T_.kpi_explained)+': <b>'+esc(pct)+'</b></span>'+(amt?'<span>'+esc(T_.lbl_total_plain)+': <b>'+esc(amt)+'</b></span>':'')+'</div>'
       +'<select class="bstatus" aria-label="'+esc(T_.mybills_status_label)+'">'+opts+'</select>'
       +'<textarea class="bnote" placeholder="'+esc(T_.mybills_note_ph)+'">'+esc(b.note||'')+'</textarea>'
+      +sentOnHtml(b.sentOn)
       +'<div class="brow-actions"><button class="link bdel" type="button">'+esc(T_.mybills_delete_btn)+'</button></div>'
       +'</div>';
   }).join('');
@@ -3184,6 +3286,8 @@ function renderMyBillsList(bills){
     const id=row.dataset.id;
     row.querySelector('.bstatus').addEventListener('change',e=>patchMyBill(id,{status:e.target.value}));
     row.querySelector('.bnote').addEventListener('change',e=>patchMyBill(id,{note:e.target.value}));
+    row.querySelector('.bsentin').addEventListener('change',e=>{ const v=e.target.value||null;
+      patchMyBill(id,{sentOn:v}); const b=_myBills.find(x=>x.id===id); if(b) b.sentOn=v; row.querySelector('.bago').textContent=sentAgo(v); });
     row.querySelector('.bdel').addEventListener('click',()=>deleteMyBill(id));
   });
 }
@@ -3257,7 +3361,7 @@ function importLocalCheckText(text){
     name:typeof r.name==='string'?r.name.slice(0,200):null, billDate:typeof r.billDate==='string'?r.billDate.slice(0,60):null,
     explainedPct:typeof r.explainedPct==='number'?r.explainedPct:null, netPayable:typeof r.netPayable==='number'?r.netPayable:null,
     settle:(r.settle&&typeof r.settle==='object')?{total:r.settle.total,counter:r.settle.counter,discount:r.settle.discount,copay:r.settle.copay}:{},
-    extraction:r.extraction, letter:typeof r.letter==='string'?r.letter:'' };
+    extraction:r.extraction, letter:typeof r.letter==='string'?r.letter:'', sentOn:validSentOn(r.sentOn)?r.sentOn:null };
   const list=readLocalChecks(); if(list.length>=LOCAL_MAX) return 'full';
   try{ writeLocalChecks([clean,...list]); }catch(e){ return 'err'; }
   return 'ok';
@@ -3276,6 +3380,7 @@ function renderLocalList(){
     const amt=typeof r.netPayable==='number'?inrFmtSafe(r.netPayable):'';
     return '<div class="billrow" data-lid="'+esc(r.id)+'"><div class="bh"><span class="bn">'+esc(r.name||T_.mybills_unnamed)+'</span><span class="bd">'+esc(date)+'</span></div>'
       +'<div class="bstats"><span>'+esc(T_.kpi_explained)+': <b>'+esc(pct)+'</b></span>'+(amt?'<span>'+esc(T_.lbl_total_plain)+': <b>'+esc(amt)+'</b></span>':'')+'</div>'
+      +sentOnHtml(r.sentOn)
       +'<div class="brow-actions" style="gap:16px"><button class="link lopen" type="button">'+esc(T_.local_open_btn)+'</button>'
       +'<button class="link ldl" type="button">'+esc(T_.local_download_btn)+'</button>'
       +'<button class="link ldel" type="button">'+esc(T_.mybills_delete_btn)+'</button></div></div>';
@@ -3285,6 +3390,9 @@ function renderLocalList(){
     row.querySelector('.lopen').addEventListener('click',()=>{ const r=rec(); if(r) openLocalCheck(r); });
     row.querySelector('.ldl').addEventListener('click',()=>{ const r=rec(); if(r) downloadText(JSON.stringify(r,null,1),'clearbill-check-'+String(r.savedAt||'').slice(0,10)+'.json','application/json'); });
     row.querySelector('.ldel').addEventListener('click',()=>{ try{ writeLocalChecks(readLocalChecks().filter(r=>r.id!==id)); }catch(e){} renderLocalList(); });
+    row.querySelector('.bsentin').addEventListener('change',e=>{ const v=validSentOn(e.target.value)?e.target.value:null;
+      try{ writeLocalChecks(readLocalChecks().map(r=>r.id===id?{...r,sentOn:v}:r)); }catch(err){}
+      row.querySelector('.bago').textContent=sentAgo(v); });
   });
 }
 if($('saveLocalBtn')) $('saveLocalBtn').addEventListener('click',saveLocalCheck);
@@ -3320,6 +3428,28 @@ function buildFollowUpIcs(days,now,claim){
     'SUMMARY:'+icsEsc(T_.ics_summary),'DESCRIPTION:'+icsEsc(T_.ics_desc(made,claim)),
     'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+icsEsc(T_.ics_summary),'TRIGGER:-PT0M','END:VALARM',
     'END:VEVENT','END:VCALENDAR'].map(icsFold).join('\r\n')+'\r\n';
+}
+
+/* ---- "Sent on" (R13): the date the user says they sent the letter, and how
+   long ago that was. A plain count only — no deadline is stated or implied,
+   for the same reason the "After you send" card states none: the rules are
+   the insurer's and the Ombudsman's to state, and they change. */
+function validSentOn(v){
+  if(typeof v!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+  const y=+v.slice(0,4), m=+v.slice(5,7), dd=+v.slice(8,10), d=new Date(y,m-1,dd);
+  if(d.getFullYear()!==y||d.getMonth()!==m-1||d.getDate()!==dd) return false; // rejects 2026-02-30 etc.
+  return d.getTime()<=Date.now()+86400000; // not in the future (a day of slack for time zones)
+}
+function sentAgo(v,now){
+  if(!validSentOn(v)) return '';
+  const T_=S(), t=now instanceof Date?now:new Date();
+  const days=Math.round((new Date(t.getFullYear(),t.getMonth(),t.getDate())-new Date(v+'T00:00:00'))/86400000);
+  return days<=0?T_.sent_today:days===1?T_.sent_yesterday:T_.sent_days_ago(days);
+}
+function sentOnHtml(v){
+  const T_=S(), today=new Date(), p=x=>String(x).padStart(2,'0');
+  const max=today.getFullYear()+'-'+p(today.getMonth()+1)+'-'+p(today.getDate());
+  return '<label class="bsent"><span>'+esc(T_.sent_on_lbl)+'</span><input type="date" class="bsentin" max="'+max+'" value="'+(validSentOn(v)?v:'')+'"><b class="bago">'+esc(sentAgo(v))+'</b></label>';
 }
 </script>
 </body>
