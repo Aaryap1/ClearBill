@@ -27,6 +27,7 @@ const zlib = require('zlib');
 const crypto = require('crypto');
 const { verifyGoogleIdToken } = require('./lib/google_auth');
 const firestore = require('./lib/firestore_rest');
+const { analyse } = require('./lib/checks'); // the app's own rules, generated from index.html (R14: impact counter)
 
 const PORT = process.env.PORT || 8080;
 const KEY = process.env.GEMINI_API_KEY || '';
@@ -112,6 +113,56 @@ function admit(req, count) {
   return { ok: true };
 }
 const BUSY = { error: 'busy', message: 'The free reading service is busy right now. Try again in a few minutes, or use your own free Gemini key.' };
+
+/* ---- Reader status (R14): what the upload area tells people BEFORE they
+   try, instead of after a failed read. 'busy' = today's cap is used up;
+   'overloaded' = Google's own service answered 503 in the last 15 minutes and
+   has not succeeded since. Same in-memory, per-instance caveat as the caps:
+   another instance may know better; it is a hint, not a guarantee. */
+let lastUpstreamOkAt = 0, lastUpstreamOverloadAt = 0;
+const OVERLOAD_WINDOW_MS = 15 * 60 * 1000;
+function readerState() {
+  if (!KEY) return 'off';
+  const today = new Date().toISOString().slice(0, 10);
+  if (today === day && dayCount >= DAILY_CAP) return 'busy';
+  if (lastUpstreamOverloadAt > lastUpstreamOkAt && Date.now() - lastUpstreamOverloadAt < OVERLOAD_WINDOW_MS) return 'overloaded';
+  return 'ok';
+}
+
+/* ---- Impact counter (R14): "N bill pages read since <date>, ₹X matching
+   IRDAI's published lists". Counted HERE, from pages this server actually
+   read through Gemini — never from numbers a browser reports, which anyone
+   could inflate with one request. The page is run through the app's own
+   analyse() (lib/checks.js); the List I + Lists II-IV totals are added, in
+   paise. Nothing about the bill is stored: just two running totals. A page
+   claiming more than ₹1 lakh of matched charges still counts as a page read,
+   but its amount is not added (a made-up photo could otherwise inflate the
+   total by crores). Reads made with the user's own key go straight to Google
+   and are not counted — the wording on the page says so. */
+const IMPACT_ON = !!process.env.FIRESTORE_PROJECT_ID;
+const IMPACT_SINCE = process.env.IMPACT_SINCE || '2026-10-05';
+const IMPACT_PAGE_CAP_PAISE = 100000 * 100;
+let impactCache = null; // {at, body} — one Firestore read per minute per instance at most
+function countImpact(jsonText) {
+  if (!IMPACT_ON) return;
+  let page; try { page = JSON.parse(jsonText); } catch (e) { return; }
+  if (!page || page.is_hospital_bill === false || !Array.isArray(page.line_items) || !page.line_items.length) return;
+  let paise = 0;
+  try { const a = analyse(page); paise = Math.round(((a.exactSum || 0) + (a.subsumedSum || 0)) * 100); } catch (e) { paise = 0; }
+  if (!(paise >= 0) || paise > IMPACT_PAGE_CAP_PAISE) paise = 0;
+  firestore.incrementImpact(1, paise).then(() => { impactCache = null; })
+    .catch(e => console.log('[impact] count failed', String(e.message || e))); // never affects the read itself
+}
+async function impactHandler(req, res) {
+  if (!IMPACT_ON) return sendJson(res, 200, { enabled: false });
+  if (impactCache && Date.now() - impactCache.at < 60000) return sendJson(res, 200, impactCache.body);
+  try {
+    const d = await firestore.readImpact();
+    const body = { enabled: true, pages: d.pages, matched: Math.round(d.matchedPaise) / 100, since: IMPACT_SINCE };
+    impactCache = { at: Date.now(), body };
+    sendJson(res, 200, body);
+  } catch (e) { console.log('[impact] read failed', String(e.message || e)); sendJson(res, 200, { enabled: false }); }
+}
 
 /* ---- My Bills: auth + rate limit + body reading (separate counters from
    the Gemini proxy above — saving a bill costs nothing, so it gets its own,
@@ -268,6 +319,7 @@ async function readBill(req, res) {
       }
       if (!r.ok) {
         console.log('[upstream] status', r.status); // status only — never log or forward Google's body
+        if (r.status === 503) lastUpstreamOverloadAt = Date.now();
         if (r.status === 429) return sendJson(res, 429, BUSY, { 'Retry-After': '300' });
         if (r.status === 503) return sendJson(res, 503, { error: 'overloaded', message: 'The reading service is overloaded. Please try again in a moment.' });
         return sendJson(res, 502, { error: 'upstream', message: 'The reading service could not read that photo. Please try again.' });
@@ -287,7 +339,9 @@ async function readBill(req, res) {
       let ok = false;
       try { const v = JSON.parse(cleaned); ok = !!v && typeof v === 'object' && !Array.isArray(v); } catch (e) { ok = false; }
       if (!ok) return sendJson(res, 502, { error: 'unreadable', message: 'The photo could not be read (unreadable answer). Try a clearer photo.' });
+      lastUpstreamOkAt = Date.now();
       send(res, 200, cleaned, TYPES['.json']);
+      countImpact(cleaned); // after the answer is sent: counting can never slow down or break a read
     } catch (e) {
       console.log('[error]', String(e.message || e));
       sendJson(res, 500, { error: 'server', message: 'Something went wrong. Please try again.' });
@@ -320,7 +374,8 @@ const BILL_ID_PATH = /^\/api\/bills\/([A-Za-z0-9_-]{1,80})$/;
 http.createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
   if (req.method === 'POST' && url.pathname === '/api/read-bill') return readBill(req, res);
-  if (url.pathname === '/api/config') return sendJson(res, 200, { proxy: !!KEY, bills: BILLS_ON, googleClientId: BILLS_ON ? GOOGLE_CLIENT_ID : null });
+  if (url.pathname === '/api/config') return sendJson(res, 200, { proxy: !!KEY, reader: readerState(), bills: BILLS_ON, googleClientId: BILLS_ON ? GOOGLE_CLIENT_ID : null });
+  if (req.method === 'GET' && url.pathname === '/api/impact') return impactHandler(req, res);
   if (req.method === 'GET' && url.pathname === '/api/bills') return listBillsHandler(req, res);
   if (req.method === 'POST' && url.pathname === '/api/bills') return createBillHandler(req, res);
   { const m = BILL_ID_PATH.exec(url.pathname);

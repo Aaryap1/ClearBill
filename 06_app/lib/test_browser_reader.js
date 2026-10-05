@@ -25,7 +25,8 @@ const STUB = `
   const GOOD = JSON.stringify({ is_hospital_bill: true, header: {}, line_items: [{ item: 'BED CHARGES', quantity: 1, rate: 100, total: 100 }] });
   window.fetch = async (u, o) => {
     u = String(u);
-    if (u.includes('api/config')) { await wait(window.__cfgDelay); return new Response(JSON.stringify({ proxy: true }), { status: 200 }); }
+    if (u.includes('api/config')) { await wait(window.__cfgDelay); let rd = 'ok'; try { rd = localStorage.getItem('__test_reader') || 'ok'; } catch (e) {} return new Response(JSON.stringify({ proxy: true, reader: rd }), { status: 200 }); }
+    if (u.includes('api/impact')) { let b = '{"enabled":false}'; try { b = localStorage.getItem('__test_impact') || b; } catch (e) {} return new Response(b, { status: 200 }); }
     if (u.includes('api/read-bill')) {
       const b = o && o.body ? JSON.parse(o.body) : null;
       window.__calls.push(b ? b.mime_type : '?');
@@ -339,6 +340,38 @@ const STUB = `
     const acct = await ev(`renderMyBillsList([{id:'b1',status:'sent',note:'',sentOn:'2026-09-20',savedAt:'2026-09-20T10:00:00Z',explainedPct:22}]);
       return {v: document.querySelector('#mybillsList .bsentin').value, ago: document.querySelector('#mybillsList .bago').textContent};`);
     ok(acct.v === '2026-09-20' && /^sent \d+ days ago$/.test(acct.ago), 'a bill saved to a Google account shows its sent-on date and count the same way (' + acct.ago + ')');
+
+    console.log('== R14: impact line (numbers come from the server) and reader status');
+    const loadWith = async (reader, impact) => {
+      await fresh();
+      await ev(`localStorage.setItem('__test_reader', ${JSON.stringify(reader)}); localStorage.setItem('__test_impact', ${JSON.stringify(JSON.stringify(impact))});`);
+      await send('Page.navigate', { url: `http://127.0.0.1:${port}/` }); await sleep(1300);
+      return ev(`return {impact: document.getElementById('impactLine').classList.contains('hide') ? null : document.getElementById('impactLine').innerText,
+        note: document.getElementById('readerNote').classList.contains('hide') ? null : document.getElementById('readerNote').textContent,
+        keyRow: !document.getElementById('keyRow').classList.contains('hide'), busyFlag: _proxyState.busy}`);
+    };
+    let rs = await loadWith('ok', { enabled: false });
+    ok(rs.impact === null && rs.note === null, 'counter off and reader ok: no impact line, no status note');
+    rs = await loadWith('ok', { enabled: true, pages: 0, matched: 0, since: '2026-10-05' });
+    ok(rs.impact === null, 'nothing counted yet: the line stays hidden rather than showing "0"');
+    rs = await loadWith('ok', { enabled: true, pages: 1234, matched: 56789.5, since: '2026-10-05' });
+    ok(/^1,234 bill pages read by the free reading service since 5 October 2026/.test(rs.impact || ''), 'the line says exactly what is counted: "1,234 bill pages read by the free reading service since 5 October 2026"');
+    ok(/₹56,789\.5 in charges matching IRDAI's published lists/.test(rs.impact || ''), 'and the matched amount: "₹56,789.5 in charges matching IRDAI\'s published lists"');
+    rs = await loadWith('ok', { enabled: true, pages: 1, matched: 0, since: '2026-10-05' });
+    ok(/^1 bill page read by/.test(rs.impact || '') && !/IRDAI/.test(rs.impact || ''), 'one page reads "1 bill page", and a zero amount is left out');
+    rs = await loadWith('ok', { enabled: true, pages: 5, matched: 100, since: '<img src=x onerror="window.__xss2=1">' });
+    ok(!(await ev(`return !!window.__xss2 || !!document.querySelector('#impactLine img')`)), 'text from the server is escaped, never run as HTML');
+    rs = await loadWith('ok', { enabled: true, pages: 1234, matched: 56789.5, since: '2026-10-05' });
+    await ev(`setLang('hi');`); await sleep(150);
+    ok(/पेज़ पढ़े/.test(await ev(`return document.getElementById('impactLine').innerText`)), 'the line follows the language switch');
+    await ev(`setLang('en');`);
+    rs = await loadWith('busy', { enabled: false });
+    ok(/today's limit/.test(rs.note || '') && rs.keyRow && rs.busyFlag === true, '"busy": the upload area says today\'s free reads are used up, opens the own-key box, and sends a pasted key straight to Google');
+    rs = await loadWith('overloaded', { enabled: false });
+    ok(/overloaded in the last few minutes/.test(rs.note || '') && !rs.keyRow, '"overloaded": it warns that a read may fail right now (no key box needed)');
+    await ev(`setLang('mr');`); await sleep(150);
+    ok(/भार/.test(await ev(`return document.getElementById('readerNote').textContent`)), 'the status note is in Marathi too');
+    await ev(`setLang('en');`);
 
     console.log('== downscale: large photos are resized before upload (R10)');
     await fresh();

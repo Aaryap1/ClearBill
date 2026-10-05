@@ -98,4 +98,34 @@ async function deleteBill(uid, billId) {
   return { ok: true };
 }
 
-module.exports = { listBills, createBill, updateBill, deleteBill, toFirestoreFields, fromFirestoreFields };
+/* ---- The public impact counter (R14): ONE document, stats/impact, holding
+   two running totals and nothing else — no bill content, no user, no time
+   series. Incremented with Firestore's own server-side `increment` transform
+   inside a commit, so two pages read at the same moment can never overwrite
+   each other's count (no read-modify-write, no Cloud Function needed). The
+   empty update + empty mask makes the write an upsert: it creates the
+   document the first time and never touches any other field. */
+const IMPACT_DOC = 'stats/impact';
+async function incrementImpact(pages, paise) {
+  const token = await getAccessToken();
+  const name = `projects/${PROJECT_ID}/databases/${DB}/documents/${IMPACT_DOC}`;
+  const body = { writes: [{ update: { name, fields: {} }, updateMask: { fieldPaths: [] }, updateTransforms: [
+    { fieldPath: 'pages', increment: { integerValue: String(pages) } },
+    { fieldPath: 'matchedPaise', increment: { integerValue: String(paise) } },
+  ] }] };
+  const r = await fetch(`${FIRESTORE_BASE}/v1/projects/${PROJECT_ID}/databases/${DB}/documents:commit`,
+    { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  if (!r.ok) throw Object.assign(new Error('Firestore commit failed: ' + r.status), { status: 502, code: 'firestore_error' });
+}
+async function readImpact() {
+  try {
+    const j = await fsFetch(IMPACT_DOC, { method: 'GET' });
+    const f = fromFirestoreFields(j.fields || {});
+    return { pages: Number(f.pages) || 0, matchedPaise: Number(f.matchedPaise) || 0 };
+  } catch (e) {
+    if (e.status === 404) return { pages: 0, matchedPaise: 0 }; // nothing counted yet
+    throw e;
+  }
+}
+
+module.exports = { listBills, createBill, updateBill, deleteBill, toFirestoreFields, fromFirestoreFields, incrementImpact, readImpact };

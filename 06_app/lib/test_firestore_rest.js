@@ -11,13 +11,27 @@ const ok = (cond, name, extra) => { if (cond) { pass++; console.log('  ok   ' + 
   // (POST to create with an auto id, GET to list, PATCH with updateMask,
   // DELETE, and a Bearer-token check) for firestore_rest.js to talk to.
   const store = new Map(); // path "users/UID/bills/ID" -> {fields}
-  let nextId = 1, lastAuthHeader = null;
+  let nextId = 1, lastAuthHeader = null, lastCommit = null;
   const PROJECT = 'test-project';
   const mock = http.createServer((req, res) => {
     lastAuthHeader = req.headers['authorization'];
     const chunks = []; req.on('data', c => chunks.push(c));
     req.on('end', () => {
       const body = chunks.length ? JSON.parse(Buffer.concat(chunks).toString()) : null;
+      // R14: documents:commit with increment transforms (the impact counter)
+      if (req.method === 'POST' && req.url === `/v1/projects/${PROJECT}/databases/(default)/documents:commit`) {
+        lastCommit = body;
+        for (const w of body.writes) {
+          const docPath = w.update.name.split('/documents/')[1];
+          const fields = store.get(docPath) || {};
+          for (const t of w.updateTransforms || []) {
+            const cur = fields[t.fieldPath] ? Number(fields[t.fieldPath].integerValue) : 0;
+            fields[t.fieldPath] = { integerValue: String(cur + Number(t.increment.integerValue)) };
+          }
+          store.set(docPath, fields);
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end('{}');
+      }
       const prefix = `/v1/projects/${PROJECT}/databases/(default)/documents/`;
       if (!req.url.startsWith(prefix)) { res.writeHead(404); return res.end('{}'); }
       const rest = req.url.slice(prefix.length); // "users/UID/bills" or "users/UID/bills/ID?query" or "users/UID/bills/ID"
@@ -28,6 +42,11 @@ const ok = (cond, name, extra) => { if (cond) { pass++; console.log('  ok   ' + 
         store.set(full, body.fields);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ name: `projects/${PROJECT}/databases/(default)/documents/${full}`, fields: body.fields }));
+      }
+      if (req.method === 'GET' && pathPart.split('/').length % 2 === 0) { // an even number of segments is a document, not a collection
+        if (!store.has(pathPart)) { res.writeHead(404); return res.end(JSON.stringify({ error: { message: 'not found' } })); }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ name: `projects/${PROJECT}/databases/(default)/documents/${pathPart}`, fields: store.get(pathPart) }));
       }
       if (req.method === 'GET') {
         const collPrefix = pathPart + '/';
@@ -92,6 +111,18 @@ const ok = (cond, name, extra) => { if (cond) { pass++; console.log('  ok   ' + 
   const withNested = await firestore.createBill('uid-carol', { flagCounts: { listI: 3, listII: 1, duplicates: 2 }, tags: ['a', 'b'] });
   ok(withNested.flagCounts.listI === 3 && withNested.flagCounts.duplicates === 2, 'a nested object (mapValue) round-trips');
   ok(Array.isArray(withNested.tags) && withNested.tags[1] === 'b', 'an array (arrayValue) round-trips');
+
+  console.log('== R14: the impact counter document');
+  let imp = await firestore.readImpact();
+  ok(imp.pages === 0 && imp.matchedPaise === 0, 'before anything is counted, the totals read as zero (a missing document is not an error)');
+  await firestore.incrementImpact(1, 61000);
+  await firestore.incrementImpact(1, 0);
+  imp = await firestore.readImpact();
+  ok(imp.pages === 2 && imp.matchedPaise === 61000, 'two increments add up: 2 pages, 61000 paise');
+  const w = lastCommit.writes[0];
+  ok(w.update.name.endsWith('/documents/stats/impact') && Array.isArray(w.updateMask.fieldPaths) && w.updateMask.fieldPaths.length === 0, 'the write is an upsert of stats/impact that touches no other field (empty update mask)');
+  ok(w.updateTransforms.length === 2 && w.updateTransforms.every(t => t.increment && typeof t.increment.integerValue === 'string'), 'both totals use Firestore\'s server-side increment (no read-then-write race)');
+  ok(Object.keys(store.get('stats/impact')).sort().join() === 'matchedPaise,pages', 'the counter document holds the two totals and nothing else');
 
   console.log('== updating a document that was never created');
   try { await firestore.updateBill('uid-alice', 'doc-does-not-exist', { status: 'x' }); ok(false, 'updating a missing document throws'); }

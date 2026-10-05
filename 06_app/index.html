@@ -126,6 +126,9 @@
   .omb .ombo{margin:6px 0;font-size:.88rem;line-height:1.45}
   .omb .ombj{margin-top:4px;color:var(--soft);font-size:.8rem}
   .omb .ombsrc,.ombnote{margin:8px 0 0;color:var(--soft);font-size:.8rem}
+  .impact{margin:6px 0 0;font-size:.78rem;color:var(--soft);max-width:34ch}
+  .impact b{color:var(--ink);font-weight:600}
+  #readerNote{margin:0 0 10px}
 
   /* the slip */
   .slip{background:var(--card);border:1px solid var(--rule);border-radius:12px;box-shadow:var(--sh);
@@ -362,6 +365,7 @@
       <h1>ClearBill</h1>
       <p class="tag" id="tagLine">Your settlement, decomposed &mdash; then the itemised bill checked against what insurers don't pay for.</p>
       <p class="gcstrip" id="gcStrip">Runs on Google Cloud &mdash; <span>Gemini &middot; Cloud Run &middot; Document AI</span></p>
+      <p class="impact hide" id="impactLine"></p>
       <p class="tag hide" id="iosHint" style="margin-top:6px">To install: tap <b>Share</b> &rarr; <b>Add to Home Screen</b>.</p>
     </div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:7px">
@@ -434,6 +438,7 @@
     <div class="sec-label" id="secBill">Check the itemised bill</div>
     <div class="card">
       <p class="lead" id="billLead">Upload photos of your itemised bill (all pages, if more than one). Google Gemini reads them into rows; the checks then run in your browser against the published lists.</p>
+      <p class="notez hide" id="readerNote" role="status"></p>
       <div class="drop" id="drop" role="button" tabindex="0" aria-labelledby="dropText"><span id="dropText"><b>Tap to choose photos</b><br>or drag images here (JPG / PNG) &mdash; multiple pages OK</span>
         <input type="file" id="file" accept="image/*" multiple class="hide"></div>
       <details class="findnums" id="photoGuide" style="margin-top:12px">
@@ -934,6 +939,7 @@ const makeInr = lang => new Intl.NumberFormat(LOCALE_TAG[lang]||'en-IN',{style:'
 let LANG = 'en';
 const LOCAL_LS='clearbill_local_checks', LOCAL_MAX=20; // R12: checks kept on this device, no sign-in
 let _myBills=[], BILLS_ON=false, GOOGLE_CLIENT_ID=null, ID_TOKEN=null, ID_TOKEN_NAME=null;
+let READER_STATE='ok', _impact=null; // R14: from /api/config and /api/impact
 let inr = makeInr(LANG);
 try{ const saved=localStorage.getItem('clearbill_lang'); if(saved && LOCALE_TAG[saved]) LANG=saved; }catch(e){}
 document.documentElement.lang=LANG;
@@ -1169,6 +1175,9 @@ en: {
   omb_pick:"Choose your state under \u201cYour details\u201d above to see your Insurance Ombudsman office here.",
   omb_src:d=>`From the Council for Insurance Ombudsmen's list at cioins.co.in, as read on ${d}. Check it there before you post anything: offices move.`,
   sent_on_lbl:"Sent on", sent_today:"sent today", sent_yesterday:"sent yesterday", sent_days_ago:n=>`sent ${n} days ago`,
+  impact_line:(nf,n,amt,since)=>`<b>${nf}</b> bill page${n===1?'':'s'} read by the free reading service since ${since}${amt?` &middot; <b>${amt}</b> in charges matching IRDAI's published lists`:''}`,
+  reader_busy:"The free reading service has reached today's limit. You can still read your bill with your own free Gemini key (paste it in the box below), or try again tomorrow.",
+  reader_overloaded:"Google's reading service has been overloaded in the last few minutes, so reading a photo may fail right now. If it does, try again a little later.",
   share_findings_btn:"Share findings",
   share_findings_text:(exactN,exactSum,nppaN,dupN,reconTxt,url)=>`ClearBill checked my hospital bill against India's published rules.${exactN?` ${exactN} charge(s) match the IRDAI non-payable list (${exactSum}).`:''}${nppaN?` ${nppaN} implant charge(s) flagged against NPPA ceilings.`:''}${dupN?` ${dupN} duplicate charge(s) found.`:''}${reconTxt?` ${reconTxt}`:''} Check your own bill free: ${url}`,
   share_findings_recon:diff=>`A ${diff} gap in the bill's own arithmetic.`,
@@ -1460,6 +1469,9 @@ hi: {
   omb_pick:"अपने बीमा लोकपाल का दफ़्तर यहाँ देखने के लिए ऊपर \u201cआपकी जानकारी\u201d में अपना राज्य चुनें।",
   omb_src:d=>`Council for Insurance Ombudsmen की सूची (cioins.co.in) से, ${d} को पढ़ी गई। कुछ भी भेजने से पहले वहाँ जाँच लें: दफ़्तर बदलते रहते हैं।`,
   sent_on_lbl:"भेजने की तारीख़", sent_today:"आज भेजा", sent_yesterday:"कल भेजा", sent_days_ago:n=>`${n} दिन पहले भेजा`,
+  impact_line:(nf,n,amt,since)=>`${since} से मुफ़्त रीडिंग सेवा ने बिल के <b>${nf}</b> पेज़ पढ़े${amt?` &middot; IRDAI की प्रकाशित सूचियों से मेल खाते चार्ज: <b>${amt}</b>`:''}`,
+  reader_busy:"मुफ़्त रीडिंग सेवा आज की सीमा तक पहुँच गई है। आप अपनी मुफ़्त Gemini key से अब भी बिल पढ़ सकते हैं (नीचे दिए बॉक्स में डालें), या कल फिर कोशिश करें।",
+  reader_overloaded:"पिछले कुछ मिनटों से Google की रीडिंग सेवा पर बहुत ज़्यादा भार है, इसलिए अभी फ़ोटो पढ़ना नाकाम हो सकता है। ऐसा हो तो थोड़ी देर बाद फिर कोशिश करें।",
   share_findings_btn:"जाँचें शेयर करें",
   share_findings_text:(exactN,exactSum,nppaN,dupN,reconTxt,url)=>`ClearBill ने मेरे अस्पताल के बिल की जाँच भारत के प्रकाशित नियमों से की।${exactN?` ${exactN} चार्ज IRDAI की न-भुगतान सूची से मेल खाते हैं (${exactSum}).`:''}${nppaN?` ${nppaN} इम्प्लांट चार्ज NPPA सीमा के विरुद्ध चिन्हित हुए।`:''}${dupN?` ${dupN} दोहरे चार्ज मिले।`:''}${reconTxt?` ${reconTxt}`:''} अपना बिल मुफ़्त जाँचें: ${url}`,
   share_findings_recon:diff=>`बिल की अपनी गणना में ${diff} का अंतर।`,
@@ -1752,6 +1764,9 @@ mr: {
   omb_pick:"तुमचं विमा लोकपाल कार्यालय इथे पाहण्यासाठी वर \u201cतुमचे तपशील\u201d मध्ये तुमचं राज्य निवडा.",
   omb_src:d=>`Council for Insurance Ombudsmen च्या यादीतून (cioins.co.in), ${d} रोजी वाचलेलं. काहीही पाठवण्याआधी तिथे तपासा: कार्यालयं बदलतात.`,
   sent_on_lbl:"पाठवल्याची तारीख", sent_today:"आज पाठवलं", sent_yesterday:"काल पाठवलं", sent_days_ago:n=>`${n} दिवसांपूर्वी पाठवलं`,
+  impact_line:(nf,n,amt,since)=>`${since} पासून मोफत वाचन सेवेने बिलाची <b>${nf}</b> पानं वाचली${amt?` &middot; IRDAI च्या प्रकाशित यादींशी जुळणारे चार्जेस: <b>${amt}</b>`:''}`,
+  reader_busy:"मोफत वाचन सेवेने आजची मर्यादा गाठली आहे. तुम्ही तुमच्या मोफत Gemini key ने अजूनही बिल वाचू शकता (खालच्या बॉक्समध्ये टाका), किंवा उद्या पुन्हा प्रयत्न करा.",
+  reader_overloaded:"गेल्या काही मिनिटांपासून Google च्या वाचन सेवेवर खूप भार आहे, त्यामुळे आत्ता फोटो वाचणं अयशस्वी होऊ शकतं. तसं झालं तर थोड्या वेळाने पुन्हा प्रयत्न करा.",
   share_findings_btn:"तपासण्या शेअर करा",
   share_findings_text:(exactN,exactSum,nppaN,dupN,reconTxt,url)=>`ClearBill ने माझं रुग्णालयाचं बिल भारताच्या प्रकाशित नियमांविरुद्ध तपासलं.${exactN?` ${exactN} चार्ज IRDAI च्या न-भरपाई यादीशी जुळतात (${exactSum}).`:''}${nppaN?` ${nppaN} इम्प्लांट चार्ज NPPA मर्यादेविरुद्ध चिन्हांकित झाले.`:''}${dupN?` ${dupN} दुहेरी चार्ज सापडले.`:''}${reconTxt?` ${reconTxt}`:''} तुमचं बिल मोफत तपासा: ${url}`,
   share_findings_recon:diff=>`बिलाच्या स्वतःच्या बेरजेत ${diff} चा फरक.`,
@@ -2576,7 +2591,7 @@ const configReady=(async()=>{
     try{
       const ctl=new AbortController(), t=setTimeout(()=>ctl.abort(),4000);
       const r=await fetch('api/config',{signal:ctl.signal}); clearTimeout(t);
-      if(r.ok){ const c=await r.json(); if(c&&c.proxy) USE_PROXY=true; if(c&&c.bills){ BILLS_ON=true; GOOGLE_CLIENT_ID=c.googleClientId||null; } return; }
+      if(r.ok){ const c=await r.json(); if(c&&c.proxy) USE_PROXY=true; if(c&&c.bills){ BILLS_ON=true; GOOGLE_CLIENT_ID=c.googleClientId||null; } if(c&&typeof c.reader==='string') READER_STATE=c.reader; return; }
     }catch(e){}
   }
 })();
@@ -3040,6 +3055,8 @@ function applyStaticI18n(){
   [['localHead','local_head'],['localHint','local_hint'],['saveLocalBtn','local_save_btn'],['localEmptyText','local_empty'],
    ['localImportBtn','local_import_btn'],['accountHead','account_head']].forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
   if(typeof renderLocalList==='function') renderLocalList();
+  if(typeof renderImpact==='function') renderImpact();
+  if(typeof renderReaderNote==='function') renderReaderNote();
   const gcr=$('gcloudRows');
   if(gcr){
     const rows=Sv('gcloud_rows')||[];
@@ -3451,6 +3468,34 @@ function sentOnHtml(v){
   const max=today.getFullYear()+'-'+p(today.getMonth()+1)+'-'+p(today.getDate());
   return '<label class="bsent"><span>'+esc(T_.sent_on_lbl)+'</span><input type="date" class="bsentin" max="'+max+'" value="'+(validSentOn(v)?v:'')+'"><b class="bago">'+esc(sentAgo(v))+'</b></label>';
 }
+
+/* ---- Impact line and reader status (R14) ----
+   The numbers are counted by the SERVER from pages it actually read (see
+   server.js countImpact) — the page only displays them. Nothing shows until
+   at least one page has been counted, and the wording says exactly what is
+   counted: pages (not bills — the server cannot tell where one bill ends),
+   read by the free reading service (reads with your own key are not seen),
+   since the date counting began. */
+function renderImpact(){
+  const el=$('impactLine'); if(!el) return;
+  const d=_impact;
+  if(!d||!d.enabled||!(d.pages>=1)){ el.classList.add('hide'); return; }
+  const T_=S(), since=new Date(d.since+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+  el.innerHTML=T_.impact_line(new Intl.NumberFormat('en-IN').format(d.pages), d.pages, d.matched>0?esc(inrFmtSafe(d.matched)):'', esc(since));
+  el.classList.remove('hide');
+}
+function renderReaderNote(){
+  const el=$('readerNote'); if(!el) return;
+  const T_=S(), msg=!USE_PROXY?'':READER_STATE==='busy'?T_.reader_busy:READER_STATE==='overloaded'?T_.reader_overloaded:'';
+  el.textContent=msg; el.classList.toggle('hide',!msg);
+  // Out of free reads today: open the own-key box now and send a pasted key
+  // straight to Google, instead of a first attempt that can only fail.
+  if(USE_PROXY&&READER_STATE==='busy'){ _proxyState.busy=true; $('keyRow').classList.remove('hide'); }
+}
+(async()=>{
+  try{ const r=await fetch('api/impact'); if(r.ok){ _impact=await r.json(); renderImpact(); } }catch(e){ /* no line is better than a wrong one */ }
+})();
+configReady.then(renderReaderNote);
 </script>
 </body>
 </html>

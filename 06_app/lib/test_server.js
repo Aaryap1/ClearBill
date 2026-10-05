@@ -25,6 +25,13 @@ const mock = http.createServer((req, res) => {
     if (img === 'secret') { res.writeHead(500); return res.end('SECRET_UPSTREAM_DETAIL key=AIzaFAKE'); }
     if (img === 'quota') { res.writeHead(429); return res.end('{"error":{"status":"RESOURCE_EXHAUSTED"}}'); }
     if (img === 'overload') { res.writeHead(503); return res.end('{"error":"high demand"}'); }
+    // R14 impact-counter pages: one List I item (Rs 200) + one Lists II-IV item (Rs 410); an implausible page; a non-bill
+    const PAGES = {
+      impact: { is_hospital_bill: true, header: {}, line_items: [{ item: 'GLOVES EXAMINATION', quantity: 1, total: 200 }, { item: 'ADMISSION SERVICES 10003', quantity: 1, total: 410 }, { item: 'ROOM RENT', quantity: 1, total: 4500 }] },
+      huge: { is_hospital_bill: true, header: {}, line_items: [{ item: 'GLOVES EXAMINATION', quantity: 1, total: 5000000 }] },
+      notbill: { is_hospital_bill: false, header: {}, line_items: [] },
+    };
+    if (PAGES[img]) { res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify(PAGES[img]) }] } }] })); }
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ candidates: [{ content: { parts: [{ text: img === 'empty' ? '' : '```json\n' + OK_JSON + '\n```' }] } }] }));
   });
@@ -290,6 +297,56 @@ async function start(port, env) {
     ok(r.status === 413, 'an oversized bill record is refused with 413, not silently truncated or dropped');
 
     certsSrv.close(); fsSrv.close();
+
+    console.log('== R14: impact counter (counted by the server from pages it read)');
+    let commits = [];
+    const impStore = { pages: 0, matchedPaise: 0 };
+    const impSrv = http.createServer((req2, res2) => {
+      const chunks = []; req2.on('data', c => chunks.push(c));
+      req2.on('end', () => {
+        if (req2.method === 'POST' && req2.url.endsWith('/documents:commit')) {
+          const body = JSON.parse(Buffer.concat(chunks).toString()); commits.push(body);
+          for (const t of body.writes[0].updateTransforms) impStore[t.fieldPath] += Number(t.increment.integerValue);
+          res2.writeHead(200, { 'Content-Type': 'application/json' }); return res2.end('{}');
+        }
+        if (req2.method === 'GET' && req2.url.endsWith('/documents/stats/impact')) {
+          res2.writeHead(200, { 'Content-Type': 'application/json' });
+          return res2.end(JSON.stringify({ name: 'x', fields: { pages: { integerValue: String(impStore.pages) }, matchedPaise: { integerValue: String(impStore.matchedPaise) } } }));
+        }
+        res2.writeHead(404); res2.end('{}');
+      });
+    });
+    await new Promise(r2 => impSrv.listen(0, '127.0.0.1', r2));
+    const impEnv = { ...common, RATE_MAX_PER_IP: '1000', DAILY_CAP: '100000', FIRESTORE_PROJECT_ID: 'imp-test', FIRESTORE_BASE: `http://127.0.0.1:${impSrv.address().port}`, GOOGLE_ACCESS_TOKEN: 'fake-imp-token' };
+    await start(P + 7, impEnv);
+    r = await req(P + 7, 'GET', '/api/impact');
+    ok(r.status === 200 && JSON.parse(text(r)).enabled === true && JSON.parse(text(r)).pages === 0, 'before any read: enabled, 0 pages');
+    r = await post(P + 7, 'impact'); ok(r.status === 200, 'a real bill page is read');
+    await sleep(300);
+    ok(impStore.pages === 1 && impStore.matchedPaise === 61000, 'it is counted: 1 page, Rs 610 (Rs 200 List I + Rs 410 Lists II-IV; room rent not counted)', JSON.stringify(impStore));
+    r = await post(P + 7, 'notbill'); await sleep(300);
+    ok(impStore.pages === 1, 'a photo the model says is not a bill page is not counted');
+    r = await post(P + 7, 'huge'); await sleep(300);
+    ok(impStore.pages === 2 && impStore.matchedPaise === 61000, 'a page claiming over Rs 1 lakh of matched charges counts as a page, but its amount is not added');
+    r = await post(P + 7, 'overload'); await sleep(300);
+    ok(impStore.pages === 2, 'a failed read is not counted');
+    ok(commits.every(c => JSON.stringify(c).length < 600 && !/GLOVES|ADMISSION|ROOM/i.test(JSON.stringify(c))), 'nothing from the bill itself is ever sent to the counter - only the two numbers');
+    r = await req(P + 7, 'GET', '/api/impact'); const imp = JSON.parse(text(r));
+    ok(imp.pages === 2 && imp.matched === 610 && imp.since === '2026-10-05', '/api/impact reports 2 pages, Rs 610, since 2026-10-05');
+    r = await req(P + 7, 'POST', '/api/impact', { body: JSON.stringify({ pages: 999999 }), headers: { 'Content-Type': 'application/json' } });
+    ok(r.status === 404 && impStore.pages === 2, 'there is no way to POST a number to the counter from outside');
+    r = await req(P + 3, 'GET', '/api/impact'); ok(JSON.parse(text(r)).enabled === false, 'with no Firestore configured the counter is simply off');
+
+    console.log('== R14: reader status in /api/config');
+    r = await req(P + 7, 'GET', '/api/config'); ok(JSON.parse(text(r)).reader === 'overloaded', 'right after Google answered 503 (and nothing has succeeded since), the reader reports "overloaded"');
+    await post(P + 7, 'impact'); await sleep(200);
+    r = await req(P + 7, 'GET', '/api/config'); ok(JSON.parse(text(r)).reader === 'ok', 'a successful read clears it back to "ok"');
+    await start(P + 8, { ...common, RATE_MAX_PER_IP: '1000', DAILY_CAP: '1' });
+    r = await req(P + 8, 'GET', '/api/config'); ok(JSON.parse(text(r)).reader === 'ok', 'with reads left today: "ok"');
+    await post(P + 8, 'a photo');
+    r = await req(P + 8, 'GET', '/api/config'); ok(JSON.parse(text(r)).reader === 'busy', 'once today\'s cap is used: "busy", before anyone has to try and fail');
+    r = await req(P + 3, 'GET', '/api/config'); ok(JSON.parse(text(r)).reader === 'off', 'with no server key: "off"');
+    impSrv.close();
   } finally {
     servers.forEach(s => s.kill()); mock.close();
   }
