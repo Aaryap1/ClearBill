@@ -124,10 +124,15 @@ const NON_PAYABLE = [
 // the line and stops, so a revision or variant row must be listed before
 // the generic row it could otherwise be swallowed by (a "REVISION FEMORAL
 // COMPONENT" line also contains the plain "femoral component" keyword).
+// `req` (revision rows only) matches whole words in ANY order: "FEMORAL
+// COMPONENT REVISION" has neither "revision femoral" nor "femoral revision"
+// as a phrase, so it used to fall through to the generic femoral row and be
+// compared with the lower (non-revision) ceiling — a false flag on a
+// correctly priced revision implant (R11).
 const NPPA = [
-  { item:"Knee revision — Femoral component", ceiling:62770, gst:"plus 5% GST", grade:"verify", kw:["revision femoral","femoral revision"] },
-  { item:"Knee revision — Tibial component", ceiling:31220, gst:"plus 5% GST", grade:"verify", kw:["revision tibial","tibial revision"] },
-  { item:"Knee revision — Articulating surface", ceiling:15870, gst:"plus 5% GST", grade:"verify", kw:["revision articulating","revision insert"] },
+  { item:"Knee revision — Femoral component", ceiling:62770, gst:"plus 5% GST", grade:"verify", kw:["revision femoral","femoral revision"], req:[["revision","femoral"]] },
+  { item:"Knee revision — Tibial component", ceiling:31220, gst:"plus 5% GST", grade:"verify", kw:["revision tibial","tibial revision"], req:[["revision","tibial"]] },
+  { item:"Knee revision — Articulating surface", ceiling:15870, gst:"plus 5% GST", grade:"verify", kw:["revision articulating","revision insert"], req:[["revision","articulating"],["revision","insert"]] },
   { item:"Knee — Femoral component, High Flex", ceiling:25860, gst:"plus 5% GST", grade:"verify", kw:["femoral component high flex","high flex femoral"] },
   { item:"Knee — Femoral component, Cobalt Chromium", ceiling:24090, gst:"plus 5% GST", grade:"verify", kw:["femoral component cobalt","cobalt chrome femoral","cocr femoral"] },
   { item:"Knee — Femoral component (Ti / Oxidised Zirconium)", ceiling:38740, gst:"plus 5% GST", grade:"verify", kw:["femoral component"] },
@@ -273,7 +278,11 @@ const IS19493_HEADER = [
   ["patient_signature","Patient / next-of-kin signature","mandatory"],
   ["authorised_signature","Authorised signatory","mandatory"],
 ];
-const GSTIN_RE = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9][A-Z0-9]{2}$/;
+// state code (2 digits) + PAN (5 letters, 4 digits, 1 letter) + entity number
+// (1-9, then A-Z) + "Z" (fixed for a regular registration) + 1 check character.
+// The old pattern allowed any character in place of the fixed "Z" and
+// rejected a valid letter entity number (R11).
+const GSTIN_RE = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 
 const money = n => Math.round((Number(n)+Number.EPSILON)*100)/100;
 /* checks */
@@ -410,6 +419,24 @@ function analyse(data,now){
   lines.forEach(l=>{ if(!l.item.trim()||l.total==null||l.total<=0) return;
     const k=keyOf(l.item,l.total), net=(pos[k]||0)-(neg[k]||0);
     if(net>1&&!dups.find(d=>d.k===k)) dups.push({k,item:l.item,amount:l.total,n:net}); });
+  // Lines that are identical apart from a trailing reference number (many
+  // hospital systems append a per-line code: "CBC COMPLETE BLOOD COUNT 10449")
+  // at the same amount. The exact match above cannot see these, so a real
+  // repeat with two different codes went unflagged (R11). Kept SEPARATE from
+  // `dups` and worded as "look alike", never "appears twice": a different code
+  // may well mean a different, legitimate service. Only a 3+ digit trailing
+  // number is treated as a code, and anything else in the text (a doctor's
+  // name in brackets, a size) must match exactly.
+  const coreOf=s=>s.trim().toLowerCase().replace(/\s+\d{3,}$/,'').trim();
+  const simGroups=new Map();
+  Object.keys(pos).forEach(k=>{ const net=pos[k]-(neg[k]||0); if(net<1) return;
+    const bar=k.lastIndexOf('|'), item=k.slice(0,bar), amt=k.slice(bar+1), core=coreOf(item);
+    const gk=core+'|'+amt, g=simGroups.get(gk)||{core,amount:+amt,keys:[],n:0};
+    g.keys.push(item); g.n+=net; simGroups.set(gk,g); });
+  const similarDups=[];
+  simGroups.forEach(g=>{ if(g.keys.length<2) return;
+    const shown=g.keys.map(k=>(lines.find(l=>l.item.trim().toLowerCase()===k)||{item:k}).item.trim());
+    similarDups.push({items:shown,amount:g.amount,n:g.n}); });
   const missing=[],malformed=[];
   // A placeholder is not a value. "Provisional Bill" is truthy and non-blank,
   // so the old isBlank-only test let it through as "present" — this bill is
@@ -451,13 +478,26 @@ function analyse(data,now){
   // two parts (femoral + tibial ...), is not comparable and is never flagged.
   const SET_WORDS=/\b(set|kit|package|pkg|combo)\b/;
   const FAMILIES=[/femoral/,/tibial/,/patell/,/insert|articulating/];
-  for(let i=0;i<lines.length;i++){ if(credit.has(i)||cancelled.has(i)) continue; const l=lines[i], t=l.item.toLowerCase();
-    for(const c of NPPA){ if(c.kw.some(k=>t.includes(k))){
+  // Punctuation is a space here, as in every other matcher (_normTxt): the
+  // standard spelling "DRUG-ELUTING STENT" used to miss the "drug eluting
+  // stent" keyword entirely, and the report then said no stent was on the
+  // bill at all (R11).
+  const nppaHit=(c,t)=>{ const k=c.kw.find(k=>t.includes(k)); if(k) return k;
+    const r=c.req&&c.req.find(ws=>ws.every(w=>_hasWord(t,w))); return r?r.join(' '):null; };
+  for(let i=0;i<lines.length;i++){ if(credit.has(i)||cancelled.has(i)) continue; const l=lines[i], t=_normTxt(l.item);
+    for(const c of NPPA){ const hit=nppaHit(c,t); if(hit){
       const knee=c.item.startsWith('Knee');
       if(knee&&HIP_WORDS.test(t)) break;
       const stent=c.item.startsWith('Coronary stent');
       if(stent&&bd&&bd.min<NPPA_STENT_FROM){ nppaDated++; break; }
-      if(SET_WORDS.test(t)||FAMILIES.filter(f=>f.test(t)).length>1){ nppaSkipped++; break; }
+      // Two parts = a part word from a family the matched ceiling doesn't
+      // cover. Counting family words alone skipped NPPA's own "Tibial tray +
+      // insert" and "tibial insert" ceilings, whose official names span two
+      // families, so those rows could never be compared (R11). Stent lines
+      // keep the original count, since no knee family belongs to a stent.
+      const own=FAMILIES.filter(f=>f.test(c.item.toLowerCase())||f.test(hit));
+      const multiPart=knee?FAMILIES.some(f=>!own.includes(f)&&f.test(t)):FAMILIES.filter(f=>f.test(t)).length>1;
+      if(SET_WORDS.test(t)||multiPart){ nppaSkipped++; break; }
       // The price per unit. A rate of 0 (the extraction template's placeholder) is
       // "no rate". When both a rate and total/quantity exist the LOWER one is used,
       // so a line total copied into the rate column cannot create a flag.
@@ -481,7 +521,7 @@ function analyse(data,now){
   // page rejected as not-a-bill. Set by the upload flow on the merged object.
   const partial=data._pageCount===1||(data._rejected||0)>0;
   const subtotals = data.printed_subtotals && Object.keys(data.printed_subtotals).length ? data.printed_subtotals : null;
-  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nppaDated,nonLatin,subtotals,unreadable,reconCompared,partial,subsumed,subsumedSum,rejected:data._rejected||0,pageCount:data._pageCount||null};
+  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,similarDups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nppaDated,nonLatin,subtotals,unreadable,reconCompared,partial,subsumed,subsumedSum,rejected:data._rejected||0,pageCount:data._pageCount||null};
 }
 
 module.exports = { NON_PAYABLE, SUBSUMED, NPPA, IS19493_HEADER, GSTIN_RE, money, bestMatch, bestMatchIn, parseAmount, billDateRange, analyse };

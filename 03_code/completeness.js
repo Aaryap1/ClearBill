@@ -22,7 +22,7 @@ const HEADER_FIELDS = [
   // Healthcare organisation
   { key: "hospital_name",        label: "Hospital name",                 area: "Healthcare organisation", sev: "mandatory" },
   { key: "hospital_address",     label: "Hospital address",              area: "Healthcare organisation", sev: "mandatory" },
-  { key: "hospital_gstin",       label: "Hospital GSTIN (15 digit)",     area: "Healthcare organisation", sev: "mandatory", format: /^\d{2}[A-Z]{5}\d{4}[A-Z]\d[A-Z\d]{2}$/ },
+  { key: "hospital_gstin",       label: "Hospital GSTIN (15 digit)",     area: "Healthcare organisation", sev: "mandatory", format: /^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[A-Z\d]$/ },  // kept identical to GSTIN_RE in 06_app/index.html
   { key: "hospital_contact",     label: "Hospital phone / email",        area: "Healthcare organisation", sev: "mandatory" },
   { key: "hospital_registration",label: "Registration / licence number", area: "Healthcare organisation", sev: "mandatory" },
   { key: "hospital_accreditation",label:"Accreditation details (e.g. NABH)",area:"Healthcare organisation", sev: "conditional" },

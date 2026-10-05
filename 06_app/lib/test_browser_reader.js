@@ -223,6 +223,26 @@ const STUB = `
     await ev(`setLang('hi');`); ok(/मुफ़्त योजना/.test(await ev(`return document.getElementById('billLead').textContent`)), 'the notice is in Hindi too');
     await ev(`setLang('en');`);
 
+    console.log('== R11: look-alike charges on screen and in the letter; a hyphenated stent is checked');
+    await fresh(); await ev(`setLang('en');`);
+    {
+      const items = [{ item: 'IP - SPECIALTY - FIRST VISIT (Dr. X) 2417', quantity: 1, total: 1260 }, { item: 'IP - SPECIALTY - FIRST VISIT (Dr. X) 2419', quantity: 1, total: 1260 }];
+      const t = await showReport(items);
+      ok(/look alike apart from a reference number/i.test(t), 'the duplicate card says the two lines look alike apart from a reference number');
+      ok(!/appear more than once/.test(t), 'it does NOT call them an exact repeat');
+      ok(/Ask whether each is a separate service/.test(t), '"Start here" asks the hospital whether each is a separate service');
+      await ev(`switchTab('letter'); document.getElementById('genLetterTab').click();`); await sleep(300);
+      const L = await ev(`return document.getElementById('letterWrap').innerText`);
+      ok(/identical apart from a reference number/.test(L) && /2417 \/ IP - SPECIALTY - FIRST VISIT \(Dr\. X\) 2419/.test(L), 'the letter lists both lines and asks the hospital to confirm');
+      await ev(`setLang('hi');`); await sleep(200);
+      ok(/रेफ़रेंस नंबर/.test(await ev(`return document.getElementById('report').innerText`)), 'the look-alike card is in Hindi too');
+      await ev(`setLang('en');`);
+    }
+    {
+      const t = await showReport([{ item: 'DRUG-ELUTING STENT', quantity: 1, rate: 45000, total: 45000 }]);
+      ok(!/No stent or knee-implant line found/.test(t), 'a hyphenated "DRUG-ELUTING STENT" is no longer reported as "no stent found"');
+    }
+
     console.log('== downscale: large photos are resized before upload (R10)');
     await fresh();
     const dimsOf = async (fileExpr) => ev(`const bmp = await createImageBitmap(${fileExpr}); const d = {w: bmp.width, h: bmp.height}; bmp.close && bmp.close(); return d;`);

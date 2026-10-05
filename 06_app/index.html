@@ -662,10 +662,15 @@ const NON_PAYABLE = [
 // the line and stops, so a revision or variant row must be listed before
 // the generic row it could otherwise be swallowed by (a "REVISION FEMORAL
 // COMPONENT" line also contains the plain "femoral component" keyword).
+// `req` (revision rows only) matches whole words in ANY order: "FEMORAL
+// COMPONENT REVISION" has neither "revision femoral" nor "femoral revision"
+// as a phrase, so it used to fall through to the generic femoral row and be
+// compared with the lower (non-revision) ceiling — a false flag on a
+// correctly priced revision implant (R11).
 const NPPA = [
-  { item:"Knee revision — Femoral component", ceiling:62770, gst:"plus 5% GST", grade:"verify", kw:["revision femoral","femoral revision"] },
-  { item:"Knee revision — Tibial component", ceiling:31220, gst:"plus 5% GST", grade:"verify", kw:["revision tibial","tibial revision"] },
-  { item:"Knee revision — Articulating surface", ceiling:15870, gst:"plus 5% GST", grade:"verify", kw:["revision articulating","revision insert"] },
+  { item:"Knee revision — Femoral component", ceiling:62770, gst:"plus 5% GST", grade:"verify", kw:["revision femoral","femoral revision"], req:[["revision","femoral"]] },
+  { item:"Knee revision — Tibial component", ceiling:31220, gst:"plus 5% GST", grade:"verify", kw:["revision tibial","tibial revision"], req:[["revision","tibial"]] },
+  { item:"Knee revision — Articulating surface", ceiling:15870, gst:"plus 5% GST", grade:"verify", kw:["revision articulating","revision insert"], req:[["revision","articulating"],["revision","insert"]] },
   { item:"Knee — Femoral component, High Flex", ceiling:25860, gst:"plus 5% GST", grade:"verify", kw:["femoral component high flex","high flex femoral"] },
   { item:"Knee — Femoral component, Cobalt Chromium", ceiling:24090, gst:"plus 5% GST", grade:"verify", kw:["femoral component cobalt","cobalt chrome femoral","cocr femoral"] },
   { item:"Knee — Femoral component (Ti / Oxidised Zirconium)", ceiling:38740, gst:"plus 5% GST", grade:"verify", kw:["femoral component"] },
@@ -810,7 +815,11 @@ const IS19493_HEADER = [
   ["patient_signature","Patient / next-of-kin signature","mandatory"],
   ["authorised_signature","Authorised signatory","mandatory"],
 ];
-const GSTIN_RE = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9][A-Z0-9]{2}$/;
+// state code (2 digits) + PAN (5 letters, 4 digits, 1 letter) + entity number
+// (1-9, then A-Z) + "Z" (fixed for a regular registration) + 1 check character.
+// The old pattern allowed any character in place of the fixed "Z" and
+// rejected a valid letter entity number (R11).
+const GSTIN_RE = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 // The real, redacted 6-page bill this whole project is built around (the
 // same one in 04_test_bills/). Embedded here — not fetched — because the
 // deployed app has no server path to that file, and the worked-example
@@ -1003,6 +1012,11 @@ en: {
   detail_recon_body:(gross,lineSum,diff)=>`The bill's printed total (${gross}) differs from the sum of its own lines (${lineSum}) by <strong>${diff}</strong>. This may be the hospital's arithmetic, not a reading error.`,
   detail_dup:"Appears more than once",
   detail_dup_src:n=>`appears ${n}&times; at the same amount`,
+  detail_similar:"Look alike apart from a reference number",
+  detail_similar_src:n=>`${n} lines, same amount, different reference numbers`,
+  sh_similar:n=>`${n} charge${n>1?'s look':' looks'} the same as another apart from a reference number, at the same amount. Ask whether each is a separate service.`,
+  ls_similar:n=>`It lists ${n} charge${n>1?'s':''} that look the same as another apart from a reference number.`,
+  letter_confirm_similar:n=>`${n} look-alike charge${n>1?'s':''}`,
   unreadable_note:n=>`${n} amount${n>1?'s':''} on this bill couldn&rsquo;t be read reliably and ${n>1?'were':'was'} left out of the totals above. Check ${n>1?'those lines':'that line'} against the paper bill.`,
   detail_is19493:"Bill completeness &mdash; IS 19493",
   detail_is19493_plain:"IS 19493:2025 is a <strong>voluntary</strong> format set by the Bureau of Indian Standards (BIS). It expects the following, which this bill does not show:",
@@ -1099,7 +1113,10 @@ en: {
       foundNotCompared:"Bill total not compared", subNotCompared:"no printed total could be read from this bill",
       money:()=>"This is the hospital&rsquo;s own arithmetic, not yours or ours. It doesn&rsquo;t change what you owe.",
       doText:"Point the billing desk to this gap and ask them to explain it. Keep this bill as your record either way." },
-    dup: { label:"Twice",
+    dup: { label:"Twice", labelSimilar:"Check",
+      foundSimilar:n=>`${n} charge${n>1?'s look':' looks'} alike apart from a reference number`, subSimilar:()=>"same text and amount, different reference number",
+      moneySimilar:()=>"Many hospital systems add a reference number to each line. Two lines that differ only in that number, at the same amount, can be the same service billed twice &mdash; or two genuinely separate services. This is a question to ask, not a finding.",
+      doTextSimilar:"Compare the dates and quantities on those lines. If they don&rsquo;t explain it, ask the hospital whether each one is a separate service.",
       found:n=>`${n} charge${n>1?'s':''} appear more than once`, sub:()=>"same item, same amount",
       foundClear:"No duplicated charges", subClear:"",
       money:()=>"The same item at the same amount appears more than once. That can be a duplicate entry, or a service that genuinely repeats (daily visits, room rent).",
@@ -1264,6 +1281,11 @@ hi: {
   detail_recon_body:(gross,lineSum,diff)=>`बिल की छपी कुल राशि (${gross}) उसकी अपनी लाइनों के योग (${lineSum}) से <strong>${diff}</strong> अलग है। यह अस्पताल की अपनी गणना हो सकती है, पढ़ने की ग़लती नहीं।`,
   detail_dup:"एक से ज़्यादा बार दिखता है",
   detail_dup_src:n=>`${n} बार एक ही राशि पर दिखता है`,
+  detail_similar:"सिर्फ़ रेफ़रेंस नंबर अलग, बाकी एक जैसे",
+  detail_similar_src:n=>`${n} लाइनें, एक ही राशि, अलग-अलग रेफ़रेंस नंबर`,
+  sh_similar:n=>`${n} चार्ज सिर्फ़ रेफ़रेंस नंबर को छोड़कर किसी दूसरे चार्ज जैसे हैं, और राशि भी वही है। पूछें कि क्या हर एक अलग सेवा है।`,
+  ls_similar:n=>`इसमें ${n} चार्ज हैं जो सिर्फ़ रेफ़रेंस नंबर में किसी दूसरे चार्ज से अलग हैं।`,
+  letter_confirm_similar:n=>`${n} मिलते-जुलते चार्ज`,
   unreadable_note:n=>`इस बिल की ${n} राशि भरोसे से पढ़ी नहीं जा सकी और ऊपर के जोड़ में शामिल नहीं है। कागज़ के बिल से उन लाइनों को मिलाकर देखें।`,
   detail_is19493:"बिल की पूर्णता &mdash; IS 19493",
   detail_is19493_plain:"IS 19493:2025 भारतीय मानक ब्यूरो (BIS) का एक <strong>स्वैच्छिक</strong> प्रारूप है। यह निम्नलिखित की अपेक्षा करता है, जो इस बिल में नहीं है:",
@@ -1361,7 +1383,10 @@ hi: {
       foundNotCompared:"बिल का कुल योग मिलाया नहीं गया", subNotCompared:"इस बिल से छपी कुल राशि पढ़ी नहीं जा सकी",
       money:()=>"यह अस्पताल की अपनी गणना है, आपकी या हमारी नहीं। इससे आपकी देय राशि नहीं बदलती।",
       doText:"बिलिंग डेस्क को यह अंतर दिखाएँ और समझाने को कहें। इस बिल को अपने रिकॉर्ड के तौर पर रखें।" },
-    dup: { label:"दो बार",
+    dup: { label:"दो बार", labelSimilar:"जाँचें",
+      foundSimilar:n=>`${n} चार्ज सिर्फ़ रेफ़रेंस नंबर में अलग दिखते हैं`, subSimilar:()=>"वही विवरण और राशि, अलग रेफ़रेंस नंबर",
+      moneySimilar:()=>"कई अस्पतालों का सिस्टम हर लाइन पर एक रेफ़रेंस नंबर जोड़ता है। सिर्फ़ उस नंबर में अलग और एक ही राशि वाली दो लाइनें एक ही सेवा का दोबारा बिल हो सकती हैं &mdash; या सच में दो अलग सेवाएँ। यह पूछने की बात है, नतीजा नहीं।",
+      doTextSimilar:"इन लाइनों की तारीख़ें और मात्रा मिलाकर देखें। अगर उनसे समझ न आए, तो अस्पताल से पूछें कि क्या हर एक अलग सेवा है।",
       found:n=>`${n} चार्ज एक से ज़्यादा बार दिखते हैं`, sub:()=>"एक ही चीज़, एक ही राशि",
       foundClear:"कोई दोहरा चार्ज नहीं", subClear:"",
       money:()=>"एक ही चीज़ एक ही राशि पर एक से ज़्यादा बार दिखती है। यह डुप्लिकेट एंट्री हो सकती है, या ऐसी सेवा जो सच में दोहराई जाती है (रोज़ की विज़िट, कमरे का किराया)।",
@@ -1526,6 +1551,11 @@ mr: {
   detail_recon_body:(gross,lineSum,diff)=>`बिलाची छापील एकूण रक्कम (${gross}) त्याच्या स्वतःच्या ओळींच्या बेरजेपेक्षा (${lineSum}) <strong>${diff}</strong> ने वेगळी आहे. ही रुग्णालयाची स्वतःची गणना असू शकते, वाचण्यातली चूक नाही.`,
   detail_dup:"एकापेक्षा जास्त वेळा दिसतं",
   detail_dup_src:n=>`तेवढ्याच रकमेला ${n} वेळा दिसतं`,
+  detail_similar:"फक्त संदर्भ क्रमांक वेगळा, बाकी सारखे",
+  detail_similar_src:n=>`${n} ओळी, तीच रक्कम, वेगवेगळे संदर्भ क्रमांक`,
+  sh_similar:n=>`${n} चार्जेस फक्त संदर्भ क्रमांक सोडून दुसऱ्या चार्जसारखे आहेत, आणि रक्कमही तीच आहे. प्रत्येक वेगळी सेवा आहे का ते विचारा.`,
+  ls_similar:n=>`त्यात ${n} चार्जेस आहेत जे फक्त संदर्भ क्रमांकात दुसऱ्या चार्जपेक्षा वेगळे आहेत.`,
+  letter_confirm_similar:n=>`${n} सारखे दिसणारे चार्जेस`,
   unreadable_note:n=>`या बिलातील ${n} रक्कम खात्रीने वाचता आली नाही आणि वरच्या बेरजेत धरलेली नाही. त्या ओळी कागदी बिलाशी पडताळून पहा.`,
   detail_is19493:"बिलाची पूर्णता &mdash; IS 19493",
   detail_is19493_plain:"IS 19493:2025 हा भारतीय मानक ब्युरो (BIS) चा एक <strong>ऐच्छिक</strong> स्वरूप आहे. तो खालील अपेक्षा करतो, जे या बिलात नाही:",
@@ -1623,7 +1653,10 @@ mr: {
       foundNotCompared:"बिलाची एकूण रक्कम जुळवली नाही", subNotCompared:"या बिलावरील छापील एकूण रक्कम वाचता आली नाही",
       money:()=>"ही रुग्णालयाची स्वतःची गणना आहे, तुमची किंवा आमची नाही. यामुळे तुमची देय रक्कम बदलत नाही.",
       doText:"बिलिंग डेस्कला हा फरक दाखवा आणि स्पष्टीकरण मागा. हे बिल तुमच्या रेकॉर्डसाठी जपून ठेवा." },
-    dup: { label:"दोनदा",
+    dup: { label:"दोनदा", labelSimilar:"तपासा",
+      foundSimilar:n=>`${n} चार्जेस फक्त संदर्भ क्रमांकात वेगळे दिसतात`, subSimilar:()=>"तोच मजकूर आणि रक्कम, वेगळा संदर्भ क्रमांक",
+      moneySimilar:()=>"अनेक रुग्णालयांची यंत्रणा प्रत्येक ओळीला एक संदर्भ क्रमांक जोडते. फक्त त्या क्रमांकात वेगळ्या आणि तीच रक्कम असलेल्या दोन ओळी म्हणजे एकाच सेवेचं दोनदा बिल असू शकतं &mdash; किंवा खरंच दोन वेगळ्या सेवा. हा विचारायचा प्रश्न आहे, निष्कर्ष नाही.",
+      doTextSimilar:"या ओळींच्या तारखा आणि प्रमाण जुळवून पाहा. त्यातून समजलं नाही, तर रुग्णालयाला विचारा की प्रत्येक वेगळी सेवा आहे का.",
       found:n=>`${n} चार्जेस एकापेक्षा जास्त वेळा दिसतात`, sub:()=>"तीच गोष्ट, तीच रक्कम",
       foundClear:"कोणताही डुप्लिकेट चार्ज नाही", subClear:"",
       money:()=>"तीच गोष्ट तीच रक्कम घेऊन एकापेक्षा जास्त वेळा दिसते. ही डुप्लिकेट नोंद असू शकते, किंवा खरंच पुन्हा होणारी सेवा (रोजच्या भेटी, खोलीचं भाडं).",
@@ -1853,6 +1886,24 @@ function analyse(data,now){
   lines.forEach(l=>{ if(!l.item.trim()||l.total==null||l.total<=0) return;
     const k=keyOf(l.item,l.total), net=(pos[k]||0)-(neg[k]||0);
     if(net>1&&!dups.find(d=>d.k===k)) dups.push({k,item:l.item,amount:l.total,n:net}); });
+  // Lines that are identical apart from a trailing reference number (many
+  // hospital systems append a per-line code: "CBC COMPLETE BLOOD COUNT 10449")
+  // at the same amount. The exact match above cannot see these, so a real
+  // repeat with two different codes went unflagged (R11). Kept SEPARATE from
+  // `dups` and worded as "look alike", never "appears twice": a different code
+  // may well mean a different, legitimate service. Only a 3+ digit trailing
+  // number is treated as a code, and anything else in the text (a doctor's
+  // name in brackets, a size) must match exactly.
+  const coreOf=s=>s.trim().toLowerCase().replace(/\s+\d{3,}$/,'').trim();
+  const simGroups=new Map();
+  Object.keys(pos).forEach(k=>{ const net=pos[k]-(neg[k]||0); if(net<1) return;
+    const bar=k.lastIndexOf('|'), item=k.slice(0,bar), amt=k.slice(bar+1), core=coreOf(item);
+    const gk=core+'|'+amt, g=simGroups.get(gk)||{core,amount:+amt,keys:[],n:0};
+    g.keys.push(item); g.n+=net; simGroups.set(gk,g); });
+  const similarDups=[];
+  simGroups.forEach(g=>{ if(g.keys.length<2) return;
+    const shown=g.keys.map(k=>(lines.find(l=>l.item.trim().toLowerCase()===k)||{item:k}).item.trim());
+    similarDups.push({items:shown,amount:g.amount,n:g.n}); });
   const missing=[],malformed=[];
   // A placeholder is not a value. "Provisional Bill" is truthy and non-blank,
   // so the old isBlank-only test let it through as "present" — this bill is
@@ -1894,13 +1945,26 @@ function analyse(data,now){
   // two parts (femoral + tibial ...), is not comparable and is never flagged.
   const SET_WORDS=/\b(set|kit|package|pkg|combo)\b/;
   const FAMILIES=[/femoral/,/tibial/,/patell/,/insert|articulating/];
-  for(let i=0;i<lines.length;i++){ if(credit.has(i)||cancelled.has(i)) continue; const l=lines[i], t=l.item.toLowerCase();
-    for(const c of NPPA){ if(c.kw.some(k=>t.includes(k))){
+  // Punctuation is a space here, as in every other matcher (_normTxt): the
+  // standard spelling "DRUG-ELUTING STENT" used to miss the "drug eluting
+  // stent" keyword entirely, and the report then said no stent was on the
+  // bill at all (R11).
+  const nppaHit=(c,t)=>{ const k=c.kw.find(k=>t.includes(k)); if(k) return k;
+    const r=c.req&&c.req.find(ws=>ws.every(w=>_hasWord(t,w))); return r?r.join(' '):null; };
+  for(let i=0;i<lines.length;i++){ if(credit.has(i)||cancelled.has(i)) continue; const l=lines[i], t=_normTxt(l.item);
+    for(const c of NPPA){ const hit=nppaHit(c,t); if(hit){
       const knee=c.item.startsWith('Knee');
       if(knee&&HIP_WORDS.test(t)) break;
       const stent=c.item.startsWith('Coronary stent');
       if(stent&&bd&&bd.min<NPPA_STENT_FROM){ nppaDated++; break; }
-      if(SET_WORDS.test(t)||FAMILIES.filter(f=>f.test(t)).length>1){ nppaSkipped++; break; }
+      // Two parts = a part word from a family the matched ceiling doesn't
+      // cover. Counting family words alone skipped NPPA's own "Tibial tray +
+      // insert" and "tibial insert" ceilings, whose official names span two
+      // families, so those rows could never be compared (R11). Stent lines
+      // keep the original count, since no knee family belongs to a stent.
+      const own=FAMILIES.filter(f=>f.test(c.item.toLowerCase())||f.test(hit));
+      const multiPart=knee?FAMILIES.some(f=>!own.includes(f)&&f.test(t)):FAMILIES.filter(f=>f.test(t)).length>1;
+      if(SET_WORDS.test(t)||multiPart){ nppaSkipped++; break; }
       // The price per unit. A rate of 0 (the extraction template's placeholder) is
       // "no rate". When both a rate and total/quantity exist the LOWER one is used,
       // so a line total copied into the rate column cannot create a flag.
@@ -1924,7 +1988,7 @@ function analyse(data,now){
   // page rejected as not-a-bill. Set by the upload flow on the merged object.
   const partial=data._pageCount===1||(data._rejected||0)>0;
   const subtotals = data.printed_subtotals && Object.keys(data.printed_subtotals).length ? data.printed_subtotals : null;
-  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nppaDated,nonLatin,subtotals,unreadable,reconCompared,partial,subsumed,subsumedSum,rejected:data._rejected||0,pageCount:data._pageCount||null};
+  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,similarDups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nppaDated,nonLatin,subtotals,unreadable,reconCompared,partial,subsumed,subsumedSum,rejected:data._rejected||0,pageCount:data._pageCount||null};
 }
 function sectionSums(lines){
   const m={}; lines.forEach(l=>{ const k=l.section||'Uncategorised'; m[k]=(m[k]||0)+(l.total||0); });
@@ -2028,6 +2092,7 @@ function renderReport(data){
   if(a.lines.length){
     const sh=[[],[]];
     if(a.dups.length) sh[0].push(T_.sh_dups(a.dups.length));
+    if(a.similarDups.length) sh[0].push(T_.sh_similar(a.similarDups.length));
     if(a.recon) sh[0].push(T_.sh_recon(inr.format(Math.abs(a.recon.diff))));
     if(a.nppa.length) sh[0].push(T_.sh_nppa(a.nppa.length));
     if(a.nppaGst.length) sh[0].push(T_.sh_gst(a.nppaGst.length));
@@ -2073,9 +2138,14 @@ function renderReport(data){
     : (a.reconCompared
         ? chk('green',T_.clear_word,C.recon.foundClear,C.recon.subClear)
         : chk('grey',T_.notcompared_word,C.recon.foundNotCompared,C.recon.subNotCompared));
+  // Exact repeats lead; "look alike apart from a reference number" is added
+  // as its own, softer line and never counted as an exact repeat (R11).
   h+= a.dups.length
-    ? chk('ochre',C.dup.label,C.dup.found(a.dups.length),C.dup.sub(),
+    ? chk('ochre',C.dup.label,C.dup.found(a.dups.length)+(a.similarDups.length?'; '+C.dup.foundSimilar(a.similarDups.length):''),C.dup.sub(),
         {money:C.dup.money(), doText:C.dup.doText})
+    : a.similarDups.length
+    ? chk('ochre',C.dup.labelSimilar,C.dup.foundSimilar(a.similarDups.length),C.dup.subSimilar(),
+        {money:C.dup.moneySimilar(), doText:C.dup.doTextSimilar})
     : chk('green',T_.clear_word,C.dup.foundClear,C.dup.subClear);
   const isN=a.missing.length+a.malformed.length+(a.noUnit?1:0);
   h+= isN
@@ -2109,6 +2179,8 @@ function renderReport(data){
     `<div class="notez">${T_.detail_recon_body(inr.format(a.recon.gross),inr.format(a.recon.lineSum),inr.format(Math.abs(a.recon.diff)))}</div>`);
   if(a.dups.length) h+=det(T_.detail_dup,`<span class="tag">${a.dups.length}</span>`,
     a.dups.map(d=>`<div class="li"><div>${esc(d.item)}<span class="src">${T_.detail_dup_src(d.n)}</span></div><div class="n">${inr.format(d.amount)}</div></div>`).join(''));
+  if(a.similarDups.length) h+=det(T_.detail_similar,`<span class="tag">${a.similarDups.length}</span>`,
+    a.similarDups.map(d=>`<div class="li"><div>${d.items.map(esc).join('<br>')}<span class="src">${T_.detail_similar_src(d.n)}</span></div><div class="n">${inr.format(d.amount)}</div></div>`).join(''));
   const redNote = (a.redacted&&a.redacted.length)
     ? `<div class="notez">${T_.detail_is19493_redacted(a.redacted.length)}</div>` : '';
   if(isN) h+=det(T_.detail_is19493,`<span class="tag">${isN}</span>`,
@@ -2269,6 +2341,7 @@ function buildLetter(a,include,noScroll){
   }
   if(a.recon&&include.recon) L.push(`The bill's printed total (${inr.format(a.recon.gross)}) differs from the sum of its own printed lines (${inr.format(a.recon.lineSum)}) by ${inr.format(Math.abs(a.recon.diff))}.`,``);
   if(a.dups.length&&include.dup){ L.push(`The following charge(s) appear more than once at the same amount; please confirm whether each is a separate service or a duplicate entry:`); a.dups.forEach(d=>L.push(`  - ${d.item} - ${inr.format(d.amount)}, ${d.n} times`)); L.push(``); }
+  if(a.similarDups.length&&include.dup){ L.push(`The following charges are identical apart from a reference number and are billed at the same amount; please confirm whether each is a separate service:`); a.similarDups.forEach(d=>L.push(`  - ${d.items.join(' / ')} - ${inr.format(d.amount)} each`)); L.push(``); }
   const reqs=[
     `A line-by-line statement of every amount recorded as non-payable or deducted, with the policy clause relied on for each.`,
     a.exact.length&&include.irdai
@@ -2304,6 +2377,7 @@ function buildLetter(a,include,noScroll){
     if(s&&include.settlement&&a.exact.length&&include.irdai&&a.exactSum<s.deduction) sl.push(T_.ls_gap(inr.format(money(s.deduction-a.exactSum))));
     if(a.nppa.length&&include.nppa) sl.push(T_.ls_nppa(a.nppa.length));
     if(a.dups.length&&include.dup) sl.push(T_.ls_dup(a.dups.length));
+    if(a.similarDups.length&&include.dup) sl.push(T_.ls_similar(a.similarDups.length));
     if(a.recon&&include.recon) sl.push(T_.ls_recon(inr.format(Math.abs(a.recon.diff))));
     sl.push(T_.ls_asks);
     lsum=`<div class="lsum"><b>${T_.ls_head}</b><ul>${sl.map(x=>`<li>${x}</li>`).join('')}</ul><div class="notez">${T_.ls_note}</div></div>`;
@@ -2833,7 +2907,7 @@ function renderLetterTab(){
   if(a.exact.length) rows.push(['irdai', T_.letter_confirm_irdai(a.exact.length), inr.format(a.exactSum)]);
   if(a.subsumed.length) rows.push(['subsumed', T_.letter_confirm_subsumed(a.subsumed.length), inr.format(a.subsumedSum)]);
   if(a.nppa.length) rows.push(['nppa', T_.letter_confirm_nppa(a.nppa.length), '✓']);
-  if(a.dups.length) rows.push(['dup', T_.letter_confirm_dup(a.dups.length), '✓']);
+  if(a.dups.length||a.similarDups.length) rows.push(['dup', a.dups.length?T_.letter_confirm_dup(a.dups.length)+(a.similarDups.length?' + '+T_.letter_confirm_similar(a.similarDups.length):''):T_.letter_confirm_similar(a.similarDups.length), '✓']);
   if(a.recon) rows.push(['recon', T_.letter_confirm_recon, inr.format(Math.abs(a.recon.diff))]);
   $('letterIncludes').innerHTML=
     rows.map(([key,k,v])=>`<label class="inclrow"><input type="checkbox" ${key==='recon'&&a.partial?'':'checked'} data-inc="${key}"><span class="incltext">${k}</span><span class="v">${v}</span></label>`).join('')

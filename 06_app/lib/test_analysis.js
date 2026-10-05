@@ -159,6 +159,45 @@ ok(D('Drug eluting stent', 45000, '05/05/2027', new Date('2027-05-06')).nppaStal
 ok(D('Drug eluting stent', 45000, '05/05/2026', new Date('2026-09-25')).nppaStale === false, 'a stent bill from May 2026 is not stale');
 ok(checks.billDateRange({ bill_datetime: '01/06/2025 11:13' }) && checks.billDateRange({}) === null, 'the date reader reads DD/MM/YYYY with a time and returns nothing when there is no date');
 
+// R11 — five findings from the council's correctness review, each reproduced
+// against the shipped code before it was fixed.
+console.log('== R11: NPPA spelling, word order and two-family names');
+const ref = r => r.nppa.map(n => n.ref).join();
+{ const r = NL('DRUG-ELUTING STENT', 1, 45000, 45000); ok(r.nppaCompared === 1 && r.nppa.length === 1, 'the hyphenated spelling "DRUG-ELUTING STENT" is recognised and compared (it used to report no stent on the bill)'); }
+{ const r = NL('BARE-METAL STENT', 1, 15000, 15000); ok(r.nppaCompared === 1 && /Bare Metal/.test(ref(r)), '"BARE-METAL STENT" is recognised as a bare-metal stent'); }
+{ const r = NL('DES/STENT', 1, 45000, 45000); ok(r.nppaCompared === 1, 'a slash between words ("DES/STENT") is read as a space too'); }
+{ const r = NL('FEMORAL COMPONENT REVISION TKR', 1, 50000, 50000); ok(r.nppa.length === 0 && r.nppaGst.length === 0 && r.nppaCompared === 1, 'a revision femoral component named part-first (₹50,000) is compared with the REVISION ceiling and not flagged (it used to be flagged against the ₹38,740 general ceiling)'); }
+{ const r = NL('TIBIAL COMPONENT REVISION SURGERY', 1, 28000, 28000); ok(r.nppa.length === 0 && r.nppaGst.length === 0, 'a revision tibial component named part-first (₹28,000) is not falsely flagged'); }
+{ const r = NL('REVISION FEMORAL COMPONENT', 1, 70000, 70000); ok(/Knee revision — Femoral/.test(ref(r)), 'a revision femoral component above the revision ceiling plus GST is still flagged, against the revision row'); }
+{ const r = NL('FEMORAL HEAD REVISION', 1, 90000, 90000); ok(r.nppaCompared === 0 && r.nppa.length === 0, 'a hip "femoral head" revision is still left alone (no knee ceiling applies)'); }
+{ const r = NL('TIBIAL TRAY + INSERT, POLYETHYLENE', 1, 20000, 20000); ok(r.nppaCompared === 1 && /Tibial tray \+ insert, polyethylene/.test(ref(r)), 'NPPA\'s own "tibial tray + insert" ceiling is now reachable (its name spans two part families; it used to be skipped as a multi-part line)'); }
+{ const r = NL('TIBIAL INSERT', 1, 12000, 12000); ok(r.nppaCompared === 1 && /Articulating/.test(ref(r)), 'a "tibial insert" (one part, the articulating surface) is compared, not skipped'); }
+{ const r = NL('FEMORAL COMPONENT + TIBIAL COMPONENT', 1, 60000, 60000); ok(r.nppaSkipped === 1 && r.nppa.length === 0, 'a line naming two separate parts is still skipped'); }
+{ const r = NL('DES stent via femoral access', 1, 45000, 45000); ok(r.nppaCompared === 1, 'a stent line mentioning one knee-family word ("femoral access") is still compared, as before'); }
+
+console.log('== R11: charges that differ only by a reference number');
+{ const r = L1([['IP - SPECIALTY - FIRST VISIT (Dr. X) 2417', 1260], ['IP - SPECIALTY - FIRST VISIT (Dr. X) 2419', 1260]]);
+  ok(r.dups.length === 0 && r.similarDups.length === 1 && r.similarDups[0].n === 2, 'two lines identical apart from a trailing reference number are reported as look-alike, NOT as an exact duplicate'); }
+{ const r = L1([['IP - SPECIALTY - FIRST VISIT (Dr. X) 2417', 1260], ['IP - SPECIALTY - FIRST VISIT (Dr. Y) 2419', 1260]]); ok(r.similarDups.length === 0, 'a different doctor in brackets is a different service, not a look-alike'); }
+{ const r = L1([['SURGICAL BLADE NO.15', 7.1], ['SURGICAL BLADE NO.16', 7.1]]); ok(r.similarDups.length === 0, 'a size or number that is part of the item name (NO.15 / NO.16) is not treated as a reference code'); }
+{ const r = L1([['CBC 10449', 430], ['CBC 10450', 500]]); ok(r.similarDups.length === 0, 'different amounts are never look-alikes'); }
+{ const r = L1([['CBC 10449', 430], ['CBC 10450', 430], ['CBC 10450', -430]]); ok(r.similarDups.length === 0, 'a look-alike that was reversed by a matching credit line is netted out'); }
+{ const r = L1([['IP VISIT 2417', 1260], ['IP VISIT 2417', 1260]]); ok(r.dups.length === 1 && r.similarDups.length === 0, 'an exact repeat stays an exact duplicate and is not double-reported as a look-alike'); }
+
+console.log('== R11: GSTIN format');
+ok(checks.GSTIN_RE.test('27AAAAA0000A1Z5'), 'a well-formed GSTIN passes');
+ok(checks.GSTIN_RE.test('27AABCP1361MAZ5'), 'a letter entity number (13th character) is valid');
+ok(!checks.GSTIN_RE.test('27AABCP1361M1QB'), 'a GSTIN without the fixed "Z" in 14th place is malformed');
+ok(!checks.GSTIN_RE.test('27AABCP1361M0Z5'), 'a 0 entity number is malformed');
+{ const r = checks.analyse({ header: { hospital_gstin: '27AABCP1361M1QB' }, line_items: [{ item: 'X', total: 1 }] }); ok(r.malformed.some(m => /GSTIN/i.test(m)), 'the completeness check reports that malformed GSTIN'); }
+{ const cmpPath = path.join(__dirname, '..', '..', '03_code', 'completeness.js');
+  if (fs.existsSync(cmpPath)) {
+    const fmt = require(cmpPath).HEADER_FIELDS.find(f => f.key === 'hospital_gstin').format;
+    const samples = ['27AAAAA0000A1Z5', '27AABCP1361MAZ5', '27AABCP1361M1QB', '27AABCP1361M0Z5', '27aabcp1361m1z5', '27AABCP1361M1Z', '127AABCP1361M1Z5', '27AABC1361M1Z5X'];
+    const differ = samples.filter(g => fmt.test(g) !== checks.GSTIN_RE.test(g));
+    ok(differ.length === 0, '03_code/completeness.js accepts and rejects exactly the same GSTINs as the app', differ.join(', '));
+  } }
+
 if (old) {
   console.log('== matcher.js duplicate parity');
   const rows = (r) => r.map(([item, total]) => ({ item, quantity: 1, total }));
