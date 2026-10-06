@@ -93,9 +93,9 @@ console.log('== 2. analysis regression (frozen fixtures)');
     }
   }
   const we = now['worked_example'];
-  ok(we.exactSum === 1310 && we.subsumedSum === 689.6 && we.recon === 10 && we.dupGroups.length === 3 && we.redacted === 12,
-    'worked example: IRDAI List I exact 1,310 / Lists II-IV 689.60 / gap 10 / 3 duplicate groups / 12 redacted (hard-coded floor; List I total dropped from 1,992.50 when Lists II-IV were added and 5 items moved to their correct citation)');
-  if (priv) ok(priv.exactSum === 1310 && priv.subsumedSum === 689.6 && priv.recon === 10 && priv.dupGroups.length === 3, 'private real bill: same headline numbers');
+  ok(we.exactSum === 460 && we.subsumedSum === 689.6 && we.recon === 10 && we.dupGroups.length === 3 && we.redacted === 12,
+    'worked example: IRDAI List I exact 460 / Lists II-IV 689.60 / gap 10 / 3 duplicate groups / 12 redacted (hard-coded floor; List I total dropped from 1,992.50 when Lists II-IV were added and 5 items moved to their correct citation; it dropped again to 460 in R18, when an ₹850 "insurance processing fee" stopped being cited as List I, which does not name it)');
+  if (priv) ok(priv.exactSum === 460 && priv.subsumedSum === 689.6 && priv.recon === 10 && priv.dupGroups.length === 3, 'private real bill: same headline numbers');
   else console.log('  skip private_bill_01 (04_test_bills not on this machine)');
 }
 

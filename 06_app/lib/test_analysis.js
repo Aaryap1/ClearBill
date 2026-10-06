@@ -83,7 +83,7 @@ ok(N('Hip femoral component', 90000, before).nppa.length === 0, 'a HIP femoral c
 ok(N('Bipolar femoral component', 90000, before).nppa.length === 0, 'a bipolar femoral component never gets a knee ceiling');
 ok(N('Knee femoral component', 90000, before).nppa.length === 1, 'a knee femoral component is still checked');
 ok(N('Knee femoral component', 90000, before).nppaStale === false, 'knee ceilings are not marked stale before 15 Nov 2026');
-ok(N('Knee femoral component', 90000, after).nppaStale === true, 'knee ceilings are marked stale after 15 Nov 2026 (copy becomes more cautious)');
+{ const r = N('Knee femoral component', 90000, after); ok(r.nppa.length === 0 && r.nppaKneeDated === 1, 'after 15 Nov 2026 (no bill date) a knee implant is not compared at all, instead of being flagged against a ceiling that may have lapsed (R18)'); }
 ok(N('Drug eluting stent', 45000, after).nppaStale === false, 'stent ceilings (open-ended from 1 Apr 2026) are not marked stale');
 
 console.log('== recon: not compared is not clear');
@@ -153,8 +153,8 @@ ok(D('Drug eluting stent', 45000, '2026-05-10').nppa.length === 1, 'an ISO date 
 ok(D('Drug eluting stent', 45000, null).nppa.length === 1, 'no bill date: the stent is compared as before');
 ok(D('Drug eluting stent', 45000, 'sometime in May').nppa.length === 1, 'an unreadable date is ignored, not guessed');
 ok(D('Knee femoral component', 90000, '10/10/2026', new Date('2027-01-01')).nppaStale === false, 'a knee bill dated inside the validity period is not "stale" just because today is later');
-ok(D('Knee femoral component', 90000, '20/11/2026', new Date('2026-09-25')).nppaStale === true, 'a knee bill dated after 15 Nov 2026 is stale even if today is earlier');
-ok(D('Knee femoral component', 90000, null, new Date('2027-01-01')).nppaStale === true, 'with no bill date the old behaviour holds (judged by today)');
+{ const r = D('Knee femoral component', 90000, '20/11/2026', new Date('2026-09-25')); ok(r.nppa.length === 0 && r.nppaKneeDated === 1, 'a knee bill dated after 15 Nov 2026 is not compared, even if today is earlier (R18)'); }
+{ const r = D('Knee femoral component', 90000, null, new Date('2027-01-01')); ok(r.nppa.length === 0 && r.nppaKneeDated === 1, 'with no bill date, today decides: after 15 Nov 2026 it is not compared (R18)'); }
 ok(D('Drug eluting stent', 45000, '05/05/2027', new Date('2027-05-06')).nppaStale === true, 'a stent bill from after 1 April 2027 asks the user to check for a newer notification');
 ok(D('Drug eluting stent', 45000, '05/05/2026', new Date('2026-09-25')).nppaStale === false, 'a stent bill from May 2026 is not stale');
 ok(checks.billDateRange({ bill_datetime: '01/06/2025 11:13' }) && checks.billDateRange({}) === null, 'the date reader reads DD/MM/YYYY with a time and returns nothing when there is no date');
@@ -242,6 +242,27 @@ console.log('== R15: merging pages');
   const two = mergePages([page({}, [['Bed', 100]]), page({}, [['Bed', 100], ['Gloves', 20]])]);
   ok(two.line_items.length === 3 && !two._dupPages, 'pages that only share some rows are both kept');
 }
+
+// R18 — council round 3: things the app stated that its sources do not support.
+console.log('== R18: only IRDAI\'s own List I items are cited as List I');
+for (const item of ['TPA CHARGES', 'INSURANCE PROCESSING FEE', 'MEDICO LEGAL CHARGES', 'MAINTENANCE CHARGES', 'PREPARATION CHARGES', 'BAND AID', 'HANSAPLAST', 'BED UNDER PAD', 'WEIGHT CONTROL PROGRAM', 'SPECTACLES', 'HOME VISIT CHARGES', 'DONOR SCREENING']) {
+  const r = L1([[item, 100]]);
+  ok(r.exact.length === 0 && r.review.length === 1, '"' + item + '" is "commonly deducted, ask your insurer", not cited as IRDAI List I', JSON.stringify(r.exact.map(x => x.matched)));
+}
+{ const r = L1([['SAVLON 500ML', 120]]); ok(r.exact.length === 0 && r.subsumed.length === 1 && r.subsumed[0].list === 'II', 'Savlon is a disinfectant lotion: IRDAI List II (part of the room charge), not List I'); }
+ok(L1([['WASHING CHARGES', 100]]).exact[0]?.matched === 'Laundry Charges', 'washing charges are cited as the official item "Laundry Charges"');
+ok(L1([['BARBER CHARGES', 100]]).exact[0]?.matched === 'Beauty Services', 'barber charges are cited as the official item "Beauty Services"');
+
+console.log('== R18: implants the NPPA ceilings do not cover');
+for (const item of ['PERIPHERAL DRUG ELUTING STENT', 'BILIARY STENT', 'DJ STENT', 'URETERIC STENT', 'RENAL STENT', 'CAROTID STENT']) {
+  const r = NL(item, 1, 45000, 45000); ok(r.nppa.length === 0 && r.nppaGst.length === 0 && r.nppaCompared === 0 && r.nppaUnmatched === 1, '"' + item + '" is not compared with the CORONARY stent ceiling; it is reported as found but not compared');
+}
+for (const item of ['RESOLUTE ONYX STENT', 'STENT XIENCE PRIME', 'KNEE IMPLANT', 'TIBIAL TRAY']) {
+  const r = NL(item, 1, 45000, 45000); ok(r.nppaUnmatched === 1 && r.nppa.length === 0, '"' + item + '" counts as an implant found but not compared (it used to read "No stent or knee-implant line found")');
+}
+ok(NL('DRUG ELUTING STENT', 1, 45000, 45000).nppa.length === 1 && NL('DES STENT VIA FEMORAL ACCESS', 1, 45000, 45000).nppa.length === 1, 'a coronary drug-eluting stent above the ceiling is still flagged');
+ok(NL('PTCA WITH STENT', 1, 150000, 150000).nppaUnmatched === 0 && NL('BED CHARGES', 1, 100, 100).nppaUnmatched === 0, 'procedure lines and ordinary lines are not counted as unmatched implants');
+{ const r = D('Knee femoral component', 50000, '10/10/2026', new Date('2027-01-01')); ok(r.nppa.length === 1 && r.nppaKneeDated === 0, 'a knee bill dated before 15 Nov 2026 is still compared, whatever today is'); }
 
 if (old) {
   console.log('== matcher.js duplicate parity');

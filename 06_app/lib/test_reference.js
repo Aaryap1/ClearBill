@@ -36,6 +36,19 @@ else {
     if (tier !== expected) unexpected.push(it + ' (expected ' + expected + ', got ' + tier + ')');
   }
   ok(unexpected.length === 0, 'every official item matches at the expected tier; the only gaps are the ' + TOO_BROAD.size + ' deliberately broad words', unexpected.join('; '));
+  // R18, the other direction. Every row the app cites to a user as "IRDAI List
+  // I" must be one of these 68 items (the official wording matches it), or a
+  // narrower case of one, named here with the official item it falls under.
+  // Twelve rows failed this (TPA charges, medico-legal, needles and syringes,
+  // home visits ...) and went into letters as List I items.
+  const NARROWER = { 'Examination Gloves': 'gloves', 'Paper Gloves': 'gloves', 'Towel': 'creams powders lotions', 'Powder': 'creams powders lotions',
+    'Moisturiser / Paste / Brush': 'creams powders lotions', 'Visco Belt Charges': 'belts/ braces',
+    "Food Charges (Other than Patient's Diet)": "food charges (other than patient's diet provided by hospital)" };
+  const backed = new Set(official.map(o => c.bestMatch(o)).filter(Boolean).map(m => m.e.item));
+  const listI = c.NON_PAYABLE.filter(e => e.tier === 'exact' && (e.basis || 'list_i') === 'list_i');
+  const unbacked = listI.filter(e => !backed.has(e.item) && !(NARROWER[e.item] && official.includes(NARROWER[e.item])));
+  ok(unbacked.length === 0, `every one of the ${listI.length} rows cited as "IRDAI List I" is an official item or a named narrower case of one`, unbacked.map(e => e.item).join('; '));
+  ok(Object.values(NARROWER).every(o => official.includes(o)), 'every "narrower case" names an item that really is on the official list');
 }
 
 console.log('== the newer keywords match real wording...');

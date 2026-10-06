@@ -3,10 +3,12 @@ Cross-check irdai_non_payables.csv against the official IRDAI standardized
 "List of excluded items" (List I, 68 items) as reproduced by insurers
 (e.g. New India Assurance "List_of_excluded_items.pdf").
 
-The IRDAI Master Circular on Health Insurance Business (29 May 2024) consolidated
-earlier circulars but did NOT replace this list — List I / II / III / IV from the
-2016 standardization circular and the 2020 Guidelines on Standardization of
-Exclusions remain the operative annexure.
+Status (corrected 6 Oct 2026, see IRDAI_VERIFICATION.md): the IRDAI Master
+Circular on Health Insurance Business (29 May 2024) supersedes the circulars in
+its Annexure-6, whose item 1 is the 22 Jul 2020 Master Circular on
+Standardization that carried List I / II / III / IV. The 2024 circular does not
+restate the lists, so the app cites them as published in 2019-2020 and asks the
+insurer to confirm whether the policy still applies them.
 
 Reports:
   A. official items with NO matching row  -> a gap (missing flag)

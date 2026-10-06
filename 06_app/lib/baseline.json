@@ -1,13 +1,12 @@
 {
  "worked_example": {
   "lines": 63,
-  "exactSum": 1310,
-  "reviewSum": 1752,
+  "exactSum": 460,
+  "reviewSum": 2602,
   "subsumedSum": 689.6,
   "exact": [
    "Examination Gloves|list_i",
-   "Medical Records|list_i",
-   "TPA Charges|list_i"
+   "Medical Records|list_i"
   ],
   "review": [
    "CSSD / Sterilisation Charges",
@@ -16,7 +15,8 @@
    "ECG Electrodes / Leads",
    "Surgical Gloves (sterile, in-procedure)",
    "Surgical Gloves (sterile, in-procedure)",
-   "Surgical Gloves (sterile, in-procedure)"
+   "Surgical Gloves (sterile, in-procedure)",
+   "TPA Charges"
   ],
   "subsumed": [
    "III|Surgical Blades / Harmonic Scalpel / Shaver",

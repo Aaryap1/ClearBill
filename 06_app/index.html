@@ -425,7 +425,7 @@
     </div>
 
     <div class="slip hide" id="settleOut">
-      <div class="k" id="neverItemisedLbl">Never itemised &mdash; you were not told what this was for</div>
+      <div class="k" id="neverItemisedLbl">Not itemised &mdash; the settlement figures don&rsquo;t say what this was for</div>
       <div class="amt tnum" id="mysteryAmt">&#8377;0</div>
       <div class="say" id="mysterySub"></div>
       <hr class="rdash">
@@ -558,7 +558,7 @@
     <div class="foot" id="footText">
       Base = total bill &minus; deduction &minus; hospital discount. Co-pay applies only to the base. Counter = deduction + co-pay.<br><br>
       The model only reads the bill into rows. Every flag after that is a table lookup or an arithmetic comparison, shown with its source.
-      &ldquo;Matches the published non-payable list&rdquo; is not &ldquo;overcharge&rdquo;. IS 19493 is a voluntary standard; NPPA ceilings are statutory.<br><br>
+      &ldquo;Matches the published non-payable list&rdquo; is not &ldquo;overcharge&rdquo;. IS 19493 is a voluntary standard; NPPA&rsquo;s stent ceilings are statutory price controls, and the knee-implant ceilings shown have not been independently re-confirmed.<br><br>
       IRDAI List I &middot; NPPA ceiling prices &middot; IS 19493:2025.
     </div>
   </div>
@@ -575,38 +575,42 @@
 <div id="printArea" style="display:none"></div>
 
 <script>
+// R18: every "exact" List I row must be one of the 68 items on IRDAI's
+// official List I (02_reference_data/verify_against_official.py, OFFICIAL_68),
+// or a narrower case of one (lib/test_reference.js names each such row and the
+// official item it falls under). Rows that were here as List I without being
+// on it (TPA charges, medico-legal, needles and syringes, home visits ...)
+// are "review": commonly deducted, ask the insurer, never cited as List I.
 const NON_PAYABLE = [
   { tier:"exact", item:"Medical Records", keywords:"medical record" },
-  { tier:"exact", item:"TPA Charges", keywords:"tpa charge|insurance processing|insurance charge" },
+  { tier:"review", item:"TPA Charges", keywords:"tpa charge|insurance processing|insurance charge" },
   { tier:"exact", item:"Certificate Charges", keywords:"certificate charge" },
   { tier:"exact", item:"Medical Certificate", keywords:"medical certificate" },
   { tier:"exact", item:"Birth Certificate", keywords:"birth certificate" },
   { tier:"exact", item:"Photocopies Charges", keywords:"photocopy|photocopies|xerox" },
   { tier:"exact", item:"Courier Charges", keywords:"courier" },
   { tier:"exact", item:"Conveyance Charges", keywords:"conveyance" },
-  { tier:"exact", item:"Medico Legal Case Charges", keywords:"medico legal|mlc charge" },
-  { tier:"exact", item:"Maintenance Charges", keywords:"maintenance charge" },
+  { tier:"review", item:"Medico Legal Case Charges", keywords:"medico legal|mlc charge" },
+  { tier:"review", item:"Maintenance Charges", keywords:"maintenance charge" },
   { tier:"exact", item:"Surcharges", keywords:"surcharge" },
   { tier:"exact", item:"Attendant Charges", keywords:"attendant charge" },
-  { tier:"exact", item:"Preparation Charges", keywords:"preparation charge" },
+  { tier:"review", item:"Preparation Charges", keywords:"preparation charge" },
   { tier:"review", item:"Service Charges Where Nursing Charge Also Charged", keywords:"service charge" },
   { tier:"review", item:"Referral Doctor's Fees", keywords:"referral doctor|referral fee" },
-  { tier:"exact", item:"Savlon", keywords:"savlon" },
   { tier:"review", item:"Micro Shield", keywords:"micro shield|microshield" },
-  { tier:"exact", item:"Washing Charges", keywords:"washing charge" },
-  { tier:"exact", item:"Laundry Charges", keywords:"laundry" },
+  { tier:"exact", item:"Laundry Charges", keywords:"laundry|washing charge" },
   { tier:"exact", item:"Examination Gloves", keywords:"gloves examination|examination glove|exam glove|nitrile glove|glove nitrile|examination medium nitrile" },
   { tier:"review", item:"Surgical Gloves (sterile, in-procedure)", keywords:"surgical glove|glove size|gammex|encore" },
   { tier:"exact", item:"Paper Gloves", keywords:"paper glove" },
   { tier:"exact", item:"Trolly Cover", keywords:"trolley cover|trolly cover" },
   { tier:"exact", item:"Carry Bags", keywords:"carry bag" },
-  { tier:"exact", item:"Band Aids, Bandages, Sterile Injections, Needles, Syringes", keywords:"band aid|bandaid" },
+  { tier:"review", item:"Band Aids, Bandages, Sterile Injections, Needles, Syringes", keywords:"band aid|bandaid" },
   { tier:"exact", item:"Crepe Bandage", keywords:"crepe bandage" },
-  { tier:"exact", item:"Hansaplast / Adhesive Bandages", keywords:"hansaplast|adhesive bandage" },
+  { tier:"review", item:"Hansaplast / Adhesive Bandages", keywords:"hansaplast|adhesive bandage" },
   { tier:"review", item:"Cliniplast", keywords:"cliniplast" },
   { tier:"review", item:"Curapore", keywords:"curapore" },
   { tier:"exact", item:"Eyelet Collar", keywords:"eyelet collar" },
-  { tier:"exact", item:"Bed Under Pad Charges", keywords:"under pad|underpad" },
+  { tier:"review", item:"Bed Under Pad Charges", keywords:"under pad|underpad" },
   { tier:"exact", item:"Diaper of Any Type", keywords:"diaper" },
   { tier:"exact", item:"Kidney Tray", keywords:"kidney tray" },
   { tier:"exact", item:"Ounce Glass", keywords:"ounce glass" },
@@ -619,8 +623,7 @@ const NON_PAYABLE = [
   { tier:"exact", item:"Moisturiser / Paste / Brush", keywords:"moisturiser|moisturizer" },
   { tier:"exact", item:"Mineral Water", keywords:"mineral water" },
   { tier:"exact", item:"Buds", keywords:"ear bud|cotton bud|buds" },
-  { tier:"exact", item:"Barber Charges", keywords:"barber" },
-  { tier:"exact", item:"Beauty Services", keywords:"beauty service" },
+  { tier:"exact", item:"Beauty Services", keywords:"beauty service|barber" },
   { tier:"exact", item:"Baby Food", keywords:"baby food|lactogen|infant food" },
   { tier:"exact", item:"Baby Utilities Charges", keywords:"baby utilities" },
   { tier:"exact", item:"Telephone Charges", keywords:"telephone charge" },
@@ -648,15 +651,15 @@ const NON_PAYABLE = [
   { tier:"review", item:"CSSD / Sterilisation Charges", keywords:"cssd|sterilisation charge|sterilization charge" },
   { tier:"review", item:"ECG Electrodes / Leads", keywords:"ecg lead|ecg electrode" },
   { tier:"review", item:"Dressing / Tegaderm film", keywords:"tegaderm|transparent dressing" },
-  { tier:"exact", item:"Weight Control Programs / Supplies / Services", keywords:"weight control|obesity program" },
-  { tier:"exact", item:"Spectacles / Contact Lenses / Hearing Aids", keywords:"spectacle|contact lens|hearing aid" },
+  { tier:"review", item:"Weight Control Programs / Supplies / Services", keywords:"weight control|obesity program" },
+  { tier:"review", item:"Spectacles / Contact Lenses / Hearing Aids", keywords:"spectacle|contact lens|hearing aid" },
   { tier:"exact", item:"Dental Treatment Not Requiring Hospitalisation", keywords:"dental treatment", basis:"policy_exclusion" },
   { tier:"exact", item:"Hormone Replacement Therapy", keywords:"hormone replacement", basis:"policy_exclusion" },
-  { tier:"exact", item:"Home Visit Charges", keywords:"home visit" },
+  { tier:"review", item:"Home Visit Charges", keywords:"home visit" },
   { tier:"exact", item:"Infertility / Assisted Conception", keywords:"infertility|assisted conception|ivf treatment|ivf cycle|ivf procedure|in vitro fertilisation|in vitro fertilization", basis:"policy_exclusion" },
   { tier:"exact", item:"Obesity Treatment", keywords:"bariatric|obesity treatment", basis:"policy_exclusion" },
   { tier:"exact", item:"Corrective Surgery for Refractive Error", keywords:"lasik|refractive error", basis:"policy_exclusion" },
-  { tier:"exact", item:"Donor Screening Charges", keywords:"donor screening" },
+  { tier:"review", item:"Donor Screening Charges", keywords:"donor screening" },
   { tier:"exact", item:"Aesthetic Treatment / Surgery", keywords:"aesthetic|cosmetic surgery", basis:"policy_exclusion" },
   { tier:"exact", item:"Stem Cell Implantation / Surgery", keywords:"stem cell", basis:"policy_exclusion" },
   // Added 25 Sep 2026. Each row below is an item of the official 68-item List I
@@ -716,8 +719,8 @@ const NPPA = [
   { item:"Knee — Tibial tray + insert, metallic", ceiling:26546, gst:"plus 5% GST", grade:"verify", kw:["tibial tray metallic","metal tibial tray"] },
   { item:"Knee — Articulating surface / insert", ceiling:9550, gst:"plus 5% GST", grade:"verify", kw:["articulating surface","tibial insert"] },
   { item:"Knee — Patella", ceiling:4090, gst:"plus 5% GST", grade:"verify", kw:["patella component","patella implant"] },
-  { item:"Coronary stent — Bare Metal Stent (BMS)", ceiling:10762.15, gst:"exclusive of GST", grade:"verified", kw:["bare metal stent","bms stent"] },
-  { item:"Coronary stent — Drug Eluting Stent (DES)", ceiling:39186.03, gst:"exclusive of GST", grade:"verified", kw:["drug eluting stent","des stent","coronary stent"] },
+  { item:"Coronary stent — Bare Metal Stent (BMS)", ceiling:10762.15, gst:"exclusive of GST", grade:"verified", kw:["bare metal stent","bms stent"], not:["peripheral","biliary","ureteric","ureteral","dj","renal","carotid","iliac","oesophageal","esophageal","tracheal","colonic","duodenal","pancreatic","intracranial"] },
+  { item:"Coronary stent — Drug Eluting Stent (DES)", ceiling:39186.03, gst:"exclusive of GST", grade:"verified", kw:["drug eluting stent","des stent","coronary stent"], not:["peripheral","biliary","ureteric","ureteral","dj","renal","carotid","iliac","oesophageal","esophageal","tracheal","colonic","duodenal","pancreatic","intracranial"] },
 ];
 // grade "verified" = independently confirmed against the NPPA notification.
 // grade "verify" = the knee-implant ceiling itself is real (NPPA order, extended
@@ -758,7 +761,7 @@ const SUBSUMED = [
   { list:"II", item:"Face Mask / Flexi Mask", keywords:"face mask|flexi mask|surgical mask" },
   { list:"II", item:"Hand Holder", keywords:"hand holder" },
   { list:"II", item:"Sputum Cup", keywords:"sputum cup" },
-  { list:"II", item:"Disinfectant Lotions", keywords:"disinfectant lotion" },
+  { list:"II", item:"Disinfectant Lotions", keywords:"disinfectant lotion|savlon" },
   { list:"II", item:"Luxury Tax", keywords:"luxury tax" },
   { list:"II", item:"HVAC Charges", keywords:"hvac" },
   { list:"II", item:"House Keeping Charges", keywords:"house keeping|housekeeping" },
@@ -973,8 +976,8 @@ en: {
   findnums_discount: '&mdash; look for "MOU Discount", "PPN Discount" or "Package Discount" on the bill. Leave as 0 if you don\'t see one.',
   findnums_copay: '&mdash; check your policy schedule, or "Co-Payment %" on the claim settlement letter. Try 0 first if you can\'t find it.',
   findnums_note: "Different insurers and hospitals word these differently — this is a guide, not an exact match for every document.",
-  never_itemised: "Never itemised &mdash; you were not told what this was for",
-  mystery_sub: (counter,copay,ded)=>`Of the ${counter} you paid at the counter, ${copay} was co-pay and ${ded} was never explained.`,
+  never_itemised: "Not itemised &mdash; the settlement figures don&rsquo;t say what this was for",
+  mystery_sub: (counter,copay,ded)=>`Of the ${counter} you paid at the counter, ${copay} was co-pay and ${ded} is not explained by these figures.`,
   ded_absorbed: "Deduction absorbed by you",
   copay_lbl: "Co-pay",
   counter_payment: "Counter payment",
@@ -990,7 +993,7 @@ en: {
   lbl_reimb_plain:"Amount the insurer paid you",
   findnums_reimb:'&mdash; look for "Claim Settled Amount" or "Amount Paid" on the insurer\'s settlement letter, or the credit in your bank statement.',
   not_reimbursed:"Not paid back to you", insurer_paid_you:"Insurer paid you",
-  mystery_sub_reimb:(gap,copay,ded)=>`Of the ${gap} the insurer did not pay back, ${copay} was co-pay and ${ded} was never explained.`,
+  mystery_sub_reimb:(gap,copay,ded)=>`Of the ${gap} the insurer did not pay back, ${copay} was co-pay and ${ded} is not explained by these figures.`,
   settle_model_note_reimb:"This is the part of your bill the insurer did not pay back that is not your co-pay. It can include room-rent limits, sub-limits, deductibles and policy exclusions as well as non-medical items; the app cannot tell them apart.",
   settle_warn_paid_all:'This says you paid the whole bill at the counter, which would mean the insurer approved nothing. If you paid the hospital yourself and claimed the money back, choose "I paid and claimed it back" above.',
   settle_warn_reimb_over:"The amount the insurer paid you is more than the total bill. Please re-check the figures you typed.",
@@ -1045,8 +1048,8 @@ en: {
   told_shown_head:"What you were told &middot; what the bill shows",
   told_h5:"The settlement told you", shown_h5:"The itemised bill contains",
   total_bill:"Total bill", hospital_discount:"Hospital discount", you_paid:"You paid",
-  never_itemised_short:"never itemised", lines_word:n=>`${n} lines`,
-  join_sentence:(ded,n)=>`You were told <b>${ded}</b> of what you paid was never itemised. The hospital's own bill lists <b>${n}</b> charges. The checks below trace one against the other.`,
+  never_itemised_short:"not itemised", lines_word:n=>`${n} lines`,
+  join_sentence:(ded,n)=>`By the settlement figures, <b>${ded}</b> of what you paid is not itemised. The hospital's own bill lists <b>${n}</b> charges. The checks below trace one against the other.`,
   bill_every_check:"The bill, and every check",
   leg_insurer:p=>`Insurer ${p}%`, leg_never:p=>`Never itemised ${p}%`, leg_copay:p=>`Co-pay ${p}%`, leg_discount:p=>`Discount ${p}%`,
   flagged_so_far:"Flagged so far",
@@ -1064,6 +1067,9 @@ en: {
   nppa_unverified_badge:"ceiling not independently confirmed",
   nppa_stale_note:"These ceilings may have been revised since they were published: the knee-implant ceilings were published as valid until 15 November 2026, and the stent ceilings took effect on 1 April 2026 and are revised from time to time. Check whether a newer NPPA notification applies before relying on this.",
   nppa_dated_note:n=>`${n} stent line${n>1?'s were':' was'} not compared: the bill's date is before, or could be read as before, 1 April 2026, when the current stent ceilings took effect.`,
+  nppa_knee_dated_note:n=>`${n} knee-implant line${n>1?'s were':' was'} not compared: the knee-implant ceilings this app has run to 15 November 2026, and this bill is, or may be, dated after that.`,
+  nppa_unmatched_note:n=>`${n} line${n>1?'s name':' names'} a stent or knee implant without saying which kind, so ${n>1?'they were':'it was'} not compared. NPPA's ceilings cover coronary stents and specific knee-implant parts only.`,
+  lists_status_note:"About these lists: IRDAI published List I and Lists II&ndash;IV in its 2019&ndash;2020 standardization guidelines. Its Master Circular on Health Insurance Business of 29 May 2024 superseded the 2020 circular and does not restate the lists, so ask your insurer whether your policy still applies them. The 2020 text asked insurers to keep hospitals from billing Lists II&ndash;IV items to you in cashless claims; for reimbursement claims it left this to your policy&rsquo;s terms.",
   notcompared_word:"Not compared",
   partial_note:(one,rej)=>[one?"Only one page was read. If your bill has more pages, add them &mdash; these checks cover only what was uploaded.":"",rej?`${rej} photo${rej>1?'s':''} didn&rsquo;t look like a bill page and ${rej>1?'were':'was'} skipped, so these checks may not cover the whole bill.`:""].filter(Boolean).join(" "),
   detail_nppa:"Above the NPPA price ceiling",
@@ -1154,7 +1160,7 @@ en: {
   detail_is19493_redacted:n=>`${n} patient/hospital identity field${n===1?'':'s'} were blacked out for privacy before analysis &mdash; not assessed here, and not counted against the bill.`,
   letter_btn:"Generate a letter to attach to a complaint",
   letter_shortcut:"Need to complain? Draft the letter now",
-  letter_note_lang:"This letter drafts in English, since that's the formal language your insurer and IRDAI actually work in.",
+  letter_note_lang:"The letter is drafted in English so that any insurer&rsquo;s grievance team can read it; this summary is for you.",
   tab_settlement:"Settlement", tab_findings:"Findings", tab_letter:"Letter", tab_about:"About",
   sec_letter:"Letter", sec_about:"About this check", how_head:"How it works",
   how1b:"The model reads", how1p:"Google's Gemini model turns your photo into rows &mdash; transcription only, no judgement.",
@@ -1182,7 +1188,7 @@ en: {
   letter_confirm_subsumed:n=>`${n} charge${n>1?'s':''} that should be in another charge`,
   letter_confirm_dup:n=>`${n} duplicate charge${n>1?'s':''}`,
   letter_confirm_recon:"The reconciliation gap",
-  letter_confirm_sent_to:"Sent to", letter_confirm_sent_to_val:"Insurer / IRDAI",
+  letter_confirm_sent_to:"Sent to", letter_confirm_sent_to_val:"Insurer&rsquo;s grievance officer",
   letter_empty:"Upload a bill in the Findings tab to see what your letter will include.",
   findings_empty:"Upload a bill above to see findings here. Nothing to check yet.",
   gen_letter_btn:"Generate the letter",
@@ -1213,8 +1219,8 @@ en: {
   share_findings_recon:diff=>`A ${diff} gap in the bill's own arithmetic.`,
   foot_html: `Base = total bill &minus; deduction &minus; hospital discount. Co-pay applies only to the base. Counter = deduction + co-pay.<br><br>
     The model only reads the bill into rows. Every flag after that is a table lookup or an arithmetic comparison, shown with its source.
-    &ldquo;Matches the published non-payable list&rdquo; is not &ldquo;overcharge&rdquo;. IS 19493 is a voluntary standard; NPPA ceilings are statutory.<br><br>
-    <b>IRDAI</b> (India's insurance regulator) publishes <b>List I</b> &mdash; the official list of hospital charges insurers don't have to pay. <b>NPPA</b> is India's drug and medical-device price regulator. <b>IS 19493:2025</b> is the Bureau of Indian Standards' hospital-bill format.`,
+    &ldquo;Matches the published non-payable list&rdquo; is not &ldquo;overcharge&rdquo;. IS 19493 is a voluntary standard; NPPA&rsquo;s stent ceilings are statutory price controls, and the knee-implant ceilings shown have not been independently re-confirmed.<br><br>
+    <b>IRDAI</b> (India's insurance regulator) published <b>List I</b> (&ldquo;Optional Items&rdquo;) &mdash; charges a standard policy need not cover unless it offers optional cover for them (2019&ndash;2020 guidelines; see the note under the checks). <b>NPPA</b> is India's drug and medical-device price regulator. <b>IS 19493:2025</b> is the Bureau of Indian Standards' hospital-bill format.`,
   checks: {
     irdai_exact: { label:"IRDAI List I",
       found:n=>`${n} charge${n>1?'s':''} match the published non-payable list`, sub:sum=>`${sum} &middot; IRDAI List I`,
@@ -1286,8 +1292,8 @@ hi: {
   findnums_discount: '&mdash; बिल पर "MOU Discount", "PPN Discount" या "Package Discount" देखें। न मिले तो 0 रहने दें।',
   findnums_copay: '&mdash; अपनी पॉलिसी शेड्यूल देखें, या क्लेम सेटलमेंट पत्र पर "Co-Payment %" देखें। न मिले तो पहले 0 आज़माएँ।',
   findnums_note: "अलग-अलग बीमा कंपनियाँ और अस्पताल इन्हें अलग शब्दों में लिखते हैं — यह एक गाइड है, हर दस्तावेज़ से हूबहू मेल नहीं।",
-  never_itemised: "कभी नहीं बताया गया &mdash; आपको यह नहीं बताया गया कि यह किसलिए था",
-  mystery_sub: (counter,copay,ded)=>`काउंटर पर चुकाई गई ${counter} में से ${copay} को-पे था और ${ded} कभी नहीं समझाया गया।`,
+  never_itemised: "ब्योरा नहीं दिया गया &mdash; सेटलमेंट के आँकड़े नहीं बताते कि यह किसलिए था",
+  mystery_sub: (counter,copay,ded)=>`काउंटर पर चुकाई गई ${counter} में से ${copay} को-पे था और ${ded} इन आँकड़ों से स्पष्ट नहीं होता।`,
   ded_absorbed: "आपने वहन की गई कटौती",
   copay_lbl: "को-पे",
   counter_payment: "काउंटर भुगतान",
@@ -1303,7 +1309,7 @@ hi: {
   lbl_reimb_plain:"बीमा कंपनी ने आपको जो राशि दी",
   findnums_reimb:'&mdash; बीमा कंपनी के सेटलमेंट पत्र पर "Claim Settled Amount" या "Amount Paid" देखें, या अपने बैंक स्टेटमेंट में जमा राशि।',
   not_reimbursed:"आपको वापस नहीं मिला", insurer_paid_you:"बीमा कंपनी ने आपको दिया",
-  mystery_sub_reimb:(gap,copay,ded)=>`बीमा कंपनी ने जो ${gap} वापस नहीं दिए, उनमें से ${copay} को-पे था और ${ded} कभी नहीं समझाया गया।`,
+  mystery_sub_reimb:(gap,copay,ded)=>`बीमा कंपनी ने जो ${gap} वापस नहीं दिए, उनमें से ${copay} को-पे था और ${ded} इन आँकड़ों से स्पष्ट नहीं होता।`,
   settle_model_note_reimb:"यह आपके बिल का वह हिस्सा है जो बीमा कंपनी ने वापस नहीं दिया और जो को-पे नहीं है। इसमें कमरे के किराए की सीमा, उप-सीमाएँ, डिडक्टिबल और पॉलिसी के अपवाद भी हो सकते हैं, सिर्फ़ ग़ैर-चिकित्सा चीज़ें नहीं; ऐप इनमें फ़र्क़ नहीं कर सकता।",
   settle_warn_paid_all:'इसके अनुसार आपने पूरा बिल काउंटर पर चुकाया, यानी बीमा कंपनी ने कुछ भी मंज़ूर नहीं किया। अगर आपने अस्पताल को ख़ुद भुगतान किया और बाद में पैसे का दावा किया, तो ऊपर "मैंने भुगतान किया और बाद में दावा किया" चुनें।',
   settle_warn_reimb_over:"बीमा कंपनी ने आपको जो राशि दी वह कुल बिल से ज़्यादा है। कृपया डाले गए आँकड़े फिर से जाँचें।",
@@ -1358,8 +1364,8 @@ hi: {
   told_shown_head:"आपको क्या बताया गया &middot; बिल में क्या दिखता है",
   told_h5:"सेटलमेंट ने आपको बताया", shown_h5:"बिल में यह शामिल है",
   total_bill:"कुल बिल", hospital_discount:"अस्पताल की छूट", you_paid:"आपने चुकाया",
-  never_itemised_short:"कभी नहीं बताया गया", lines_word:n=>`${n} लाइनें`,
-  join_sentence:(ded,n)=>`आपको बताया गया कि आपने जो चुकाया उसमें से <b>${ded}</b> कभी नहीं बताई गई। अस्पताल के अपने बिल में <b>${n}</b> चार्ज हैं। नीचे की जाँचें दोनों को मिलाकर देखती हैं।`,
+  never_itemised_short:"ब्योरा नहीं", lines_word:n=>`${n} लाइनें`,
+  join_sentence:(ded,n)=>`सेटलमेंट के आँकड़ों के अनुसार आपने जो चुकाया उसमें से <b>${ded}</b> का ब्योरा नहीं दिया गया। अस्पताल के अपने बिल में <b>${n}</b> चार्ज हैं। नीचे की जाँचें दोनों को मिलाकर देखती हैं।`,
   bill_every_check:"बिल, और हर जाँच",
   leg_insurer:p=>`बीमा कंपनी ${p}%`, leg_never:p=>`कभी नहीं बताया ${p}%`, leg_copay:p=>`को-पे ${p}%`, leg_discount:p=>`छूट ${p}%`,
   flagged_so_far:"अब तक चिन्हित",
@@ -1377,6 +1383,9 @@ hi: {
   nppa_unverified_badge:"सीमा की स्वतंत्र रूप से पुष्टि नहीं हुई",
   nppa_stale_note:"हो सकता है ये सीमाएँ प्रकाशित होने के बाद बदली हों: घुटने के इम्प्लांट की सीमाएँ 15 नवंबर 2026 तक मान्य प्रकाशित थीं, और स्टेंट की सीमाएँ 1 अप्रैल 2026 से लागू हुईं और समय-समय पर बदलती हैं। इन पर भरोसा करने से पहले जाँचें कि कोई नई NPPA अधिसूचना लागू है या नहीं।",
   nppa_dated_note:n=>`${n} स्टेंट लाइन नहीं मिलाई गई: बिल की तारीख़ 1 अप्रैल 2026 से पहले की है (या उसे पहले की पढ़ा जा सकता है), जब मौजूदा स्टेंट सीमाएँ लागू हुईं।`,
+  nppa_knee_dated_note:n=>`${n} घुटने के इम्प्लांट की लाइन नहीं मिलाई गई: इस ऐप में मौजूद घुटने के इम्प्लांट की सीमाएँ 15 नवंबर 2026 तक की हैं, और यह बिल उसके बाद का है या हो सकता है।`,
+  nppa_unmatched_note:n=>`${n} लाइन में स्टेंट या घुटने का इम्प्लांट लिखा है पर यह नहीं कि किस प्रकार का, इसलिए उसे नहीं मिलाया गया। NPPA की सीमाएँ सिर्फ़ कोरोनरी स्टेंट और घुटने के इम्प्लांट के ख़ास हिस्सों पर लागू होती हैं।`,
+  lists_status_note:"इन सूचियों के बारे में: IRDAI ने सूची I और सूची II&ndash;IV अपने 2019&ndash;2020 के मानकीकरण दिशानिर्देशों में प्रकाशित की थीं। 29 मई 2024 के स्वास्थ्य बीमा व्यवसाय पर मास्टर परिपत्र ने 2020 के परिपत्र की जगह ले ली है और इन सूचियों को दोहराता नहीं, इसलिए अपनी बीमा कंपनी से पूछें कि क्या आपकी पॉलिसी अब भी इन्हें लागू करती है। 2020 के पाठ में बीमा कंपनियों से कहा गया था कि कैशलेस दावों में अस्पताल सूची II&ndash;IV की चीज़ों का बिल आपसे न लें; रीइम्बर्समेंट दावों में यह आपकी पॉलिसी की शर्तों पर छोड़ा गया था।",
   notcompared_word:"जाँचा नहीं गया",
   partial_note:(one,rej)=>[one?"सिर्फ़ एक पेज पढ़ा गया। अगर आपके बिल में और पेज हैं तो उन्हें जोड़ें &mdash; ये जाँचें सिर्फ़ अपलोड किए गए हिस्से पर हैं।":"",rej?`${rej} फ़ोटो बिल का पेज नहीं लगी और छोड़ दी गई, इसलिए ये जाँचें पूरे बिल पर लागू नहीं हो सकतीं।`:""].filter(Boolean).join(" "),
   detail_nppa:"NPPA की मूल्य सीमा से ऊपर",
@@ -1467,7 +1476,7 @@ hi: {
   detail_is19493_redacted:n=>`विश्लेषण से पहले ${n} मरीज़/अस्पताल पहचान फ़ील्ड निजता के लिए हटाई गई थीं &mdash; यहाँ इनकी जाँच नहीं की गई, और इन्हें बिल के विरुद्ध नहीं गिना गया।`,
   letter_btn:"शिकायत के साथ लगाने के लिए पत्र बनाएँ",
   letter_shortcut:"शिकायत करनी है? अभी पत्र तैयार करें",
-  letter_note_lang:"यह पत्र अंग्रेज़ी में तैयार होता है, क्योंकि आपकी बीमा कंपनी और IRDAI इसी औपचारिक भाषा में काम करते हैं।",
+  letter_note_lang:"पत्र अंग्रेज़ी में तैयार होता है ताकि किसी भी बीमा कंपनी की शिकायत टीम उसे पढ़ सके; यह सारांश आपके लिए है।",
   tab_settlement:"सेटलमेंट", tab_findings:"जाँचें", tab_letter:"पत्र", tab_about:"जानकारी",
   sec_letter:"पत्र", sec_about:"इस जाँच के बारे में", how_head:"यह कैसे काम करता है",
   how1b:"मॉडल पढ़ता है", how1p:"Google का Gemini मॉडल आपकी फ़ोटो को पंक्तियों में बदलता है &mdash; सिर्फ़ नक़ल, कोई राय नहीं।",
@@ -1495,7 +1504,7 @@ hi: {
   letter_confirm_subsumed:n=>`किसी और चार्ज में शामिल होने चाहिए, ऐसे ${n} चार्ज`,
   letter_confirm_dup:n=>`${n} दोहरे चार्ज`,
   letter_confirm_recon:"मिलान में अंतर",
-  letter_confirm_sent_to:"किसे भेजा जाएगा", letter_confirm_sent_to_val:"बीमा कंपनी / IRDAI",
+  letter_confirm_sent_to:"किसे भेजा जाएगा", letter_confirm_sent_to_val:"बीमा कंपनी के शिकायत अधिकारी",
   letter_empty:"अपना पत्र देखने के लिए, 'जाँचें' टैब में बिल अपलोड करें।",
   findings_empty:"बिल अपलोड करें ताकि यहाँ जाँचें दिखें। अभी कुछ जाँचने को नहीं है।",
   gen_letter_btn:"पत्र तैयार करें",
@@ -1526,8 +1535,8 @@ hi: {
   share_findings_recon:diff=>`बिल की अपनी गणना में ${diff} का अंतर।`,
   foot_html: `आधार = कुल बिल &minus; कटौती &minus; अस्पताल की छूट। को-पे सिर्फ़ आधार पर लागू होता है। काउंटर = कटौती + को-पे।<br><br>
     मॉडल सिर्फ़ बिल को पंक्तियों में पढ़ता है। इसके बाद हर निशान एक तालिका-मिलान या गणना है, जिसका स्रोत साथ दिखता है।
-    &ldquo;प्रकाशित न-भुगतान सूची से मेल&rdquo; का मतलब &ldquo;ओवरचार्ज&rdquo; नहीं है। IS 19493 एक स्वैच्छिक मानक है; NPPA सीमाएँ सांविधिक हैं।<br><br>
-    <b>IRDAI</b> (भारत का बीमा नियामक) <b>सूची I</b> प्रकाशित करता है &mdash; अस्पताल के उन चार्जों की आधिकारिक सूची जिन्हें बीमा कंपनी को चुकाना ज़रूरी नहीं। <b>NPPA</b> भारत का दवा और मेडिकल डिवाइस मूल्य नियामक है। <b>IS 19493:2025</b> भारतीय मानक ब्यूरो का अस्पताल-बिल प्रारूप है।`,
+    &ldquo;प्रकाशित न-भुगतान सूची से मेल&rdquo; का मतलब &ldquo;ओवरचार्ज&rdquo; नहीं है। IS 19493 एक स्वैच्छिक मानक है; NPPA की स्टेंट सीमाएँ सांविधिक मूल्य नियंत्रण हैं, और दिखाई गई घुटने के इम्प्लांट की सीमाएँ स्वतंत्र रूप से दोबारा पुष्टि नहीं की गई हैं।<br><br>
+    <b>IRDAI</b> (भारत का बीमा नियामक) <b>सूची I</b> (&ldquo;वैकल्पिक मदें&rdquo;) प्रकाशित की थी &mdash; वे चार्ज जिन्हें सामान्य पॉलिसी तब तक कवर नहीं करती जब तक वह इनके लिए वैकल्पिक कवर न दे (2019&ndash;2020 के दिशानिर्देश; जाँचों के नीचे का नोट देखें)। <b>NPPA</b> भारत का दवा और मेडिकल डिवाइस मूल्य नियामक है। <b>IS 19493:2025</b> भारतीय मानक ब्यूरो का अस्पताल-बिल प्रारूप है।`,
   checks: {
     irdai_exact: { label:"IRDAI सूची I",
       found:n=>`${n} चार्ज प्रकाशित न-भुगतान सूची से मेल खाते हैं`, sub:sum=>`${sum} &middot; IRDAI सूची I`,
@@ -1600,8 +1609,8 @@ mr: {
   findnums_discount: '&mdash; बिलावर "MOU Discount", "PPN Discount" किंवा "Package Discount" पहा. नसेल तर 0 राहू द्या.',
   findnums_copay: '&mdash; तुमचं पॉलिसी शेड्युल पहा, किंवा क्लेम सेटलमेंट पत्रावर "Co-Payment %" पहा. नसेल तर आधी 0 वापरून पहा.',
   findnums_note: "वेगवेगळ्या विमा कंपन्या आणि रुग्णालयं हे वेगळ्या शब्दांत लिहितात — हे मार्गदर्शक आहे, प्रत्येक कागदपत्राशी तंतोतंत जुळेलच असं नाही.",
-  never_itemised: "कधीच स्पष्ट केलं नाही &mdash; हे कशासाठी होतं हे तुम्हाला सांगितलं नाही",
-  mystery_sub: (counter,copay,ded)=>`काउंटरवर दिलेल्या ${counter} पैकी ${copay} को-पे होता आणि ${ded} कधीच स्पष्ट झाला नाही.`,
+  never_itemised: "तपशील दिलेला नाही &mdash; सेटलमेंटचे आकडे हे कशासाठी होतं ते सांगत नाहीत",
+  mystery_sub: (counter,copay,ded)=>`काउंटरवर दिलेल्या ${counter} पैकी ${copay} को-पे होता आणि ${ded} या आकड्यांवरून स्पष्ट होत नाही.`,
   ded_absorbed: "तुम्ही सहन केलेली कपात",
   copay_lbl: "को-पे",
   counter_payment: "काउंटर पेमेंट",
@@ -1617,7 +1626,7 @@ mr: {
   lbl_reimb_plain:"विमा कंपनीने तुम्हाला दिलेली रक्कम",
   findnums_reimb:'&mdash; विमा कंपनीच्या सेटलमेंट पत्रावर "Claim Settled Amount" किंवा "Amount Paid" पहा, किंवा तुमच्या बँक स्टेटमेंटमधील जमा रक्कम.',
   not_reimbursed:"तुम्हाला परत न मिळालेली", insurer_paid_you:"विमा कंपनीने तुम्हाला दिलं",
-  mystery_sub_reimb:(gap,copay,ded)=>`विमा कंपनीने परत न दिलेल्या ${gap} पैकी ${copay} को-पे होता आणि ${ded} कधीच स्पष्ट झाला नाही.`,
+  mystery_sub_reimb:(gap,copay,ded)=>`विमा कंपनीने परत न दिलेल्या ${gap} पैकी ${copay} को-पे होता आणि ${ded} या आकड्यांवरून स्पष्ट होत नाही.`,
   settle_model_note_reimb:"हा तुमच्या बिलातील तो भाग आहे जो विमा कंपनीने परत दिला नाही आणि जो को-पे नाही. यात खोली भाड्याची मर्यादा, उप-मर्यादा, डिडक्टिबल आणि पॉलिसीचे अपवाद हे देखील असू शकतात, फक्त बिगर-वैद्यकीय गोष्टी नाहीत; अ‍ॅप यांच्यातला फरक ओळखू शकत नाही.",
   settle_warn_paid_all:'यानुसार तुम्ही संपूर्ण बिल काउंटरवर भरलं, म्हणजे विमा कंपनीने काहीच मंजूर केलं नाही. जर तुम्ही रुग्णालयाला स्वतः पैसे भरले आणि नंतर दावा केला असेल, तर वर "मी पैसे भरले आणि नंतर दावा केला" निवडा.',
   settle_warn_reimb_over:"विमा कंपनीने तुम्हाला दिलेली रक्कम एकूण बिलापेक्षा जास्त आहे. कृपया टाकलेले आकडे पुन्हा तपासा.",
@@ -1672,8 +1681,8 @@ mr: {
   told_shown_head:"तुम्हाला काय सांगितलं &middot; बिलात काय आहे",
   told_h5:"सेटलमेंटने तुम्हाला सांगितलं", shown_h5:"तपशीलवार बिलात हे आहे",
   total_bill:"एकूण बिल", hospital_discount:"रुग्णालयाची सूट", you_paid:"तुम्ही दिलं",
-  never_itemised_short:"कधीच स्पष्ट केलं नाही", lines_word:n=>`${n} ओळी`,
-  join_sentence:(ded,n)=>`तुम्हाला सांगितलं की तुम्ही दिलेल्या रकमेपैकी <b>${ded}</b> कधीच स्पष्ट केला नाही. रुग्णालयाच्या स्वतःच्या बिलात <b>${n}</b> चार्जेस आहेत. खालील तपासण्या दोन्ही जुळवून पाहतात.`,
+  never_itemised_short:"तपशील नाही", lines_word:n=>`${n} ओळी`,
+  join_sentence:(ded,n)=>`सेटलमेंटच्या आकड्यांनुसार तुम्ही दिलेल्या रकमेपैकी <b>${ded}</b> चा तपशील दिलेला नाही. रुग्णालयाच्या स्वतःच्या बिलात <b>${n}</b> चार्जेस आहेत. खालील तपासण्या दोन्ही जुळवून पाहतात.`,
   bill_every_check:"बिल, आणि प्रत्येक तपासणी",
   leg_insurer:p=>`विमा कंपनी ${p}%`, leg_never:p=>`कधीच स्पष्ट नाही ${p}%`, leg_copay:p=>`को-पे ${p}%`, leg_discount:p=>`सूट ${p}%`,
   flagged_so_far:"आत्तापर्यंत नोंदवलेलं",
@@ -1691,6 +1700,9 @@ mr: {
   nppa_unverified_badge:"मर्यादेची स्वतंत्रपणे पुष्टी झालेली नाही",
   nppa_stale_note:"या मर्यादा प्रकाशित झाल्यानंतर बदललेल्या असू शकतात: गुडघा इम्प्लांटच्या मर्यादा 15 नोव्हेंबर 2026 पर्यंत वैध म्हणून प्रकाशित होत्या, आणि स्टेंटच्या मर्यादा 1 एप्रिल 2026 पासून लागू झाल्या आणि वेळोवेळी बदलतात. यावर विसंबण्याआधी नवीन NPPA अधिसूचना लागू आहे का ते तपासा.",
   nppa_dated_note:n=>`${n} स्टेंट ओळ जुळवली नाही: बिलाची तारीख 1 एप्रिल 2026 च्या आधीची आहे (किंवा तशी वाचता येते), जेव्हा सध्याच्या स्टेंट मर्यादा लागू झाल्या.`,
+  nppa_knee_dated_note:n=>`${n} गुडघा इम्प्लांट ओळ जुळवली नाही: या अ‍ॅपमधील गुडघा इम्प्लांटच्या मर्यादा 15 नोव्हेंबर 2026 पर्यंतच्या आहेत, आणि हे बिल त्यानंतरचं आहे किंवा असू शकतं.`,
+  nppa_unmatched_note:n=>`${n} ओळीत स्टेंट किंवा गुडघा इम्प्लांट लिहिलं आहे पण कोणत्या प्रकारचं ते नाही, म्हणून ती जुळवली नाही. NPPA च्या मर्यादा फक्त कोरोनरी स्टेंट आणि गुडघा इम्प्लांटच्या ठरावीक भागांना लागू होतात.`,
+  lists_status_note:"या याद्यांबद्दल: IRDAI ने यादी I आणि याद्या II&ndash;IV आपल्या 2019&ndash;2020 च्या प्रमाणीकरण मार्गदर्शक तत्त्वांमध्ये प्रकाशित केल्या होत्या. 29 मे 2024 च्या आरोग्य विमा व्यवसायावरील मास्टर परिपत्रकाने 2020 च्या परिपत्रकाची जागा घेतली आहे आणि या याद्या पुन्हा दिलेल्या नाहीत, म्हणून तुमच्या विमा कंपनीला विचारा की तुमची पॉलिसी अजूनही त्या लागू करते का. 2020 च्या मजकुरात विमा कंपन्यांना सांगितलं होतं की कॅशलेस दाव्यांमध्ये रुग्णालयांनी याद्या II&ndash;IV मधील वस्तूंचं बिल तुमच्याकडून घेऊ नये; प्रतिपूर्ती (रीइम्बर्समेंट) दाव्यांमध्ये हे तुमच्या पॉलिसीच्या अटींवर सोडलं होतं.",
   notcompared_word:"तपासले नाही",
   partial_note:(one,rej)=>[one?"फक्त एक पान वाचलं गेलं. तुमच्या बिलात आणखी पानं असतील तर ती जोडा &mdash; या तपासण्या फक्त अपलोड केलेल्या भागावर आहेत.":"",rej?`${rej} फोटो बिलाचं पान वाटला नाही आणि वगळला गेला, त्यामुळे या तपासण्या संपूर्ण बिलावर लागू नसू शकतात.`:""].filter(Boolean).join(" "),
   detail_nppa:"NPPA च्या किंमत मर्यादेपेक्षा जास्त",
@@ -1781,7 +1793,7 @@ mr: {
   detail_is19493_redacted:n=>`विश्लेषणापूर्वी ${n} रुग्ण/रुग्णालय ओळख फील्ड गोपनीयतेसाठी काढून टाकली होती &mdash; येथे त्यांची तपासणी केलेली नाही, आणि ती बिलाविरुद्ध मोजलेली नाहीत.`,
   letter_btn:"तक्रारीसोबत जोडण्यासाठी पत्र तयार करा",
   letter_shortcut:"तक्रार करायची आहे? आत्ताच पत्र तयार करा",
-  letter_note_lang:"हे पत्र इंग्रजीत तयार होतं, कारण तुमची विमा कंपनी आणि IRDAI याच औपचारिक भाषेत काम करतात.",
+  letter_note_lang:"पत्र इंग्रजीत तयार होतं जेणेकरून कोणत्याही विमा कंपनीची तक्रार टीम ते वाचू शकेल; हा सारांश तुमच्यासाठी आहे.",
   tab_settlement:"सेटलमेंट", tab_findings:"तपासण्या", tab_letter:"पत्र", tab_about:"माहिती",
   sec_letter:"पत्र", sec_about:"या तपासणीबद्दल", how_head:"हे कसं काम करतं",
   how1b:"मॉडेल वाचतं", how1p:"Google चं Gemini मॉडेल तुमचा फोटो ओळींमध्ये बदलतं &mdash; फक्त नक्कल, मत नाही.",
@@ -1809,7 +1821,7 @@ mr: {
   letter_confirm_subsumed:n=>`दुसऱ्या चार्जमध्ये समाविष्ट असायला हवेत असे ${n} चार्जेस`,
   letter_confirm_dup:n=>`${n} डुप्लिकेट चार्जेस`,
   letter_confirm_recon:"ताळमेळातील फरक",
-  letter_confirm_sent_to:"कोणाला पाठवायचं", letter_confirm_sent_to_val:"विमा कंपनी / IRDAI",
+  letter_confirm_sent_to:"कोणाला पाठवायचं", letter_confirm_sent_to_val:"विमा कंपनीचे तक्रार अधिकारी",
   letter_empty:"तुमचं पत्र पाहण्यासाठी, 'तपासण्या' टॅबमध्ये बिल अपलोड करा.",
   findings_empty:"बिल अपलोड करा म्हणजे इथे तपासण्या दिसतील. अजून तपासण्यासारखं काही नाही.",
   gen_letter_btn:"पत्र तयार करा",
@@ -1840,8 +1852,8 @@ mr: {
   share_findings_recon:diff=>`बिलाच्या स्वतःच्या बेरजेत ${diff} चा फरक.`,
   foot_html: `आधार = एकूण बिल &minus; कपात &minus; रुग्णालयाची सूट. को-पे फक्त आधारावर लागू होतो. काउंटर = कपात + को-पे.<br><br>
     मॉडेल फक्त बिल ओळींमध्ये वाचतं. त्यानंतरचा प्रत्येक निष्कर्ष हा तक्ता-जुळवणी किंवा गणित आहे, ज्याचा स्रोत सोबत दिसतो.
-    &ldquo;प्रकाशित न-भरणा यादीशी जुळतं&rdquo; याचा अर्थ &ldquo;ओव्हरचार्ज&rdquo; नाही. IS 19493 हा ऐच्छिक मानक आहे; NPPA मर्यादा वैधानिक आहेत.<br><br>
-    <b>IRDAI</b> (भारताचा विमा नियामक) <b>यादी I</b> प्रकाशित करतो &mdash; रुग्णालयाच्या ज्या चार्जेसना विमा कंपनीने भरणं बंधनकारक नाही त्यांची अधिकृत यादी. <b>NPPA</b> हा भारताचा औषध आणि वैद्यकीय उपकरण किंमत नियामक आहे. <b>IS 19493:2025</b> हा भारतीय मानक ब्युरोचा रुग्णालय-बिल स्वरूप आहे.`,
+    &ldquo;प्रकाशित न-भरणा यादीशी जुळतं&rdquo; याचा अर्थ &ldquo;ओव्हरचार्ज&rdquo; नाही. IS 19493 हा ऐच्छिक मानक आहे; NPPA च्या स्टेंट मर्यादा वैधानिक किंमत नियंत्रण आहेत, आणि दाखवलेल्या गुडघा इम्प्लांटच्या मर्यादांची स्वतंत्रपणे पुन्हा खात्री केलेली नाही.<br><br>
+    <b>IRDAI</b> (भारताचा विमा नियामक) <b>यादी I</b> (&ldquo;ऐच्छिक बाबी&rdquo;) प्रकाशित केली होती &mdash; असे चार्जेस जे सामान्य पॉलिसी, त्यांच्यासाठी ऐच्छिक कव्हर दिल्याशिवाय, कव्हर करत नाही (2019&ndash;2020 ची मार्गदर्शक तत्त्वं; तपासण्यांखालील नोट पहा). <b>NPPA</b> हा भारताचा औषध आणि वैद्यकीय उपकरण किंमत नियामक आहे. <b>IS 19493:2025</b> हा भारतीय मानक ब्युरोचा रुग्णालय-बिल स्वरूप आहे.`,
   checks: {
     irdai_exact: { label:"IRDAI यादी I",
       found:n=>`${n} चार्जेस प्रकाशित न-भरणा यादीशी जुळतात`, sub:sum=>`${sum} &middot; IRDAI यादी I`,
@@ -2221,7 +2233,7 @@ function analyse(data,now){
     else if(k==='hospital_gstin'&&!GSTIN_RE.test(String(v).replace(/\s/g,''))) malformed.push(label);
   }
   const noUnit = lines.length>0 && lines.every(l=>l.unit==null);
-  const nppa=[], nppaGst=[]; let nppaStale=false, nppaCompared=0, nppaSkipped=0, nppaDated=0;
+  const nppa=[], nppaGst=[]; let nppaStale=false, nppaCompared=0, nppaSkipped=0, nppaDated=0, nppaKneeDated=0, nppaUnmatched=0;
   const clock=(now instanceof Date?now:new Date()).getTime();
   const bd=billDateRange(H);
   // "Past its validity" is judged at the BILL's date when it can be read (a bill from
@@ -2232,6 +2244,11 @@ function analyse(data,now){
   // procedure (angioplasty with stenting, surgery ...), or names two parts
   // (femoral + tibial ...), is not comparable and is never flagged.
   const SET_WORDS=/\b(set|kit|package|pkg|combo|procedure|surgery|operation|ptca|angioplasty|stenting)\b/;
+  // A line that names a stent or a knee-implant part but matches no ceiling
+  // ("RESOLUTE ONYX STENT", "KNEE IMPLANT", "TIBIAL TRAY") is reported as
+  // found but not compared. It used to read "No stent or knee-implant line
+  // found", which was false (R18).
+  const IMPLANT_WORDS=/\b(stents?|knee implants?|knee prosthesis|tibial tray|tibial base ?plate|tibial insert|femoral component|patellar? (component|button|implant))\b/;
   const FAMILIES=[/femoral/,/tibial/,/patell/,/insert|articulating/];
   // Punctuation is a space here, as in every other matcher (_normTxt): the
   // standard spelling "DRUG-ELUTING STENT" used to miss the "drug eluting
@@ -2242,9 +2259,17 @@ function analyse(data,now){
   const nppaHit=(c,t)=>{ const k=c.kw.find(k=>_hasWord(t,k)); if(k) return k;
     const r=c.req&&c.req.find(ws=>ws.every(w=>_hasWord(t,w))); return r?r.join(' '):null; };
   for(let i=0;i<lines.length;i++){ if(credit.has(i)||cancelled.has(i)) continue; const l=lines[i], t=_normTxt(l.item);
-    for(const c of NPPA){ const hit=nppaHit(c,t); if(hit){
+    let seen=false;
+    // NPPA's stent ceilings are for CORONARY stents: a peripheral, biliary or
+    // ureteric stent was compared with them and flagged (R18).
+    for(const c of NPPA){ if(c.not&&c.not.some(w=>_hasWord(t,w))) continue; const hit=nppaHit(c,t); if(hit){ seen=true;
       const knee=c.item.startsWith('Knee');
       if(knee&&HIP_WORDS.test(t)) break;
+      // The knee-implant ceilings this app has run to 15 Nov 2026. A bill from
+      // after that (or with no readable date, once today is after it) is not
+      // compared, instead of being flagged against a ceiling that may have
+      // lapsed (R18).
+      if(knee&&(bd?bd.max>NPPA_KNEE_VALID_TO:clock>NPPA_KNEE_VALID_TO)){ nppaKneeDated++; break; }
       const stent=c.item.startsWith('Coronary stent');
       if(stent&&bd&&bd.min<NPPA_STENT_FROM){ nppaDated++; break; }
       // Two parts = a part word from a family the matched ceiling doesn't
@@ -2270,6 +2295,7 @@ function analyse(data,now){
       }
       break;
     }}
+    if(!seen&&IMPLANT_WORDS.test(t)&&!SET_WORDS.test(t)) nppaUnmatched++;
   }
   // Lines with letters but no English letters (Hindi, Marathi ...) cannot be matched
   // against the English lists; say so instead of implying they were checked.
@@ -2278,7 +2304,7 @@ function analyse(data,now){
   // page rejected as not-a-bill. Set by the upload flow on the merged object.
   const partial=data._pageCount===1||(data._rejected||0)>0;
   const subtotals = data.printed_subtotals && Object.keys(data.printed_subtotals).length ? data.printed_subtotals : null;
-  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,similarDups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nppaDated,nonLatin,subtotals,unreadable,reconCompared,reconBlocked,partial,subsumed,subsumedSum,rejected:data._rejected||0,pageCount:data._pageCount||null};
+  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,similarDups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nppaDated,nppaKneeDated,nppaUnmatched,nonLatin,subtotals,unreadable,reconCompared,reconBlocked,partial,subsumed,subsumedSum,rejected:data._rejected||0,pageCount:data._pageCount||null};
 }
 function sectionSums(lines){
   const m={}; lines.forEach(l=>{ const k=l.section||'Uncategorised'; m[k]=(m[k]||0)+(l.total||0); });
@@ -2417,7 +2443,7 @@ function renderReport(data){
         {money:(nppaAllVerified?C.nppa.money():C.nppa.moneyUnverified())+(a.nppaStale?' '+T_.nppa_stale_note:''), doText:nppaAllVerified?C.nppa.doText:C.nppa.doTextUnverified})
     : (a.nppaGst.length?'':(a.nppaCompared>0
         ? chk('green',T_.clear_word,C.nppa.foundClearN(a.nppaCompared),C.nppa.subClearN)
-        : ((a.nppaSkipped+a.nppaDated)>0
+        : ((a.nppaSkipped+a.nppaDated+a.nppaKneeDated+a.nppaUnmatched)>0
             ? chk('grey',T_.notcompared_word,C.nppa.foundNC,C.nppa.subNC)
             : chk('grey',T_.notapplicable_word,C.nppa.foundNA,C.nppa.subNA))));
   if(a.nppaGst.length) h+=chk('ochre',C.nppa.labelGst,C.nppa.foundGst(a.nppaGst.length),C.nppa.subGst(),
@@ -2449,6 +2475,9 @@ function renderReport(data){
   if(data._dupPages>0) h+=noteHtml(T_.dup_pages_note(data._dupPages));
   if(a.nppaSkipped>0) h+=noteHtml(T_.nppa_skipped_note(a.nppaSkipped));
   if(a.nppaDated>0) h+=noteHtml(T_.nppa_dated_note(a.nppaDated));
+  if(a.nppaKneeDated>0) h+=noteHtml(T_.nppa_knee_dated_note(a.nppaKneeDated));
+  if(a.nppaUnmatched>0) h+=noteHtml(T_.nppa_unmatched_note(a.nppaUnmatched));
+  if(a.exact.some(l=>l.basis!=='policy_exclusion')||a.subsumed.length) h+=noteHtml(T_.lists_status_note);
   if(a.nonLatin>0) h+=noteHtml(T_.nonlatin_note(a.nonLatin));
 
   if(ded>0) h+=`<div class="flagtot"><span>${T_.flagged_so_far}</span><span class="v">${inr.format(totalFlagged)}</span></div>`;
@@ -2567,12 +2596,15 @@ function buildLetter(a,include,noScroll){
   if(D.address) L.push(D.address);
   L.push(today,``,`To: The Grievance Redressal Officer`);
   if(D.insurer) L.push(`    ${D.insurer}`);
-  L.push(`Copy to: IRDAI Bima Bharosa (bimabharosa.irdai.gov.in)`,``,
+  // No "Copy to: IRDAI" line (R18): writing it on a letter files nothing with
+  // IRDAI, and people waited believing a complaint was lodged. Bima Bharosa
+  // and the Ombudsman are the next steps, in "After you send the letter".
+  L.push(``,
     `Subject: Request for a line-by-line explanation of deductions${D.claim?` - Claim no. ${D.claim}`:``}`,``);
   const at=H.hospital_name?` at ${H.hospital_name}`:``;
   const dt=(H.admission_datetime&&H.discharge_datetime)?` between ${H.admission_datetime} and ${H.discharge_datetime}`:``;
   const reimb=!!(s&&s.mode==='reimb');
-  L.push(`${pname||'I'} was hospitalised${at}${dt}.`+((s&&include.settlement)?(reimb?` I paid the hospital bill myself and claimed it back. By my calculation from the claim figures, the reimbursement settlement was as follows:`:` By my calculation from the discharge figures, the cashless settlement was as follows:`):``),``);
+  L.push(`${pname||'The patient'} was hospitalised${at}${dt}.`+((s&&include.settlement)?(reimb?` I paid the hospital bill myself and claimed it back. By my calculation from the claim figures, the reimbursement settlement was as follows:`:` By my calculation from the discharge figures, the cashless settlement was as follows:`):``),``);
   if(s&&include.settlement){
     L.push(...(reimb?[
       `    Total bill (paid by me)    ${inr.format(s.total)}`,
@@ -2585,7 +2617,7 @@ function buildLetter(a,include,noScroll){
       `      of which co-pay          ${inr.format(s.copayAmt)}`,
       `      of which not itemised    ${inr.format(s.deduction)}`,``,
       D.asked
-        ? `A breakdown of the ${inr.format(s.deduction)} recorded as non-payable has not been provided despite my earlier request.`
+        ? `A breakdown of the ${inr.format(s.deduction)} that I calculate as non-payable has not been provided despite my earlier request.`
         : `I would like a breakdown of the ${inr.format(s.deduction)} that I calculate as non-payable.`,``);
   }
   if(a.exact.length&&include.irdai){
@@ -2594,7 +2626,11 @@ function buildLetter(a,include,noScroll){
     // rows (verified against 02_reference_data/IRDAI_VERIFICATION.md).
     const listI=a.exact.filter(l=>l.basis!=='policy_exclusion'), policyExcl=a.exact.filter(l=>l.basis==='policy_exclusion');
     if(listI.length){
-      L.push(`Checking the hospital's own itemised bill against IRDAI's List I (Optional Items) in its Guidelines on Standardization in Health Insurance (as modified on 27 September 2019), the following charges appear to fall within that list:`,``);
+      // R18: the 2019 guidelines were consolidated into the 22 Jul 2020 Master
+      // Circular, which the 29 May 2024 Master Circular superseded (its
+      // Annexure-6, item 1) without restating the lists. Cite them as what
+      // they are, and ask the insurer to confirm, rather than as rules in force.
+      L.push(`Checking the hospital's own itemised bill against List I ("Optional Items") of IRDAI's standardization guidelines (issued in 2019 and consolidated in IRDAI's Master Circular on Standardization of Health Insurance Products of 22 July 2020), the following charges appear to fall within that list. As IRDAI's Master Circular on Health Insurance Business of 29 May 2024 superseded the 2020 circular, please confirm whether my policy still applies this list:`,``);
       listI.sort((x,y)=>y.total-x.total).forEach(l=>L.push(`  - ${l.item} - ${inr.format(l.total)}  (IRDAI List I: ${l.matched})`));
       L.push(``);
     }
@@ -2605,7 +2641,7 @@ function buildLetter(a,include,noScroll){
     }
     L.push(`  Subtotal: ${inr.format(a.exactSum)}`,``);
     // Only when the arithmetic supports it: the listed items do not cover the whole deduction.
-    if(s&&include.settlement&&a.exactSum<s.deduction) L.push(`The items listed above total ${inr.format(a.exactSum)}. The remaining ${inr.format(money(s.deduction-a.exactSum))} of the amount recorded as non-payable is not accounted for by those items.`,``);
+    if(s&&include.settlement&&a.exactSum<s.deduction) L.push(`The items listed above total ${inr.format(a.exactSum)}. The remaining ${inr.format(money(s.deduction-a.exactSum))} of the amount I calculate as non-payable is not accounted for by those items.`,``);
   }
   if(a.subsumed.length&&include.subsumed){
     // A different point from List I: these are named in IRDAI's Lists II-IV as
@@ -2613,7 +2649,11 @@ function buildLetter(a,include,noScroll){
     // charge, so billing them as a separate line may itself be the error —
     // independent of what the insurer will or won't pay.
     const bySub={II:[],III:[],IV:[]}; a.subsumed.forEach(l=>bySub[l.list].push(l));
-    L.push(`Checking the hospital's own itemised bill against IRDAI's Guidelines on Standardization in Health Insurance (as modified on 27 September 2019), the following charges appear on Lists II-IV — items that should already be included in the room, procedure or treatment charge, not billed as a separate line:`,``);
+    L.push(`Checking the hospital's own itemised bill against Lists II-IV of the same IRDAI standardization guidelines, the following charges appear among the items those lists treat as part of the room, procedure or treatment charge rather than a separate line.`+(!s
+      ? ` The guidelines asked insurers to ensure such items were not billed to policyholders in cashless claims, and left reimbursement claims to the policy terms; please confirm how this applies to my claim:`
+      : reimb
+      ? ` For reimbursement claims the guidelines left this to the policy terms, so please confirm how my policy treats these items:`
+      : ` The guidelines asked insurers to ensure such items were not billed to policyholders in cashless claims; please confirm whether this applies to my claim:`),``);
     const subName={II:'Room charges',III:'Procedure charges',IV:'Treatment cost'};
     ['II','III','IV'].forEach(k=>{ if(!bySub[k].length) return;
       L.push(`  Should be part of ${subName[k]} (List ${k}):`);
@@ -2642,7 +2682,9 @@ function buildLetter(a,include,noScroll){
   if(a.dups.length&&include.dup){ L.push(`The following charge(s) appear more than once at the same amount; please confirm whether each is a separate service or a duplicate entry:`); a.dups.forEach(d=>L.push(`  - ${d.item} - ${inr.format(d.amount)}, ${d.n} times`)); L.push(``); }
   if(a.similarDups.length&&include.dup){ L.push(`The following charges are identical apart from a reference number and are billed at the same amount; please confirm whether each is a separate service:`); a.similarDups.forEach(d=>L.push(`  - ${d.items.join(' / ')} - ${inr.format(d.amount)} each`)); L.push(``); }
   const reqs=[
-    `A line-by-line statement of every amount recorded as non-payable or deducted, with the policy clause relied on for each.`,
+    // R18: the rule in force today. Verified verbatim from the English PDF of
+    // IRDAI/HLT/CIR/PRO/84/5/2024, para 17 (Settlement of Claims), clause (b).
+    `A line-by-line statement of every amount deducted or treated as non-payable, with the policy clause relied on for each. IRDAI's Master Circular on Health Insurance Business (29 May 2024, para 17(b)) requires that where a claim is disallowed partially, details are conveyed to the claimant "along with full details giving reference to the specific terms and conditions of the policy document".`,
     a.exact.length&&include.irdai
       ? `Confirmation of which of the items listed above were actually declined, whether my policy offers optional cover for any of them, and reconsideration of any amount that is not covered by an exclusion in my policy.`
       : `Reconsideration of any amount that is not covered by an exclusion in my policy.`
@@ -2654,7 +2696,7 @@ function buildLetter(a,include,noScroll){
   }
   if(a.subsumed.length&&include.subsumed) reqs.push(`Confirmation that each charge listed under IRDAI Lists II-IV was already included in the relevant room, procedure or treatment charge, and removal or refund of any that was billed separately in error.`);
   L.push(`I request:`); reqs.forEach((r,i)=>L.push(`  ${i+1}. ${r}`));
-  L.push(``,`This letter was prepared with reference to published IRDAI and NPPA lists. It is a request for explanation, not an allegation.`,``,
+  L.push(``,`This letter was prepared with reference to IRDAI's published lists and circulars and NPPA's ceiling prices. It is a request for explanation, not an allegation.`,``,
     `Yours faithfully,`);
   const sig=[sender,D.policy?`Policy no. ${D.policy}`:'',D.contact].filter(Boolean);
   if(sig.length) L.push(sig.join('  -  '));

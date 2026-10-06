@@ -3,36 +3,34 @@
  * analyse() in index.html. `node lib/build_checks.js --check` fails if stale. */
 const NON_PAYABLE = [
   { tier:"exact", item:"Medical Records", keywords:"medical record" },
-  { tier:"exact", item:"TPA Charges", keywords:"tpa charge|insurance processing|insurance charge" },
+  { tier:"review", item:"TPA Charges", keywords:"tpa charge|insurance processing|insurance charge" },
   { tier:"exact", item:"Certificate Charges", keywords:"certificate charge" },
   { tier:"exact", item:"Medical Certificate", keywords:"medical certificate" },
   { tier:"exact", item:"Birth Certificate", keywords:"birth certificate" },
   { tier:"exact", item:"Photocopies Charges", keywords:"photocopy|photocopies|xerox" },
   { tier:"exact", item:"Courier Charges", keywords:"courier" },
   { tier:"exact", item:"Conveyance Charges", keywords:"conveyance" },
-  { tier:"exact", item:"Medico Legal Case Charges", keywords:"medico legal|mlc charge" },
-  { tier:"exact", item:"Maintenance Charges", keywords:"maintenance charge" },
+  { tier:"review", item:"Medico Legal Case Charges", keywords:"medico legal|mlc charge" },
+  { tier:"review", item:"Maintenance Charges", keywords:"maintenance charge" },
   { tier:"exact", item:"Surcharges", keywords:"surcharge" },
   { tier:"exact", item:"Attendant Charges", keywords:"attendant charge" },
-  { tier:"exact", item:"Preparation Charges", keywords:"preparation charge" },
+  { tier:"review", item:"Preparation Charges", keywords:"preparation charge" },
   { tier:"review", item:"Service Charges Where Nursing Charge Also Charged", keywords:"service charge" },
   { tier:"review", item:"Referral Doctor's Fees", keywords:"referral doctor|referral fee" },
-  { tier:"exact", item:"Savlon", keywords:"savlon" },
   { tier:"review", item:"Micro Shield", keywords:"micro shield|microshield" },
-  { tier:"exact", item:"Washing Charges", keywords:"washing charge" },
-  { tier:"exact", item:"Laundry Charges", keywords:"laundry" },
+  { tier:"exact", item:"Laundry Charges", keywords:"laundry|washing charge" },
   { tier:"exact", item:"Examination Gloves", keywords:"gloves examination|examination glove|exam glove|nitrile glove|glove nitrile|examination medium nitrile" },
   { tier:"review", item:"Surgical Gloves (sterile, in-procedure)", keywords:"surgical glove|glove size|gammex|encore" },
   { tier:"exact", item:"Paper Gloves", keywords:"paper glove" },
   { tier:"exact", item:"Trolly Cover", keywords:"trolley cover|trolly cover" },
   { tier:"exact", item:"Carry Bags", keywords:"carry bag" },
-  { tier:"exact", item:"Band Aids, Bandages, Sterile Injections, Needles, Syringes", keywords:"band aid|bandaid" },
+  { tier:"review", item:"Band Aids, Bandages, Sterile Injections, Needles, Syringes", keywords:"band aid|bandaid" },
   { tier:"exact", item:"Crepe Bandage", keywords:"crepe bandage" },
-  { tier:"exact", item:"Hansaplast / Adhesive Bandages", keywords:"hansaplast|adhesive bandage" },
+  { tier:"review", item:"Hansaplast / Adhesive Bandages", keywords:"hansaplast|adhesive bandage" },
   { tier:"review", item:"Cliniplast", keywords:"cliniplast" },
   { tier:"review", item:"Curapore", keywords:"curapore" },
   { tier:"exact", item:"Eyelet Collar", keywords:"eyelet collar" },
-  { tier:"exact", item:"Bed Under Pad Charges", keywords:"under pad|underpad" },
+  { tier:"review", item:"Bed Under Pad Charges", keywords:"under pad|underpad" },
   { tier:"exact", item:"Diaper of Any Type", keywords:"diaper" },
   { tier:"exact", item:"Kidney Tray", keywords:"kidney tray" },
   { tier:"exact", item:"Ounce Glass", keywords:"ounce glass" },
@@ -45,8 +43,7 @@ const NON_PAYABLE = [
   { tier:"exact", item:"Moisturiser / Paste / Brush", keywords:"moisturiser|moisturizer" },
   { tier:"exact", item:"Mineral Water", keywords:"mineral water" },
   { tier:"exact", item:"Buds", keywords:"ear bud|cotton bud|buds" },
-  { tier:"exact", item:"Barber Charges", keywords:"barber" },
-  { tier:"exact", item:"Beauty Services", keywords:"beauty service" },
+  { tier:"exact", item:"Beauty Services", keywords:"beauty service|barber" },
   { tier:"exact", item:"Baby Food", keywords:"baby food|lactogen|infant food" },
   { tier:"exact", item:"Baby Utilities Charges", keywords:"baby utilities" },
   { tier:"exact", item:"Telephone Charges", keywords:"telephone charge" },
@@ -74,15 +71,15 @@ const NON_PAYABLE = [
   { tier:"review", item:"CSSD / Sterilisation Charges", keywords:"cssd|sterilisation charge|sterilization charge" },
   { tier:"review", item:"ECG Electrodes / Leads", keywords:"ecg lead|ecg electrode" },
   { tier:"review", item:"Dressing / Tegaderm film", keywords:"tegaderm|transparent dressing" },
-  { tier:"exact", item:"Weight Control Programs / Supplies / Services", keywords:"weight control|obesity program" },
-  { tier:"exact", item:"Spectacles / Contact Lenses / Hearing Aids", keywords:"spectacle|contact lens|hearing aid" },
+  { tier:"review", item:"Weight Control Programs / Supplies / Services", keywords:"weight control|obesity program" },
+  { tier:"review", item:"Spectacles / Contact Lenses / Hearing Aids", keywords:"spectacle|contact lens|hearing aid" },
   { tier:"exact", item:"Dental Treatment Not Requiring Hospitalisation", keywords:"dental treatment", basis:"policy_exclusion" },
   { tier:"exact", item:"Hormone Replacement Therapy", keywords:"hormone replacement", basis:"policy_exclusion" },
-  { tier:"exact", item:"Home Visit Charges", keywords:"home visit" },
+  { tier:"review", item:"Home Visit Charges", keywords:"home visit" },
   { tier:"exact", item:"Infertility / Assisted Conception", keywords:"infertility|assisted conception|ivf treatment|ivf cycle|ivf procedure|in vitro fertilisation|in vitro fertilization", basis:"policy_exclusion" },
   { tier:"exact", item:"Obesity Treatment", keywords:"bariatric|obesity treatment", basis:"policy_exclusion" },
   { tier:"exact", item:"Corrective Surgery for Refractive Error", keywords:"lasik|refractive error", basis:"policy_exclusion" },
-  { tier:"exact", item:"Donor Screening Charges", keywords:"donor screening" },
+  { tier:"review", item:"Donor Screening Charges", keywords:"donor screening" },
   { tier:"exact", item:"Aesthetic Treatment / Surgery", keywords:"aesthetic|cosmetic surgery", basis:"policy_exclusion" },
   { tier:"exact", item:"Stem Cell Implantation / Surgery", keywords:"stem cell", basis:"policy_exclusion" },
   // Added 25 Sep 2026. Each row below is an item of the official 68-item List I
@@ -142,8 +139,8 @@ const NPPA = [
   { item:"Knee — Tibial tray + insert, metallic", ceiling:26546, gst:"plus 5% GST", grade:"verify", kw:["tibial tray metallic","metal tibial tray"] },
   { item:"Knee — Articulating surface / insert", ceiling:9550, gst:"plus 5% GST", grade:"verify", kw:["articulating surface","tibial insert"] },
   { item:"Knee — Patella", ceiling:4090, gst:"plus 5% GST", grade:"verify", kw:["patella component","patella implant"] },
-  { item:"Coronary stent — Bare Metal Stent (BMS)", ceiling:10762.15, gst:"exclusive of GST", grade:"verified", kw:["bare metal stent","bms stent"] },
-  { item:"Coronary stent — Drug Eluting Stent (DES)", ceiling:39186.03, gst:"exclusive of GST", grade:"verified", kw:["drug eluting stent","des stent","coronary stent"] },
+  { item:"Coronary stent — Bare Metal Stent (BMS)", ceiling:10762.15, gst:"exclusive of GST", grade:"verified", kw:["bare metal stent","bms stent"], not:["peripheral","biliary","ureteric","ureteral","dj","renal","carotid","iliac","oesophageal","esophageal","tracheal","colonic","duodenal","pancreatic","intracranial"] },
+  { item:"Coronary stent — Drug Eluting Stent (DES)", ceiling:39186.03, gst:"exclusive of GST", grade:"verified", kw:["drug eluting stent","des stent","coronary stent"], not:["peripheral","biliary","ureteric","ureteral","dj","renal","carotid","iliac","oesophageal","esophageal","tracheal","colonic","duodenal","pancreatic","intracranial"] },
 ];
 // grade "verified" = independently confirmed against the NPPA notification.
 // grade "verify" = the knee-implant ceiling itself is real (NPPA order, extended
@@ -184,7 +181,7 @@ const SUBSUMED = [
   { list:"II", item:"Face Mask / Flexi Mask", keywords:"face mask|flexi mask|surgical mask" },
   { list:"II", item:"Hand Holder", keywords:"hand holder" },
   { list:"II", item:"Sputum Cup", keywords:"sputum cup" },
-  { list:"II", item:"Disinfectant Lotions", keywords:"disinfectant lotion" },
+  { list:"II", item:"Disinfectant Lotions", keywords:"disinfectant lotion|savlon" },
   { list:"II", item:"Luxury Tax", keywords:"luxury tax" },
   { list:"II", item:"HVAC Charges", keywords:"hvac" },
   { list:"II", item:"House Keeping Charges", keywords:"house keeping|housekeeping" },
@@ -533,7 +530,7 @@ function analyse(data,now){
     else if(k==='hospital_gstin'&&!GSTIN_RE.test(String(v).replace(/\s/g,''))) malformed.push(label);
   }
   const noUnit = lines.length>0 && lines.every(l=>l.unit==null);
-  const nppa=[], nppaGst=[]; let nppaStale=false, nppaCompared=0, nppaSkipped=0, nppaDated=0;
+  const nppa=[], nppaGst=[]; let nppaStale=false, nppaCompared=0, nppaSkipped=0, nppaDated=0, nppaKneeDated=0, nppaUnmatched=0;
   const clock=(now instanceof Date?now:new Date()).getTime();
   const bd=billDateRange(H);
   // "Past its validity" is judged at the BILL's date when it can be read (a bill from
@@ -544,6 +541,11 @@ function analyse(data,now){
   // procedure (angioplasty with stenting, surgery ...), or names two parts
   // (femoral + tibial ...), is not comparable and is never flagged.
   const SET_WORDS=/\b(set|kit|package|pkg|combo|procedure|surgery|operation|ptca|angioplasty|stenting)\b/;
+  // A line that names a stent or a knee-implant part but matches no ceiling
+  // ("RESOLUTE ONYX STENT", "KNEE IMPLANT", "TIBIAL TRAY") is reported as
+  // found but not compared. It used to read "No stent or knee-implant line
+  // found", which was false (R18).
+  const IMPLANT_WORDS=/\b(stents?|knee implants?|knee prosthesis|tibial tray|tibial base ?plate|tibial insert|femoral component|patellar? (component|button|implant))\b/;
   const FAMILIES=[/femoral/,/tibial/,/patell/,/insert|articulating/];
   // Punctuation is a space here, as in every other matcher (_normTxt): the
   // standard spelling "DRUG-ELUTING STENT" used to miss the "drug eluting
@@ -554,9 +556,17 @@ function analyse(data,now){
   const nppaHit=(c,t)=>{ const k=c.kw.find(k=>_hasWord(t,k)); if(k) return k;
     const r=c.req&&c.req.find(ws=>ws.every(w=>_hasWord(t,w))); return r?r.join(' '):null; };
   for(let i=0;i<lines.length;i++){ if(credit.has(i)||cancelled.has(i)) continue; const l=lines[i], t=_normTxt(l.item);
-    for(const c of NPPA){ const hit=nppaHit(c,t); if(hit){
+    let seen=false;
+    // NPPA's stent ceilings are for CORONARY stents: a peripheral, biliary or
+    // ureteric stent was compared with them and flagged (R18).
+    for(const c of NPPA){ if(c.not&&c.not.some(w=>_hasWord(t,w))) continue; const hit=nppaHit(c,t); if(hit){ seen=true;
       const knee=c.item.startsWith('Knee');
       if(knee&&HIP_WORDS.test(t)) break;
+      // The knee-implant ceilings this app has run to 15 Nov 2026. A bill from
+      // after that (or with no readable date, once today is after it) is not
+      // compared, instead of being flagged against a ceiling that may have
+      // lapsed (R18).
+      if(knee&&(bd?bd.max>NPPA_KNEE_VALID_TO:clock>NPPA_KNEE_VALID_TO)){ nppaKneeDated++; break; }
       const stent=c.item.startsWith('Coronary stent');
       if(stent&&bd&&bd.min<NPPA_STENT_FROM){ nppaDated++; break; }
       // Two parts = a part word from a family the matched ceiling doesn't
@@ -582,6 +592,7 @@ function analyse(data,now){
       }
       break;
     }}
+    if(!seen&&IMPLANT_WORDS.test(t)&&!SET_WORDS.test(t)) nppaUnmatched++;
   }
   // Lines with letters but no English letters (Hindi, Marathi ...) cannot be matched
   // against the English lists; say so instead of implying they were checked.
@@ -590,7 +601,7 @@ function analyse(data,now){
   // page rejected as not-a-bill. Set by the upload flow on the merged object.
   const partial=data._pageCount===1||(data._rejected||0)>0;
   const subtotals = data.printed_subtotals && Object.keys(data.printed_subtotals).length ? data.printed_subtotals : null;
-  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,similarDups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nppaDated,nonLatin,subtotals,unreadable,reconCompared,reconBlocked,partial,subsumed,subsumedSum,rejected:data._rejected||0,pageCount:data._pageCount||null};
+  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,similarDups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nppaDated,nppaKneeDated,nppaUnmatched,nonLatin,subtotals,unreadable,reconCompared,reconBlocked,partial,subsumed,subsumedSum,rejected:data._rejected||0,pageCount:data._pageCount||null};
 }
 
 module.exports = { NON_PAYABLE, SUBSUMED, NPPA, OMBUDSMAN, OMBUDSMAN_READ_ON, INDIA_STATES, ombudsmanFor, IS19493_HEADER, GSTIN_RE, money, bestMatch, bestMatchIn, parseAmount, billDateRange, analyse };

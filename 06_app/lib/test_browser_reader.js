@@ -165,8 +165,12 @@ const STUB = `
     console.log('== letter: coherent requests and a checkable citation');
     await ev(`switchTab('letter'); document.getElementById('genLetterTab').click();`); await sleep(300);
     const lt = await ev(`return document.querySelector('.letter').innerText`);
-    ok(/List I \(Optional Items\)/.test(lt) && /27 September 2019/.test(lt), 'the letter names the list the way IRDAI does, with the date of the guidelines');
-    ok(/The items listed above total .1,310\. The remaining .4,652\.89 of the amount recorded as non-payable is not accounted for by those items\./.test(lt), 'the letter states the arithmetic gap between the listed items and the deduction');
+    ok(/List I \("Optional Items"\)/.test(lt) && /22 July 2020/.test(lt) && /29 May 2024 superseded the 2020 circular/.test(lt) && /please confirm whether my policy still applies this list/.test(lt), 'the letter names the list as IRDAI does, says when it was issued and that the 2024 Master Circular superseded it, and asks the insurer to confirm (R18)');
+    ok(/para 17\(b\)/.test(lt) && /along with full details giving reference to the specific terms and conditions of the policy document/.test(lt), 'request 1 quotes the rule in force today: the 2024 Master Circular, para 17(b) (R18)');
+    ok(!/Copy to: IRDAI/.test(lt) && /^The patient was hospitalised/m.test(lt), 'no "Copy to: IRDAI" line, and with no name on the bill the letter says "The patient", not "I" (R18)');
+    ok(!/recorded as non-payable/.test(lt), 'the letter never says the insurer "recorded" an amount the user only calculated (R18)');
+    ok(/The guidelines asked insurers to ensure such items were not billed to policyholders in cashless claims/.test(lt), 'the Lists II-IV paragraph is worded for a cashless claim (the worked example is cashless)');
+    ok(/The items listed above total .460\. The remaining .5,502\.89 of the amount I calculate as non-payable is not accounted for by those items\./.test(lt), 'the letter states the arithmetic gap between the listed items and the deduction');
     ok(/with the policy clause relied on for each/.test(lt) && /whether my policy offers optional cover/.test(lt), 'the requests ask for the policy clause and for optional cover');
     ok(!/Reconsideration of any amount above that/.test(lt), 'the letter no longer asks for reconsideration of the items it has just listed');
     await ev(`document.querySelector('[data-inc=irdai]').checked=false; document.getElementById('genLetterTab').click();`); await sleep(300);
@@ -255,13 +259,13 @@ const STUB = `
     await ev(`switchTab('mybills'); document.getElementById('saveLocalBtn').click();`); await sleep(200);
     let loc = await ev(`return {msg: document.getElementById('localSaveMsg').textContent, rows: document.querySelectorAll('#localList .billrow').length, text: document.getElementById('localList').innerText, stored: readLocalChecks().length}`);
     ok(loc.msg === 'Saved on this device.' && loc.rows === 1 && loc.stored === 1, 'the worked example is saved on this device without signing in');
-    ok(/Explained: 22%/.test(loc.text), 'the saved row shows the explained share (22%)');
+    ok(/Explained: 8%/.test(loc.text), 'the saved row shows the explained share (8%)');
     await send('Page.navigate', { url: `http://127.0.0.1:${port}/` }); await sleep(1200); // a reload that keeps storage
     await ev(`switchTab('mybills');`); await sleep(200);
     ok(await ev(`return document.querySelectorAll('#localList .billrow').length`) === 1, 'after closing and reopening the page, the saved check is still listed');
     await ev(`document.querySelector('#localList .lopen').click();`); await sleep(600);
     const reopened = await ev(`return {tab: document.getElementById('page-findings').classList.contains('on'), kpis: [...document.querySelectorAll('.kpi .v')].map(e=>e.textContent).join('|'), total: document.getElementById('total').value, counter: document.getElementById('counter').value, status: document.getElementById('status').textContent}`);
-    ok(reopened.tab && reopened.kpis === '₹5,962.89|22%|6 / 6', 'Open restores the same report (₹5,962.89 deducted, 22% explained, 6 of 6 checks): ' + reopened.kpis);
+    ok(reopened.tab && reopened.kpis === '₹5,962.89|8%|6 / 6', 'Open restores the same report (₹5,962.89 deducted, 8% explained, 6 of 6 checks): ' + reopened.kpis);
     ok(reopened.total === '41396' && reopened.counter === '9349', 'the settlement figures are restored too');
     ok(/Opened the check saved on/.test(reopened.status), 'it says which saved check was opened');
 
@@ -487,6 +491,21 @@ const STUB = `
     ok(dr.calls === 0 && dr.left === 'abc', 'saying no to "Delete all … cannot be undone" deletes nothing');
     dr = await delRun([200, 404, 200], 'true');
     ok(dr.left === '' && /Deleted 3 of 3/.test(dr.msg), 'a bill already gone (404) counts as deleted');
+
+    console.log('== R18: what the screens say');
+    await fresh(); await ev(`setLang('en'); document.getElementById('egBtn').click();`); await sleep(500);
+    const rep18 = await ev(`switchTab('findings'); return document.getElementById('report').innerText`);
+    ok(/About these lists: IRDAI published List I and Lists II.IV in its 2019.2020 standardization guidelines/.test(rep18) && /superseded the 2020 circular/.test(rep18), 'the report says when the lists were published and that the 2024 Master Circular superseded them');
+    ok(!/You were told/.test(rep18) && /By the settlement figures/.test(rep18), 'the report no longer says "You were told" an amount was never itemised: the app worked it out');
+    ok(await ev(`switchTab('settlement'); return /the settlement figures don.t say what this was for/.test(document.getElementById('neverItemisedLbl').textContent)`), 'the Settlement headline says the figures don\'t explain the amount, not "you were not told"');
+    ok(await ev(`switchTab('letter'); const v=[...document.querySelectorAll('.inclrow.static .v')].map(x=>x.textContent).join('|'); return /grievance officer/.test(v) && !/IRDAI/.test(v)`), 'the letter is "Sent to" the insurer\'s grievance officer, not "Insurer / IRDAI"');
+    const about18 = await ev(`switchTab('about'); return document.getElementById('page-about').innerText`);
+    ok(/Optional Items/.test(about18) && !/the official list of hospital charges insurers don.t have to pay/.test(about18) && /knee-implant ceilings shown have not been independently re-confirmed/.test(about18), 'About describes List I as IRDAI does and says which NPPA ceilings are confirmed');
+    for (const l of ['hi', 'mr']) { await ev(`setLang('${l}'); switchTab('findings');`); await sleep(150);
+      ok(/2019.2020/.test(await ev(`return document.getElementById('report').innerText`)) && await ev(`return !/undefined/.test(document.getElementById('report').innerText)`), 'the note about the lists is shown in ' + l.toUpperCase() + ' too'); }
+    await ev(`setLang('en');`);
+    const imp18 = await ev(`window.__lastExtraction={header:{},line_items:[{item:'RESOLUTE ONYX STENT',quantity:1,rate:45000,total:45000}]}; renderReport(window.__lastExtraction); return document.getElementById('report').innerText;`);
+    ok(/An implant line was found but not compared/.test(imp18) && /names a stent or knee implant without saying which kind/.test(imp18) && !/No stent or knee-implant line found/.test(imp18), 'a stent line without its type is "found but not compared", with the reason (it used to say no stent was on the bill)');
 
     console.log('== Hindi errors');
     await fresh();

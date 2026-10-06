@@ -10,11 +10,28 @@ insurer's reproduction (New India Assurance, `List_of_excluded_items.pdf`), whic
 matches the IRDAI 2016 standardization circular and the 2020 Guidelines on
 Standardization of Exclusions.
 
-The **IRDAI Master Circular on Health Insurance Business, 29 May 2024**
-consolidated 55 earlier circulars but **did not replace** List I / II / III / IV.
-The 68-item List I is still the operative annexure. So the table's provenance
-line ("as circulated by insurers") is accurate; it should additionally cite the
-2024 Master Circular as the confirming authority.
+**Corrected 6 Oct 2026 (R18).** This section used to say the 2024 Master
+Circular "did not replace" the lists and confirmed them. That was wrong.
+Checked against IRDAI's own PDFs (irdai.gov.in, documentId=4942918):
+- The **Master Circular on Health Insurance Business, 29 May 2024**
+  (IRDAI/HLT/CIR/PRO/84/5/2024), Part IV, says: "This Circular supersedes all
+  the Guidelines/Circulars listed in Annexure-6."
+- **Annexure-6, item 1** is IRDAI/HLT/REG/CIR/193/07/2020 of 22.07.2020,
+  the "Master Circular on Standardization of Health Insurance Products". That
+  is the circular that carried Lists I-IV after the 2019 guidelines.
+- Neither the 2024 circular nor its annexures restate the lists. The text of
+  the annexures never mentions non-payable items, "List I", "Optional items"
+  or proportionate deduction. Item 19 of Annexure-6 is the 2020
+  proportionate-deduction circular, IRDAI/HLT/REG/CIR/151/06/2020, which is
+  also superseded.
+
+So the app now cites the lists as published in IRDAI's 2019–2020
+standardization guidelines, says the 2024 circular superseded them, and asks
+the insurer to confirm whether the policy still applies them. The rule the
+letter relies on today is para 17(b) of the 2024 circular, quoted verbatim:
+"In case, the claim is repudiated or disallowed partially, details shall be
+conveyed to the claimant along with full details giving reference to the
+specific terms and conditions of the policy document."
 
 ## What the CSV is
 
