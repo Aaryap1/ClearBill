@@ -64,7 +64,7 @@
 
   header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
   header h1{font-family:"Archivo",sans-serif;font-weight:800;font-size:1.4rem;letter-spacing:-.02em}
-  header .tag{font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.06em;color:var(--soft);margin-top:3px;max-width:30ch}
+  header .tag{font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.06em;color:var(--soft);margin-top:3px;max-width:38ch}
   header .instbtn{font-family:"Archivo",sans-serif;font-weight:600;font-size:.7rem;letter-spacing:.03em;
     border:1.5px solid var(--rule);background:transparent;color:var(--ink);padding:6px 10px;border-radius:8px;cursor:pointer;white-space:nowrap}
   .langsw{display:flex;gap:4px}
@@ -72,8 +72,14 @@
     background:transparent;color:var(--soft);padding:5px 8px;border-radius:7px;cursor:pointer;min-width:32px}
   .langsw button.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 
-  .sec-label{font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;
+  /* A real heading now (R19: screen readers had no headings to move by); it
+     keeps the small mono label look. scroll-padding stops the fixed tab bar
+     covering a field that has keyboard focus (WCAG 2.4.11). */
+  html{scroll-padding-bottom:calc(92px + env(safe-area-inset-bottom, 0px))}
+  .sec-label{font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;font-weight:400;line-height:1.4;
     color:var(--soft);display:flex;align-items:center;gap:10px;margin:26px 0 12px}
+  .sec-label:focus:not(:focus-visible){outline:none}
+  .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
   .sec-label::after{content:"";flex:1;border-top:1.5px dashed var(--dash)}
 
   .card{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:16px;box-shadow:var(--sh)}
@@ -90,7 +96,11 @@
   .ldf input[type=text],.ldf textarea{width:100%;min-height:44px;border:1.5px solid var(--ctl);border-radius:9px;padding:10px 12px;
     font-size:.95rem;font-family:"Spectral",serif;color:var(--ink);background:var(--field);outline:none;resize:vertical}
   .ldf textarea:focus,.ldf input[type=text]:focus{border-color:var(--ink);background:var(--card);box-shadow:0 0 0 3px var(--ochre-bg)}
-  .ldf label.chk{display:flex;align-items:flex-start;gap:9px;font-family:"Spectral",serif;font-weight:400;font-size:.86rem;margin:12px 0 0;cursor:pointer}
+  .ldf label.chk{display:flex;flex-wrap:nowrap;align-items:flex-start;gap:9px;font-family:"Spectral",serif;font-weight:400;font-size:.86rem;margin:12px 0 0;cursor:pointer}
+  .ldf label.chk span{flex:1;min-width:0}
+  .ldf select{width:100%;max-width:100%;min-height:44px;border:1.5px solid var(--ctl);border-radius:9px;padding:10px 12px;background:var(--field);
+    color:var(--ink);font:inherit;font-size:.95rem;box-sizing:border-box}
+  .ldf select:focus{border-color:var(--ink);background:var(--card);box-shadow:0 0 0 3px var(--ochre-bg);outline:none}
   .ldf label.chk input{width:17px;height:17px;accent-color:var(--ink);flex:none;margin-top:2px}
   .ldf .ldnote{font-size:.78rem;color:var(--soft);margin:4px 0 0 26px}
   input:focus{border-color:var(--ink);background:var(--card);box-shadow:0 0 0 3px var(--ochre-bg)}
@@ -147,7 +157,7 @@
 
   .bar{display:flex;height:13px;border:1.5px solid var(--ink);margin:16px 0 6px}
   .bar i{display:block}
-  .leg{font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.03em;color:var(--soft);display:flex;gap:10px;flex-wrap:wrap}
+  .leg{font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.03em;color:var(--soft);display:grid;grid-template-columns:1fr 1fr;gap:2px 10px}
 
   .tvs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
   @media(max-width:460px){.tvs{grid-template-columns:1fr}}
@@ -185,11 +195,24 @@
   .expl .do{margin-top:7px;padding:8px 10px;background:var(--field);border-left:2px solid var(--ochre);border-radius:0 6px 6px 0}
   .expl .do b{font-family:"Archivo",sans-serif;font-weight:700;font-size:.7rem;letter-spacing:.04em;
     text-transform:uppercase;color:var(--ochre);display:block;margin-bottom:2px;font-style:normal}
+  .finding details.why{border:none;background:none;margin:2px 0 0;overflow:visible;border-radius:0}
+  .finding details.why>summary{padding:4px 0;font-size:.78rem;color:var(--soft);justify-content:flex-start;gap:6px}
+  .finding details.why>summary::after{content:"\25BE";font-size:.75rem}
+  .finding details.why[open]>summary::after{content:"\25B4"}
+  .finding details.why[open]>summary{border-bottom:none}
+  .chk .seelines{display:block;margin-top:3px;font-size:.76rem;padding:0;text-align:left}
+  .upsum{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:.86rem;color:var(--soft)}
+  #uploadCard.compact>*:not(#uploadSummary):not(#readerNote):not(#status):not(#keyRow){display:none!important}
+  #uploadCard.compact #uploadSummary{display:flex!important}
+  #uploadCard.compact #status:empty{display:none}
   .expl.ok .do{border-left-color:var(--green)}
   .expl.ok .do b{color:var(--green)}
 
   /* summary strip — three numbers before the detail */
-  .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+  .kpis{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr) minmax(0,1fr);gap:8px;margin-top:14px}
+  /* On a phone the deducted amount gets a row of its own, so neither it nor
+     the labels beside it are ever cut off (R19: it read "₹5,962.…"). */
+  @media (max-width:430px){.kpis{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.kpis .kpi:first-child{grid-column:1/-1}}
   /* min-width:0 stops a 1fr track from growing past its share to fit an
      unbreakable figure like ₹41,395.92 — the classic grid-items-don't-shrink
      gotcha, and without it "Deducted" alone crowds the other two tiles. */
@@ -266,7 +289,7 @@
   .btn:disabled{opacity:.6;cursor:default}
   /* figures that cannot all be true: show only the warning, never a confident-looking result */
   .slip.inconsistent>*:not(.keep){display:none}
-  .fthumb .rejbadge{position:absolute;left:0;right:0;bottom:0;background:var(--red);color:#fff;
+  .fthumb .rejbadge{position:absolute;left:0;right:0;bottom:0;background:var(--red);color:var(--paper);
     font-family:"IBM Plex Mono",monospace;font-size:.7rem;font-weight:700;text-align:center;padding:2px 1px;
     letter-spacing:.02em}
   .wenote{grid-column:1/-1;font-size:.82rem;color:var(--soft);background:var(--field);border:1px dashed var(--rule);
@@ -352,7 +375,7 @@
   .gcrow .gcn{font-family:"Archivo",sans-serif;font-weight:700;flex:none;min-width:104px}
   .gcrow .gcd{color:var(--soft)}
   .gcrow .gclive{font-family:"IBM Plex Mono",monospace;font-size:.7rem;font-weight:700;letter-spacing:.04em;padding:1px 5px;border-radius:3px;flex:none;margin-top:1px}
-  .gcrow .gclive.on{background:var(--red);color:#fff}
+  .gcrow .gclive.on{background:var(--red);color:var(--paper)}
   .gcrow .gclive.eval{background:var(--dash);color:var(--ink)}
   @media (max-width:440px){ .gcrow{flex-wrap:wrap} .gcrow .gcn{min-width:0} }
   a{color:var(--red)}
@@ -365,14 +388,14 @@
   <header>
     <div>
       <h1>ClearBill</h1>
-      <p class="tag" id="tagLine">Your settlement, decomposed &mdash; then the itemised bill checked against what insurers don't pay for.</p>
+      <p class="tag" id="tagLine">Check a hospital bill and your insurance settlement against the published rules.</p>
       <p class="gcstrip" id="gcStrip">Runs on Google Cloud &mdash; <span>Gemini &middot; Cloud Run &middot; Document AI</span></p>
       <p class="impact hide" id="impactLine"></p>
       <p class="tag hide" id="iosHint" style="margin-top:6px">To install: tap <b>Share</b> &rarr; <b>Add to Home Screen</b>.</p>
     </div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:7px">
       <div class="langsw" id="langsw" role="group" aria-label="Language">
-        <button data-lang="en" class="on">EN</button><button data-lang="hi">हिं</button><button data-lang="mr">मर</button>
+        <button data-lang="en" lang="en" aria-label="English" aria-pressed="true" class="on">EN</button><button data-lang="hi" lang="hi" aria-label="हिन्दी" aria-pressed="false">हिं</button><button data-lang="mr" lang="mr" aria-label="मराठी" aria-pressed="false">मर</button>
       </div>
       <div class="authbox hide" id="authBox">
         <div id="gsiBtnHeader"></div>
@@ -382,9 +405,10 @@
     </div>
   </header>
 
+  <main id="main">
   <!-- TAB 1: SETTLEMENT -->
   <div class="tabpage on" id="page-settlement">
-    <div class="sec-label" id="secSettlement">Settlement</div>
+    <h2 class="sec-label" id="secSettlement">Settlement</h2>
     <button class="link" id="skipToFindingsBtn" style="margin:-2px 0 12px;display:block">Have the itemised bill but not these numbers? Check it directly &rarr;</button>
     <div class="card">
       <div class="k" id="settleModeLbl" style="margin-bottom:6px">How was the claim paid?</div>
@@ -445,8 +469,9 @@
 
   <!-- TAB 2: FINDINGS -->
   <div class="tabpage" id="page-findings">
-    <div class="sec-label" id="secBill">Check the itemised bill</div>
-    <div class="card">
+    <h2 class="sec-label" id="secBill">Check the itemised bill</h2>
+    <div class="card" id="uploadCard">
+      <div class="upsum hide" id="uploadSummary"><span id="uploadSummaryText"></span><button class="link" type="button" id="changePhotosBtn">Change photos</button></div>
       <p class="lead" id="billLead">Upload photos of your itemised bill (all pages, if more than one). Google Gemini reads them into rows; the checks then run in your browser against the published lists.</p>
       <p class="notez hide" id="readerNote" role="status"></p>
       <div class="drop" id="drop" role="button" tabindex="0" aria-labelledby="dropText"><span id="dropText"><b>Tap to choose photos</b><br>or drag images here (JPG / PNG) &mdash; multiple pages OK</span>
@@ -470,7 +495,7 @@
 
   <!-- TAB 3: LETTER — nothing drafts until Generate is tapped -->
   <div class="tabpage" id="page-letter">
-    <div class="sec-label" id="secLetter">Letter</div>
+    <h2 class="sec-label" id="secLetter">Letter</h2>
     <p class="emptystate" id="letterEmpty">Upload a bill in the Findings tab to see what your letter will include.</p>
     <div id="letterConfirm" class="hide">
       <div class="card">
@@ -498,12 +523,12 @@
 
   <!-- TAB 4: ABOUT -->
   <div class="tabpage" id="page-mybills">
-    <div class="sec-label" id="secMybills">My Bills</div>
+    <h2 class="sec-label" id="secMybills">My Bills</h2>
     <div class="card" id="localCard">
       <div class="k" id="localHead" style="margin-bottom:8px">On this device</div>
       <p id="localHint">Keep this check on this phone or computer, no sign-in needed. It stays only in this browser and is not sent anywhere. Anyone who uses this browser can open it.</p>
       <button class="btn" id="saveLocalBtn" type="button">Save this check on this device</button>
-      <p class="hide" id="localSaveMsg" style="margin:10px 0 0"></p>
+      <p class="hide" id="localSaveMsg" role="status" style="margin:10px 0 0"></p>
       <p class="hide" id="localEmpty" style="margin:12px 0 0;color:var(--soft)"><span id="localEmptyText">Nothing saved on this device yet.</span></p>
       <div id="localList" style="margin-top:12px"></div>
       <input type="file" id="localImportFile" accept=".json,application/json" class="hide">
@@ -521,7 +546,7 @@
         <div class="k" id="mybillsCurrentHead" style="margin-bottom:8px">This bill</div>
         <p id="mybillsCurrentHint">Save this bill and its letter to your account so you can come back later and record what the insurer said.</p>
         <button class="btn" id="saveBillBtn" type="button">Save this bill</button>
-        <p class="hide" id="mybillsSaveMsg" style="margin:10px 0 0"></p>
+        <p class="hide" id="mybillsSaveMsg" role="status" style="margin:10px 0 0"></p>
       </div>
       <div class="k" id="mybillsListHead" style="margin:18px 0 8px">Saved bills</div>
       <div class="card hide" id="mybillsEmpty"><p id="mybillsEmptyText" style="margin:0">No saved bills yet.</p></div>
@@ -531,7 +556,7 @@
     </div>
   </div>
   <div class="tabpage" id="page-about">
-    <div class="sec-label" id="secAbout">About this check</div>
+    <h2 class="sec-label" id="secAbout">About this check</h2>
     <div class="card">
       <div class="k" style="margin-bottom:10px">How it works</div>
       <div class="steps3">
@@ -562,16 +587,18 @@
       IRDAI List I &middot; NPPA ceiling prices &middot; IS 19493:2025.
     </div>
   </div>
+  </main>
 
 </div>
 
 <nav class="tabbar" id="tabbar" aria-label="Sections">
-  <button class="tabbtn on" data-tab="settlement" aria-current="page"><span class="dot">&#8377;</span><span id="tabLblSettlement">Settlement</span></button>
-  <button class="tabbtn" data-tab="findings"><span class="dot" id="tabDotFindings">&mdash;</span><span id="tabLblFindings">Findings</span></button>
-  <button class="tabbtn" data-tab="letter"><span class="dot">&#9993;</span><span id="tabLblLetter">Letter</span></button>
-  <button class="tabbtn" data-tab="mybills"><span class="dot">&#128193;</span><span id="tabLblMybills">My Bills</span></button>
-  <button class="tabbtn" data-tab="about"><span class="dot">i</span><span id="tabLblAbout">About</span></button>
+  <button class="tabbtn on" data-tab="settlement" aria-current="page"><span class="dot"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg></span><span id="tabLblSettlement">Settlement</span></button>
+  <button class="tabbtn" data-tab="findings"><span class="dot"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6l1.5 1.5L8 5M4 12l1.5 1.5L8 11M4 18l1.5 1.5L8 17"/><path d="M11 6h9M11 12h9M11 18h9"/></svg></span><span id="tabLblFindings">Findings</span></button>
+  <button class="tabbtn" data-tab="letter"><span class="dot"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></span><span id="tabLblLetter">Letter</span></button>
+  <button class="tabbtn" data-tab="mybills"><span class="dot"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span><span id="tabLblMybills">My Bills</span></button>
+  <button class="tabbtn" data-tab="about"><span class="dot"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></span><span id="tabLblAbout">About</span></button>
 </nav>
+<div id="srLive" class="sr-only" role="status" aria-live="polite"></div>
 <div id="printArea" style="display:none"></div>
 
 <script>
@@ -949,7 +976,16 @@ const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
    Devanagari digits for these locales.
    ============================================================ */
 const LOCALE_TAG = {en:'en-IN', hi:'hi-IN-u-nu-latn', mr:'mr-IN-u-nu-latn'};
-const makeInr = lang => new Intl.NumberFormat(LOCALE_TAG[lang]||'en-IN',{style:'currency',currency:'INR',maximumFractionDigits:2,minimumFractionDigits:0});
+const makeInr = lang => {
+  const tag=LOCALE_TAG[lang]||'en-IN';
+  const f0=new Intl.NumberFormat(tag,{style:'currency',currency:'INR',maximumFractionDigits:0});
+  const f2=new Intl.NumberFormat(tag,{style:'currency',currency:'INR',minimumFractionDigits:2,maximumFractionDigits:2});
+  // Whole rupees stay whole (₹41,396); an amount with paise always shows two
+  // digits (₹689.60), never "₹689.6" (R19).
+  return { format: v => { const r=Math.round((+v||0)*100)/100; return Number.isInteger(r)?f0.format(r):f2.format(r); } };
+};
+// Says something to screen readers without changing what is on screen.
+function announce(t){ const el=document.getElementById('srLive'); if(!el) return; el.textContent=''; setTimeout(()=>{ el.textContent=t; },60); }
 let LANG = 'en';
 const LOCAL_LS='clearbill_local_checks', LOCAL_MAX=20; // R12: checks kept on this device, no sign-in
 let _myBills=[], BILLS_ON=false, GOOGLE_CLIENT_ID=null, ID_TOKEN=null, ID_TOKEN_NAME=null;
@@ -960,7 +996,10 @@ document.documentElement.lang=LANG;
 
 const STRINGS = {
 en: {
-  tag: "Your settlement, decomposed &mdash; then the itemised bill checked against what insurers don't pay for.",
+  tag: "Check a hospital bill and your insurance settlement against the published rules.",
+  why_summary:"What this means and what to do", see_lines:"See the lines", change_photos:"Change photos",
+  upsum:n=>`${n} lines read`, upsum_example:n=>`Worked example &middot; ${n} lines read`,
+  aria_language:"Language", aria_sections:"Sections", aria_remove_photo:"Remove this photo",
   sec_settlement: "Settlement",
   lbl_total: 'Total bill amount <span class="hint">&mdash; the hospital\'s final bill</span>',
   lbl_counter: 'Amount paid at the discharge counter <span class="hint">&mdash; what you handed over</span>',
@@ -1051,7 +1090,7 @@ en: {
   never_itemised_short:"not itemised", lines_word:n=>`${n} lines`,
   join_sentence:(ded,n)=>`By the settlement figures, <b>${ded}</b> of what you paid is not itemised. The hospital's own bill lists <b>${n}</b> charges. The checks below trace one against the other.`,
   bill_every_check:"The bill, and every check",
-  leg_insurer:p=>`Insurer ${p}%`, leg_never:p=>`Never itemised ${p}%`, leg_copay:p=>`Co-pay ${p}%`, leg_discount:p=>`Discount ${p}%`,
+  leg_insurer:p=>`Insurer ${p}%`, leg_never:p=>`Not itemised ${p}%`, leg_copay:p=>`Co-pay ${p}%`, leg_discount:p=>`Discount ${p}%`,
   flagged_so_far:"Flagged so far",
   clear_word:"Clear",
   do_label:"What you can do",
@@ -1180,6 +1219,9 @@ en: {
     ["Cloud Run","Hosts the app and runs the function that calls Gemini, in asia-south1.","on"],
     ["Secret Manager","Holds the Gemini key server-side, so nothing has to be entered on your device.","on"],
     ["Cloud Build","Builds and versions the container on every deploy.","on"],
+    ["Firestore","Keeps bills you choose to save to your Google account (My Bills), and the public count of pages read.","on"],
+    ["Google sign-in","Lets you sign in to keep saved bills; the server checks every sign-in itself.","on"],
+    ["Cloud Monitoring","Checks the live site every 5 minutes and emails the owner if it, or the free reader, stops working.","on"],
     ["Document AI","Form Parser, evaluated head-to-head against Gemini on the real test bill; the comparison is kept on file.","eval"]
   ],
   letter_confirm_head:"This letter will include",
@@ -1276,7 +1318,10 @@ en: {
   },
 },
 hi: {
-  tag: "आपका सेटलमेंट, विस्तार से &mdash; फिर बिल की हर लाइन को उन चीज़ों से मिलाया गया जिनके लिए बीमा कंपनी भुगतान नहीं करती।",
+  tag: "अस्पताल का बिल और अपना बीमा सेटलमेंट प्रकाशित नियमों से जाँचें।",
+  why_summary:"इसका मतलब और क्या करें", see_lines:"लाइनें देखें", change_photos:"फ़ोटो बदलें",
+  upsum:n=>`${n} लाइनें पढ़ी गईं`, upsum_example:n=>`उदाहरण बिल &middot; ${n} लाइनें पढ़ी गईं`,
+  aria_language:"भाषा", aria_sections:"हिस्से", aria_remove_photo:"यह फ़ोटो हटाएँ",
   sec_settlement: "सेटलमेंट",
   lbl_total: 'कुल बिल राशि <span class="hint">&mdash; अस्पताल का अंतिम बिल</span>',
   lbl_counter: 'डिस्चार्ज के समय काउंटर पर दी गई राशि <span class="hint">&mdash; आपने जो चुकाया</span>',
@@ -1367,7 +1412,7 @@ hi: {
   never_itemised_short:"ब्योरा नहीं", lines_word:n=>`${n} लाइनें`,
   join_sentence:(ded,n)=>`सेटलमेंट के आँकड़ों के अनुसार आपने जो चुकाया उसमें से <b>${ded}</b> का ब्योरा नहीं दिया गया। अस्पताल के अपने बिल में <b>${n}</b> चार्ज हैं। नीचे की जाँचें दोनों को मिलाकर देखती हैं।`,
   bill_every_check:"बिल, और हर जाँच",
-  leg_insurer:p=>`बीमा कंपनी ${p}%`, leg_never:p=>`कभी नहीं बताया ${p}%`, leg_copay:p=>`को-पे ${p}%`, leg_discount:p=>`छूट ${p}%`,
+  leg_insurer:p=>`बीमा कंपनी ${p}%`, leg_never:p=>`ब्योरा नहीं ${p}%`, leg_copay:p=>`को-पे ${p}%`, leg_discount:p=>`छूट ${p}%`,
   flagged_so_far:"अब तक चिन्हित",
   clear_word:"ठीक",
   do_label:"आप क्या कर सकते हैं",
@@ -1496,6 +1541,9 @@ hi: {
     ["Cloud Run","ऐप को होस्ट करता है और Gemini को कॉल करने वाला फ़ंक्शन चलाता है, asia-south1 में।","on"],
     ["Secret Manager","Gemini की key सर्वर पर रखता है, ताकि आपके डिवाइस पर कुछ डालना न पड़े।","on"],
     ["Cloud Build","हर डिप्लॉय पर कंटेनर बनाता और वर्शन करता है।","on"],
+    ["Firestore","वे बिल रखता है जिन्हें आप अपने Google खाते में सहेजते हैं (My Bills), और पढ़े गए पेजों की सार्वजनिक गिनती।","on"],
+    ["Google sign-in","सहेजे गए बिल रखने के लिए साइन इन; सर्वर हर साइन-इन की ख़ुद जाँच करता है।","on"],
+    ["Cloud Monitoring","हर 5 मिनट में साइट जाँचता है और साइट या मुफ़्त रीडिंग सेवा बंद हो तो मालिक को ईमेल करता है।","on"],
     ["Document AI","Form Parser, असली टेस्ट बिल पर Gemini के साथ तुलना की गई; तुलना रिकॉर्ड में रखी है।","eval"]
   ],
   letter_confirm_head:"इस पत्र में यह शामिल होगा",
@@ -1593,7 +1641,10 @@ hi: {
   },
 },
 mr: {
-  tag: "तुमचं सेटलमेंट, तपशीलवार &mdash; मग बिलाची प्रत्येक ओळ विमा कंपनी न भरत असलेल्या गोष्टींशी जुळवली.",
+  tag: "रुग्णालयाचं बिल आणि तुमचं विमा सेटलमेंट प्रकाशित नियमांशी तपासा.",
+  why_summary:"याचा अर्थ आणि काय करावं", see_lines:"ओळी पहा", change_photos:"फोटो बदला",
+  upsum:n=>`${n} ओळी वाचल्या`, upsum_example:n=>`उदाहरण बिल &middot; ${n} ओळी वाचल्या`,
+  aria_language:"भाषा", aria_sections:"विभाग", aria_remove_photo:"हा फोटो काढा",
   sec_settlement: "सेटलमेंट",
   lbl_total: 'एकूण बिल रक्कम <span class="hint">&mdash; रुग्णालयाचं अंतिम बिल</span>',
   lbl_counter: 'डिस्चार्जच्या वेळी काउंटरवर दिलेली रक्कम <span class="hint">&mdash; तुम्ही जे दिलं</span>',
@@ -1684,7 +1735,7 @@ mr: {
   never_itemised_short:"तपशील नाही", lines_word:n=>`${n} ओळी`,
   join_sentence:(ded,n)=>`सेटलमेंटच्या आकड्यांनुसार तुम्ही दिलेल्या रकमेपैकी <b>${ded}</b> चा तपशील दिलेला नाही. रुग्णालयाच्या स्वतःच्या बिलात <b>${n}</b> चार्जेस आहेत. खालील तपासण्या दोन्ही जुळवून पाहतात.`,
   bill_every_check:"बिल, आणि प्रत्येक तपासणी",
-  leg_insurer:p=>`विमा कंपनी ${p}%`, leg_never:p=>`कधीच स्पष्ट नाही ${p}%`, leg_copay:p=>`को-पे ${p}%`, leg_discount:p=>`सूट ${p}%`,
+  leg_insurer:p=>`विमा कंपनी ${p}%`, leg_never:p=>`तपशील नाही ${p}%`, leg_copay:p=>`को-पे ${p}%`, leg_discount:p=>`सूट ${p}%`,
   flagged_so_far:"आत्तापर्यंत नोंदवलेलं",
   clear_word:"ठीक",
   do_label:"तुम्ही काय करू शकता",
@@ -1813,6 +1864,9 @@ mr: {
     ["Cloud Run","अ‍ॅप होस्ट करतं आणि Gemini ला कॉल करणारं फंक्शन चालवतं, asia-south1 मध्ये.","on"],
     ["Secret Manager","Gemini ची key सर्व्हरवर ठेवतं, त्यामुळे तुमच्या डिव्हाइसवर काही टाकावं लागत नाही.","on"],
     ["Cloud Build","प्रत्येक डिप्लॉयला कंटेनर बांधतं आणि व्हर्जन करतं.","on"],
+    ["Firestore","तुम्ही तुमच्या Google खात्यात जतन केलेली बिले (My Bills) आणि वाचलेल्या पानांची सार्वजनिक मोजणी ठेवतं.","on"],
+    ["Google sign-in","जतन केलेली बिले ठेवण्यासाठी साइन इन; सर्व्हर प्रत्येक साइन-इन स्वतः तपासतो.","on"],
+    ["Cloud Monitoring","दर 5 मिनिटांनी साइट तपासतं आणि साइट किंवा मोफत वाचन सेवा बंद पडली तर मालकाला ईमेल करतं.","on"],
     ["Document AI","Form Parser, खऱ्या टेस्ट बिलावर Gemini शी तुलना केली; तुलना नोंदीत ठेवली आहे.","eval"]
   ],
   letter_confirm_head:"या पत्रात हे असेल",
@@ -2312,8 +2366,12 @@ function sectionSums(lines){
 }
 
 /* report */
+// The next det() call takes this id (set with the comma form
+// "(nextDetId='det-x',det)(...)"), so a finding's "See the lines" can open it.
+let nextDetId=null;
 function det(summary,tag,body,open){
-  return `<details ${open?'open':''}><summary><span>${summary}</span>${tag||''}</summary><div class="db">${body}</div></details>`;
+  const id=nextDetId; nextDetId=null;
+  return `<details ${id?`id="${id}" `:''}${open?'open':''}><summary><span>${summary}</span>${tag||''}</summary><div class="db">${body}</div></details>`;
 }
 function renderReport(data){
   window.__lastExtraction=data;
@@ -2385,8 +2443,11 @@ function renderReport(data){
   // act on, two more lines: what it means for your money, what you can do.
   // A clean "Clear" needs neither — there's nothing to explain about an
   // absence.
+  // R19: the explanation folds away under "What this means and what to do"
+  // (the Findings tab was 6½ phone screens long); "See the lines" opens the
+  // matching list at the bottom.
   const chk=(cls,label,t,sub,explain)=>
-    `<div class="finding"><div class="chk"><span class="t">${t}<small>${sub}</small></span><span class="st ${cls}">${label}</span></div>${explain?explainHtml(cls,explain):''}</div>`;
+    `<div class="finding"><div class="chk"><span class="t">${t}<small>${sub}</small>${explain&&explain.goto?`<button type="button" class="link seelines" data-goto="${explain.goto}">${T_.see_lines}</button>`:''}</span><span class="st ${cls}">${label}</span></div>${explain&&(explain.money||explain.doText)?`<details class="why"><summary>${T_.why_summary}</summary>${explainHtml(cls,explain)}</details>`:''}</div>`;
   const explainHtml=(cls,{money,doText})=>
     `<div class="expl${cls==='green'?' ok':''}">${money?`<div class="money">${money}</div>`:''}${doText?`<div class="do"><b>${T_.do_label}</b>${doText}</div>`:''}</div>`;
 
@@ -2425,22 +2486,22 @@ function renderReport(data){
   const C=T_.checks;
   h+= a.exact.length
     ? chk('red',C.irdai_exact.label,C.irdai_exact.found(a.exact.length),C.irdai_exact.sub(inr.format(a.exactSum)),
-        {money:C.irdai_exact.money(ded,inr.format(ded),Math.min(100,Math.round(a.exactSum/(ded||1)*100))), doText:C.irdai_exact.doText})
+        {money:C.irdai_exact.money(ded,inr.format(ded),Math.min(100,Math.round(a.exactSum/(ded||1)*100))), doText:C.irdai_exact.doText, goto:'det-exact'})
     : chk('green',T_.clear_word,C.irdai_exact.foundClear,C.irdai_exact.subClear);
   h+= a.review.length
     ? chk('ochre',C.irdai_review.label,C.irdai_review.found(a.review.length),C.irdai_review.sub(inr.format(a.reviewSum)),
-        {money:C.irdai_review.money(), doText:C.irdai_review.doText})
+        {money:C.irdai_review.money(), doText:C.irdai_review.doText, goto:'det-review'})
     : chk('green',T_.clear_word,C.irdai_review.foundClear,C.irdai_review.subClear);
   h+= a.subsumed.length
     ? chk('red',C.subsumed.label,C.subsumed.found(a.subsumed.length),C.subsumed.sub(inr.format(a.subsumedSum)),
-        {money:C.subsumed.money(), doText:C.subsumed.doText})
+        {money:C.subsumed.money(), doText:C.subsumed.doText, goto:'det-subsumed'})
     : chk('green',T_.clear_word,C.subsumed.foundClear,C.subsumed.subClear);
   const nppaAllVerified = a.nppa.length>0 && a.nppa.every(n=>n.grade==='verified');
   h+= a.nppa.length
     ? chk('red',C.nppa.label,
         nppaAllVerified?C.nppa.found(a.nppa.length):C.nppa.foundUnverified(a.nppa.length),
         nppaAllVerified?C.nppa.sub():C.nppa.subUnverified(),
-        {money:(nppaAllVerified?C.nppa.money():C.nppa.moneyUnverified())+(a.nppaStale?' '+T_.nppa_stale_note:''), doText:nppaAllVerified?C.nppa.doText:C.nppa.doTextUnverified})
+        {money:(nppaAllVerified?C.nppa.money():C.nppa.moneyUnverified())+(a.nppaStale?' '+T_.nppa_stale_note:''), doText:nppaAllVerified?C.nppa.doText:C.nppa.doTextUnverified, goto:'det-nppa'})
     : (a.nppaGst.length?'':(a.nppaCompared>0
         ? chk('green',T_.clear_word,C.nppa.foundClearN(a.nppaCompared),C.nppa.subClearN)
         : ((a.nppaSkipped+a.nppaDated+a.nppaKneeDated+a.nppaUnmatched)>0
@@ -2450,7 +2511,7 @@ function renderReport(data){
         {money:C.nppa.moneyGst(), doText:C.nppa.doTextGst});
   h+= a.recon
     ? chk('ochre',C.recon.label,C.recon.found(inr.format(Math.abs(a.recon.diff))),C.recon.sub(inr.format(a.recon.gross),inr.format(a.recon.lineSum)),
-        {money:C.recon.money(), doText:C.recon.doText})
+        {money:C.recon.money(), doText:C.recon.doText, goto:'det-recon'})
     : (a.reconCompared
         ? chk('green',T_.clear_word,C.recon.foundClear,C.recon.subClear)
         : chk('grey',T_.notcompared_word,C.recon.foundNotCompared,a.reconBlocked?C.recon.subNotComparedUnreadable:C.recon.subNotCompared));
@@ -2458,15 +2519,15 @@ function renderReport(data){
   // as its own, softer line and never counted as an exact repeat (R11).
   h+= a.dups.length
     ? chk('ochre',C.dup.label,C.dup.found(a.dups.length)+(a.similarDups.length?'; '+C.dup.foundSimilar(a.similarDups.length):''),C.dup.sub(),
-        {money:C.dup.money(), doText:C.dup.doText})
+        {money:C.dup.money(), doText:C.dup.doText, goto:'det-dup'})
     : a.similarDups.length
     ? chk('ochre',C.dup.labelSimilar,C.dup.foundSimilar(a.similarDups.length),C.dup.subSimilar(),
-        {money:C.dup.moneySimilar(), doText:C.dup.doTextSimilar})
+        {money:C.dup.moneySimilar(), doText:C.dup.doTextSimilar, goto:'det-similar'})
     : chk('green',T_.clear_word,C.dup.foundClear,C.dup.subClear);
   const isN=a.missing.length+a.malformed.length+(a.noUnit?1:0);
   h+= isN
     ? chk('ochre',C.is19493.label,C.is19493.found(isN),C.is19493.sub(),
-        {money:C.is19493.money(), doText:C.is19493.doText})
+        {money:C.is19493.money(), doText:C.is19493.doText, goto:'det-is19493'})
     : chk('green',T_.clear_word,C.is19493.foundClear,C.is19493.subClear);
   h+=`</div>`;
   if(a.partial) h+=`<div role="note" style="margin-top:10px;font-family:'Spectral',serif;font-size:.86rem;color:var(--soft);line-height:1.5">${T_.partial_note(a.pageCount===1,a.rejected)}</div>`;
@@ -2484,26 +2545,26 @@ function renderReport(data){
   if(a.lines.length>0) h+=`<button class="btn ghost sm" id="shareFindingsBtn" style="margin-top:10px;width:100%">${T_.share_findings_btn}</button>`;
 
   /* detail */
-  if(a.exact.length) h+=det(T_.detail_matched,`<span class="tag money">${inr.format(a.exactSum)}</span>`,
-    a.exact.sort((x,y)=>y.total-x.total).map(l=>`<div class="li"><div>${esc(l.item)}<span class="src">${T_.detail_matched_src(esc(l.matched))}</span>${l.basis==='policy_exclusion'?`<span class="gradebadge">${T_.basis_policy_exclusion_badge}</span>`:''}</div><div class="n">${inr.format(l.total)}</div></div>`).join(''), true);
-  if(a.review.length) h+=det(T_.detail_review,`<span class="tag">${inr.format(a.reviewSum)}</span>`,
+  if(a.exact.length) h+=(nextDetId='det-exact',det)(T_.detail_matched,`<span class="tag money">${inr.format(a.exactSum)}</span>`,
+    a.exact.sort((x,y)=>y.total-x.total).map(l=>`<div class="li"><div>${esc(l.item)}<span class="src">${T_.detail_matched_src(esc(l.matched))}</span>${l.basis==='policy_exclusion'?`<span class="gradebadge">${T_.basis_policy_exclusion_badge}</span>`:''}</div><div class="n">${inr.format(l.total)}</div></div>`).join(''));
+  if(a.review.length) h+=(nextDetId='det-review',det)(T_.detail_review,`<span class="tag">${inr.format(a.reviewSum)}</span>`,
     `<div class="plain">${T_.detail_review_plain}</div>`+
     a.review.sort((x,y)=>y.total-x.total).map(l=>`<div class="li"><div>${esc(l.item)}<span class="src">${T_.detail_review_src(esc(l.matched))}</span></div><div class="n">${inr.format(l.total)}</div></div>`).join(''));
-  if(a.subsumed.length) h+=det(T_.detail_subsumed,`<span class="tag money">${inr.format(a.subsumedSum)}</span>`,
+  if(a.subsumed.length) h+=(nextDetId='det-subsumed',det)(T_.detail_subsumed,`<span class="tag money">${inr.format(a.subsumedSum)}</span>`,
     `<div class="plain">${T_.detail_subsumed_plain}</div>`+
-    a.subsumed.sort((x,y)=>y.total-x.total).map(l=>`<div class="li"><div>${esc(l.item)}<span class="src">${T_.detail_subsumed_src(l.list,esc(l.matched))}</span></div><div class="n">${inr.format(l.total)}</div></div>`).join(''), true);
-  if(a.nppa.length) h+=det(T_.detail_nppa,`<span class="tag money">${a.nppa.length}</span>`,
+    a.subsumed.sort((x,y)=>y.total-x.total).map(l=>`<div class="li"><div>${esc(l.item)}<span class="src">${T_.detail_subsumed_src(l.list,esc(l.matched))}</span></div><div class="n">${inr.format(l.total)}</div></div>`).join(''));
+  if(a.nppa.length) h+=(nextDetId='det-nppa',det)(T_.detail_nppa,`<span class="tag money">${a.nppa.length}</span>`,
     `<div class="plain">${T_.detail_nppa_plain}</div>`+
     a.nppa.map(n=>`<div class="li"><div>${esc(n.item)}<span class="src">${T_.detail_nppa_src(esc(n.ref),inr.format(n.ceiling),esc(n.gst))}</span>${n.grade!=='verified'?`<span class="gradebadge">${T_.nppa_unverified_badge}</span>`:''}</div><div class="n">${inr.format(n.price)}</div></div>`).join(''), true);
-  if(a.recon) h+=det(T_.detail_recon,'',
+  if(a.recon) h+=(nextDetId='det-recon',det)(T_.detail_recon,'',
     `<div class="notez">${T_.detail_recon_body(inr.format(a.recon.gross),inr.format(a.recon.lineSum),inr.format(Math.abs(a.recon.diff)))}</div>`);
-  if(a.dups.length) h+=det(T_.detail_dup,`<span class="tag">${a.dups.length}</span>`,
+  if(a.dups.length) h+=(nextDetId='det-dup',det)(T_.detail_dup,`<span class="tag">${a.dups.length}</span>`,
     a.dups.map(d=>`<div class="li"><div>${esc(d.item)}<span class="src">${T_.detail_dup_src(d.n)}</span></div><div class="n">${inr.format(d.amount)}</div></div>`).join(''));
-  if(a.similarDups.length) h+=det(T_.detail_similar,`<span class="tag">${a.similarDups.length}</span>`,
+  if(a.similarDups.length) h+=(nextDetId='det-similar',det)(T_.detail_similar,`<span class="tag">${a.similarDups.length}</span>`,
     a.similarDups.map(d=>`<div class="li"><div>${d.items.map(esc).join('<br>')}<span class="src">${T_.detail_similar_src(d.n)}</span></div><div class="n">${inr.format(d.amount)}</div></div>`).join(''));
   const redNote = (a.redacted&&a.redacted.length)
     ? `<div class="notez">${T_.detail_is19493_redacted(a.redacted.length)}</div>` : '';
-  if(isN) h+=det(T_.detail_is19493,`<span class="tag">${isN}</span>`,
+  if(isN) h+=(nextDetId='det-is19493',det)(T_.detail_is19493,`<span class="tag">${isN}</span>`,
     `<div class="plain">${T_.detail_is19493_plain}</div>`+
     (a.noUnit?`<div class="li"><div>${T_.detail_is19493_unit}</div></div>`:'')+
     a.malformed.map(m=>`<div class="li"><div>${esc(m)}<span class="src">${T_.detail_is19493_malformed}</span></div></div>`).join('')+
@@ -2516,6 +2577,7 @@ function renderReport(data){
 
   h+=`</div>`;
   rep.innerHTML=h;
+  setUploadCompact(a.lines.length>0&&!_reading, a.lines.length);
   // The letter now lives on its own tab with its own confirm step (per
   // feedback: nothing should be generated without being asked for first).
   // This shortcut only takes you there — it never calls buildLetter itself.
@@ -2740,9 +2802,9 @@ function buildLetter(a,include,noScroll){
       <button class="btn sm ghost" id="shareLetter" style="flex:1">${T_.share_btn}</button></div>
     <div id="remindRow"><div class="k" id="remindLbl" style="margin:14px 0 6px">${T_.remind_lbl}</div>
       <div style="display:flex;gap:8px"><button class="chip" type="button" data-days="7">${T_.remind_1w}</button><button class="chip" type="button" data-days="14">${T_.remind_2w}</button><button class="chip" type="button" data-days="30">${T_.remind_1m}</button></div>
-      <p class="hide" id="remindNote" style="margin:8px 0 0;font-size:.85rem;color:var(--soft)"></p></div>${afterSend}`;
+      <p class="hide" id="remindNote" role="status" style="margin:8px 0 0;font-size:.85rem;color:var(--soft)"></p></div>${afterSend}`;
   $('printLetter').addEventListener('click',()=>{ $('printArea').textContent=text; window.print(); });
-  $('copyLetter').addEventListener('click',()=>{ copyText(text).then(done=>{const b=$('copyLetter'); b.textContent=done?T_.copied_btn:T_.copy_failed_btn; setTimeout(()=>b.textContent=T_.copy_btn,done?1500:3500);}); });
+  $('copyLetter').addEventListener('click',()=>{ copyText(text).then(done=>{const b=$('copyLetter'); b.textContent=done?T_.copied_btn:T_.copy_failed_btn; announce(b.textContent); setTimeout(()=>b.textContent=T_.copy_btn,done?1500:3500);}); });
   $('shareLetter').addEventListener('click',()=>shareText(text,'ClearBill'));
   // R12: a calendar file the user adds themselves — no account, no
   // notification service, nothing sent anywhere. The user picks the date;
@@ -2962,6 +3024,7 @@ let _lastLetterInclude=null;  // the include-checkbox state it was generated wit
                                // or silently re-checking boxes the user had unchecked
 
 function resetUploadState(){
+  setUploadCompact(false);
   _pendingFiles=[]; _pageCache.clear(); _failedNow=0;
   _usingWorkedExample=false;
   _letterGenerated=false; _lastLetterInclude=null;
@@ -2982,7 +3045,7 @@ function renderFilePreview(){
     const url=URL.createObjectURL(f); _previewUrls.push(url);
     return `<div class="fthumb" id="fthumb-${i}"><img src="${url}" alt="">
       <span class="pg">${i+1}</span>
-      <button class="fremove" type="button" data-i="${i}" aria-label="Remove this photo">&times;</button></div>`;
+      <button class="fremove" type="button" data-i="${i}" aria-label="${T_.aria_remove_photo}">&times;</button></div>`;
   }).join('');
   el.classList.toggle('hide',_pendingFiles.length===0);
   el.querySelectorAll('.fremove').forEach(b=>b.addEventListener('click',()=>removeFile(+b.dataset.i)));
@@ -3008,6 +3071,7 @@ function removeFile(i){
 function addFiles(fileList){
   const T_=S();
   if(_reading){ setStatus(T_.wait_reading,true); return; }
+  setUploadCompact(false);
   const incoming=[...fileList];
   if(!incoming.length) return;
   // One unreadable file no longer rejects the whole selection: keep the photos,
@@ -3185,6 +3249,8 @@ async function downscaleImage(file){
 function applyStaticI18n(){
   const T_=S();
   $('tagLine').innerHTML=T_.tag;
+  $('langsw').setAttribute('aria-label',T_.aria_language); $('tabbar').setAttribute('aria-label',T_.aria_sections);
+  $('changePhotosBtn').textContent=T_.change_photos;
   $('secSettlement').textContent=T_.sec_settlement;
   $('lblTotal').innerHTML=T_.lbl_total;
   $('lblCounter').innerHTML=T_.lbl_counter;
@@ -3278,8 +3344,26 @@ function switchTab(name){
   document.querySelectorAll('.tabbtn').forEach(b=>{ const on=b.dataset.tab===name; b.classList.toggle('on',on); if(on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
   document.querySelectorAll('.tabpage').forEach(p=>p.classList.toggle('on', p.id==='page-'+name));
   window.scrollTo(0,0);
+  // Keyboard and screen-reader users land on the new tab's heading instead of
+  // nowhere (R19, WCAG 2.4.3).
+  const hd=document.querySelector('#page-'+name+' h2'); if(hd){ hd.tabIndex=-1; hd.focus({preventScroll:true}); }
   if(name==='mybills' && typeof onMyBillsTabOpen==='function') onMyBillsTabOpen();
 }
+// "See the lines": open the finding's own list and move to it
+$('report').addEventListener('click',e=>{
+  const b=e.target.closest('.seelines'); if(!b) return;
+  const d=document.getElementById(b.dataset.goto); if(!d) return;
+  d.open=true; d.scrollIntoView({behavior:'smooth',block:'start'});
+  const sm=d.querySelector('summary'); if(sm) sm.focus({preventScroll:true});
+});
+// Once a report is on screen, the upload card shrinks to one line (R19). It
+// opens again for "Change photos", for new photos, and when starting over.
+function setUploadCompact(on,lines){
+  const c=$('uploadCard'); if(!c) return;
+  c.classList.toggle('compact',!!on);
+  if(on) $('uploadSummaryText').innerHTML=_usingWorkedExample?S().upsum_example(lines):S().upsum(lines);
+}
+$('changePhotosBtn').addEventListener('click',()=>{ setUploadCompact(false); $('drop').focus(); });
 document.querySelectorAll('.tabbtn').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
 if($('skipToFindingsBtn')) $('skipToFindingsBtn').addEventListener('click',()=>switchTab('findings'));
 
@@ -3338,7 +3422,7 @@ function setLang(lang){
   document.documentElement.lang=lang;
   try{ localStorage.setItem('clearbill_lang',lang); }catch(e){}
   inr=makeInr(lang);
-  document.querySelectorAll('#langsw button').forEach(b=>b.classList.toggle('on',b.dataset.lang===lang));
+  document.querySelectorAll('#langsw button').forEach(b=>{ const on=b.dataset.lang===lang; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on); });
   applyStaticI18n();
   if(window.__settle) calc();                              // re-derives settle text and re-renders the report
   else if(window.__lastExtraction) renderReport(window.__lastExtraction);

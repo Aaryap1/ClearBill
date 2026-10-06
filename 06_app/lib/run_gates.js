@@ -148,6 +148,13 @@ console.log('== 5c. the page under its real security policy (real server, headle
   ok(r.status === 0 && !/SKIPPED/.test(out), 'test_browser_csp.js - ' + last, r.status === 0 && !/SKIPPED/.test(out) ? '' : (out.split('\n').filter(l => /FAIL|SKIPPED/.test(l)).join('\n') || r.stderr).slice(-800));
 }
 
+console.log('== 5d. accessibility and layout (real server, headless Chrome, keyboard and contrast measured)');
+{
+  const r = spawnSync(process.execPath, ['--experimental-websocket', path.join(__dirname, 'test_browser_a11y.js')], { cwd: APP, encoding: 'utf8', timeout: 300000 });
+  const out = (r.stdout || '').trim(), last = out.split('\n').pop();
+  ok(r.status === 0 && !/SKIPPED/.test(out), 'test_browser_a11y.js - ' + last, r.status === 0 && !/SKIPPED/.test(out) ? '' : (out.split('\n').filter(l => /FAIL|SKIPPED/.test(l)).join('\n') || r.stderr).slice(-800));
+}
+
 console.log('== 4. server protections');
 {
   const r = run(path.join(__dirname, 'test_server.js'), [], APP);

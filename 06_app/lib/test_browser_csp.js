@@ -82,7 +82,7 @@ const GSI_STAND_IN = `window.google = { accounts: { id: { initialize(o) { window
     await sleep(400);
     ok(await ev(`return [...document.querySelectorAll('img')].some(i => i.src.startsWith('blob:') && i.complete && i.naturalWidth > 0)`), 'the photo thumbnail (a blob: image) is shown');
     await ev(`document.getElementById('checkPhotosBtn').click();`); await sleep(2500);
-    ok(/GLOVES/i.test(await ev(`return document.getElementById('report').innerText`)), 'the photo is resized, sent to the server, read and reported');
+    ok(/GLOVES/i.test(await ev(`return document.getElementById('report').textContent`)), 'the photo is resized, sent to the server, read and reported');
     const v = await violations();
     ok(v.length === 0, 'no CSP violation anywhere in all of that', JSON.stringify(v).slice(0, 300));
     ok(errs.length === 0, 'no page errors', errs.join(' | ').slice(0, 300));

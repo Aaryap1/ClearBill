@@ -365,7 +365,7 @@ const STUB = `
     ok(rs.impact === null, 'nothing counted yet: the line stays hidden rather than showing "0"');
     rs = await loadWith('ok', { enabled: true, pages: 1234, matched: 56789.5, since: '2026-10-05' });
     ok(/^1,234 bill pages read by the free reading service since 5 October 2026/.test(rs.impact || ''), 'the line says exactly what is counted: "1,234 bill pages read by the free reading service since 5 October 2026"');
-    ok(/₹56,789\.5 in charges matching IRDAI's published lists/.test(rs.impact || ''), 'and the matched amount: "₹56,789.5 in charges matching IRDAI\'s published lists"');
+    ok(/₹56,789\.50 in charges matching IRDAI's published lists/.test(rs.impact || ''), 'and the matched amount, with both paise digits: "₹56,789.50 in charges matching IRDAI\'s published lists"');
     rs = await loadWith('ok', { enabled: true, pages: 1, matched: 0, since: '2026-10-05' });
     ok(/^1 bill page read by/.test(rs.impact || '') && !/IRDAI/.test(rs.impact || ''), 'one page reads "1 bill page", and a zero amount is left out');
     rs = await loadWith('ok', { enabled: true, pages: 5, matched: 100, since: '<img src=x onerror="window.__xss2=1">' });
