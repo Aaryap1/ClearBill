@@ -138,6 +138,18 @@ ok(new Set(c.GRO.map(g => g.name)).size === c.GRO.length, 'no insurer appears tw
 ok(c.GRO.every(g => !/E\+/i.test(g.tel) && (!g.tel || /^[\d\s\-\/+]+$/.test(g.tel))), 'no phone number is a spreadsheet artefact ("1.80043E+11" is left blank, never guessed)');
 ok(c.GRO.every(g => !g.web || /^https?:\/\//.test(g.web)), 'every grievance page is a web address');
 ok(/^\d{4}-\d{2}-\d{2}$/.test(c.GRO_READ_ON) && /^\d{4}-\d{2}-\d{2}$/.test(c.GRO_LIST_UPDATED), 'when the list was last updated and when it was read are both recorded');
+{
+  console.log('== R23: the monthly reference check (offline: the comparison only)');
+  const fr = require('./freshness.js');
+  const em = fr.extractEmails('<td>gro@starhealth.in</td><td>GRO@NewIndia.co.in.</td> grievance[at]acko[dot]com <a href="mailto:gro@starhealth.in">x</a>');
+  ok(JSON.stringify(em) === '["grievance@acko.com","gro@newindia.co.in","gro@starhealth.in"]', 'emails are read from a page: lower-cased, de-duplicated, "[at]"/"[dot]" spellings too: ' + JSON.stringify(em));
+  const d = fr.compare(['a@x.in', 'b@x.in'], ['b@x.in', 'c@x.in'], ['A@x.in', 'b@x.in']);
+  ok(d.added.join() === 'c@x.in' && d.removed.join() === 'a@x.in' && d.oursMissing.join() === 'a@x.in', 'a change is reported both ways, and an address the app shows that left the page is named');
+  ok(fr.dateReminders(new Date('2026-10-01')).length === 0 && /valid until 2026-11-15/.test(fr.dateReminders(new Date('2026-11-01'))[0]) && /does not compare knee implants/.test(fr.dateReminders(new Date('2026-12-01'))[0]), 'the knee-implant reminder starts a month before 15 Nov 2026 and changes wording once it has passed');
+  ok(fr.dateReminders(new Date('2027-03-15')).some(r => /stent/.test(r)), 'the stent reminder starts a month before 1 April 2027');
+  const bl = JSON.parse(require('fs').readFileSync(fr.BASELINE, 'utf8'));
+  ok(c.GRO.every(g => bl.gro.includes(g.email.toLowerCase())) && c.OMBUDSMAN.every(o => bl.ombudsman.includes(o.email.toLowerCase())), 'the saved baseline has every address the app shows (so a first run reports nothing false)');
+}
 ok(c.GRO.some(g => g.name === 'Star Health and Allied' && g.email === 'gro@starhealth.in') && c.GRO.some(g => g.name === 'The New India Assurance' && g.email === 'gro@newindia.co.in'), 'spot check against the published list: Star Health and New India Assurance');
 
 console.log(`\n${pass} passed, ${fail} failed`);

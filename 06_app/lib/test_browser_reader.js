@@ -637,6 +637,40 @@ const STUB = `
     ok(await ev(`setLang('mr'); return !document.getElementById('langNote').classList.contains('hide') && /मशीनने अनुवादित/.test(document.getElementById('langNote').textContent)`), 'Marathi has its own note');
     ok(await ev(`setLang('en'); return document.getElementById('langNote').classList.contains('hide')`), 'English shows no such note');
 
+    console.log('== R23: correct a misread row against the paper bill');
+    await fresh(); await ev(`setLang('en'); document.getElementById('egBtn').click();`); await sleep(500);
+    await ev(`switchTab('findings'); document.getElementById('readChecks').open=true; document.querySelector('#readChecks .rcfix').click();`); await sleep(100);
+    const f23 = await ev(`const t=document.activeElement; return {id: t.id, val: t.value, label: document.querySelector('label[for="'+t.id+'"]').textContent, hint: document.querySelector('.rcform').textContent, exp: document.querySelector('#readChecks .rcfix').getAttribute('aria-expanded')}`);
+    ok(/^rc_t_\d+$/.test(f23.id) && f23.val === '53.27' && f23.label === 'Amount (₹)' && f23.exp === 'true', '"Correct this row" opens a small labelled form on that row, with the amount as read, and moves to it');
+    ok(/Change it only if your paper bill shows something different/.test(f23.hint) && /leave it as printed/.test(f23.hint), 'it says to change a figure only if the paper differs, and to leave a misprint as printed');
+    await ev(`document.activeElement.value='abc'; document.querySelector('.rcsave').click();`); await sleep(100);
+    ok(await ev(`const e=document.querySelector('.rcerr'); return !e.classList.contains('hide') && /as a number/.test(e.textContent) && !window.__lastExtraction._edits`), 'an amount that is not a number is refused with a message, and nothing changes');
+    await ev(`document.querySelector('.rcform input[id^="rc_t_"]').value='63.27'; document.querySelector('.rcsave').click();`); await sleep(300);
+    const c23 = await ev(`const d=document.getElementById('readChecks'); return {open: d.open, sum: d.querySelector('summary').textContent, body: d.textContent, focus: document.activeElement===d.querySelector('summary'), live: document.getElementById('srLive').textContent, starts: document.querySelector('.starthere').textContent, ex: WORKED_EXAMPLE_BILL.line_items.find(l=>/RL 500ML/.test(l.item)).total, kpis: [...document.querySelectorAll('.kpi .v')].map(e=>e.textContent).join('|')}`);
+    ok(c23.open && /You corrected 1 row/.test(c23.sum) && /Your corrections \(1\)/.test(c23.body) && /read as 1 × ₹63\.27 = ₹53\.27, corrected to 1 × ₹63\.27 = ₹63\.27/.test(c23.body), 'after saving, the panel stays open and lists the correction, before and after: ' + c23.sum);
+    ok(c23.focus && /Row corrected\. The checks have run again\./.test(c23.live), 'focus returns to the panel and a screen reader hears that the checks ran again');
+    ok(!/does not match/i.test(c23.starts) && !/₹10/.test(c23.starts) && c23.kpis === '₹5,962.89|8%|6 / 6', 'the checks run on the corrected row: the ₹10 total gap is gone, the rest is unchanged: ' + c23.kpis);
+    ok(c23.ex === 53.27 || c23.ex === '53.27', 'the worked example itself is never changed (a corrected copy is used)');
+    await ev(`switchTab('letter'); document.getElementById('genLetterTab').click();`); await sleep(300);
+    ok(await ev(`const h=document.getElementById('hospNoteText'); return !h || !/differs from the sum/.test(h.textContent)`), 'the hospital note no longer asks about a total gap that was only a misreading');
+    await ev(`switchTab('findings'); document.querySelector('#readChecks .rcundo').click();`); await sleep(300);
+    const u23 = await ev(`const d=document.getElementById('readChecks'); return {sum: d.querySelector('summary').textContent, edits: !!window.__lastExtraction._edits, live: document.getElementById('srLive').textContent, starts: document.querySelector('.starthere').textContent}`);
+    ok(/Check 1 row against your paper bill/.test(u23.sum) && !u23.edits && /Correction undone/.test(u23.live) && /₹10/.test(u23.starts), 'Undo puts the row back as read, and the ₹10 gap returns');
+
+    console.log('== R23: leave out a carried-forward total; saved and reopened');
+    await fresh(); await ev(`setLang('en'); window.__lastExtraction={header:{},line_items:[{item:'ROOM RENT',quantity:2,rate:3000,total:6000},{item:'BALANCE BROUGHT FORWARD',quantity:null,rate:null,total:6000},{item:'PHARMACY',quantity:1,rate:900,total:900}]}; calc(); switchTab('findings');`); await sleep(300);
+    ok(await ev(`return !!document.querySelector('#readChecks .rcdrop') && document.querySelectorAll('#readChecks .rcdrop').length===1`), '"Leave it out" is offered only for a carried-forward total');
+    await ev(`document.querySelector('#readChecks .rcdrop').click();`); await sleep(300);
+    const d23 = await ev(`return {n: window.__lastExtraction.line_items.length, orig: window.__lastExtraction._orig.length, body: document.getElementById('readChecks').textContent}`);
+    ok(d23.n === 2 && d23.orig === 3 && /BALANCE BROUGHT FORWARD/.test(d23.body) && /left out: not a charge/.test(d23.body), 'the row is left out of the checks and listed as "left out", with the reading kept');
+    await ev(`switchTab('mybills'); document.getElementById('saveLocalBtn').click();`); await sleep(200);
+    await ev(`window.__lastExtraction=null; calc(); document.querySelector('#localList .lopen').click();`); await sleep(500);
+    ok(await ev(`return window.__lastExtraction.line_items.length===2 && /You corrected 1 row/.test(document.querySelector('#readChecks summary').textContent)`), 'a check saved on this device keeps its corrections when reopened');
+    await ev(`document.getElementById('readChecks').open=true; document.querySelector('#readChecks .rcundo').click();`); await sleep(300);
+    ok(await ev(`return window.__lastExtraction.line_items.length===3 && window.__lastExtraction.line_items[1].item==='BALANCE BROUGHT FORWARD' && !window.__lastExtraction._orig`), 'Undo puts the left-out row back in its place');
+    await ev(`window.__lastExtraction={header:{},line_items:[{item:'X',total:5}],_orig:[{item:'<img src=x onerror="window.__xss23=1">',total:5}],_edits:{'0':{total:'<b>bad</b>',quantity:'<i>'},'7':{drop:true},'__proto__':{drop:true}}}; calc(); switchTab('findings'); document.getElementById('readChecks').open=true;`); await sleep(300);
+    ok(await ev(`return !document.querySelector('#readChecks img') && !window.__xss23 && !document.querySelector('#readChecks b, #readChecks i') && /You corrected 1 row/.test(document.querySelector('#readChecks summary').textContent)`), 'corrections from a file are re-checked: text shown as text, out-of-range rows ignored, values read as numbers only');
+
     console.log('== R22: grievance officer, documents and delay lines');
     await fresh(); await ev(`setLang('en'); document.getElementById('egBtn').click();`); await sleep(500);
     await ev(`switchTab('letter'); const g=document.getElementById('ld_gro'); g.value='Star Health and Allied'; g.dispatchEvent(new Event('input',{bubbles:true}));

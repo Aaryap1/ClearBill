@@ -41,7 +41,7 @@ function build() {
     ' * Re-run `node lib/build_checks.js` after changing the reference tables or\n' +
     ' * analyse() in index.html. `node lib/build_checks.js --check` fails if stale. */\n' +
     parts.join('\n') + '\n' +
-    'module.exports = { NON_PAYABLE, SUBSUMED, NPPA, OMBUDSMAN, OMBUDSMAN_READ_ON, GRO, GRO_READ_ON, GRO_LIST_UPDATED, INDIA_STATES, ombudsmanFor, IS19493_HEADER, GSTIN_RE, money, bestMatch, bestMatchIn, parseAmount, billDateRange, analyse, readingChecks };\n'
+    'module.exports = { NON_PAYABLE, SUBSUMED, NPPA, OMBUDSMAN, OMBUDSMAN_READ_ON, GRO, GRO_READ_ON, GRO_LIST_UPDATED, NPPA_KNEE_VALID_TO, NPPA_STENT_REVIEW_FROM, INDIA_STATES, ombudsmanFor, IS19493_HEADER, GSTIN_RE, money, bestMatch, bestMatchIn, parseAmount, billDateRange, analyse, readingChecks };\n'
   );
 }
 

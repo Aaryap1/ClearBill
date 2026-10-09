@@ -1,0 +1,43 @@
+# Monthly check that the official lists copied into ClearBill are still current (R23).
+# Free: GitHub Actions minutes are free for public repositories.
+# It never changes the app; when something needs a person, it opens a GitHub
+# issue labelled "reference-check" (or comments on the open one).
+# Note: GitHub pauses scheduled workflows after 60 days with no commits; the
+# Actions tab has a button to turn it back on, and "Run workflow" runs it now.
+name: Monthly reference check
+
+on:
+  schedule:
+    - cron: '30 3 1 * *'   # 09:00 IST on the 1st of each month
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Read the official pages and compare
+        id: check
+        working-directory: 06_app
+        run: node lib/freshness.js --out "$RUNNER_TEMP/report.md"
+      - name: Open or update the issue
+        if: steps.check.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh label create reference-check --color FBCA04 --description "Official list or dated rule to re-check" --force
+          n=$(gh issue list --label reference-check --state open --json number --jq '.[0].number')
+          if [ -n "$n" ]; then
+            gh issue comment "$n" --body-file "$RUNNER_TEMP/report.md"
+          else
+            gh issue create --title "Monthly reference check: something to look at" --label reference-check --body-file "$RUNNER_TEMP/report.md"
+          fi

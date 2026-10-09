@@ -658,21 +658,21 @@ const FORWARD_RE=/\b(brought|carried)\s*(forward|fwd)\b|\b(b|c)\s*\/\s*f\b/i;
 function readingChecks(a){
   const rows=[], unread=new Set(a.unreadableRows||[]);
   const qr=[]; let eligible=0;
-  a.lines.forEach(l=>{
+  a.lines.forEach((l,i)=>{
     const q=l.quantity, r=l.rate, t=l.total;
-    if(q>0&&r>0&&t>0){ eligible++; const calc=money(q*r); if(Math.abs(calc-t)>Math.max(1,t*0.005)) qr.push({item:l.item,kind:'qtyrate',q,r,calc,t,ratio:t/calc}); }
+    if(q>0&&r>0&&t>0){ eligible++; const calc=money(q*r); if(Math.abs(calc-t)>Math.max(1,t*0.005)) qr.push({item:l.item,kind:'qtyrate',q,r,calc,t,ratio:t/calc,i}); }
   });
   // One shared ratio across many rows = a tax-inclusive bill, not misreadings.
   const ratios=qr.map(x=>x.ratio).sort((x,y)=>x-y), med=ratios.length?ratios[Math.floor(ratios.length/2)]:1;
   const suppressed=qr.length>=3&&qr.length>eligible*0.3&&qr.filter(x=>Math.abs(x.ratio/med-1)<0.02).length>=qr.length*0.8;
   if(!suppressed) qr.forEach(x=>rows.push(x));
-  a.lines.forEach(l=>{
+  a.lines.forEach((l,i)=>{
     if(!l.item.trim()) return;
-    if(unread.has(l.item)) rows.push({item:l.item,kind:'unreadable'});
-    else if(l.total==null) rows.push({item:l.item,kind:'noamount'});
-    if(FORWARD_RE.test(l.item)) rows.push({item:l.item,kind:'forward'});
+    if(unread.has(l.item)) rows.push({item:l.item,kind:'unreadable',i});
+    else if(l.total==null) rows.push({item:l.item,kind:'noamount',i});
+    if(FORWARD_RE.test(l.item)) rows.push({item:l.item,kind:'forward',i});
   });
   return {rows,suppressed};
 }
 
-module.exports = { NON_PAYABLE, SUBSUMED, NPPA, OMBUDSMAN, OMBUDSMAN_READ_ON, GRO, GRO_READ_ON, GRO_LIST_UPDATED, INDIA_STATES, ombudsmanFor, IS19493_HEADER, GSTIN_RE, money, bestMatch, bestMatchIn, parseAmount, billDateRange, analyse, readingChecks };
+module.exports = { NON_PAYABLE, SUBSUMED, NPPA, OMBUDSMAN, OMBUDSMAN_READ_ON, GRO, GRO_READ_ON, GRO_LIST_UPDATED, NPPA_KNEE_VALID_TO, NPPA_STENT_REVIEW_FROM, INDIA_STATES, ombudsmanFor, IS19493_HEADER, GSTIN_RE, money, bestMatch, bestMatchIn, parseAmount, billDateRange, analyse, readingChecks };

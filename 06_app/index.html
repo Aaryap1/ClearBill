@@ -307,6 +307,15 @@
   details.card.gcdet[open]>summary{border-bottom:none;margin-bottom:6px}
   details.readchk{margin-top:14px;border-color:var(--ochre);background:var(--ochre-bg)}
   details.readchk>summary{color:var(--ochre)}
+  .rcacts{display:flex;gap:16px;flex-wrap:wrap;margin-top:4px}
+  .rcacts .link{font-size:.8rem;padding:0;min-height:28px}
+  .rcform{margin:8px 0 4px;padding:10px 12px;border:1px solid var(--rule);border-radius:9px;background:var(--card)}
+  .rcform .rcgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .rcform label{margin:0 0 4px}
+  .rcform p{margin:0 0 8px;font-size:.82rem}
+  .rcform .btn{margin:6px 12px 0 0}
+  .rcerr{color:var(--red)}
+  .rcdone{margin-top:10px}
   .bdates{display:block;font-size:.78rem;color:var(--soft);margin-top:4px;font-weight:400}
   .asdates{margin:8px 0 0;font-size:.86rem}
   .inlineconfirm{margin-top:8px;padding:10px 12px;border:1px solid var(--rule);border-radius:9px;background:var(--field);font-size:.86rem}
@@ -1086,6 +1095,7 @@ const LOCAL_LS='clearbill_local_checks', LOCAL_MAX=20; // R12: checks kept on th
 // Declared here, before calc() first runs at load and draws the Letter tab (R20/R21).
 let _userIncl={}, _userInclFor=null;
 const NO_BILL={header:{},line_items:[]};
+let _rcOpen=false; // R23: keep "Rows to check" open after a correction
 const _analyses=new WeakMap(); // analyseFor() cache (R20)
 let _myBills=[], BILLS_ON=false, GOOGLE_CLIENT_ID=null, ID_TOKEN=null, ID_TOKEN_NAME=null;
 let READER_STATE='ok', _impact=null; // R14: from /api/config and /api/impact
@@ -1139,6 +1149,15 @@ en: {
   rc_unreadable:"the amount could not be read", rc_noamount:"no amount was read for this row",
   rc_forward:"looks like a running total carried from another page, not a charge: check it isn't counted twice",
   rc_suppressed:"Many rows come out a fixed percentage above quantity &times; rate, probably because their amounts include tax, so that check was skipped.",
+  rc_fix:"Correct this row", rc_drop:"Leave it out", rc_save:"Save", rc_cancel:"Cancel",
+  rc_fix_hint:"Change it only if your paper bill shows something different. If the bill itself prints a wrong figure, leave it as printed: that is for the checks to find.",
+  rc_qty:"Quantity", rc_rate:"Rate (₹)", rc_amt:"Amount (₹)",
+  rc_bad:"Enter the amount as a number, as printed on your bill.",
+  rc_head_done:n=>`You corrected ${n} row${n>1?'s':''}`,
+  rc_edits_head:n=>`Your corrections (${n}). The checks and the letter now use them.`,
+  rc_changed:(a,b)=>`read as ${a}, corrected to ${b}`,
+  rc_dropped:"left out: not a charge",
+  rc_saved:"Row corrected. The checks have run again.", rc_undone:"Correction undone. The checks have run again.",
   dates_today:(today,reply,opens,deadline)=>`If you send it today (${today}): a reply is due around ${reply}, within 14 days. If none comes, you can go to the Ombudsman one month after the insurer receives your letter, so on or after ${opens}, and you have until ${deadline} (Insurance Ombudsman Rules 2017, rule 14(3)). If the insurer does reply, the year counts from its reply. Sending on another day? Enter that date under "Sent on" in My Bills and the dates follow it.`,
   dates_sent:(reply,opens,deadline)=>`Reply due around ${reply}. No reply: the Ombudsman route opens on or after ${opens}, until ${deadline}.`,
   upsum:n=>`${n} lines read`, upsum_example:n=>`Worked example &middot; ${n} lines read`,
@@ -1506,6 +1525,15 @@ hi: {
   rc_unreadable:"रकम पढ़ी नहीं जा सकी", rc_noamount:"इस लाइन की कोई रकम नहीं पढ़ी गई",
   rc_forward:"यह किसी और पेज से आगे लाया गया जोड़ लगता है, चार्ज नहीं: देखें कि यह दो बार तो नहीं गिना गया",
   rc_suppressed:"कई लाइनों की रकम मात्रा &times; दर से एक तय प्रतिशत ज़्यादा है, शायद उनमें टैक्स शामिल है, इसलिए यह जाँच छोड़ दी गई।",
+  rc_fix:"यह लाइन सुधारें", rc_drop:"इसे हटा दें", rc_save:"सहेजें", rc_cancel:"रद्द करें",
+  rc_fix_hint:"इसे तभी बदलें जब आपके काग़ज़ी बिल में कुछ और लिखा हो। अगर बिल में ही गलत आँकड़ा छपा है, तो उसे वैसा ही रहने दें: उसे पकड़ना जाँचों का काम है।",
+  rc_qty:"मात्रा", rc_rate:"दर (₹)", rc_amt:"रकम (₹)",
+  rc_bad:"रकम संख्या में डालें, जैसी आपके बिल में छपी है।",
+  rc_head_done:n=>`आपने ${n} लाइन सुधारी`,
+  rc_edits_head:n=>`आपके सुधार (${n})। जाँचें और पत्र अब इन्हीं का उपयोग करते हैं।`,
+  rc_changed:(a,b)=>`${a} पढ़ा गया था, ${b} किया गया`,
+  rc_dropped:"हटाया गया: यह चार्ज नहीं है",
+  rc_saved:"लाइन सुधारी गई। जाँचें फिर से चलाई गईं।", rc_undone:"सुधार वापस लिया गया। जाँचें फिर से चलाई गईं।",
   dates_today:(today,reply,opens,deadline)=>`अगर आप इसे आज (${today}) भेजें: जवाब लगभग ${reply} तक, 14 दिनों में आना चाहिए। जवाब न आए तो बीमा कंपनी को पत्र मिलने के एक महीने बाद, यानी ${opens} या उसके बाद, आप लोकपाल के पास जा सकते हैं, और ${deadline} तक (बीमा लोकपाल नियम 2017, नियम 14(3))। अगर बीमा कंपनी जवाब दे, तो साल उसके जवाब से गिना जाता है। किसी और दिन भेज रहे हैं? My Bills में "भेजने की तारीख़" में वह तारीख़ डालें, तारीख़ें उसी से चलेंगी।`,
   dates_sent:(reply,opens,deadline)=>`जवाब लगभग ${reply} तक। जवाब न आए तो लोकपाल का रास्ता ${opens} या उसके बाद, ${deadline} तक।`,
   upsum:n=>`${n} लाइनें पढ़ी गईं`, upsum_example:n=>`उदाहरण बिल &middot; ${n} लाइनें पढ़ी गईं`,
@@ -1874,6 +1902,15 @@ mr: {
   rc_unreadable:"रक्कम वाचता आली नाही", rc_noamount:"या ओळीची कोणतीही रक्कम वाचली गेली नाही",
   rc_forward:"ही दुसऱ्या पानावरून पुढे आणलेली बेरीज वाटते, चार्ज नव्हे: ती दोनदा मोजली गेली नाही ना ते पहा",
   rc_suppressed:"अनेक ओळींची रक्कम प्रमाण &times; दरापेक्षा ठरावीक टक्क्यांनी जास्त आहे, बहुधा त्यात कर आहे, म्हणून ही तपासणी वगळली.",
+  rc_fix:"ही ओळ दुरुस्त करा", rc_drop:"ही वगळा", rc_save:"जतन करा", rc_cancel:"रद्द करा",
+  rc_fix_hint:"तुमच्या कागदी बिलावर काही वेगळं छापलेलं असेल तरच बदला. बिलावरच चुकीचा आकडा छापलेला असेल, तर तो तसाच ठेवा: तो शोधणं हे तपासण्यांचं काम आहे.",
+  rc_qty:"प्रमाण", rc_rate:"दर (₹)", rc_amt:"रक्कम (₹)",
+  rc_bad:"रक्कम आकड्यांत टाका, बिलावर छापली आहे तशी.",
+  rc_head_done:n=>`तुम्ही ${n} ओळ दुरुस्त केली`,
+  rc_edits_head:n=>`तुमच्या दुरुस्त्या (${n}). तपासण्या आणि पत्र आता त्याच वापरतात.`,
+  rc_changed:(a,b)=>`${a} असं वाचलं होतं, ${b} केलं`,
+  rc_dropped:"वगळलं: हा चार्ज नाही",
+  rc_saved:"ओळ दुरुस्त केली. तपासण्या पुन्हा चालवल्या.", rc_undone:"दुरुस्ती परत घेतली. तपासण्या पुन्हा चालवल्या.",
   dates_today:(today,reply,opens,deadline)=>`तुम्ही हे आज (${today}) पाठवलं तर: उत्तर साधारण ${reply} पर्यंत, 14 दिवसांत यायला हवं. उत्तर आलं नाही तर विमा कंपनीला पत्र मिळाल्यानंतर एका महिन्याने, म्हणजे ${opens} किंवा त्यानंतर, तुम्ही लोकपालाकडे जाऊ शकता, आणि ${deadline} पर्यंत (विमा लोकपाल नियम 2017, नियम 14(3)). विमा कंपनीने उत्तर दिलं तर वर्ष त्या उत्तरापासून मोजलं जातं. दुसऱ्या दिवशी पाठवताय? My Bills मध्ये "पाठवल्याची तारीख" मध्ये ती तारीख टाका, तारखा त्यानुसार बदलतील.`,
   dates_sent:(reply,opens,deadline)=>`उत्तर साधारण ${reply} पर्यंत. उत्तर न आल्यास लोकपालाचा मार्ग ${opens} किंवा त्यानंतर, ${deadline} पर्यंत.`,
   upsum:n=>`${n} ओळी वाचल्या`, upsum_example:n=>`उदाहरण बिल &middot; ${n} ओळी वाचल्या`,
@@ -2661,19 +2698,19 @@ const FORWARD_RE=/\b(brought|carried)\s*(forward|fwd)\b|\b(b|c)\s*\/\s*f\b/i;
 function readingChecks(a){
   const rows=[], unread=new Set(a.unreadableRows||[]);
   const qr=[]; let eligible=0;
-  a.lines.forEach(l=>{
+  a.lines.forEach((l,i)=>{
     const q=l.quantity, r=l.rate, t=l.total;
-    if(q>0&&r>0&&t>0){ eligible++; const calc=money(q*r); if(Math.abs(calc-t)>Math.max(1,t*0.005)) qr.push({item:l.item,kind:'qtyrate',q,r,calc,t,ratio:t/calc}); }
+    if(q>0&&r>0&&t>0){ eligible++; const calc=money(q*r); if(Math.abs(calc-t)>Math.max(1,t*0.005)) qr.push({item:l.item,kind:'qtyrate',q,r,calc,t,ratio:t/calc,i}); }
   });
   // One shared ratio across many rows = a tax-inclusive bill, not misreadings.
   const ratios=qr.map(x=>x.ratio).sort((x,y)=>x-y), med=ratios.length?ratios[Math.floor(ratios.length/2)]:1;
   const suppressed=qr.length>=3&&qr.length>eligible*0.3&&qr.filter(x=>Math.abs(x.ratio/med-1)<0.02).length>=qr.length*0.8;
   if(!suppressed) qr.forEach(x=>rows.push(x));
-  a.lines.forEach(l=>{
+  a.lines.forEach((l,i)=>{
     if(!l.item.trim()) return;
-    if(unread.has(l.item)) rows.push({item:l.item,kind:'unreadable'});
-    else if(l.total==null) rows.push({item:l.item,kind:'noamount'});
-    if(FORWARD_RE.test(l.item)) rows.push({item:l.item,kind:'forward'});
+    if(unread.has(l.item)) rows.push({item:l.item,kind:'unreadable',i});
+    else if(l.total==null) rows.push({item:l.item,kind:'noamount',i});
+    if(FORWARD_RE.test(l.item)) rows.push({item:l.item,kind:'forward',i});
   });
   return {rows,suppressed};
 }
@@ -2694,6 +2731,38 @@ function analyseFor(data){
   const day=new Date().toDateString(), hit=_analyses.get(data);
   if(hit&&hit.day===day) return hit.a;
   const a=analyse(data); _analyses.set(data,{day,a}); return a;
+}
+// R23: a row misread from the photo can be corrected against the paper bill,
+// and a carried-forward total left out. The reading as it came back is kept
+// (_orig) and each correction is listed with an undo; analyse() only sees the
+// corrected rows. Always a new object, so the cached analysis (analyseFor) and
+// the worked example itself are never changed. A saved or opened check
+// carries its corrections; one from a file is re-validated here.
+const rcNum=v=>{ const n=parseAmount(v).n; return n==null||!isFinite(n)?null:n; };
+function rcEdits(data){
+  const o=data&&data._orig, e=data&&data._edits;
+  if(!Array.isArray(o)||!e||typeof e!=='object') return [];
+  return Object.keys(e).filter(k=>/^\d+$/.test(k)&&+k<o.length&&o[+k]&&typeof o[+k]==='object'&&e[k]&&typeof e[k]==='object')
+    .sort((x,y)=>x-y).map(k=>({oi:+k,orig:o[+k],ed:e[k].drop?{drop:true}:{quantity:rcNum(e[k].quantity),rate:rcNum(e[k].rate),total:rcNum(e[k].total)}}));
+}
+function withEdits(data,edits){
+  const base=Array.isArray(data._orig)?data._orig:data.line_items;
+  const d={...data}; delete d._orig; delete d._edits;
+  if(!Object.keys(edits).length) return {...d,line_items:base};
+  const items=[];
+  base.forEach((l,k)=>{ const ed=edits[k]; if(ed&&ed.drop) return;
+    items.push(ed?{...l,quantity:ed.quantity,rate:ed.rate,total:ed.total,_oi:k}:{...l,_oi:k}); });
+  return {...d,line_items:items,_orig:base,_edits:edits};
+}
+function rcApply(i,ed,undoOi){
+  const d=window.__lastExtraction; if(!d||!Array.isArray(d.line_items)) return;
+  const edits={}; rcEdits(d).forEach(e=>{ edits[e.oi]=e.ed; });
+  if(ed){ const l=d.line_items[i]; if(!l) return; edits[Array.isArray(d._orig)&&Number.isInteger(l._oi)?l._oi:i]=ed; }
+  else delete edits[undoOi];
+  window.__lastExtraction=withEdits(d,edits); _rcOpen=true;
+  calc();
+  const T_=S(); $('srLive').textContent=ed?T_.rc_saved:T_.rc_undone;
+  const sm=document.querySelector('#readChecks>summary'); if(sm) sm.focus();
 }
 function det(summary,tag,body,open){
   const id=nextDetId; nextDetId=null;
@@ -2809,12 +2878,15 @@ function renderReport(data){
         : `<p>${T_.sh_none}</p>`)
       +`</div>`;
   }
-  const rc=readingChecks(a);
-  if(rc.rows.length||rc.suppressed){
+  const rc=readingChecks(a), eds=rcEdits(data), rcOpen=_rcOpen; _rcOpen=false;
+  if(rc.rows.length||rc.suppressed||eds.length){
     const why=x=>x.kind==='qtyrate'?T_.rc_qtyrate(x.q,inr.format(x.r),inr.format(x.calc),inr.format(x.t)):T_['rc_'+x.kind];
-    h+=`<details class="readchk" id="readChecks"><summary><span>${T_.rc_head(rc.rows.length)}</span></summary><div class="db"><div class="plain">${T_.rc_intro}</div>`
-      +rc.rows.map(x=>`<div class="li"><div>${esc(x.item)}<span class="src">${why(x)}</span></div></div>`).join('')
-      +(rc.suppressed?`<div class="plain">${T_.rc_suppressed}</div>`:'')+`</div></details>`;
+    const vals=v=>{ const q=rcNum(v.quantity), r=rcNum(v.rate), t=rcNum(v.total); return (q!=null&&r!=null?`${q} &times; ${inr.format(r)} = `:'')+(t!=null?inr.format(t):'&mdash;'); };
+    h+=`<details class="readchk" id="readChecks"${rcOpen?' open':''}><summary><span>${rc.rows.length?T_.rc_head(rc.rows.length):T_.rc_head_done(eds.length)}</span></summary><div class="db"><div class="plain">${T_.rc_intro}</div>`
+      +rc.rows.map(x=>`<div class="li"><div>${esc(x.item)}<span class="src">${why(x)}</span><span class="rcacts"><button type="button" class="link rcfix" data-i="${x.i}" aria-expanded="false">${T_.rc_fix}</button>${x.kind==='forward'?`<button type="button" class="link rcdrop" data-i="${x.i}">${T_.rc_drop}</button>`:''}</span><div class="rcslot"></div></div></div>`).join('')
+      +(rc.suppressed?`<div class="plain">${T_.rc_suppressed}</div>`:'')
+      +(eds.length?`<div class="rcdone"><div class="k">${T_.rc_edits_head(eds.length)}</div>`+eds.map(e=>`<div class="li"><div>${esc(String(e.orig.item||''))}<span class="src">${e.ed.drop?T_.rc_dropped:T_.rc_changed(vals(e.orig),vals(e.ed))}</span><span class="rcacts"><button type="button" class="link rcundo" data-oi="${e.oi}">${T_.undo_word}</button></span></div></div>`).join('')+`</div>`:'')
+      +`</div></details>`;
   }
   h+=`<div class="checks">`;
   const C=T_.checks;
@@ -3752,6 +3824,25 @@ $('report').addEventListener('click',e=>{
   const d=document.getElementById(b.dataset.goto); if(!d) return;
   d.open=true; d.scrollIntoView({behavior:'smooth',block:'start'});
   const sm=d.querySelector('summary'); if(sm) sm.focus({preventScroll:true});
+});
+// R23: correct a row against the paper bill, leave one out, or undo.
+$('report').addEventListener('click',e=>{
+  const d=window.__lastExtraction; if(!d||!Array.isArray(d.line_items)) return;
+  const T_=S(), at=c=>e.target.closest(c);
+  const fix=at('.rcfix'), drop=at('.rcdrop'), undo=at('.rcundo'), save=at('.rcsave'), cancel=at('.rccancel');
+  if(fix){ const i=+fix.dataset.i, l=d.line_items[i]; if(!l) return;
+    const v=x=>x==null?'':esc(String(x));
+    fix.closest('.li').querySelector('.rcslot').innerHTML=`<div class="rcform ldf" role="group" aria-label="${esc(T_.rc_fix)}"><p>${T_.rc_fix_hint}</p><div class="rcgrid">`
+      +[['q',T_.rc_qty,l.quantity],['r',T_.rc_rate,l.rate],['t',T_.rc_amt,l.total]].map(([k,lab,val])=>`<div><label for="rc_${k}_${i}">${lab}</label><input type="text" inputmode="decimal" autocomplete="off" id="rc_${k}_${i}" value="${v(val)}"></div>`).join('')
+      +`</div><p class="rcerr hide" role="alert"></p><button type="button" class="btn sm rcsave" data-i="${i}">${T_.rc_save}</button><button type="button" class="link rccancel">${T_.rc_cancel}</button></div>`;
+    fix.setAttribute('aria-expanded','true'); $('rc_t_'+i).focus(); return; }
+  if(cancel){ const li=cancel.closest('.li'), f=li.querySelector('.rcfix'); li.querySelector('.rcslot').innerHTML=''; if(f){ f.setAttribute('aria-expanded','false'); f.focus(); } return; }
+  if(save){ const i=+save.dataset.i, rd=k=>{ const el=$('rc_'+k+'_'+i); return el?el.value.trim():''; };
+    const q=rd('q')===''?null:rcNum(rd('q')), r=rd('r')===''?null:rcNum(rd('r')), t=rcNum(rd('t'));
+    if(t==null||(rd('q')!==''&&q==null)||(rd('r')!==''&&r==null)){ const er=save.parentNode.querySelector('.rcerr'); er.textContent=T_.rc_bad; er.classList.remove('hide'); return; }
+    return rcApply(i,{quantity:q,rate:r,total:t}); }
+  if(drop) return rcApply(+drop.dataset.i,{drop:true});
+  if(undo) return rcApply(null,null,+undo.dataset.oi);
 });
 // Once a report is on screen, the upload card shrinks to one line (R19). It
 // opens again for "Change photos", for new photos, and when starting over.
