@@ -79,9 +79,11 @@ const UPSTREAM_TIMEOUT_MS = Number(process.env.UPSTREAM_TIMEOUT_MS) || 90 * 1000
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.json': 'application/json; charset=utf-8',
   '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json',
+  '.png': 'image/png', '.txt': 'text/plain; charset=utf-8',
 };
 // The only files the app needs. Anything else — including this file — is a 404.
-const STATIC = { '/': 'index.html', '/index.html': 'index.html', '/manifest.json': 'manifest.json', '/icon.svg': 'icon.svg' };
+// og.png is the link-preview image (WhatsApp and others fetch it); robots.txt lets search engines in (R22).
+const STATIC = { '/': 'index.html', '/index.html': 'index.html', '/manifest.json': 'manifest.json', '/icon.svg': 'icon.svg', '/og.png': 'og.png', '/robots.txt': 'robots.txt' };
 const IMAGE_MIME = /^image\/(jpeg|jpg|png|webp|heic|heif)$/i;
 
 // Kept identical to 06_app/index.html's EXTRACT_PROMPT — this file was a
@@ -533,7 +535,7 @@ function loadStatic(name) {
   e = { buf, gz: zlib.gzipSync(buf, { level: 9 }),
     br: zlib.brotliCompressSync(buf, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 11, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: buf.length } }),
     etag: '"' + crypto.createHash('sha1').update(buf).digest('hex').slice(0, 16) + '"', type,
-    csp: /^text\/html/.test(type) ? cspFor(buf.toString('utf8')) : null };
+    csp: /^text\/html/.test(type) ? cspFor(buf.toString('utf8')) : null, textual: !/^image\/png/.test(type) };
   staticCache.set(name, e);
   return e;
 }
@@ -545,7 +547,7 @@ function serveStatic(req, res, name) {
   if (req.headers['if-none-match'] === e.etag) { res.writeHead(304, h); return res.end(); }
   // Brotli (R16) is about a fifth smaller than gzip for this page; every
   // current browser asks for it over HTTPS.
-  const ae = String(req.headers['accept-encoding'] || '');
+  const ae = e.textual ? String(req.headers['accept-encoding'] || '') : ''; // a PNG is already compressed
   if (/\bbr\b/.test(ae)) { res.writeHead(200, { ...h, 'Content-Encoding': 'br' }); return res.end(req.method === 'HEAD' ? undefined : e.br); }
   if (/\bgzip\b/.test(ae)) { res.writeHead(200, { ...h, 'Content-Encoding': 'gzip' }); return res.end(req.method === 'HEAD' ? undefined : e.gz); }
   res.writeHead(200, h); res.end(req.method === 'HEAD' ? undefined : e.buf);

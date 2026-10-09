@@ -605,6 +605,38 @@ const STUB = `
     const sd = await ev(`const i=document.querySelector('#localList .bsentin'); i.value='2026-10-01'; i.dispatchEvent(new Event('change',{bubbles:true})); return document.querySelector('#localList .bdates').textContent;`);
     ok(/Reply due around 15 October 2026\. No reply: the Ombudsman route opens on or after 1 November 2026, until 1 November 2027\./.test(sd), 'a saved check with a "sent on" date shows its own dates: ' + sd);
 
+    console.log('== R22: the first screen');
+    await fresh(); await send('Page.navigate', { url: `http://127.0.0.1:${port}/` }); await sleep(1200); await ev(`setLang('en');`);
+    ok(await ev(`return !document.getElementById('beforeStart').classList.contains('hide') && /final bill, and its itemised/.test(document.getElementById('beforeStart').innerText)`), 'an empty screen starts with "Before you start": the three papers to have');
+    await ev(`const e=document.getElementById('total'); e.value='5000'; e.dispatchEvent(new Event('input',{bubbles:true}));`); await sleep(100);
+    ok(await ev(`return document.getElementById('beforeStart').classList.contains('hide')`), 'it steps aside as soon as you type a figure');
+    await ev(`const e=document.getElementById('total'); e.value=''; e.dispatchEvent(new Event('input',{bubbles:true}));`); await sleep(100);
+    await ev(`document.getElementById('bysExampleBtn').click();`); await sleep(500);
+    ok(await ev(`return _usingWorkedExample && document.getElementById('total').value==='41396'`), '"See the worked example" from the first screen loads it');
+    await fresh(); await send('Page.navigate', { url: `http://127.0.0.1:${port}/#example` }); await sleep(1500);
+    ok(await ev(`return _usingWorkedExample && document.getElementById('page-findings').classList.contains('on') && !!document.querySelector('#report .checks')`), 'a link ending in #example opens the worked example straight on Findings');
+
+    console.log('== R22: how we know, and something wrong?');
+    await fresh(); await ev(`setLang('en'); switchTab('about');`); await sleep(150);
+    const hk = await ev(`return {items: document.querySelectorAll('#howList li').length, text: document.getElementById('howKnow').innerText, gh: document.getElementById('fbGithub').href, em: document.getElementById('fbEmail').href, gc: document.querySelector('details.gcdet').open}`);
+    ok(hk.items === 5 && /^How we know/i.test(hk.text) && /25 September 2026/.test(hk.text) && /29 May 2024/.test(hk.text) && /not independently re-confirmed/.test(hk.text) && /rule 14/.test(hk.text), 'About lists each source, when it was checked, and how far to trust it');
+    ok(/tested on one real bill/.test(hk.text) && /machine translations/.test(hk.text) && /not legal advice/.test(hk.text) && /github\.com\/Aaryap1\/ClearBill/.test(hk.text), 'and its limits, plainly, and who made it');
+    ok(hk.gh.startsWith('https://github.com/Aaryap1/ClearBill/issues/new?title=') && hk.em.startsWith('mailto:aaryap2024@gmail.com?subject='), '"Something wrong?" opens a pre-filled GitHub issue or email');
+    await ev(`document.getElementById('egBtn').click();`); await sleep(400);
+    const fbAfter = await ev(`return decodeURIComponent(document.getElementById('fbGithub').href+' '+document.getElementById('fbEmail').href)`);
+    ok(!/5,?962|41,?396|RL 500ML|GLOVES|BED CHARGES/i.test(fbAfter), 'nothing from the bill on screen is ever put in the report link');
+    ok(hk.gc === false, 'the Google Cloud list is folded away under "Built on Google Cloud"');
+
+    console.log('== R22: Hindi and Marathi say they are machine-translated');
+    await fresh(); await ev(`setLang('hi');`); await sleep(150);
+    ok(await ev(`return !document.getElementById('langNote').classList.contains('hide') && /मशीन से अनुवादित/.test(document.getElementById('langNote').textContent)`), 'in Hindi, a note says the text is machine-translated and not yet reviewed');
+    await ev(`document.getElementById('langNoteOk').click();`); await sleep(100);
+    ok(await ev(`return document.getElementById('langNote').classList.contains('hide')`), 'it can be dismissed');
+    await send('Page.navigate', { url: `http://127.0.0.1:${port}/` }); await sleep(1200);
+    ok(await ev(`setLang('hi'); return document.getElementById('langNote').classList.contains('hide')`), '... and stays dismissed on this device');
+    ok(await ev(`setLang('mr'); return !document.getElementById('langNote').classList.contains('hide') && /मशीनने अनुवादित/.test(document.getElementById('langNote').textContent)`), 'Marathi has its own note');
+    ok(await ev(`setLang('en'); return document.getElementById('langNote').classList.contains('hide')`), 'English shows no such note');
+
     console.log('== Hindi errors');
     await fresh();
     await ev(`setLang('hi'); window.__mode='504'; addFiles([__mk('k1.jpg','image/jpeg',41)]); document.getElementById('checkPhotosBtn').click();`); await sleep(700);

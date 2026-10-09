@@ -427,6 +427,14 @@ async function start(port, env) {
     ok(br.headers['content-encoding'] === 'br' && zlib.brotliDecompressSync(br.raw).equals(page.raw), 'a browser that accepts brotli gets brotli, and it decompresses to exactly the page');
     ok(br.raw.length < gz2.raw.length, `brotli is smaller than gzip (${br.raw.length} vs ${gz2.raw.length} bytes)`);
 
+    console.log('== R22: link-preview image and robots.txt');
+    const og = await req(P, 'GET', '/og.png', { headers: { 'Accept-Encoding': 'gzip, br' } });
+    ok(og.status === 200 && og.headers['content-type'] === 'image/png' && !og.headers['content-encoding'] && og.raw.slice(1, 4).toString() === 'PNG' && og.raw.length < 300 * 1024,
+      'the preview image is served as a PNG, not re-compressed, under the 300 KB WhatsApp limit (' + og.raw.length + ' bytes)');
+    r = await req(P, 'GET', '/robots.txt'); ok(r.status === 200 && /^User-agent: \*\s+Allow: \//.test(text(r)), 'robots.txt lets search engines in');
+    ok(/<meta property="og:image" content="https:\/\/[^"]+\/og\.png">/.test(text(page)) && /<meta name="description"/.test(text(page)), 'the page carries a description and a preview image for shared links');
+    for (const f of ['/og.PNG', '/robots.txt/../server.js', '/lib/checks.js']) { r = await req(P, 'GET', f); ok(r.status === 404, f + ' is still 404'); }
+
     console.log('== R16: upload size and attempts');
     await start(P + 9, { ...common, RATE_MAX_PER_IP: '1000', DAILY_CAP: '100000' });
     r = await post(P + 9, 'x'.repeat(Math.ceil(10.5 * 1024 * 1024 * 3 / 4))); ok(r.status === 413, 'the default upload limit is now 10 MB (a 10.5 MB upload is refused with 413)');

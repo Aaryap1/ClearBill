@@ -4,6 +4,15 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>ClearBill — hospital bill, checkable</title>
+<meta name="description" content="Free: check an Indian hospital bill and your insurance settlement against IRDAI and NPPA rules, and draft a letter to your insurer. English, Hindi, Marathi.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="ClearBill: check your hospital bill and insurance settlement">
+<meta property="og:description" content="Free: checks an Indian hospital bill and your insurance settlement against IRDAI and NPPA rules, and drafts a letter to your insurer. English, Hindi, Marathi.">
+<meta property="og:url" content="https://clearbill-e7sodufiva-el.a.run.app/">
+<meta property="og:image" content="https://clearbill-e7sodufiva-el.a.run.app/og.png">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="ClearBill: check your hospital bill and insurance settlement">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#2A211A">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -284,6 +293,15 @@
   .aftersend{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:12px 14px;margin-top:14px;font-size:.88rem;line-height:1.5}
   .aftersend h4{font-family:"Archivo",sans-serif;font-size:.9rem;margin:0 0 6px} .aftersend ol{margin:0 0 0 1.1rem;padding:0} .aftersend li{margin:6px 0}
   .clearsaved{margin-top:12px}
+  .bys ol{margin:8px 0 0 1.2rem;padding:0;font-size:.9rem;line-height:1.5} .bys li{margin:3px 0}
+  .bys p{margin:0;font-size:.9rem;line-height:1.5}
+  .bys .btn{margin-top:12px;width:100%}
+  .howlist{margin:6px 0 0;padding:0;list-style:none} .howlist li{margin:0 0 10px;font-size:.88rem;line-height:1.5}
+  .howlist b{font-family:"Archivo",sans-serif;display:block;font-size:.84rem}
+  .fbrow{display:flex;gap:14px;flex-wrap:wrap;margin-top:6px}
+  .langnote{font-size:.84rem;margin:8px 0 0}
+  details.card.gcdet>summary{padding:0;font-family:"Archivo",sans-serif}
+  details.card.gcdet[open]>summary{border-bottom:none;margin-bottom:6px}
   details.readchk{margin-top:14px;border-color:var(--ochre);background:var(--ochre-bg)}
   details.readchk>summary{color:var(--ochre)}
   .bdates{display:block;font-size:.78rem;color:var(--soft);margin-top:4px;font-weight:400}
@@ -398,6 +416,7 @@
       <p class="tag" id="tagLine">Check a hospital bill and your insurance settlement against the published rules.</p>
       <p class="gcstrip" id="gcStrip">Runs on Google Cloud &mdash; <span>Gemini &middot; Cloud Run &middot; Document AI</span></p>
       <p class="impact hide" id="impactLine"></p>
+      <p class="notez langnote hide" id="langNote" role="note"><span id="langNoteTxt"></span> <button class="link" type="button" id="langNoteOk"></button></p>
       <p class="tag hide" id="iosHint" style="margin-top:6px">To install: tap <b>Share</b> &rarr; <b>Add to Home Screen</b>.</p>
     </div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:7px">
@@ -416,6 +435,12 @@
   <!-- TAB 1: SETTLEMENT -->
   <div class="tabpage on" id="page-settlement">
     <h2 class="sec-label" id="secSettlement">Settlement</h2>
+    <div class="card bys" id="beforeStart">
+      <div class="k" id="bysHead" style="margin-bottom:6px">Before you start</div>
+      <p id="bysIntro">ClearBill checks a hospital bill and your insurance settlement against the published rules, and drafts a letter you can send. Keep these papers to hand:</p>
+      <ol><li id="bys1">The hospital's final bill, and its itemised (detailed) bill</li><li id="bys2">Your insurer's or TPA's settlement letter</li><li id="bys3">Your payment receipt from the hospital</li></ol>
+      <button class="btn ghost sm" type="button" id="bysExampleBtn">No papers to hand? See the worked example</button>
+    </div>
     <button class="link" id="skipToFindingsBtn" style="margin:-2px 0 12px;display:block">Have the itemised bill but not these numbers? Check it directly &rarr;</button>
     <div class="card">
       <p class="notez hide" id="restoredNote" role="status" style="margin:0 0 12px"><span id="restoredTxt"></span> <button class="link" type="button" id="restoredClearBtn"></button></p>
@@ -576,6 +601,15 @@
         <div class="step3"><span class="n">3</span><p><b id="howStep3b">You decide</b><span id="howStep3p">Nothing is sent anywhere on your behalf. The letter is yours to send or not.</span></p></div>
       </div>
     </div>
+    <div class="card" id="howKnow">
+      <div class="k" id="howHead" style="margin-bottom:4px">How we know</div>
+      <ul class="howlist" id="howList"></ul>
+      <p id="howLimits" style="margin:6px 0 0;font-size:.88rem;line-height:1.5"></p>
+      <p id="howWho" style="margin:8px 0 0;font-size:.88rem;line-height:1.5"></p>
+      <div class="k" id="fbHead" style="margin:14px 0 4px">Something wrong?</div>
+      <p id="fbIntro" style="margin:0;font-size:.88rem;line-height:1.5"></p>
+      <div class="fbrow"><a class="link" id="fbGithub" target="_blank" rel="noopener">Report on GitHub</a><a class="link" id="fbEmail">Report by email</a></div>
+    </div>
     <div class="card">
       <div class="k" id="scenariosHead" style="margin-bottom:6px">Who this is for</div>
       <p class="gcintro" id="scenariosIntro">Built around one fully documented real cashless settlement &mdash; and meant for moments like these:</p>
@@ -586,11 +620,11 @@
       </ul>
       <p class="scennote" id="scenariosNote">These are illustrative situations, not additional validated cases &mdash; the one documented result above is the only outcome ClearBill claims.</p>
     </div>
-    <div class="card">
-      <div class="k" id="gcloudHead" style="margin-bottom:4px">Built on Google Cloud</div>
+    <details class="card gcdet">
+      <summary><span class="k" id="gcloudHead">Built on Google Cloud</span></summary>
       <p class="gcintro" id="gcloudIntro">ClearBill runs end to end on Google Cloud. Each service does one job:</p>
       <div class="gcrows" id="gcloudRows"></div>
-    </div>
+    </details>
     <div class="foot" id="footText">
       Base = total bill &minus; deduction &minus; hospital discount. Co-pay applies only to the base. Counter = deduction + co-pay.<br><br>
       The model only reads the bill into rows. Every flag after that is a table lookup or an arithmetic comparison, shown with its source.
@@ -1019,6 +1053,21 @@ en: {
   eg_yes:"Load the example", eg_keep:"Keep my bill",
   eg_undo_note:"The example replaced the figures you typed.", undo_word:"Undo",
   restored_note:"These figures are from your last visit on this device.", restored_clear:"Clear them",
+  bys_head:"Before you start", bys_intro:"ClearBill checks a hospital bill and your insurance settlement against the published rules, and drafts a letter you can send. Keep these papers to hand:",
+  bys_1:"The hospital's final bill, and its itemised (detailed) bill", bys_2:"Your insurer's or TPA's settlement letter", bys_3:"Your payment receipt from the hospital",
+  bys_try:"No papers to hand? See the worked example",
+  know_head:"How we know",
+  how_items:[
+    ["IRDAI List I and Lists II–IV","From IRDAI's 2019–2020 standardization guidelines. The 68 List I items were checked against IRDAI's own page on 25 September 2026. IRDAI's Master Circular of 29 May 2024 superseded that circular and does not restate the lists, so the letter asks your insurer to confirm they still apply."],
+    ["IRDAI's rules on claims and complaints","Quoted word for word from IRDAI's Master Circular on Health Insurance Business (29 May 2024) and its Master Circular on Protection of Policyholders' Interests (5 September 2024), checked 6–9 October 2026."],
+    ["NPPA price ceilings","Coronary stents: the ceilings in force from 1 April 2026. Knee implants: published as valid until 15 November 2026, and not independently re-confirmed by this project."],
+    ["Insurance Ombudsman","Insurance Ombudsman Rules 2017 (as amended in 2023), rule 14, checked on 9 October 2026. Office addresses as read on cioins.co.in on 5 October 2026."],
+    ["Bill format","IS 19493:2025, a voluntary Bureau of Indian Standards format: a missing field is not a breach of law."]],
+  how_limits:"Limits: tested on one real bill. Hindi and Marathi are machine translations that a native speaker has not yet reviewed. This is not legal advice.",
+  how_who:"A student project, open source at <a href='https://github.com/Aaryap1/ClearBill' target='_blank' rel='noopener'>github.com/Aaryap1/ClearBill</a>.",
+  fb_head:"Something wrong?", fb_intro:"A line read wrongly, a check that looks wrong, a translation mistake, or a problem with the letter: tell us. Please don't include your name, policy number or bill details.",
+  fb_github:"Report on GitHub", fb_email:"Report by email",
+  lang_note:"", lang_note_ok:"",
   copay_notsure:"Not sure", copay_not_entered:"not entered", approved_base_unknown:"Approved amount, before any co-pay", upto:v=>`up to ${v}`,
   settle_model_note_unknown:"This is the part of what you paid that these figures do not explain. Because you haven't entered a co-pay, it may include your co-pay, as well as room-rent limits, sub-limits, deductibles, policy exclusions and non-medical items; the app cannot tell them apart.",
   mystery_sub_unknown:(counter,ded)=>`You haven't entered a co-pay. Of the ${counter} you paid at the counter, up to ${ded} is not explained by these figures; part of it may be your co-pay.`,
@@ -1363,6 +1412,21 @@ hi: {
   eg_yes:"उदाहरण खोलें", eg_keep:"मेरा बिल रखें",
   eg_undo_note:"उदाहरण ने आपके डाले गए आँकड़े बदल दिए।", undo_word:"वापस लें",
   restored_note:"ये आँकड़े इस डिवाइस पर आपकी पिछली विज़िट के हैं।", restored_clear:"इन्हें मिटाएँ",
+  bys_head:"शुरू करने से पहले", bys_intro:"ClearBill अस्पताल के बिल और आपके बीमा सेटलमेंट को प्रकाशित नियमों से जाँचता है, और एक पत्र तैयार करता है जिसे आप भेज सकते हैं। ये काग़ज़ पास रखें:",
+  bys_1:"अस्पताल का अंतिम बिल, और उसका विस्तृत (आइटमवार) बिल", bys_2:"बीमा कंपनी या TPA का सेटलमेंट पत्र", bys_3:"अस्पताल को किए भुगतान की रसीद",
+  bys_try:"काग़ज़ पास नहीं हैं? उदाहरण देखें",
+  know_head:"हम कैसे जानते हैं",
+  how_items:[
+    ["IRDAI सूची I और सूची II–IV","IRDAI के 2019–2020 के मानकीकरण दिशानिर्देशों से। सूची I की 68 मदें 25 सितंबर 2026 को IRDAI के अपने पेज से मिलाई गईं। 29 मई 2024 के IRDAI मास्टर परिपत्र ने उस परिपत्र की जगह ले ली है और ये सूचियाँ दोहराता नहीं, इसलिए पत्र बीमा कंपनी से पुष्टि करने को कहता है कि ये अब भी लागू हैं।"],
+    ["दावों और शिकायतों पर IRDAI के नियम","IRDAI के स्वास्थ्य बीमा व्यवसाय पर मास्टर परिपत्र (29 मई 2024) और पॉलिसीधारकों के हितों की सुरक्षा पर मास्टर परिपत्र (5 सितंबर 2024) से शब्दशः, 6–9 अक्टूबर 2026 को जाँचे गए।"],
+    ["NPPA मूल्य सीमाएँ","कोरोनरी स्टेंट: 1 अप्रैल 2026 से लागू सीमाएँ। घुटने के इम्प्लांट: 15 नवंबर 2026 तक मान्य बताई गई, इस परियोजना ने इनकी स्वतंत्र रूप से दोबारा पुष्टि नहीं की है।"],
+    ["बीमा लोकपाल","बीमा लोकपाल नियम 2017 (2023 में संशोधित), नियम 14, 9 अक्टूबर 2026 को जाँचा गया। दफ़्तरों के पते cioins.co.in से, 5 अक्टूबर 2026 को पढ़े गए।"],
+    ["बिल का प्रारूप","IS 19493:2025, भारतीय मानक ब्यूरो का स्वैच्छिक प्रारूप: कोई जानकारी न होना क़ानून का उल्लंघन नहीं है।"]],
+  how_limits:"सीमाएँ: एक असली बिल पर जाँचा गया। हिंदी और मराठी मशीन से अनुवादित हैं और अभी किसी मूल वक्ता ने इन्हें नहीं जाँचा है। यह क़ानूनी सलाह नहीं है।",
+  how_who:"एक छात्र परियोजना, ओपन सोर्स: <a href='https://github.com/Aaryap1/ClearBill' target='_blank' rel='noopener'>github.com/Aaryap1/ClearBill</a>।",
+  fb_head:"कुछ गलत है?", fb_intro:"कोई लाइन गलत पढ़ी गई, कोई जाँच गलत लगती है, अनुवाद में गलती है, या पत्र में कोई समस्या है: हमें बताएँ। कृपया अपना नाम, पॉलिसी नंबर या बिल का ब्योरा न लिखें।",
+  fb_github:"GitHub पर बताएँ", fb_email:"ईमेल से बताएँ",
+  lang_note:"यह हिंदी पाठ मशीन से अनुवादित है और अभी किसी मूल वक्ता ने इसे नहीं जाँचा है। कोई गलती दिखे तो About टैब में “कुछ गलत है?” से बताएँ।", lang_note_ok:"ठीक है",
   copay_notsure:"पता नहीं", copay_not_entered:"नहीं डाला", approved_base_unknown:"मंज़ूर रकम, किसी भी को-पे से पहले", upto:v=>`${v} तक`,
   settle_model_note_unknown:"यह आपके भुगतान का वह हिस्सा है जो इन आँकड़ों से स्पष्ट नहीं होता। आपने को-पे नहीं डाला है, इसलिए इसमें आपका को-पे भी हो सकता है, साथ ही कमरे के किराए की सीमा, उप-सीमाएँ, डिडक्टिबल, पॉलिसी के अपवाद और ग़ैर-चिकित्सा चीज़ें; ऐप इनमें फ़र्क़ नहीं कर सकता।",
   mystery_sub_unknown:(counter,ded)=>`आपने को-पे नहीं डाला है। काउंटर पर चुकाई गई ${counter} में से ${ded} तक इन आँकड़ों से स्पष्ट नहीं होता; इसका कुछ हिस्सा आपका को-पे हो सकता है।`,
@@ -1708,6 +1772,21 @@ mr: {
   eg_yes:"उदाहरण उघडा", eg_keep:"माझं बिल ठेवा",
   eg_undo_note:"उदाहरणाने तुम्ही टाकलेले आकडे बदलले.", undo_word:"परत आणा",
   restored_note:"हे आकडे या डिव्हाइसवरील तुमच्या मागच्या भेटीतले आहेत.", restored_clear:"ते पुसा",
+  bys_head:"सुरू करण्यापूर्वी", bys_intro:"ClearBill रुग्णालयाचं बिल आणि तुमचं विमा सेटलमेंट प्रकाशित नियमांशी तपासतं, आणि तुम्ही पाठवू शकाल असं पत्र तयार करतं. ही कागदपत्रं जवळ ठेवा:",
+  bys_1:"रुग्णालयाचं अंतिम बिल, आणि त्याचं तपशीलवार (आयटमनिहाय) बिल", bys_2:"विमा कंपनीचं किंवा TPA चं सेटलमेंट पत्र", bys_3:"रुग्णालयाला केलेल्या पेमेंटची पावती",
+  bys_try:"कागदपत्रं जवळ नाहीत? उदाहरण पहा",
+  know_head:"आम्हाला कसं माहीत आहे",
+  how_items:[
+    ["IRDAI यादी I आणि याद्या II–IV","IRDAI च्या 2019–2020 च्या प्रमाणीकरण मार्गदर्शक तत्त्वांमधून. यादी I च्या 68 बाबी 25 सप्टेंबर 2026 रोजी IRDAI च्या स्वतःच्या पानाशी पडताळल्या. 29 मे 2024 च्या IRDAI मास्टर परिपत्रकाने त्या परिपत्रकाची जागा घेतली आहे आणि या याद्या पुन्हा दिलेल्या नाहीत, म्हणून पत्र विमा कंपनीला त्या अजूनही लागू आहेत का याची खात्री करायला सांगतं."],
+    ["दावे आणि तक्रारींबद्दल IRDAI चे नियम","IRDAI च्या आरोग्य विमा व्यवसायावरील मास्टर परिपत्रक (29 मे 2024) आणि पॉलिसीधारकांच्या हितसंरक्षणावरील मास्टर परिपत्रक (5 सप्टेंबर 2024) यांतून शब्दशः, 6–9 ऑक्टोबर 2026 रोजी तपासले."],
+    ["NPPA किंमत मर्यादा","कोरोनरी स्टेंट: 1 एप्रिल 2026 पासून लागू मर्यादा. गुडघा इम्प्लांट: 15 नोव्हेंबर 2026 पर्यंत वैध म्हणून प्रकाशित, या प्रकल्पाने त्यांची स्वतंत्रपणे पुन्हा खात्री केलेली नाही."],
+    ["विमा लोकपाल","विमा लोकपाल नियम 2017 (2023 मध्ये सुधारित), नियम 14, 9 ऑक्टोबर 2026 रोजी तपासला. कार्यालयांचे पत्ते cioins.co.in वरून, 5 ऑक्टोबर 2026 रोजी वाचलेले."],
+    ["बिलाचा नमुना","IS 19493:2025, भारतीय मानक ब्युरोचा ऐच्छिक नमुना: एखादा तपशील नसणं हा कायद्याचा भंग नाही."]],
+  how_limits:"मर्यादा: एका खऱ्या बिलावर तपासलं. हिंदी आणि मराठी मशीनने अनुवादित आहेत आणि अजून कोणत्याही मूळ भाषकाने ते तपासलेलं नाही. हा कायदेशीर सल्ला नाही.",
+  how_who:"एक विद्यार्थी प्रकल्प, ओपन सोर्स: <a href='https://github.com/Aaryap1/ClearBill' target='_blank' rel='noopener'>github.com/Aaryap1/ClearBill</a>.",
+  fb_head:"काही चुकलं आहे?", fb_intro:"एखादी ओळ चुकीची वाचली गेली, एखादी तपासणी चुकीची वाटते, अनुवादात चूक आहे, किंवा पत्रात काही अडचण आहे: आम्हाला कळवा. कृपया तुमचं नाव, पॉलिसी नंबर किंवा बिलाचा तपशील लिहू नका.",
+  fb_github:"GitHub वर कळवा", fb_email:"ईमेलने कळवा",
+  lang_note:"हा मराठी मजकूर मशीनने अनुवादित केलेला आहे आणि अजून कोणत्याही मूळ भाषकाने तो तपासलेला नाही. चूक दिसली तर About टॅबमधील “काही चुकलं आहे?” मधून कळवा.", lang_note_ok:"ठीक आहे",
   copay_notsure:"माहीत नाही", copay_not_entered:"टाकलेला नाही", approved_base_unknown:"मंजूर रक्कम, कोणत्याही को-पेच्या आधी", upto:v=>`${v} पर्यंत`,
   settle_model_note_unknown:"हा तुम्ही भरलेल्या रकमेचा तो भाग आहे जो या आकड्यांवरून स्पष्ट होत नाही. तुम्ही को-पे टाकलेला नाही, त्यामुळे यात तुमचा को-पे असू शकतो, तसेच खोली भाड्याची मर्यादा, उप-मर्यादा, डिडक्टिबल, पॉलिसीचे अपवाद आणि बिगर-वैद्यकीय गोष्टी; अ‍ॅप यांच्यातला फरक ओळखू शकत नाही.",
   mystery_sub_unknown:(counter,ded)=>`तुम्ही को-पे टाकलेला नाही. काउंटरवर दिलेल्या ${counter} पैकी ${ded} पर्यंत रक्कम या आकड्यांवरून स्पष्ट होत नाही; त्यातला काही भाग तुमचा को-पे असू शकतो.`,
@@ -2124,7 +2203,7 @@ function calc(){
   const disc=re?0:Math.max(0,+F.discount.value||0);
   const paidBack=re?Math.max(0,+F.reimb.value||0):null;
   const counter=re?Math.max(0,money(total-paidBack)):Math.max(0,+F.counter.value||0);
-  if(!total||!(re?paidBack:counter)){ $('settleOut').classList.add('hide'); window.__settle=null; if(window.__lastExtraction) renderReport(window.__lastExtraction); else renderLetterTab(); return; }
+  if(!total||!(re?paidBack:counter)){ $('settleOut').classList.add('hide'); window.__settle=null; if(window.__lastExtraction) renderReport(window.__lastExtraction); else renderLetterTab(); renderBeforeStart(); return; }
   const r=cp/100;
   let deduction, warnKey, base, copayAmt, insurer;
   if(re){
@@ -2166,6 +2245,7 @@ function calc(){
   $('settleWarn').textContent = warnKey ? S()[warnKey] : '';
   $('settleWarn').classList.toggle('hide', !warnKey);
   if(window.__lastExtraction) renderReport(window.__lastExtraction); else renderLetterTab();
+  renderBeforeStart();
 }
 document.querySelectorAll('#settleMode .chip').forEach(c=>c.addEventListener('click',()=>setSettleMode(c.dataset.mode)));
 $('nextBill').addEventListener('click',()=>switchTab('findings'));
@@ -2193,6 +2273,28 @@ $('egUndoBtn').addEventListener('click',()=>{
   setSettleMode(b.mode,true); saveDraft(); calc();
   _beforeExample=null; $('egUndo').classList.add('hide');
 });
+// "Something wrong?" (R22): a pre-filled GitHub issue or email. Nothing from
+// the bill is ever put in it; only the screen language and the app version.
+const APP_VERSION='R22 (Oct 2026)', FEEDBACK_EMAIL='aaryap2024@gmail.com', FEEDBACK_REPO='https://github.com/Aaryap1/ClearBill';
+function feedbackBody(){
+  return ['What is wrong (keep the ones that apply):','- a line was read wrongly','- a check looks wrong','- a translation mistake','- a problem with the letter','',
+    'Which tab:','What you expected:','','Please do not include your name, policy number or bill details.','','Screen language: '+LANG+' / app version: '+APP_VERSION].join('\n');
+}
+function setFeedbackLinks(){
+  const title='ClearBill feedback ('+LANG+')', body=feedbackBody(), e=encodeURIComponent;
+  if($('fbGithub')) $('fbGithub').href=FEEDBACK_REPO+'/issues/new?title='+e(title)+'&body='+e(body);
+  if($('fbEmail')) $('fbEmail').href='mailto:'+FEEDBACK_EMAIL+'?subject='+e(title)+'&body='+e(body);
+}
+// The unreviewed-translation note shows in Hindi and Marathi until it is dismissed (on this device).
+function renderLangNote(){
+  let seen=false; try{ seen=localStorage.getItem('clearbill_langnote_'+LANG)==='1'; }catch(e){}
+  if($('langNote')) $('langNote').classList.toggle('hide', LANG==='en'||seen||!S().lang_note);
+}
+// Before you start shows only while the screen is empty: no figures typed and no bill on screen.
+function renderBeforeStart(){
+  const empty=![F.total.value,F.counter.value,F.reimb.value].some(v=>String(v).trim()!=='') && !window.__lastExtraction;
+  if($('beforeStart')) $('beforeStart').classList.toggle('hide',!empty);
+}
 function loadWorkedExample(){
   const prev={mode:SETTLE_MODE,total:F.total.value,counter:F.counter.value,discount:F.discount.value,copay:F.copay.value,reimb:F.reimb.value};
   const typed=[prev.total,prev.counter,prev.discount,prev.copay,prev.reimb].some(v=>v!=='') && !(prev.mode==='cashless'&&+prev.total===41396&&+prev.counter===9349&&+prev.discount===1572&&+prev.copay===10);
@@ -2208,6 +2310,8 @@ function loadWorkedExample(){
   renderFilePreview(); // resetUploadState() just rendered the empty state before this flag was set — render again now it's true
   window.__lastExtraction=WORKED_EXAMPLE_BILL;
   calc(); // computes the settlement AND calls renderReport() since lastExtraction is now set
+  // The result was below the fold on a phone, with no cue (R22).
+  if($('page-settlement').classList.contains('on')) $('settleOut').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 /* checks */
@@ -3415,6 +3519,12 @@ function applyStaticI18n(){
    ['clearConfirmQ','clear_confirm_q'],['clearYesBtn','clear_yes'],['clearCancelBtn','cancel_word'],['restoredTxt','restored_note'],['restoredClearBtn','restored_clear']]
     .forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
   if($('copayNotSure')) $('copayNotSure').textContent=T_.copay_notsure;
+  [['bysHead','bys_head'],['bysIntro','bys_intro'],['bys1','bys_1'],['bys2','bys_2'],['bys3','bys_3'],['bysExampleBtn','bys_try'],['howHead','know_head'],['howLimits','how_limits'],
+   ['fbHead','fb_head'],['fbIntro','fb_intro'],['fbGithub','fb_github'],['fbEmail','fb_email'],['langNoteTxt','lang_note'],['langNoteOk','lang_note_ok']]
+    .forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
+  if($('howWho')) $('howWho').innerHTML=T_.how_who;
+  if($('howList')) $('howList').innerHTML=(Sv('how_items')||[]).map(([t,d])=>'<li><b>'+esc(t)+'</b>'+esc(d)+'</li>').join('');
+  setFeedbackLinks(); renderLangNote();
   $('secSettlement').textContent=T_.sec_settlement;
   $('lblTotal').innerHTML=T_.lbl_total;
   $('lblCounter').innerHTML=T_.lbl_counter;
@@ -4007,6 +4117,12 @@ function renderReaderNote(){
   try{ const r=await fetch('api/impact'); if(r.ok){ _impact=await r.json(); renderImpact(); } }catch(e){ /* no line is better than a wrong one */ }
 })();
 configReady.then(renderReaderNote);
+$('bysExampleBtn').addEventListener('click',()=>{ $('egBtn').click(); });
+$('langNoteOk').addEventListener('click',()=>{ try{ localStorage.setItem('clearbill_langnote_'+LANG,'1'); }catch(e){} renderLangNote(); });
+// A shared link to the worked example (R22): #example opens it on Findings.
+const openExampleFromHash=()=>{ if(location.hash==='#example'){ loadWorkedExample(); switchTab('findings'); } };
+openExampleFromHash(); window.addEventListener('hashchange',openExampleFromHash);
+renderBeforeStart();
 </script>
 </body>
 </html>

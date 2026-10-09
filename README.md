@@ -113,4 +113,4 @@ A signed-in user can optionally save a checked bill and its letter — "My Bills
 - **Not tested on real devices** — phone browsers, print-to-PDF output, screen readers.
 - **Hindi and Marathi text** is machine-translated and has not been reviewed by a native speaker.
 - **NPPA knee-implant ceilings** are real notifications this project has not independently re-confirmed, and were published as valid until 15 Nov 2026. The GST allowance applied to implant ceilings (5%) is an assumption pending a primary source.
-- **IRDAI table** is built from an insurer's reproduction of List I; see `02_reference_data/IRDAI_VERIFICATION.md` for what was checked and what was not.
+- **IRDAI table**: the 68 List I item names were checked against IRDAI's own page on 25 Sep 2026, and every row cited as List I is tested against them. The lists come from IRDAI's 2019–2020 standardization guidelines, which the 29 May 2024 Master Circular superseded without restating them, so the letter asks the insurer to confirm they still apply. See `02_reference_data/IRDAI_VERIFICATION.md` for what was checked and what was not.

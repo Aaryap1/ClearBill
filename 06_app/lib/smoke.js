@@ -37,6 +37,10 @@ const get = (p, h) => fetch(BASE + p, { headers: h || {}, redirect: 'manual' });
   r = await get('/api/impact'); const imp = await r.json();
   ok(r.status === 200 && imp.enabled === true && imp.pages >= 0, 'the impact counter answers (' + imp.pages + ' pages so far)');
 
+  r = await get('/og.png');
+  ok(r.status === 200 && r.headers.get('content-type') === 'image/png' && (await r.arrayBuffer()).byteLength < 300 * 1024, 'the link-preview image is served (PNG, under 300 KB)');
+  ok(/property="og:image" content="https:\/\/[^"]+\/og\.png"/.test(html), 'the page names it as its preview image');
+
   for (const p of ['/server.js', '/lib/checks.js', '/Dockerfile', '/DEPLOY.md']) { r = await get(p); ok(r.status === 404, p + ' is not served'); }
 
   r = await fetch(BASE + '/api/read-bill', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"not":"a photo"}' });
