@@ -284,6 +284,10 @@
   .aftersend{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:12px 14px;margin-top:14px;font-size:.88rem;line-height:1.5}
   .aftersend h4{font-family:"Archivo",sans-serif;font-size:.9rem;margin:0 0 6px} .aftersend ol{margin:0 0 0 1.1rem;padding:0} .aftersend li{margin:6px 0}
   .clearsaved{margin-top:12px}
+  details.readchk{margin-top:14px;border-color:var(--ochre);background:var(--ochre-bg)}
+  details.readchk>summary{color:var(--ochre)}
+  .bdates{display:block;font-size:.78rem;color:var(--soft);margin-top:4px;font-weight:400}
+  .asdates{margin:8px 0 0;font-size:.86rem}
   .inlineconfirm{margin-top:8px;padding:10px 12px;border:1px solid var(--rule);border-radius:9px;background:var(--field);font-size:.86rem}
   .inlineconfirm p{margin:0 0 8px}
   .inlineconfirm .btn{margin-right:10px}
@@ -433,7 +437,7 @@
       <div class="chips" id="copayChips">
         <button type="button" class="chip" data-v="0">0</button><button type="button" class="chip" data-v="5">5</button>
         <button type="button" class="chip" data-v="10">10</button><button type="button" class="chip" data-v="15">15</button>
-        <button type="button" class="chip" data-v="20">20</button>
+        <button type="button" class="chip" data-v="20">20</button><button type="button" class="chip" data-v="" id="copayNotSure">Not sure</button>
       </div>
       <details class="findnums">
         <summary id="findNumsSummary">Not sure which number is which?</summary>
@@ -503,7 +507,7 @@
   <!-- TAB 3: LETTER — nothing drafts until Generate is tapped -->
   <div class="tabpage" id="page-letter">
     <h2 class="sec-label" id="secLetter">Letter</h2>
-    <p class="emptystate" id="letterEmpty">Upload a bill in the Findings tab to see what your letter will include.</p>
+    <p class="emptystate" id="letterEmpty">Enter your settlement figures, or check your itemised bill in Findings, to draft a letter.</p>
     <div id="letterConfirm" class="hide">
       <div class="card">
         <div class="k" id="letterConfirmHead" style="margin-bottom:8px">This letter will include</div>
@@ -995,6 +999,10 @@ const makeInr = lang => {
 function announce(t){ const el=document.getElementById('srLive'); if(!el) return; el.textContent=''; setTimeout(()=>{ el.textContent=t; },60); }
 let LANG = 'en';
 const LOCAL_LS='clearbill_local_checks', LOCAL_MAX=20; // R12: checks kept on this device, no sign-in
+// Declared here, before calc() first runs at load and draws the Letter tab (R20/R21).
+let _userIncl={}, _userInclFor=null;
+const NO_BILL={header:{},line_items:[]};
+const _analyses=new WeakMap(); // analyseFor() cache (R20)
 let _myBills=[], BILLS_ON=false, GOOGLE_CLIENT_ID=null, ID_TOKEN=null, ID_TOKEN_NAME=null;
 let READER_STATE='ok', _impact=null; // R14: from /api/config and /api/impact
 let inr = makeInr(LANG);
@@ -1011,6 +1019,21 @@ en: {
   eg_yes:"Load the example", eg_keep:"Keep my bill",
   eg_undo_note:"The example replaced the figures you typed.", undo_word:"Undo",
   restored_note:"These figures are from your last visit on this device.", restored_clear:"Clear them",
+  copay_notsure:"Not sure", copay_not_entered:"not entered", approved_base_unknown:"Approved amount, before any co-pay", upto:v=>`up to ${v}`,
+  settle_model_note_unknown:"This is the part of what you paid that these figures do not explain. Because you haven't entered a co-pay, it may include your co-pay, as well as room-rent limits, sub-limits, deductibles, policy exclusions and non-medical items; the app cannot tell them apart.",
+  mystery_sub_unknown:(counter,ded)=>`You haven't entered a co-pay. Of the ${counter} you paid at the counter, up to ${ded} is not explained by these figures; part of it may be your co-pay.`,
+  mystery_sub_reimb_unknown:(gap,ded)=>`You haven't entered a co-pay. Of the ${gap} the insurer did not pay back, up to ${ded} is not explained by these figures; part of it may be your co-pay.`,
+  copay_unknown_note:"You haven't entered a co-pay, so the amount not itemised below may include your co-pay. The letter asks your insurer to show how much was co-pay and how much was deducted.",
+  ls_settle_unknown:counter=>`It says you paid ${counter} and asks your insurer to show how much of it was co-pay and how much was deducted.`,
+  letter_no_bill:"No itemised bill checked yet. The letter asks your insurer for the line-by-line breakdown; checking your bill in Findings adds what the checks find.",
+  rc_head:n=>`Check ${n} row${n>1?'s':''} against your paper bill`,
+  rc_intro:"These may be reading mistakes, not findings about the hospital. They are never put in the letter.",
+  rc_qtyrate:(q,r,calc,t)=>`${q} &times; ${r} = ${calc}, but the amount reads ${t}`,
+  rc_unreadable:"the amount could not be read", rc_noamount:"no amount was read for this row",
+  rc_forward:"looks like a running total carried from another page, not a charge: check it isn't counted twice",
+  rc_suppressed:"Many rows come out a fixed percentage above quantity &times; rate, probably because their amounts include tax, so that check was skipped.",
+  dates_today:(today,reply,opens,deadline)=>`If you send it today (${today}): a reply is due around ${reply}, within 14 days. If none comes, you can go to the Ombudsman one month after the insurer receives your letter, so on or after ${opens}, and you have until ${deadline} (Insurance Ombudsman Rules 2017, rule 14(3)). If the insurer does reply, the year counts from its reply. Sending on another day? Enter that date under "Sent on" in My Bills and the dates follow it.`,
+  dates_sent:(reply,opens,deadline)=>`Reply due around ${reply}. No reply: the Ombudsman route opens on or after ${opens}, until ${deadline}.`,
   upsum:n=>`${n} lines read`, upsum_example:n=>`Worked example &middot; ${n} lines read`,
   aria_language:"Language", aria_sections:"Sections", aria_remove_photo:"Remove this photo",
   sec_settlement: "Settlement",
@@ -1026,7 +1049,7 @@ en: {
   findnums_total: '&mdash; look for "Final Bill", "Gross Amount" or "Total Bill Amount" on the hospital bill or the TPA settlement letter.',
   findnums_counter: '&mdash; look for "Amount Payable by Patient" or "Net Amount Paid" on the discharge summary or payment receipt.',
   findnums_discount: '&mdash; look for "MOU Discount", "PPN Discount" or "Package Discount" on the bill. Leave as 0 if you don\'t see one.',
-  findnums_copay: '&mdash; check your policy schedule, or "Co-Payment %" on the claim settlement letter. Try 0 first if you can\'t find it.',
+  findnums_copay: '&mdash; check your policy schedule, or "Co-Payment %" on the claim settlement letter. If you can\'t find it, leave it blank or tap "Not sure": the letter will then ask your insurer how much of what you paid was co-pay.',
   findnums_note: "Different insurers and hospitals word these differently — this is a guide, not an exact match for every document.",
   never_itemised: "Not itemised &mdash; the settlement figures don&rsquo;t say what this was for",
   mystery_sub: (counter,copay,ded)=>`Of the ${counter} you paid at the counter, ${copay} was co-pay and ${ded} is not explained by these figures.`,
@@ -1244,7 +1267,7 @@ en: {
   letter_confirm_dup:n=>`${n} duplicate charge${n>1?'s':''}`,
   letter_confirm_recon:"The reconciliation gap",
   letter_confirm_sent_to:"Sent to", letter_confirm_sent_to_val:"Insurer&rsquo;s grievance officer",
-  letter_empty:"Upload a bill in the Findings tab to see what your letter will include.",
+  letter_empty:"Enter your settlement figures, or check your itemised bill in Findings, to draft a letter.",
   findings_empty:"Upload a bill above to see findings here. Nothing to check yet.",
   gen_letter_btn:"Generate the letter",
   print_btn:"Print / Save as PDF", copy_btn:"Copy text", copied_btn:"Copied", share_btn:"Share",
@@ -1340,6 +1363,21 @@ hi: {
   eg_yes:"उदाहरण खोलें", eg_keep:"मेरा बिल रखें",
   eg_undo_note:"उदाहरण ने आपके डाले गए आँकड़े बदल दिए।", undo_word:"वापस लें",
   restored_note:"ये आँकड़े इस डिवाइस पर आपकी पिछली विज़िट के हैं।", restored_clear:"इन्हें मिटाएँ",
+  copay_notsure:"पता नहीं", copay_not_entered:"नहीं डाला", approved_base_unknown:"मंज़ूर रकम, किसी भी को-पे से पहले", upto:v=>`${v} तक`,
+  settle_model_note_unknown:"यह आपके भुगतान का वह हिस्सा है जो इन आँकड़ों से स्पष्ट नहीं होता। आपने को-पे नहीं डाला है, इसलिए इसमें आपका को-पे भी हो सकता है, साथ ही कमरे के किराए की सीमा, उप-सीमाएँ, डिडक्टिबल, पॉलिसी के अपवाद और ग़ैर-चिकित्सा चीज़ें; ऐप इनमें फ़र्क़ नहीं कर सकता।",
+  mystery_sub_unknown:(counter,ded)=>`आपने को-पे नहीं डाला है। काउंटर पर चुकाई गई ${counter} में से ${ded} तक इन आँकड़ों से स्पष्ट नहीं होता; इसका कुछ हिस्सा आपका को-पे हो सकता है।`,
+  mystery_sub_reimb_unknown:(gap,ded)=>`आपने को-पे नहीं डाला है। बीमा कंपनी ने जो ${gap} वापस नहीं दिए, उनमें से ${ded} तक इन आँकड़ों से स्पष्ट नहीं होता; इसका कुछ हिस्सा आपका को-पे हो सकता है।`,
+  copay_unknown_note:"आपने को-पे नहीं डाला है, इसलिए नीचे दिखाई गई बिना ब्योरे वाली रकम में आपका को-पे शामिल हो सकता है। पत्र बीमा कंपनी से पूछता है कि कितना को-पे था और कितना काटा गया।",
+  ls_settle_unknown:counter=>`इसमें लिखा है कि आपने ${counter} चुकाए और बीमा कंपनी से पूछा गया है कि उसमें से कितना को-पे था और कितना काटा गया।`,
+  letter_no_bill:"अभी कोई बिल नहीं जाँचा गया। पत्र बीमा कंपनी से लाइन-दर-लाइन ब्योरा माँगता है; 'जाँचें' में बिल जाँचने से जाँचों के नतीजे भी जुड़ जाते हैं।",
+  rc_head:n=>`अपने काग़ज़ी बिल से ${n} लाइन मिलाकर देखें`,
+  rc_intro:"ये पढ़ने की गलतियाँ हो सकती हैं, अस्पताल के बारे में नतीजे नहीं। इन्हें पत्र में कभी नहीं डाला जाता।",
+  rc_qtyrate:(q,r,calc,t)=>`${q} &times; ${r} = ${calc}, पर रकम ${t} पढ़ी गई`,
+  rc_unreadable:"रकम पढ़ी नहीं जा सकी", rc_noamount:"इस लाइन की कोई रकम नहीं पढ़ी गई",
+  rc_forward:"यह किसी और पेज से आगे लाया गया जोड़ लगता है, चार्ज नहीं: देखें कि यह दो बार तो नहीं गिना गया",
+  rc_suppressed:"कई लाइनों की रकम मात्रा &times; दर से एक तय प्रतिशत ज़्यादा है, शायद उनमें टैक्स शामिल है, इसलिए यह जाँच छोड़ दी गई।",
+  dates_today:(today,reply,opens,deadline)=>`अगर आप इसे आज (${today}) भेजें: जवाब लगभग ${reply} तक, 14 दिनों में आना चाहिए। जवाब न आए तो बीमा कंपनी को पत्र मिलने के एक महीने बाद, यानी ${opens} या उसके बाद, आप लोकपाल के पास जा सकते हैं, और ${deadline} तक (बीमा लोकपाल नियम 2017, नियम 14(3))। अगर बीमा कंपनी जवाब दे, तो साल उसके जवाब से गिना जाता है। किसी और दिन भेज रहे हैं? My Bills में "भेजने की तारीख़" में वह तारीख़ डालें, तारीख़ें उसी से चलेंगी।`,
+  dates_sent:(reply,opens,deadline)=>`जवाब लगभग ${reply} तक। जवाब न आए तो लोकपाल का रास्ता ${opens} या उसके बाद, ${deadline} तक।`,
   upsum:n=>`${n} लाइनें पढ़ी गईं`, upsum_example:n=>`उदाहरण बिल &middot; ${n} लाइनें पढ़ी गईं`,
   aria_language:"भाषा", aria_sections:"हिस्से", aria_remove_photo:"यह फ़ोटो हटाएँ",
   sec_settlement: "सेटलमेंट",
@@ -1355,7 +1393,7 @@ hi: {
   findnums_total: '&mdash; अस्पताल के बिल या TPA सेटलमेंट पत्र पर "Final Bill", "Gross Amount" या "Total Bill Amount" देखें।',
   findnums_counter: '&mdash; डिस्चार्ज समरी या पेमेंट रसीद पर "Amount Payable by Patient" या "Net Amount Paid" देखें।',
   findnums_discount: '&mdash; बिल पर "MOU Discount", "PPN Discount" या "Package Discount" देखें। न मिले तो 0 रहने दें।',
-  findnums_copay: '&mdash; अपनी पॉलिसी शेड्यूल देखें, या क्लेम सेटलमेंट पत्र पर "Co-Payment %" देखें। न मिले तो पहले 0 आज़माएँ।',
+  findnums_copay: '&mdash; अपनी पॉलिसी शेड्यूल देखें, या क्लेम सेटलमेंट पत्र पर "Co-Payment %" देखें। न मिले तो इसे ख़ाली छोड़ें या "पता नहीं" दबाएँ: तब पत्र बीमा कंपनी से पूछेगा कि आपके भुगतान में कितना को-पे था।',
   findnums_note: "अलग-अलग बीमा कंपनियाँ और अस्पताल इन्हें अलग शब्दों में लिखते हैं — यह एक गाइड है, हर दस्तावेज़ से हूबहू मेल नहीं।",
   never_itemised: "ब्योरा नहीं दिया गया &mdash; सेटलमेंट के आँकड़े नहीं बताते कि यह किसलिए था",
   mystery_sub: (counter,copay,ded)=>`काउंटर पर चुकाई गई ${counter} में से ${copay} को-पे था और ${ded} इन आँकड़ों से स्पष्ट नहीं होता।`,
@@ -1573,7 +1611,7 @@ hi: {
   letter_confirm_dup:n=>`${n} दोहरे चार्ज`,
   letter_confirm_recon:"मिलान में अंतर",
   letter_confirm_sent_to:"किसे भेजा जाएगा", letter_confirm_sent_to_val:"बीमा कंपनी के शिकायत अधिकारी",
-  letter_empty:"अपना पत्र देखने के लिए, 'जाँचें' टैब में बिल अपलोड करें।",
+  letter_empty:"पत्र तैयार करने के लिए अपने सेटलमेंट के आँकड़े डालें, या 'जाँचें' में अपना बिल जाँचें।",
   findings_empty:"बिल अपलोड करें ताकि यहाँ जाँचें दिखें। अभी कुछ जाँचने को नहीं है।",
   gen_letter_btn:"पत्र तैयार करें",
   print_btn:"प्रिंट करें / PDF सहेजें", copy_btn:"टेक्स्ट कॉपी करें", copied_btn:"कॉपी हो गया", share_btn:"शेयर करें",
@@ -1670,6 +1708,21 @@ mr: {
   eg_yes:"उदाहरण उघडा", eg_keep:"माझं बिल ठेवा",
   eg_undo_note:"उदाहरणाने तुम्ही टाकलेले आकडे बदलले.", undo_word:"परत आणा",
   restored_note:"हे आकडे या डिव्हाइसवरील तुमच्या मागच्या भेटीतले आहेत.", restored_clear:"ते पुसा",
+  copay_notsure:"माहीत नाही", copay_not_entered:"टाकलेला नाही", approved_base_unknown:"मंजूर रक्कम, कोणत्याही को-पेच्या आधी", upto:v=>`${v} पर्यंत`,
+  settle_model_note_unknown:"हा तुम्ही भरलेल्या रकमेचा तो भाग आहे जो या आकड्यांवरून स्पष्ट होत नाही. तुम्ही को-पे टाकलेला नाही, त्यामुळे यात तुमचा को-पे असू शकतो, तसेच खोली भाड्याची मर्यादा, उप-मर्यादा, डिडक्टिबल, पॉलिसीचे अपवाद आणि बिगर-वैद्यकीय गोष्टी; अ‍ॅप यांच्यातला फरक ओळखू शकत नाही.",
+  mystery_sub_unknown:(counter,ded)=>`तुम्ही को-पे टाकलेला नाही. काउंटरवर दिलेल्या ${counter} पैकी ${ded} पर्यंत रक्कम या आकड्यांवरून स्पष्ट होत नाही; त्यातला काही भाग तुमचा को-पे असू शकतो.`,
+  mystery_sub_reimb_unknown:(gap,ded)=>`तुम्ही को-पे टाकलेला नाही. विमा कंपनीने परत न दिलेल्या ${gap} पैकी ${ded} पर्यंत रक्कम या आकड्यांवरून स्पष्ट होत नाही; त्यातला काही भाग तुमचा को-पे असू शकतो.`,
+  copay_unknown_note:"तुम्ही को-पे टाकलेला नाही, त्यामुळे खाली दाखवलेल्या तपशील नसलेल्या रकमेत तुमचा को-पे असू शकतो. पत्र विमा कंपनीला विचारतं की को-पे किती होता आणि किती कापलं गेलं.",
+  ls_settle_unknown:counter=>`त्यात असं लिहिलं आहे की तुम्ही ${counter} भरले आणि विमा कंपनीला विचारलं आहे की त्यापैकी को-पे किती होता आणि किती कापलं गेलं.`,
+  letter_no_bill:"अजून कोणतंही बिल तपासलेलं नाही. पत्र विमा कंपनीकडे ओळीनुसार तपशील मागतं; 'तपासण्या' मध्ये बिल तपासल्यावर तपासण्यांचे निष्कर्षही जोडले जातात.",
+  rc_head:n=>`तुमच्या कागदी बिलाशी ${n} ओळी पडताळून पहा`,
+  rc_intro:"या वाचनातल्या चुका असू शकतात, रुग्णालयाबद्दलचे निष्कर्ष नव्हेत. त्या पत्रात कधीच टाकल्या जात नाहीत.",
+  rc_qtyrate:(q,r,calc,t)=>`${q} &times; ${r} = ${calc}, पण रक्कम ${t} वाचली गेली`,
+  rc_unreadable:"रक्कम वाचता आली नाही", rc_noamount:"या ओळीची कोणतीही रक्कम वाचली गेली नाही",
+  rc_forward:"ही दुसऱ्या पानावरून पुढे आणलेली बेरीज वाटते, चार्ज नव्हे: ती दोनदा मोजली गेली नाही ना ते पहा",
+  rc_suppressed:"अनेक ओळींची रक्कम प्रमाण &times; दरापेक्षा ठरावीक टक्क्यांनी जास्त आहे, बहुधा त्यात कर आहे, म्हणून ही तपासणी वगळली.",
+  dates_today:(today,reply,opens,deadline)=>`तुम्ही हे आज (${today}) पाठवलं तर: उत्तर साधारण ${reply} पर्यंत, 14 दिवसांत यायला हवं. उत्तर आलं नाही तर विमा कंपनीला पत्र मिळाल्यानंतर एका महिन्याने, म्हणजे ${opens} किंवा त्यानंतर, तुम्ही लोकपालाकडे जाऊ शकता, आणि ${deadline} पर्यंत (विमा लोकपाल नियम 2017, नियम 14(3)). विमा कंपनीने उत्तर दिलं तर वर्ष त्या उत्तरापासून मोजलं जातं. दुसऱ्या दिवशी पाठवताय? My Bills मध्ये "पाठवल्याची तारीख" मध्ये ती तारीख टाका, तारखा त्यानुसार बदलतील.`,
+  dates_sent:(reply,opens,deadline)=>`उत्तर साधारण ${reply} पर्यंत. उत्तर न आल्यास लोकपालाचा मार्ग ${opens} किंवा त्यानंतर, ${deadline} पर्यंत.`,
   upsum:n=>`${n} ओळी वाचल्या`, upsum_example:n=>`उदाहरण बिल &middot; ${n} ओळी वाचल्या`,
   aria_language:"भाषा", aria_sections:"विभाग", aria_remove_photo:"हा फोटो काढा",
   sec_settlement: "सेटलमेंट",
@@ -1685,7 +1738,7 @@ mr: {
   findnums_total: '&mdash; रुग्णालयाच्या बिलावर किंवा TPA सेटलमेंट पत्रावर "Final Bill", "Gross Amount" किंवा "Total Bill Amount" पहा.',
   findnums_counter: '&mdash; डिस्चार्ज समरी किंवा पेमेंट पावतीवर "Amount Payable by Patient" किंवा "Net Amount Paid" पहा.',
   findnums_discount: '&mdash; बिलावर "MOU Discount", "PPN Discount" किंवा "Package Discount" पहा. नसेल तर 0 राहू द्या.',
-  findnums_copay: '&mdash; तुमचं पॉलिसी शेड्युल पहा, किंवा क्लेम सेटलमेंट पत्रावर "Co-Payment %" पहा. नसेल तर आधी 0 वापरून पहा.',
+  findnums_copay: '&mdash; तुमचं पॉलिसी शेड्युल पहा, किंवा क्लेम सेटलमेंट पत्रावर "Co-Payment %" पहा. सापडलं नाही तर हे रिकामं ठेवा किंवा "माहीत नाही" दाबा: मग पत्र विमा कंपनीला विचारेल की तुम्ही भरलेल्या रकमेत को-पे किती होता.',
   findnums_note: "वेगवेगळ्या विमा कंपन्या आणि रुग्णालयं हे वेगळ्या शब्दांत लिहितात — हे मार्गदर्शक आहे, प्रत्येक कागदपत्राशी तंतोतंत जुळेलच असं नाही.",
   never_itemised: "तपशील दिलेला नाही &mdash; सेटलमेंटचे आकडे हे कशासाठी होतं ते सांगत नाहीत",
   mystery_sub: (counter,copay,ded)=>`काउंटरवर दिलेल्या ${counter} पैकी ${copay} को-पे होता आणि ${ded} या आकड्यांवरून स्पष्ट होत नाही.`,
@@ -1903,7 +1956,7 @@ mr: {
   letter_confirm_dup:n=>`${n} डुप्लिकेट चार्जेस`,
   letter_confirm_recon:"ताळमेळातील फरक",
   letter_confirm_sent_to:"कोणाला पाठवायचं", letter_confirm_sent_to_val:"विमा कंपनीचे तक्रार अधिकारी",
-  letter_empty:"तुमचं पत्र पाहण्यासाठी, 'तपासण्या' टॅबमध्ये बिल अपलोड करा.",
+  letter_empty:"पत्र तयार करण्यासाठी तुमचे सेटलमेंटचे आकडे टाका, किंवा 'तपासण्या' मध्ये तुमचं बिल तपासा.",
   findings_empty:"बिल अपलोड करा म्हणजे इथे तपासण्या दिसतील. अजून तपासण्यासारखं काही नाही.",
   gen_letter_btn:"पत्र तयार करा",
   print_btn:"प्रिंट करा / PDF सेव्ह करा", copy_btn:"मजकूर कॉपी करा", copied_btn:"कॉपी झालं", share_btn:"शेअर करा",
@@ -2062,12 +2115,16 @@ const settleOk=()=>{ const s=window.__settle; return s&&!s.warn?s:null; };
 function calc(){
   const re=SETTLE_MODE==='reimb';
   const total=Math.max(0,+F.total.value||0), cp=Math.max(0,Math.min(100,+F.copay.value||0));
+  // A blank co-pay is "not entered", not 0 (R21). It used to count as 0, so
+  // the whole counter payment went into the letter as "I calculate as
+  // non-payable", a figure the insurer could rebut at once.
+  const cpUnknown=String(F.copay.value).trim()==='';
   // A reimbursement has no counter payment and no network discount: you paid
   // the bill, and "counter" becomes the part of it you did not get back.
   const disc=re?0:Math.max(0,+F.discount.value||0);
   const paidBack=re?Math.max(0,+F.reimb.value||0):null;
   const counter=re?Math.max(0,money(total-paidBack)):Math.max(0,+F.counter.value||0);
-  if(!total||!(re?paidBack:counter)){ $('settleOut').classList.add('hide'); window.__settle=null; if(window.__lastExtraction) renderReport(window.__lastExtraction); return; }
+  if(!total||!(re?paidBack:counter)){ $('settleOut').classList.add('hide'); window.__settle=null; if(window.__lastExtraction) renderReport(window.__lastExtraction); else renderLetterTab(); return; }
   const r=cp/100;
   let deduction, warnKey, base, copayAmt, insurer;
   if(re){
@@ -2092,14 +2149,15 @@ function calc(){
     copayAmt = money(base*r);
     insurer = Math.max(0, money(base-copayAmt));
   }
-  window.__settle = {mode:SETTLE_MODE,total,counter,disc,cp,deduction,base,copayAmt,insurer,warn:warnKey};
+  window.__settle = {mode:SETTLE_MODE,total,counter,disc,cp,deduction,base,copayAmt,insurer,warn:warnKey,copayUnknown:cpUnknown};
   $('settleOut').classList.toggle('inconsistent',!!warnKey);
-  $('settleModelNote').textContent=re?S().settle_model_note_reimb:S().settle_model_note;
+  $('settleModelNote').textContent=cpUnknown?S().settle_model_note_unknown:re?S().settle_model_note_reimb:S().settle_model_note;
   $('mysteryAmt').textContent = inr.format(deduction);
-  $('mysterySub').textContent = (re?S().mystery_sub_reimb:S().mystery_sub)(inr.format(counter),inr.format(copayAmt),inr.format(deduction));
-  $('rDed').textContent = inr.format(deduction);
-  $('rCopay').textContent = inr.format(copayAmt);
-  $('rCopayDesc').textContent = S().approved_base(cp);
+  $('mysterySub').textContent = cpUnknown ? (re?S().mystery_sub_reimb_unknown:S().mystery_sub_unknown)(inr.format(counter),inr.format(deduction))
+    : (re?S().mystery_sub_reimb:S().mystery_sub)(inr.format(counter),inr.format(copayAmt),inr.format(deduction));
+  $('rDed').textContent = cpUnknown ? S().upto(inr.format(deduction)) : inr.format(deduction);
+  $('rCopay').textContent = cpUnknown ? S().copay_not_entered : inr.format(copayAmt);
+  $('rCopayDesc').textContent = cpUnknown ? S().approved_base_unknown : S().approved_base(cp);
   $('rCounter').textContent = inr.format(re?counter:deduction+copayAmt);
   $('sInsurer').textContent = inr.format(insurer);
   $('sBase').textContent = inr.format(base);
@@ -2107,7 +2165,7 @@ function calc(){
   $('settleOut').classList.remove('hide');
   $('settleWarn').textContent = warnKey ? S()[warnKey] : '';
   $('settleWarn').classList.toggle('hide', !warnKey);
-  if(window.__lastExtraction) renderReport(window.__lastExtraction);
+  if(window.__lastExtraction) renderReport(window.__lastExtraction); else renderLetterTab();
 }
 document.querySelectorAll('#settleMode .chip').forEach(c=>c.addEventListener('click',()=>setSettleMode(c.dataset.mode)));
 $('nextBill').addEventListener('click',()=>switchTab('findings'));
@@ -2115,7 +2173,7 @@ $('nextBill').addEventListener('click',()=>switchTab('findings'));
 // not on every keystroke, so typing is never interrupted.
 Object.values(F).forEach(el=>el.addEventListener('change',()=>{ const o=$('settleOut'); if(!o.classList.contains('hide')) o.scrollIntoView({behavior:'smooth',block:'nearest'}); }));
 Object.values(F).forEach(el=>el.addEventListener('input',()=>{ if(el===F.copay) markChips(F.copay.value); $('restoredNote').classList.add('hide'); calc(); saveDraft(); }));
-function markChips(v){ document.querySelectorAll('#copayChips .chip').forEach(c=>{ const on=+c.dataset.v===+v; c.classList.toggle('on',on); c.setAttribute('aria-pressed',on); }); }
+function markChips(v){ const blank=v==null||String(v).trim()===''; document.querySelectorAll('#copayChips .chip').forEach(c=>{ const on=c.dataset.v===''?(blank&&v!==-1):(!blank&&+c.dataset.v===+v); c.classList.toggle('on',on); c.setAttribute('aria-pressed',on); }); }
 document.querySelectorAll('#copayChips .chip').forEach(c=>c.addEventListener('click',()=>{ F.copay.value=c.dataset.v; markChips(c.dataset.v); calc(); saveDraft(); }));
 restoreDraft(); calc();
 // R20: loading the example used to throw away, without asking, a bill the
@@ -2236,13 +2294,14 @@ function billDateRange(H){
 // applied to it.
 const HIP_WORDS=/\b(hip|acetabul\w*|bipolar|unipolar|thr|stem|neck|head)\b/;
 function analyse(data,now){
-  let unreadable=0;
+  let unreadable=0; const unreadableRows=[];
   const amt=v=>{ const p=parseAmount(v); if(p.bad) unreadable++; return p.n; };
   const lines=(data.line_items||[]).map(l=>{
     // Only the line total (and the printed gross) feed a sum, so only those count
     // as "amounts that could not be read". Quantity and rate text such as
     // "2 Nos" or "500/-" is read if it can be and ignored if it cannot.
-    let q=parseAmount(l.quantity).n; const tot=amt(l.total), rate=parseAmount(l.rate).n;
+    const u0=unreadable; let q=parseAmount(l.quantity).n; const tot=amt(l.total), rate=parseAmount(l.rate).n;
+    if(unreadable>u0) unreadableRows.push(String(l.item||''));
     if(tot!=null&&tot<0&&q!=null&&q>0) q=-Math.abs(q);
     return {item:String(l.item||''),unit:l.unit??null,quantity:q,rate,total:tot,section:l.section||l.category||null};
   });
@@ -2412,7 +2471,33 @@ function analyse(data,now){
   // page rejected as not-a-bill. Set by the upload flow on the merged object.
   const partial=data._pageCount===1||(data._rejected||0)>0;
   const subtotals = data.printed_subtotals && Object.keys(data.printed_subtotals).length ? data.printed_subtotals : null;
-  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,similarDups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nppaDated,nppaKneeDated,nppaUnmatched,nonLatin,subtotals,unreadable,reconCompared,reconBlocked,partial,subsumed,subsumedSum,rejected:data._rejected||0,pageCount:data._pageCount||null};
+  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,similarDups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nppaDated,nppaKneeDated,nppaUnmatched,nonLatin,subtotals,unreadable,unreadableRows,reconCompared,reconBlocked,partial,subsumed,subsumedSum,rejected:data._rejected||0,pageCount:data._pageCount||null};
+}
+// Rows to check against the paper bill (R21). Possible READING mistakes,
+// never findings about the hospital, never in the letter:
+//  - quantity x rate does not give the amount (unless many rows are off by
+//    the same ratio, which usually means the amounts include tax);
+//  - an amount that could not be read, or no amount at all;
+//  - a "brought / carried forward" running total read as if it were a charge.
+const FORWARD_RE=/\b(brought|carried)\s*(forward|fwd)\b|\b(b|c)\s*\/\s*f\b/i;
+function readingChecks(a){
+  const rows=[], unread=new Set(a.unreadableRows||[]);
+  const qr=[]; let eligible=0;
+  a.lines.forEach(l=>{
+    const q=l.quantity, r=l.rate, t=l.total;
+    if(q>0&&r>0&&t>0){ eligible++; const calc=money(q*r); if(Math.abs(calc-t)>Math.max(1,t*0.005)) qr.push({item:l.item,kind:'qtyrate',q,r,calc,t,ratio:t/calc}); }
+  });
+  // One shared ratio across many rows = a tax-inclusive bill, not misreadings.
+  const ratios=qr.map(x=>x.ratio).sort((x,y)=>x-y), med=ratios.length?ratios[Math.floor(ratios.length/2)]:1;
+  const suppressed=qr.length>=3&&qr.length>eligible*0.3&&qr.filter(x=>Math.abs(x.ratio/med-1)<0.02).length>=qr.length*0.8;
+  if(!suppressed) qr.forEach(x=>rows.push(x));
+  a.lines.forEach(l=>{
+    if(!l.item.trim()) return;
+    if(unread.has(l.item)) rows.push({item:l.item,kind:'unreadable'});
+    else if(l.total==null) rows.push({item:l.item,kind:'noamount'});
+    if(FORWARD_RE.test(l.item)) rows.push({item:l.item,kind:'forward'});
+  });
+  return {rows,suppressed};
 }
 function sectionSums(lines){
   const m={}; lines.forEach(l=>{ const k=l.section||'Uncategorised'; m[k]=(m[k]||0)+(l.total||0); });
@@ -2427,7 +2512,6 @@ let nextDetId=null;
 // report and the letter checklist, and each ran analyse() again: about
 // 0.4 s each on a 500-line bill on a slow phone. The result depends only on
 // the bill (and today's date, for the dated NPPA checks), so it is kept.
-const _analyses=new WeakMap();
 function analyseFor(data){
   const day=new Date().toDateString(), hit=_analyses.get(data);
   if(hit&&hit.day===day) return hit.a;
@@ -2446,6 +2530,7 @@ function renderReport(data){
   let h='<div class="slip">';
   h+=`<div class="mast"><div class="co">${esc(co)}</div></div><hr class="rdash">`;
   if(window.__settle&&window.__settle.warn) h+=`<div class="notez" role="note" style="margin-bottom:10px">${T_.settle_inconsistent_note}</div>`;
+  else if(s&&s.copayUnknown) h+=`<div class="notez" role="note" style="margin-bottom:10px">${T_.copay_unknown_note}</div>`;
 
   /* verdict */
   if(ded>0){
@@ -2545,6 +2630,13 @@ function renderReport(data){
         ? [[T_.sh_hospital,sh[0]],[T_.sh_insurer,sh[1]]].filter(g=>g[1].length).map(g=>`<div class="sh-g">${g[0]}</div><ul>${g[1].map(x=>`<li>${x}</li>`).join('')}</ul>`).join('')
         : `<p>${T_.sh_none}</p>`)
       +`</div>`;
+  }
+  const rc=readingChecks(a);
+  if(rc.rows.length||rc.suppressed){
+    const why=x=>x.kind==='qtyrate'?T_.rc_qtyrate(x.q,inr.format(x.r),inr.format(x.calc),inr.format(x.t)):T_['rc_'+x.kind];
+    h+=`<details class="readchk" id="readChecks"><summary><span>${T_.rc_head(rc.rows.length)}</span></summary><div class="db"><div class="plain">${T_.rc_intro}</div>`
+      +rc.rows.map(x=>`<div class="li"><div>${esc(x.item)}<span class="src">${why(x)}</span></div></div>`).join('')
+      +(rc.suppressed?`<div class="plain">${T_.rc_suppressed}</div>`:'')+`</div></details>`;
   }
   h+=`<div class="checks">`;
   const C=T_.checks;
@@ -2740,11 +2832,13 @@ function buildLetter(a,include,noScroll){
       `    Insurer approved         - ${inr.format(s.insurer)}`,
       `    Hospital discount        - ${inr.format(s.disc)}`,
       `    Paid at discharge          ${inr.format(s.counter)}`]),
-      `      of which co-pay          ${inr.format(s.copayAmt)}`,
+      ...(s.copayUnknown ? [``,
+      `I do not know how much of the ${inr.format(s.counter)} ${reimb?'not reimbursed':'I paid'} was co-payment under my policy. Please show how much of it was co-payment and how much was deducted, line by line.`+(D.asked?` I have asked for this before and have not received it.`:``),``]
+      : [`      of which co-pay          ${inr.format(s.copayAmt)}`,
       `      of which not itemised    ${inr.format(s.deduction)}`,``,
       D.asked
         ? `A breakdown of the ${inr.format(s.deduction)} that I calculate as non-payable has not been provided despite my earlier request.`
-        : `I would like a breakdown of the ${inr.format(s.deduction)} that I calculate as non-payable.`,``);
+        : `I would like a breakdown of the ${inr.format(s.deduction)} that I calculate as non-payable.`,``]));
   }
   if(a.exact.length&&include.irdai){
     // Two different documents, two different citations — collapsing them into
@@ -2767,7 +2861,7 @@ function buildLetter(a,include,noScroll){
     }
     L.push(`  Subtotal: ${inr.format(a.exactSum)}`,``);
     // Only when the arithmetic supports it: the listed items do not cover the whole deduction.
-    if(s&&include.settlement&&a.exactSum<s.deduction) L.push(`The items listed above total ${inr.format(a.exactSum)}. The remaining ${inr.format(money(s.deduction-a.exactSum))} of the amount I calculate as non-payable is not accounted for by those items.`,``);
+    if(s&&include.settlement&&!s.copayUnknown&&a.exactSum<s.deduction) L.push(`The items listed above total ${inr.format(a.exactSum)}. The remaining ${inr.format(money(s.deduction-a.exactSum))} of the amount I calculate as non-payable is not accounted for by those items.`,``);
   }
   if(a.subsumed.length&&include.subsumed){
     // A different point from List I: these are named in IRDAI's Lists II-IV as
@@ -2839,10 +2933,10 @@ function buildLetter(a,include,noScroll){
   let lsum='';
   if(LANG!=='en'){
     const sl=[];
-    if(s&&include.settlement) sl.push((s.mode==='reimb'?T_.ls_settle_reimb:T_.ls_settle)(inr.format(s.counter),inr.format(s.deduction)));
+    if(s&&include.settlement) sl.push(s.copayUnknown?T_.ls_settle_unknown(inr.format(s.counter)):(s.mode==='reimb'?T_.ls_settle_reimb:T_.ls_settle)(inr.format(s.counter),inr.format(s.deduction)));
     if(a.exact.length&&include.irdai) sl.push(T_.ls_irdai(a.exact.length,inr.format(a.exactSum)));
     if(a.subsumed.length&&include.subsumed) sl.push(T_.ls_subsumed(a.subsumed.length,inr.format(a.subsumedSum)));
-    if(s&&include.settlement&&a.exact.length&&include.irdai&&a.exactSum<s.deduction) sl.push(T_.ls_gap(inr.format(money(s.deduction-a.exactSum))));
+    if(s&&include.settlement&&!s.copayUnknown&&a.exact.length&&include.irdai&&a.exactSum<s.deduction) sl.push(T_.ls_gap(inr.format(money(s.deduction-a.exactSum))));
     if(a.nppa.length&&include.nppa) sl.push(T_.ls_nppa(a.nppa.length));
     if(a.dups.length&&include.dup) sl.push(T_.ls_dup(a.dups.length));
     if(a.similarDups.length&&include.dup) sl.push(T_.ls_similar(a.similarDups.length));
@@ -2859,7 +2953,8 @@ function buildLetter(a,include,noScroll){
   const readOn=new Date(OMBUDSMAN_READ_ON+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
   const ombHtml=!D.state ? `<p class="ombnote">${T_.omb_pick}</p>`
     : `<div class="omb" id="ombBlock"><div class="ombh">${T_.omb_head(esc(D.state))}</div>${offices.length>1?`<p style="margin:4px 0 6px">${T_.omb_split}</p>`:''}<p style="margin:4px 0 6px">${T_.omb_branch}</p>${offices.map(o=>ombCard(o,offices.length>1)).join('')}<p class="ombsrc">${T_.omb_src(readOn)}</p></div>`;
-  const afterSend=`<div class="aftersend"><h4>${T_.as_head}</h4><ol><li>${T_.as_1}</li><li>${T_.as_2}</li><li>${T_.as_3}</li></ol>${ombHtml}<p style="margin:8px 0 0;color:var(--soft)">${T_.as_4}</p></div>`;
+  const od=ombDates(todayYmd());
+  const afterSend=`<div class="aftersend"><h4>${T_.as_head}</h4><ol><li>${T_.as_1}</li><li>${T_.as_2}</li><li>${T_.as_3}<p class="asdates">${T_.dates_today(fmtYmd(todayYmd()),fmtYmd(od.reply),fmtYmd(od.opens),fmtYmd(od.deadline))}</p></li></ol>${ombHtml}<p style="margin:8px 0 0;color:var(--soft)">${T_.as_4}</p></div>`;
   $('letterWrap').innerHTML=`${lsum}<div class="tearline"></div><div class="letter">${langNote}<div class="lh">${T_.letter_draft_head}</div>${esc(text)}</div>
     <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn sm" id="printLetter" style="flex:1">${T_.print_btn}</button>
@@ -3319,6 +3414,7 @@ function applyStaticI18n(){
   [['egConfirmQ','eg_confirm_q'],['egYesBtn','eg_yes'],['egKeepBtn','eg_keep'],['egUndoTxt','eg_undo_note'],['egUndoBtn','undo_word'],
    ['clearConfirmQ','clear_confirm_q'],['clearYesBtn','clear_yes'],['clearCancelBtn','cancel_word'],['restoredTxt','restored_note'],['restoredClearBtn','restored_clear']]
     .forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
+  if($('copayNotSure')) $('copayNotSure').textContent=T_.copay_notsure;
   $('secSettlement').textContent=T_.sec_settlement;
   $('lblTotal').innerHTML=T_.lbl_total;
   $('lblCounter').innerHTML=T_.lbl_counter;
@@ -3362,7 +3458,7 @@ function applyStaticI18n(){
   $('genLetterTab').textContent=T_.gen_letter_btn;
   $('nextBill').textContent=T_.next_bill_btn;
   if($('cancelReadBtn')){ $('cancelReadBtn').textContent=T_.cancel_btn; updateCheckBtn(); }
-  if($('settleModelNote')&&window.__settle) $('settleModelNote').textContent=SETTLE_MODE==='reimb'?T_.settle_model_note_reimb:T_.settle_model_note;
+  if($('settleModelNote')&&window.__settle) $('settleModelNote').textContent=window.__settle.copayUnknown?T_.settle_model_note_unknown:SETTLE_MODE==='reimb'?T_.settle_model_note_reimb:T_.settle_model_note;
   if($('photoGuideSum')){ $('photoGuideSum').textContent=T_.photo_guide_sum; $('photoGuideList').innerHTML=T_.photo_guide.map(x=>'<li>'+x+'</li>').join(''); }
   if($('clearSavedBtn')){ $('clearSavedBtn').textContent=T_.clear_saved_btn; $('clearSavedHint').textContent=T_.clear_saved_hint; if(!$('clearedNote').classList.contains('hide')) $('clearedNote').textContent=T_.cleared_note; }
   [['ldHead','ld_head'],['ldIntro','ld_intro'],['ldLblName','ld_name'],['ldLblAddress','ld_address'],['ldLblInsurer','ld_insurer'],
@@ -3445,16 +3541,18 @@ if($('skipToFindingsBtn')) $('skipToFindingsBtn').addEventListener('click',()=>s
 // screen. The list is rebuilt whenever the report redraws (every keystroke in
 // Settlement, every language switch) and used to come back fully ticked, so
 // items the user had removed went to the insurer (R20).
-let _userIncl={}, _userInclFor=null;
+// A letter needs either a checked bill or settlement figures that add up.
+// With figures alone it asks for the line-by-line breakdown (R21).
 function renderLetterTab(){
   const T_=S();
-  const data=window.__lastExtraction;
-  const hasData = data && data.line_items && data.line_items.length>0;
-  $('letterEmpty').classList.toggle('hide', !!hasData);
-  $('letterConfirm').classList.toggle('hide', !hasData);
-  if(!hasData) return;
+  const hasBill = !!(window.__lastExtraction && window.__lastExtraction.line_items && window.__lastExtraction.line_items.length>0);
+  const data = hasBill ? window.__lastExtraction : NO_BILL;
+  const s=settleOk(), canWrite = hasBill || !!s;
+  $('letterEmpty').classList.toggle('hide', canWrite);
+  $('letterConfirm').classList.toggle('hide', !canWrite);
+  if(!canWrite) return;
   if(_userInclFor!==data){ _userIncl={}; _userInclFor=data; }
-  const a=analyseFor(data), s=settleOk();
+  const a=analyseFor(data);
   window.__letterA=a; // so Generate reads the exact same analysis this checklist was built from
   const rows=[];
   if(s) rows.push(['settlement', T_.letter_confirm_settlement, '✓']);
@@ -3465,7 +3563,8 @@ function renderLetterTab(){
   if(a.recon) rows.push(['recon', T_.letter_confirm_recon, inr.format(Math.abs(a.recon.diff))]);
   $('letterIncludes').innerHTML=
     rows.map(([key,k,v])=>`<label class="inclrow"><input type="checkbox" ${(key in _userIncl ? _userIncl[key] : !(key==='recon'&&a.partial))?'checked':''} data-inc="${key}"><span class="incltext">${k}</span><span class="v">${v}</span></label>`).join('')
-    + `<div class="inclrow static"><span class="incltext">${T_.letter_confirm_sent_to}</span><span class="v">${T_.letter_confirm_sent_to_val}</span></div>`;
+    + `<div class="inclrow static"><span class="incltext">${T_.letter_confirm_sent_to}</span><span class="v">${T_.letter_confirm_sent_to_val}</span></div>`
+    + (hasBill?'':`<p class="notez" style="margin-top:10px">${T_.letter_no_bill}</p>`);
 }
 $('letterIncludes').addEventListener('change',e=>{ const cb=e.target.closest('input[data-inc]'); if(cb) _userIncl[cb.dataset.inc]=cb.checked; });
 // Editing a detail updates a letter that is already on screen (no scroll jump).
@@ -3489,8 +3588,8 @@ $('clearYesBtn').addEventListener('click',()=>{
   const n=$('clearedNote'); n.textContent=S().cleared_note; n.classList.remove('hide');
 });
 $('genLetterTab').addEventListener('click',()=>{
-  if(!window.__lastExtraction) return;
-  const a=window.__letterA || analyseFor(window.__lastExtraction);
+  if(!window.__lastExtraction && !settleOk()) return;
+  const a=window.__letterA || analyseFor(window.__lastExtraction||NO_BILL);
   const include={};
   document.querySelectorAll('#letterIncludes input[type=checkbox]').forEach(cb=>{ include[cb.dataset.inc]=cb.checked; });
   _letterGenerated=true; _lastLetterInclude=include;
@@ -3611,7 +3710,7 @@ if($('signOutBtnHeader')) $('signOutBtnHeader').addEventListener('click',signOut
 if($('signOutBtnTab')) $('signOutBtnTab').addEventListener('click',signOut);
 
 function buildBillPayload(){
-  const data=window.__lastExtraction; if(!data) return null;
+  const data=window.__lastExtraction || (settleOk()?NO_BILL:null); if(!data) return null;
   const a=window.__letterA || (typeof analyse==='function'?analyseFor(data):null); if(!a) return null;
   const st=window.__settle; const ded=st?st.deduction:0;
   const H=data.header||{};
@@ -3683,7 +3782,7 @@ function renderMyBillsList(bills){
     row.querySelector('.bstatus').addEventListener('change',e=>patchMyBill(id,{status:e.target.value}));
     row.querySelector('.bnote').addEventListener('change',e=>patchMyBill(id,{note:e.target.value}));
     row.querySelector('.bsentin').addEventListener('change',e=>{ const v=e.target.value||null;
-      patchMyBill(id,{sentOn:v}); const b=_myBills.find(x=>x.id===id); if(b) b.sentOn=v; row.querySelector('.bago').textContent=sentAgo(v); });
+      patchMyBill(id,{sentOn:v}); const b=_myBills.find(x=>x.id===id); if(b) b.sentOn=v; row.querySelector('.bago').textContent=sentAgo(v); row.querySelector('.bdates').textContent=sentDatesText(v); });
     row.querySelector('.bdel').addEventListener('click',()=>deleteMyBill(id));
   });
 }
@@ -3736,11 +3835,12 @@ function writeLocalChecks(a){ localStorage.setItem(LOCAL_LS,JSON.stringify(a)); 
 const newLocalId=()=>'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 function validLocalCheck(r){
   return !!r&&typeof r==='object'&&r.v===1&&!!r.extraction&&typeof r.extraction==='object'
-    &&Array.isArray(r.extraction.line_items)&&r.extraction.line_items.length>0&&r.extraction.line_items.length<=3000
+    &&Array.isArray(r.extraction.line_items)&&(r.extraction.line_items.length>0||(!!r.settle&&+r.settle.total>0))&&r.extraction.line_items.length<=3000
     &&r.extraction.line_items.every(l=>l&&typeof l==='object'&&(l.item==null||typeof l.item==='string'));
 }
 function buildLocalCheck(){
-  const data=window.__lastExtraction; if(!data||!Array.isArray(data.line_items)||!data.line_items.length) return null;
+  const data=(window.__lastExtraction&&Array.isArray(window.__lastExtraction.line_items)&&window.__lastExtraction.line_items.length)?window.__lastExtraction:(settleOk()?NO_BILL:null);
+  if(!data) return null;
   const p=buildBillPayload()||{};
   return { v:1, id:newLocalId(), savedAt:new Date().toISOString(),
     name:p.hospitalName||null, billDate:p.billDate||null,
@@ -3762,7 +3862,7 @@ function openLocalCheck(r){
   F.total.value=num(st.total); F.counter.value=num(st.counter); F.discount.value=num(st.discount); F.copay.value=num(st.copay); F.reimb.value=num(st.reimb);
   setSettleMode(st.mode==='reimb'?'reimb':'cashless',true);
   markChips(F.copay.value); saveDraft();
-  window.__lastExtraction=r.extraction;
+  window.__lastExtraction=r.extraction.line_items.length?r.extraction:null;
   calc();                                  // renders the report from the restored extraction
   switchTab('findings');
   const d=r.savedAt?new Date(r.savedAt).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'}):'';
@@ -3807,7 +3907,7 @@ function renderLocalList(){
     row.querySelector('.ldel').addEventListener('click',()=>{ try{ writeLocalChecks(readLocalChecks().filter(r=>r.id!==id)); }catch(e){} renderLocalList(); });
     row.querySelector('.bsentin').addEventListener('change',e=>{ const v=validSentOn(e.target.value)?e.target.value:null;
       try{ writeLocalChecks(readLocalChecks().map(r=>r.id===id?{...r,sentOn:v}:r)); }catch(err){}
-      row.querySelector('.bago').textContent=sentAgo(v); });
+      row.querySelector('.bago').textContent=sentAgo(v); row.querySelector('.bdates').textContent=sentDatesText(v); });
   });
 }
 if($('saveLocalBtn')) $('saveLocalBtn').addEventListener('click',saveLocalCheck);
@@ -3855,6 +3955,18 @@ function validSentOn(v){
   if(d.getFullYear()!==y||d.getMonth()!==m-1||d.getDate()!==dd) return false; // rejects 2026-02-30 etc.
   return d.getTime()<=Date.now()+86400000; // not in the future (a day of slack for time zones)
 }
+// Calendar dates for the Ombudsman route (R21), from Insurance Ombudsman
+// Rules 2017 rule 14(3): one month after the insurer receives the letter if
+// it does not reply, and within one year after the month from sending. Done
+// on calendar dates (UTC), never on milliseconds, with the day clamped to the
+// month's end (31 Jan + 1 month = 28 or 29 Feb).
+function ymd(d){ const p=x=>String(x).padStart(2,'0'); return d.getUTCFullYear()+'-'+p(d.getUTCMonth()+1)+'-'+p(d.getUTCDate()); }
+function addMonthsYmd(v,m){ const [y,mo,d]=v.split('-').map(Number), t=new Date(Date.UTC(y,mo-1+m,1)); const last=new Date(Date.UTC(t.getUTCFullYear(),t.getUTCMonth()+1,0)).getUTCDate(); return ymd(new Date(Date.UTC(t.getUTCFullYear(),t.getUTCMonth(),Math.min(d,last)))); }
+function addDaysYmd(v,n){ const [y,mo,d]=v.split('-').map(Number); return ymd(new Date(Date.UTC(y,mo-1,d+n))); }
+function ombDates(sent){ const opens=addMonthsYmd(sent,1); return {reply:addDaysYmd(sent,14), opens, deadline:addMonthsYmd(opens,12)}; }
+function fmtYmd(v){ return new Date(v+'T00:00:00').toLocaleDateString(LOCALE_TAG[LANG]||'en-IN',{day:'numeric',month:'long',year:'numeric'}); }
+function sentDatesText(v){ if(!validSentOn(v)) return ''; const o=ombDates(v); return S().dates_sent(fmtYmd(o.reply),fmtYmd(o.opens),fmtYmd(o.deadline)); }
+function todayYmd(){ const t=new Date(), p=x=>String(x).padStart(2,'0'); return t.getFullYear()+'-'+p(t.getMonth()+1)+'-'+p(t.getDate()); }
 function sentAgo(v,now){
   if(!validSentOn(v)) return '';
   const T_=S(), t=now instanceof Date?now:new Date();
@@ -3864,7 +3976,7 @@ function sentAgo(v,now){
 function sentOnHtml(v){
   const T_=S(), today=new Date(), p=x=>String(x).padStart(2,'0');
   const max=today.getFullYear()+'-'+p(today.getMonth()+1)+'-'+p(today.getDate());
-  return '<label class="bsent"><span>'+esc(T_.sent_on_lbl)+'</span><input type="date" class="bsentin" max="'+max+'" value="'+(validSentOn(v)?v:'')+'"><b class="bago">'+esc(sentAgo(v))+'</b></label>';
+  return '<label class="bsent"><span>'+esc(T_.sent_on_lbl)+'</span><input type="date" class="bsentin" max="'+max+'" value="'+(validSentOn(v)?v:'')+'"><b class="bago">'+esc(sentAgo(v))+'</b><span class="bdates">'+esc(sentDatesText(v))+'</span></label>';
 }
 
 /* ---- Impact line and reader status (R14) ----

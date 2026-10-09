@@ -320,7 +320,7 @@ const STUB = `
     let aft = await ev(`return document.querySelector('.aftersend').innerText`);
     ok(/Office of the Insurance Ombudsman, Bengaluru/.test(aft) && /oio\.bengaluru@cioins\.co\.in/.test(aft) && /JP Nagar/.test(aft), 'Karnataka shows the Bengaluru office: address, phone, email');
     ok(/cioins\.co\.in, as read on 5 October 2026/.test(aft), 'it says where the address came from and when it was read');
-    ok(!/\b\d+\s*(days?|months?|years?|lakhs?)\b/i.test(aft), 'the card still states no time limits of its own (addresses contain numbers, but no deadlines)');
+    ok(/If you send it today/.test(aft) && /Insurance Ombudsman Rules 2017, rule 14\(3\)/.test(aft) && !/\blakhs?\b/i.test(aft), 'the dates it gives come with their rule (Insurance Ombudsman Rules 2017, rule 14(3)), and no amounts of its own (R21)');
     const letterOnly = await ev(`return document.querySelector('.letter').innerText`);
     ok(!/Ombudsman|oio\./.test(letterOnly), 'the Ombudsman is NOT put in the letter itself (a complaint goes to the insurer first)');
     await pickState('Maharashtra'); await sleep(300);
@@ -566,6 +566,44 @@ const STUB = `
     const keys = await ev(`const out=[]; for(let i=0;i<7;i++){ const t0=performance.now(); const e=document.getElementById('copay'); e.value=String(10+(i%2)); e.dispatchEvent(new Event('input',{bubbles:true})); out.push(performance.now()-t0); await new Promise(r=>setTimeout(r,40)); } return out.sort((a,b)=>a-b)[3];`);
     await send('Emulation.setCPUThrottlingRate', { rate: 1 });
     ok(keys < 250, `a keystroke in Settlement with a 500-line bill on a 4x slower CPU takes ${Math.round(keys)} ms (it was about 500-900 ms)`);
+
+    console.log('== R21: co-pay not entered');
+    await fresh(); await ev(`setLang('en'); for(const [id,v] of [['total','120000'],['counter','18500'],['discount',''],['copay','']]){ const e=document.getElementById(id); e.value=v; e.dispatchEvent(new Event('input',{bubbles:true})); }`); await sleep(150);
+    const cp = await ev(`return {unk: settleOk() && settleOk().copayUnknown, sub: document.getElementById('mysterySub').textContent, rc: document.getElementById('rCopay').textContent, ded: document.getElementById('rDed').textContent, note: document.getElementById('settleModelNote').textContent, chip: document.getElementById('copayNotSure').classList.contains('on')}`);
+    ok(cp.unk === true && /haven't entered a co-pay/.test(cp.sub) && /up to ₹18,500/.test(cp.sub) && cp.rc === 'not entered' && cp.chip && cp.ded === 'up to ₹18,500' && /may include your co-pay/.test(cp.note), 'a blank co-pay is "not entered": up to ₹18,500 not explained, part of it may be co-pay; "Not sure" is shown as chosen (it used to count as 0): ' + cp.sub.slice(0, 90));
+    await ev(`document.querySelector('#copayChips .chip[data-v="10"]').click();`); await sleep(100);
+    ok(await ev(`return settleOk().copayUnknown===false && !document.getElementById('copayNotSure').classList.contains('on')`), 'choosing 10% makes it known again');
+    await ev(`document.getElementById('copayNotSure').click();`); await sleep(100);
+    ok(await ev(`return document.getElementById('copay').value==='' && settleOk().copayUnknown===true`), '"Not sure" clears the co-pay field');
+
+    console.log('== R21: a letter from the settlement figures alone');
+    const lt21 = await ev(`switchTab('letter'); const vis=!document.getElementById('letterConfirm').classList.contains('hide'); const rows=[...document.querySelectorAll('#letterIncludes [data-inc]')].map(x=>x.dataset.inc).join(',');
+      const note=/No itemised bill checked yet/.test(document.getElementById('letterIncludes').innerText);
+      document.getElementById('genLetterTab').click(); await new Promise(r=>setTimeout(r,300)); return {vis, rows, note, text: document.querySelector('.letter') ? document.querySelector('.letter').innerText : ''};`);
+    ok(lt21.vis && lt21.rows === 'settlement' && lt21.note, 'with settlement figures and no bill, the Letter tab offers a letter (it used to be a dead end), with a note that no bill was checked');
+    ok(/Paid at discharge\s+₹18,500/.test(lt21.text) && /I do not know how much of the ₹18,500 I paid was co-payment under my policy\. Please show how much of it was co-payment and how much was deducted, line by line\./.test(lt21.text) && /para 17\(b\)/.test(lt21.text), 'the letter asks the insurer to split co-pay from deduction, and cites para 17(b)');
+    ok(!/of which co-pay|that I calculate as non-payable|List I/.test(lt21.text), 'it never calls the whole payment "non-payable", and has no bill paragraphs');
+    await ev(`switchTab('mybills'); document.getElementById('saveLocalBtn').click();`); await sleep(200);
+    ok(await ev(`return readLocalChecks().length===1 && readLocalChecks()[0].extraction.line_items.length===0`), 'a figures-only check can be saved on this device');
+    await ev(`openLocalCheck(readLocalChecks()[0]); switchTab('letter');`); await sleep(300);
+    ok(await ev(`return !document.getElementById('letterConfirm').classList.contains('hide') && document.getElementById('total').value==='120000' && !window.__lastExtraction`), '... and reopened, with the letter still available');
+    await ev(`localStorage.clear(); for(const id of ['total','counter','copay']){ const e=document.getElementById(id); e.value=''; e.dispatchEvent(new Event('input',{bubbles:true})); } switchTab('letter');`); await sleep(150);
+    ok(await ev(`return !document.getElementById('letterEmpty').classList.contains('hide') && /Enter your settlement figures, or check your itemised bill/.test(document.getElementById('letterEmpty').textContent)`), 'with neither figures nor a bill, it says what to do');
+
+    console.log('== R21: rows to check against the paper bill');
+    await fresh(); await ev(`setLang('en'); document.getElementById('egBtn').click();`); await sleep(500);
+    const rc = await ev(`switchTab('findings'); const d=document.getElementById('readChecks'); return d ? {sum: d.querySelector('summary').textContent, body: d.textContent, open: d.open} : null;`);
+    ok(rc && /Check 1 row against your paper bill/.test(rc.sum) && /RL 500ML/.test(rc.body) && /1 × ₹63\.27 = ₹63\.27, but the amount reads ₹53\.27/.test(rc.body) && !rc.open, 'the worked example lists exactly one row to check, the one behind the ₹10 gap, folded: ' + (rc && rc.sum));
+    ok(/never put in the letter/.test(rc.body) && !/amount reads/.test(await ev(`switchTab('letter'); document.getElementById('genLetterTab').click(); await new Promise(r=>setTimeout(r,300)); return document.querySelector('.letter').innerText`)), 'it says these are reading checks and never go in the letter, and they don\'t');
+
+    console.log('== R21: Ombudsman dates');
+    const dm = await ev(`return [addMonthsYmd('2027-01-31',1), addMonthsYmd('2028-01-31',1), addMonthsYmd('2026-12-31',1), addDaysYmd('2026-12-25',14), JSON.stringify(ombDates('2026-10-09')), JSON.stringify(ombDates('2027-01-31'))].join(' | ')`);
+    ok(dm === '2027-02-28 | 2028-02-29 | 2027-01-31 | 2027-01-08 | {"reply":"2026-10-23","opens":"2026-11-09","deadline":"2027-11-09"} | {"reply":"2027-02-14","opens":"2027-02-28","deadline":"2028-02-28"}', 'calendar months clamp to the month\'s end (31 Jan + 1 month = 28 Feb, or 29 Feb in a leap year), across a year end too: ' + dm);
+    const as21 = await ev(`return document.querySelector('.aftersend').innerText`);
+    ok(/If you send it today \(/.test(as21) && /a reply is due around/.test(as21) && /on or after/.test(as21) && /rule 14\(3\)/.test(as21) && /the year counts from its reply/.test(as21), 'after the letter: the dates if you send it today, each with its rule');
+    await ev(`switchTab('mybills'); document.getElementById('saveLocalBtn').click();`); await sleep(200);
+    const sd = await ev(`const i=document.querySelector('#localList .bsentin'); i.value='2026-10-01'; i.dispatchEvent(new Event('change',{bubbles:true})); return document.querySelector('#localList .bdates').textContent;`);
+    ok(/Reply due around 15 October 2026\. No reply: the Ombudsman route opens on or after 1 November 2026, until 1 November 2027\./.test(sd), 'a saved check with a "sent on" date shows its own dates: ' + sd);
 
     console.log('== Hindi errors');
     await fresh();

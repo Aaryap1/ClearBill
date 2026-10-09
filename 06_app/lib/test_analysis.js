@@ -264,6 +264,22 @@ ok(NL('DRUG ELUTING STENT', 1, 45000, 45000).nppa.length === 1 && NL('DES STENT 
 ok(NL('PTCA WITH STENT', 1, 150000, 150000).nppaUnmatched === 0 && NL('BED CHARGES', 1, 100, 100).nppaUnmatched === 0, 'procedure lines and ordinary lines are not counted as unmatched implants');
 { const r = D('Knee femoral component', 50000, '10/10/2026', new Date('2027-01-01')); ok(r.nppa.length === 1 && r.nppaKneeDated === 0, 'a knee bill dated before 15 Nov 2026 is still compared, whatever today is'); }
 
+// R21 — rows to check against the paper bill: reading checks, never findings.
+console.log('== R21: reading checks');
+{
+  const RC = rows => checks.readingChecks(checks.analyse({ header: {}, line_items: rows.map(([item, quantity, rate, total]) => ({ item, quantity, rate, total })) }));
+  let r = RC([['RL 500ML-ACULIFE INFUSION', 1, 63.27, 53.27], ['BED', 1, 4500, 4500]]);
+  ok(r.rows.length === 1 && r.rows[0].kind === 'qtyrate' && r.rows[0].calc === 63.27 && r.rows[0].t === 53.27, 'a row whose quantity × rate does not give its amount is listed (the worked example\'s Rs 10 gap: 1 × 63.27 printed as 53.27)');
+  r = RC([['SYRINGE', 3, 33.33, 100], ['GLOVES', 2, 80, 160]]);
+  ok(r.rows.length === 0, 'rounding (3 × 33.33 = 99.99 against 100) is not flagged');
+  r = RC([['A', 1, 100, 105], ['B', 2, 50, 105], ['C', 1, 200, 210], ['D', 4, 25, 105]]);
+  ok(r.suppressed && r.rows.length === 0, 'when many rows are off by the same ratio (amounts that include 5% tax) the check is skipped and says so');
+  r = RC([['DISCOUNT', 1, null, '(500)'], ['NURSING', 1, null, null], ['BALANCE B/F', 1, null, 4430], ['CARRIED FORWARD', 1, null, 4430]]);
+  const kinds = r.rows.map(x => x.kind + ':' + x.item).join('|');
+  ok(/unreadable:DISCOUNT/.test(kinds) && /noamount:NURSING/.test(kinds) && /forward:BALANCE B\/F/.test(kinds) && /forward:CARRIED FORWARD/.test(kinds), 'an unreadable amount, a row with no amount, and brought/carried-forward totals are named row by row: ' + kinds);
+  ok(checks.analyse({ header: {}, line_items: [{ item: 'X', total: '(500)' }] }).unreadableRows[0] === 'X', 'analyse() records which rows had an amount it could not read');
+}
+
 if (old) {
   console.log('== matcher.js duplicate parity');
   const rows = (r) => r.map(([item, total]) => ({ item, quantity: 1, total }));

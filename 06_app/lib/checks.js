@@ -425,13 +425,14 @@ function billDateRange(H){
 // applied to it.
 const HIP_WORDS=/\b(hip|acetabul\w*|bipolar|unipolar|thr|stem|neck|head)\b/;
 function analyse(data,now){
-  let unreadable=0;
+  let unreadable=0; const unreadableRows=[];
   const amt=v=>{ const p=parseAmount(v); if(p.bad) unreadable++; return p.n; };
   const lines=(data.line_items||[]).map(l=>{
     // Only the line total (and the printed gross) feed a sum, so only those count
     // as "amounts that could not be read". Quantity and rate text such as
     // "2 Nos" or "500/-" is read if it can be and ignored if it cannot.
-    let q=parseAmount(l.quantity).n; const tot=amt(l.total), rate=parseAmount(l.rate).n;
+    const u0=unreadable; let q=parseAmount(l.quantity).n; const tot=amt(l.total), rate=parseAmount(l.rate).n;
+    if(unreadable>u0) unreadableRows.push(String(l.item||''));
     if(tot!=null&&tot<0&&q!=null&&q>0) q=-Math.abs(q);
     return {item:String(l.item||''),unit:l.unit??null,quantity:q,rate,total:tot,section:l.section||l.category||null};
   });
@@ -601,7 +602,33 @@ function analyse(data,now){
   // page rejected as not-a-bill. Set by the upload flow on the merged object.
   const partial=data._pageCount===1||(data._rejected||0)>0;
   const subtotals = data.printed_subtotals && Object.keys(data.printed_subtotals).length ? data.printed_subtotals : null;
-  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,similarDups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nppaDated,nppaKneeDated,nppaUnmatched,nonLatin,subtotals,unreadable,reconCompared,reconBlocked,partial,subsumed,subsumedSum,rejected:data._rejected||0,pageCount:data._pageCount||null};
+  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,similarDups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nppaDated,nppaKneeDated,nppaUnmatched,nonLatin,subtotals,unreadable,unreadableRows,reconCompared,reconBlocked,partial,subsumed,subsumedSum,rejected:data._rejected||0,pageCount:data._pageCount||null};
+}
+// Rows to check against the paper bill (R21). Possible READING mistakes,
+// never findings about the hospital, never in the letter:
+//  - quantity x rate does not give the amount (unless many rows are off by
+//    the same ratio, which usually means the amounts include tax);
+//  - an amount that could not be read, or no amount at all;
+//  - a "brought / carried forward" running total read as if it were a charge.
+const FORWARD_RE=/\b(brought|carried)\s*(forward|fwd)\b|\b(b|c)\s*\/\s*f\b/i;
+function readingChecks(a){
+  const rows=[], unread=new Set(a.unreadableRows||[]);
+  const qr=[]; let eligible=0;
+  a.lines.forEach(l=>{
+    const q=l.quantity, r=l.rate, t=l.total;
+    if(q>0&&r>0&&t>0){ eligible++; const calc=money(q*r); if(Math.abs(calc-t)>Math.max(1,t*0.005)) qr.push({item:l.item,kind:'qtyrate',q,r,calc,t,ratio:t/calc}); }
+  });
+  // One shared ratio across many rows = a tax-inclusive bill, not misreadings.
+  const ratios=qr.map(x=>x.ratio).sort((x,y)=>x-y), med=ratios.length?ratios[Math.floor(ratios.length/2)]:1;
+  const suppressed=qr.length>=3&&qr.length>eligible*0.3&&qr.filter(x=>Math.abs(x.ratio/med-1)<0.02).length>=qr.length*0.8;
+  if(!suppressed) qr.forEach(x=>rows.push(x));
+  a.lines.forEach(l=>{
+    if(!l.item.trim()) return;
+    if(unread.has(l.item)) rows.push({item:l.item,kind:'unreadable'});
+    else if(l.total==null) rows.push({item:l.item,kind:'noamount'});
+    if(FORWARD_RE.test(l.item)) rows.push({item:l.item,kind:'forward'});
+  });
+  return {rows,suppressed};
 }
 
-module.exports = { NON_PAYABLE, SUBSUMED, NPPA, OMBUDSMAN, OMBUDSMAN_READ_ON, INDIA_STATES, ombudsmanFor, IS19493_HEADER, GSTIN_RE, money, bestMatch, bestMatchIn, parseAmount, billDateRange, analyse };
+module.exports = { NON_PAYABLE, SUBSUMED, NPPA, OMBUDSMAN, OMBUDSMAN_READ_ON, INDIA_STATES, ombudsmanFor, IS19493_HEADER, GSTIN_RE, money, bestMatch, bestMatchIn, parseAmount, billDateRange, analyse, readingChecks };
