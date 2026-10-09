@@ -158,7 +158,9 @@ const STUB = `
     ok(!/By my calculation/.test(bad.letter) && !/not itemised/.test(bad.letter), 'the letter leaves the settlement figures out');
     await setF('counter', '9349'); await setF('total', '41396'); await setF('discount', '1572'); await setF('copay', '100');
     ok(await ev(`return document.getElementById('settleOut').classList.contains('inconsistent') && document.getElementById('rCounter').offsetParent === null`), '100% co-pay: no result panel (it used to show a counter payment the user never typed)');
-    await ev(`document.getElementById('egBtn').click();`); await sleep(400);
+    await ev(`document.getElementById('egBtn').click();`); await sleep(100);
+    ok(await ev(`return !document.getElementById('egConfirm').classList.contains('hide') && window.__lastExtraction.line_items[0].item==='TV CHARGES'`), 'with a bill of your own on screen, "Load the worked example" asks first and replaces nothing yet (R20)');
+    await ev(`document.getElementById('egYesBtn').click();`); await sleep(400);
     ok(await ev(`return !document.getElementById('settleOut').classList.contains('inconsistent') && settleOk() !== null`), 'the worked example figures are consistent and used');
     { const mn = await ev(`return document.getElementById('settleModelNote').textContent`); ok(/room-rent limits/.test(mn), 'the result says the amount can include room-rent limits, deductibles and other exclusions', JSON.stringify(mn)); }
 
@@ -204,7 +206,7 @@ const STUB = `
     const after = await ev(`const a=document.querySelector('.aftersend'); return a ? {t: a.textContent, links: [...a.querySelectorAll('a')].map(x=>x.href)} : null`);
     ok(after && /grievance officer/.test(after.t) && /registered post/.test(after.t) && /hospital's billing office/.test(after.t), '"After you send the letter" says where to send it, to keep proof, and to ask the hospital about its own charges');
     ok(after && after.links.some(l => /bimabharosa\.irdai\.gov\.in/.test(l)) && after.links.some(l => /cioins\.co\.in/.test(l)), 'it links to Bima Bharosa and the Insurance Ombudsman');
-    ok(after && !/\b\d+\s*(days?|months?|years?|lakhs?)\b/i.test(after.t) && /time limits/.test(after.t), 'it states no time limits or amounts of its own; it sends people to the official rules');
+    ok(after && /does not reply within one month of receiving it/.test(after.t) && /Insurance Ombudsman Rules 2017, rule 14/.test(after.t) && /one-year limit/.test(after.t) && !/\blakhs?\b/i.test(after.t), 'it gives the Ombudsman route when there is no reply within one month, and the one-year limit, each with its rule (Insurance Ombudsman Rules 2017, rule 14), and still sends people to the current rules (R20)');
     ok(await ev(`return document.querySelector('.lsum') === null`), 'in English there is no separate summary above the letter');
     await ev(`setLang('hi');`); await sleep(300);
     const hs = await ev(`window.__pr=null; const op=window.print; window.print=()=>{ window.__pr=document.getElementById('printArea').textContent; }; document.getElementById('printLetter').click(); window.print=op; const s=document.querySelector('.lsum'); return {sum: s?s.textContent:'', lettertext: document.querySelector('.letter').textContent, printed: window.__pr, order: s ? (s.compareDocumentPosition(document.querySelector('.letter')) & 4) : 0}`);
@@ -213,7 +215,7 @@ const STUB = `
     ok(!/[ऀ-ॿ]/.test(hs.printed) && !/इस पत्र में क्या/.test(hs.printed), 'the summary is not part of the text that is printed');
     await ev(`setLang('en'); localStorage.setItem('clearbill_settlement_draft','{"total":"5"}'); localStorage.setItem('clearbill_gemini_key','KEY'); document.getElementById('ld_name').value='Someone'; document.getElementById('ld_remember').checked=true; document.getElementById('ld_name').dispatchEvent(new Event('input',{bubbles:true}));`);
     ok(await ev(`return !!localStorage.getItem('clearbill_letter_details')`), 'letter details are remembered when the box is ticked (setup for the next check)');
-    await ev(`document.getElementById('clearSavedBtn').click();`);
+    await ev(`document.getElementById('clearSavedBtn').click(); document.getElementById('clearYesBtn').click();`);
     const cleared = await ev(`return {draft: localStorage.getItem('clearbill_settlement_draft'), key: localStorage.getItem('clearbill_gemini_key'), det: localStorage.getItem('clearbill_letter_details'), sdet: sessionStorage.getItem('clearbill_letter_details'), total: document.getElementById('total').value, name: document.getElementById('ld_name').value, apik: document.getElementById('apiKey').value, note: !document.getElementById('clearedNote').classList.contains('hide'), lang: localStorage.getItem('clearbill_lang')}`);
     ok(!cleared.draft && !cleared.key && !cleared.det && !cleared.sdet && cleared.total === '' && cleared.name === '' && cleared.apik === '', '"Clear what this app saved" removes the saved figures, letter details and key, and empties the fields');
     ok(cleared.note && cleared.lang === 'en', 'it confirms, and keeps only the language choice');
@@ -281,7 +283,7 @@ const STUB = `
     const before = await ev(`return readLocalChecks().length`);
     await ev(`document.querySelector('#localList .ldel').click();`); await sleep(100);
     ok(await ev(`return readLocalChecks().length`) === before - 1, 'Delete removes one saved check');
-    await ev(`switchTab('settlement'); document.getElementById('clearSavedBtn').click();`); await sleep(100);
+    await ev(`switchTab('settlement'); document.getElementById('clearSavedBtn').click(); document.getElementById('clearYesBtn').click();`); await sleep(100);
     ok(await ev(`return readLocalChecks().length === 0 && !document.getElementById('localEmpty').classList.contains('hide')`), '"Clear what this app saved" also removes checks saved on this device');
     await fresh();
     await ev(`switchTab('mybills'); document.getElementById('saveLocalBtn').click();`); await sleep(100);
@@ -324,7 +326,7 @@ const STUB = `
     await pickState('Maharashtra'); await sleep(300);
     aft = await ev(`return document.querySelector('.aftersend').innerText`);
     ok(/Mumbai/.test(aft) && /Pune/.test(aft) && /Thane/.test(aft) && (aft.match(/Covers:/g) || []).length === 3, 'Maharashtra (split) shows all three offices, each with the area it covers in its own words');
-    ok(/depends on where you live/.test(aft), 'and says plainly that which office applies depends on where you live');
+    ok(/different offices cover different areas/.test(aft) && /or to the one for the insurer.s branch or office you dealt with \(Insurance Ombudsman Rules 2017, rule 14\(1\)\)/.test(aft), 'and says the office can be the one for where you live or for the insurer\'s branch you dealt with, citing rule 14(1) (R20)');
     await ev(`setLang('hi');`); await sleep(200);
     ok(/बीमा लोकपाल/.test(await ev(`return document.querySelector('.aftersend').innerText`)), 'the office block is in Hindi too (the address stays as published)');
     await ev(`setLang('en'); document.getElementById('ld_remember').checked=true; document.getElementById('ld_remember').dispatchEvent(new Event('input',{bubbles:true}));`); await sleep(100);
@@ -506,6 +508,64 @@ const STUB = `
     await ev(`setLang('en');`);
     const imp18 = await ev(`window.__lastExtraction={header:{},line_items:[{item:'RESOLUTE ONYX STENT',quantity:1,rate:45000,total:45000}]}; renderReport(window.__lastExtraction); return document.getElementById('report').innerText;`);
     ok(/An implant line was found but not compared/.test(imp18) && /names a stent or knee implant without saying which kind/.test(imp18) && !/No stent or knee-implant line found/.test(imp18), 'a stent line without its type is "found but not compared", with the reason (it used to say no stent was on the bill)');
+
+    console.log('== R20: ticks you removed stay removed');
+    await fresh(); await ev(`setLang('en'); document.getElementById('egBtn').click();`); await sleep(500);
+    await ev(`switchTab('letter'); document.querySelector('[data-inc=dup]').click(); document.querySelector('[data-inc=recon]').click();`);
+    await ev(`switchTab('settlement'); const e=document.getElementById('copay'); e.value='10'; e.dispatchEvent(new Event('input',{bubbles:true}));`); await sleep(100);
+    await ev(`setLang('hi'); setLang('en'); switchTab('letter');`); await sleep(150);
+    const ticks = await ev(`return ['dup','recon','irdai'].map(k=>k+':'+document.querySelector('[data-inc='+k+']').checked).join(',')`);
+    ok(ticks === 'dup:false,recon:false,irdai:true', 'after editing a settlement figure and switching language, the boxes you unticked stay unticked (they used to come back): ' + ticks);
+    await ev(`document.getElementById('genLetterTab').click();`); await sleep(300);
+    const lt20 = await ev(`return document.querySelector('.letter').innerText`);
+    ok(!/appear more than once at the same amount/.test(lt20) && !/differs from the sum of its own printed lines/.test(lt20) && /List I/.test(lt20), 'so the letter leaves out the repeats and the arithmetic gap you removed');
+    ok(/reply within 14 days, the time IRDAI.s Master Circular on Protection of Policyholders. Interests \(5 September 2024\) gives insurers to resolve a complaint/.test(lt20) && /Part B\) says the same/.test(lt20), 'the letter asks for a reply within the 14 days IRDAI sets, and cites the policyholder-protection circular too');
+    await ev(`localStorage.clear(); window.__lastExtraction={header:{},line_items:[{item:'TV CHARGES',quantity:1,total:300}]}; renderReport(window.__lastExtraction); switchTab('letter');`); await sleep(150);
+    ok(await ev(`return document.querySelector('[data-inc=irdai]') && document.querySelector('[data-inc=irdai]').checked`), 'a different bill starts with every box ticked again');
+
+    console.log('== R20: nothing is wiped without asking');
+    await fresh(); await ev(`setLang('en'); localStorage.setItem('clearbill_local_checks', JSON.stringify([{v:1,id:'cx',savedAt:'2026-10-01T00:00:00Z',extraction:{header:{},line_items:[{item:'BED',total:100}]}}]));`);
+    await ev(`document.getElementById('clearSavedBtn').click();`); await sleep(100);
+    ok(await ev(`return !document.getElementById('clearConfirm').classList.contains('hide') && !!localStorage.getItem('clearbill_local_checks')`), '"Clear what this app saved" asks first, and nothing is deleted yet');
+    await ev(`document.getElementById('clearCancelBtn').click();`);
+    ok(await ev(`return document.getElementById('clearConfirm').classList.contains('hide') && !!localStorage.getItem('clearbill_local_checks')`), 'Cancel keeps everything');
+    await ev(`document.getElementById('clearSavedBtn').click(); document.getElementById('clearYesBtn').click();`); await sleep(100);
+    ok(await ev(`return !localStorage.getItem('clearbill_local_checks')`), '"Yes, clear it all" clears it');
+    // The worked example and a bill of your own
+    await fresh(); await ev(`setLang('en');`);
+    await ev(`addFiles([__mk('own1.jpg','image/jpeg',81)]); document.getElementById('checkPhotosBtn').click();`); await sleep(900);
+    const own = await ev(`return {lines: window.__lastExtraction && window.__lastExtraction.line_items.length, cache: _pageCache.size}`);
+    await ev(`document.getElementById('egBtn').click();`); await sleep(100);
+    ok(await ev(`return !document.getElementById('egConfirm').classList.contains('hide') && !_usingWorkedExample`), 'with your own bill on screen, "Load the worked example" asks first (it used to replace it at once)');
+    await ev(`document.getElementById('egKeepBtn').click();`); await sleep(100);
+    ok(await ev(`return !_usingWorkedExample && window.__lastExtraction.line_items[0].item==='BED CHARGES'`), '"Keep my bill" keeps it');
+    await ev(`document.getElementById('egBtn').click(); document.getElementById('egYesBtn').click();`); await sleep(400);
+    ok(await ev(`return _usingWorkedExample && _pageCache.size`) === own.cache && own.cache >= 1, 'after loading the example, the pages already read stay cached, so adding the same photos again costs no free reads');
+    // Typed figures can be brought back
+    await fresh(); await ev(`setLang('en'); for(const [id,v] of [['total','230000'],['counter','40000']]){ const e=document.getElementById(id); e.value=v; e.dispatchEvent(new Event('input',{bubbles:true})); }`);
+    await ev(`document.getElementById('egBtn').click();`); await sleep(400);
+    ok(await ev(`return !document.getElementById('egUndo').classList.contains('hide') && document.getElementById('total').value==='41396'`), 'loading the example over figures you typed says so, with Undo');
+    await ev(`document.getElementById('egUndoBtn').click();`); await sleep(150);
+    ok(await ev(`return document.getElementById('total').value==='230000' && document.getElementById('counter').value==='40000' && document.getElementById('egUndo').classList.contains('hide')`), 'Undo brings your figures back');
+    // Figures from a last visit say so
+    await send('Page.navigate', { url: `http://127.0.0.1:${port}/` }); await sleep(1200);
+    ok(await ev(`return !document.getElementById('restoredNote').classList.contains('hide') && document.getElementById('total').value==='230000' && /from your last visit/.test(document.getElementById('restoredNote').textContent)`), 'figures restored from your last visit are labelled as such');
+    await ev(`document.getElementById('restoredClearBtn').click();`); await sleep(100);
+    ok(await ev(`return document.getElementById('total').value==='' && document.getElementById('restoredNote').classList.contains('hide') && !localStorage.getItem('clearbill_settlement_draft')`), '"Clear them" clears just those figures');
+
+    console.log('== R20: what goes out in public');
+    await fresh(); await ev(`setLang('en'); document.getElementById('egBtn').click();`); await sleep(500);
+    const share = await ev(`switchTab('findings'); const a=analyseFor(window.__lastExtraction), s=settleOk(); return S().share_findings_text(a.exact.length, inr.format(a.exactSum), a.nppa.length, a.dups.length, '', 'https://x', inr.format(s.deduction));`);
+    ok(/By the settlement figures, ₹5,962\.89 of what I paid is not itemised/.test(share) && /List I \("Optional Items"\)/.test(share) && /appear more than once/.test(share) && !/non-payable|duplicate/i.test(share), 'the share text leads with the un-itemised amount and uses the on-screen wording (List I, "appear more than once"): ' + share.slice(0, 120));
+    ok(/What the settlement says/i.test(await ev(`return document.getElementById('report').innerText`)), 'the report heading says what the settlement says, not "what you were told"');
+    ok(/not money recovered/.test(await ev(`return S().impact_line('1','1','₹5','5 October 2026')`)), 'the public counter says its amount is on bills, not money recovered');
+
+    console.log('== R20: typing stays quick on a long bill');
+    await ev(`const items=[]; for(let i=0;i<500;i++) items.push({item:(i%7===0?'GLOVES EXAMINATION ':'ITEM ')+i, quantity:1, rate:100+i, total:100+i}); window.__lastExtraction={header:{},line_items:items}; calc();`);
+    await send('Emulation.setCPUThrottlingRate', { rate: 4 }); await sleep(200);
+    const keys = await ev(`const out=[]; for(let i=0;i<7;i++){ const t0=performance.now(); const e=document.getElementById('copay'); e.value=String(10+(i%2)); e.dispatchEvent(new Event('input',{bubbles:true})); out.push(performance.now()-t0); await new Promise(r=>setTimeout(r,40)); } return out.sort((a,b)=>a-b)[3];`);
+    await send('Emulation.setCPUThrottlingRate', { rate: 1 });
+    ok(keys < 250, `a keystroke in Settlement with a 500-line bill on a 4x slower CPU takes ${Math.round(keys)} ms (it was about 500-900 ms)`);
 
     console.log('== Hindi errors');
     await fresh();

@@ -284,6 +284,9 @@
   .aftersend{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:12px 14px;margin-top:14px;font-size:.88rem;line-height:1.5}
   .aftersend h4{font-family:"Archivo",sans-serif;font-size:.9rem;margin:0 0 6px} .aftersend ol{margin:0 0 0 1.1rem;padding:0} .aftersend li{margin:6px 0}
   .clearsaved{margin-top:12px}
+  .inlineconfirm{margin-top:8px;padding:10px 12px;border:1px solid var(--rule);border-radius:9px;background:var(--field);font-size:.86rem}
+  .inlineconfirm p{margin:0 0 8px}
+  .inlineconfirm .btn{margin-right:10px}
   .is-reading #drop{pointer-events:none;opacity:.6}
   .is-reading .fremove{display:none}
   .btn:disabled{opacity:.6;cursor:default}
@@ -411,6 +414,7 @@
     <h2 class="sec-label" id="secSettlement">Settlement</h2>
     <button class="link" id="skipToFindingsBtn" style="margin:-2px 0 12px;display:block">Have the itemised bill but not these numbers? Check it directly &rarr;</button>
     <div class="card">
+      <p class="notez hide" id="restoredNote" role="status" style="margin:0 0 12px"><span id="restoredTxt"></span> <button class="link" type="button" id="restoredClearBtn"></button></p>
       <div class="k" id="settleModeLbl" style="margin-bottom:6px">How was the claim paid?</div>
       <div class="chips seg" id="settleMode" role="group" aria-labelledby="settleModeLbl">
         <button type="button" class="chip on" data-mode="cashless" aria-pressed="true" id="modeCashlessBtn">Cashless (hospital billed the insurer)</button>
@@ -442,8 +446,11 @@
           <p id="findNumsNote" class="note2">Different insurers and hospitals word these differently &mdash; this is a guide, not an exact match for every document.</p>
         </div>
       </details>
-      <div style="margin-top:14px"><button class="link" id="egBtn">Load the worked example</button></div>
+      <div style="margin-top:14px"><button class="link" id="egBtn">Load the worked example</button>
+        <div class="inlineconfirm hide" id="egConfirm" role="group" aria-labelledby="egConfirmQ"><p id="egConfirmQ"></p><button class="btn sm" type="button" id="egYesBtn"></button><button class="link" type="button" id="egKeepBtn"></button></div>
+        <p class="hide" id="egUndo" role="status" style="font-size:.84rem;margin:6px 0 0"><span id="egUndoTxt"></span> <button class="link" type="button" id="egUndoBtn"></button></p></div>
       <div class="clearsaved"><button class="link" id="clearSavedBtn" type="button">Clear what this app saved on this device</button>
+        <div class="inlineconfirm hide" id="clearConfirm" role="group" aria-labelledby="clearConfirmQ"><p id="clearConfirmQ"></p><button class="btn sm" type="button" id="clearYesBtn"></button><button class="link" type="button" id="clearCancelBtn"></button></div>
         <p id="clearSavedHint" style="font-size:.76rem;color:var(--soft);margin:4px 0 0"></p>
         <div class="notez hide" id="clearedNote" role="status"></div></div>
     </div>
@@ -998,6 +1005,12 @@ const STRINGS = {
 en: {
   tag: "Check a hospital bill and your insurance settlement against the published rules.",
   why_summary:"What this means and what to do", see_lines:"See the lines", change_photos:"Change photos",
+  clear_confirm_q:"Clear everything this app saved on this device: typed figures, letter details, saved checks and your Gemini key?",
+  clear_yes:"Yes, clear it all", cancel_word:"Cancel",
+  eg_confirm_q:"Loading the worked example replaces the bill you checked on this screen. Your saved checks are kept.",
+  eg_yes:"Load the example", eg_keep:"Keep my bill",
+  eg_undo_note:"The example replaced the figures you typed.", undo_word:"Undo",
+  restored_note:"These figures are from your last visit on this device.", restored_clear:"Clear them",
   upsum:n=>`${n} lines read`, upsum_example:n=>`Worked example &middot; ${n} lines read`,
   aria_language:"Language", aria_sections:"Sections", aria_remove_photo:"Remove this photo",
   sec_settlement: "Settlement",
@@ -1084,7 +1097,7 @@ en: {
   bill_read_head:"Bill read",
   bill_read_sub:"Fill in the settlement above to see how much of your deduction these account for.",
   lines_total:(n,total)=>`${n} line items read, totalling ${total}.`,
-  told_shown_head:"What you were told &middot; what the bill shows",
+  told_shown_head:"What the settlement says &middot; what the bill shows",
   told_h5:"The settlement told you", shown_h5:"The itemised bill contains",
   total_bill:"Total bill", hospital_discount:"Hospital discount", you_paid:"You paid",
   never_itemised_short:"not itemised", lines_word:n=>`${n} lines`,
@@ -1155,7 +1168,7 @@ en: {
   as_head:"After you send the letter",
   as_1:"Send it to your insurer's grievance officer by email or post. The address is on your policy documents, your claim letter or the insurer's website. Use a method that gives you proof (an email you can save, or registered post) and keep a copy with the date.",
   as_2:"If a finding is about the hospital's own bill (a repeated charge, a total that doesn't match, an implant price), also ask the hospital's billing office to explain it.",
-  as_3:"If the reply does not settle it, you can complain to IRDAI through Bima Bharosa (<a href='https://bimabharosa.irdai.gov.in' target='_blank' rel='noopener'>bimabharosa.irdai.gov.in</a>) and to the Insurance Ombudsman (<a href='https://www.cioins.co.in' target='_blank' rel='noopener'>cioins.co.in</a>). Both have time limits and rules about what they accept, so read the current rules on those sites before you file.",
+  as_3:"If the insurer rejects your complaint, does not reply within one month of receiving it, or replies but does not settle it, you can complain to the Insurance Ombudsman (<a href='https://www.cioins.co.in' target='_blank' rel='noopener'>cioins.co.in</a>), free and online. You can also complain to IRDAI through Bima Bharosa (<a href='https://bimabharosa.irdai.gov.in' target='_blank' rel='noopener'>bimabharosa.irdai.gov.in</a>). The Ombudsman's rules (Insurance Ombudsman Rules 2017, rule 14) set a one-year limit, counted from the insurer's rejection or reply, or, if there was no reply, from one month after you sent your letter. Read the current rules on cioins.co.in before you file.",
   as_4:"ClearBill helps you ask questions and draft a letter. It is not legal advice.",
   sh_head:"Start here", sh_hospital:"Ask the hospital", sh_insurer:"Ask your insurer",
   sh_dups:n=>`${n} charge${n>1?'s appear':' appears'} more than once. Ask whether each is a separate service.`,
@@ -1245,19 +1258,20 @@ en: {
   ld_note:"Off by default. Details stay on this device only; they are never sent anywhere.",
   ld_state:"Your state (to find your Insurance Ombudsman office)", ld_state_none:"Choose your state",
   omb_head:st=>`Your Insurance Ombudsman office (${st})`,
-  omb_split:"In this state, which office handles a complaint depends on where you live. The offices, and the areas each one covers in its own words:",
+  omb_split:"In this state, different offices cover different areas. The offices, and the areas each one covers in its own words:",
+  omb_branch:"You can complain to the office for where you live (shown here) or to the one for the insurer's branch or office you dealt with (Insurance Ombudsman Rules 2017, rule 14(1)).",
   omb_office:o=>`Office of the Insurance Ombudsman, ${o}`, omb_tel:"Tel.", omb_covers:"Covers:",
   omb_pick:"Choose your state under \u201cYour details\u201d above to see your Insurance Ombudsman office here.",
   omb_src:d=>`From the Council for Insurance Ombudsmen's list at cioins.co.in, as read on ${d}. Check it there before you post anything: offices move.`,
   sent_on_lbl:"Sent on", sent_today:"sent today", sent_yesterday:"sent yesterday", sent_days_ago:n=>`sent ${n} days ago`,
-  impact_line:(nf,n,amt,since)=>`<b>${nf}</b> bill page${n===1?'':'s'} read by the free reading service since ${since}${amt?` &middot; <b>${amt}</b> in charges matching IRDAI's published lists`:''}`,
+  impact_line:(nf,n,amt,since)=>`<b>${nf}</b> bill page${n===1?'':'s'} read by the free reading service since ${since}${amt?` &middot; <b>${amt}</b> in charges matching IRDAI's published lists (amounts on bills, not money recovered)`:''}`,
   reader_busy:"The free reading service has reached today's limit. You can still read your bill with your own free Gemini key (paste it in the box below), or try again tomorrow.",
   reader_overloaded:"Google's reading service has been overloaded in the last few minutes, so reading a photo may fail right now. If it does, try again a little later.",
   reader_broken:"The free reading service is not working right now (the problem is on our side, not with your photo). You can still read your bill with your own free Gemini key: paste it in the box below.",
   broken_byo:"The free reading service is not working right now. Paste your own free Gemini key below and tap Check again.",
   mybills_limit:n=>`You have ${n} saved bills, the most an account can keep. Delete some you no longer need, then save again.`,
   share_findings_btn:"Share findings",
-  share_findings_text:(exactN,exactSum,nppaN,dupN,reconTxt,url)=>`ClearBill checked my hospital bill against India's published rules.${exactN?` ${exactN} charge(s) match the IRDAI non-payable list (${exactSum}).`:''}${nppaN?` ${nppaN} implant charge(s) flagged against NPPA ceilings.`:''}${dupN?` ${dupN} duplicate charge(s) found.`:''}${reconTxt?` ${reconTxt}`:''} Check your own bill free: ${url}`,
+  share_findings_text:(exactN,exactSum,nppaN,dupN,reconTxt,url,ded)=>`ClearBill checked my hospital bill against India's published rules.${ded?` By the settlement figures, ${ded} of what I paid is not itemised.`:''}${exactN?` ${exactN} charge(s) are on IRDAI's List I ("Optional Items") (${exactSum}).`:''}${nppaN?` ${nppaN} implant charge(s) are priced above an NPPA ceiling.`:''}${dupN?` ${dupN} charge(s) appear more than once.`:''}${reconTxt?` ${reconTxt}`:''} Check your own bill free: ${url}`,
   share_findings_recon:diff=>`A ${diff} gap in the bill's own arithmetic.`,
   foot_html: `Base = total bill &minus; deduction &minus; hospital discount. Co-pay applies only to the base. Counter = deduction + co-pay.<br><br>
     The model only reads the bill into rows. Every flag after that is a table lookup or an arithmetic comparison, shown with its source.
@@ -1320,6 +1334,12 @@ en: {
 hi: {
   tag: "अस्पताल का बिल और अपना बीमा सेटलमेंट प्रकाशित नियमों से जाँचें।",
   why_summary:"इसका मतलब और क्या करें", see_lines:"लाइनें देखें", change_photos:"फ़ोटो बदलें",
+  clear_confirm_q:"इस डिवाइस पर इस ऐप ने जो कुछ सहेजा है, सब मिटाएँ: डाले गए आँकड़े, पत्र की जानकारी, सहेजी गई जाँचें और आपकी Gemini key?",
+  clear_yes:"हाँ, सब मिटाएँ", cancel_word:"रद्द करें",
+  eg_confirm_q:"उदाहरण खोलने से इस स्क्रीन पर जाँचा गया आपका बिल हट जाएगा। आपकी सहेजी गई जाँचें बनी रहेंगी।",
+  eg_yes:"उदाहरण खोलें", eg_keep:"मेरा बिल रखें",
+  eg_undo_note:"उदाहरण ने आपके डाले गए आँकड़े बदल दिए।", undo_word:"वापस लें",
+  restored_note:"ये आँकड़े इस डिवाइस पर आपकी पिछली विज़िट के हैं।", restored_clear:"इन्हें मिटाएँ",
   upsum:n=>`${n} लाइनें पढ़ी गईं`, upsum_example:n=>`उदाहरण बिल &middot; ${n} लाइनें पढ़ी गईं`,
   aria_language:"भाषा", aria_sections:"हिस्से", aria_remove_photo:"यह फ़ोटो हटाएँ",
   sec_settlement: "सेटलमेंट",
@@ -1406,7 +1426,7 @@ hi: {
   bill_read_head:"बिल पढ़ा गया",
   bill_read_sub:"ऊपर सेटलमेंट भरें ताकि पता चले ये कितनी कटौती की वजह बताते हैं।",
   lines_total:(n,total)=>`${n} लाइन आइटम पढ़े गए, कुल ${total}।`,
-  told_shown_head:"आपको क्या बताया गया &middot; बिल में क्या दिखता है",
+  told_shown_head:"सेटलमेंट क्या कहता है &middot; बिल में क्या दिखता है",
   told_h5:"सेटलमेंट ने आपको बताया", shown_h5:"बिल में यह शामिल है",
   total_bill:"कुल बिल", hospital_discount:"अस्पताल की छूट", you_paid:"आपने चुकाया",
   never_itemised_short:"ब्योरा नहीं", lines_word:n=>`${n} लाइनें`,
@@ -1477,7 +1497,7 @@ hi: {
   as_head:"पत्र भेजने के बाद",
   as_1:"इसे ईमेल या डाक से अपनी बीमा कंपनी के शिकायत निवारण अधिकारी को भेजें। पता आपके पॉलिसी काग़ज़ों, क्लेम पत्र या बीमा कंपनी की वेबसाइट पर होता है। ऐसा तरीक़ा चुनें जिसका सबूत रहे (सहेजा जा सकने वाला ईमेल, या रजिस्टर्ड डाक) और तारीख़ के साथ एक कॉपी रखें।",
   as_2:"अगर कोई निष्कर्ष अस्पताल के अपने बिल के बारे में है (दोहराया चार्ज, न मिलता कुल योग, इम्प्लांट की क़ीमत), तो अस्पताल के बिलिंग विभाग से भी समझाने को कहें।",
-  as_3:"अगर जवाब से मामला नहीं सुलझता, तो आप बीमा भरोसा (<a href='https://bimabharosa.irdai.gov.in' target='_blank' rel='noopener'>bimabharosa.irdai.gov.in</a>) के ज़रिए IRDAI से और बीमा लोकपाल (<a href='https://www.cioins.co.in' target='_blank' rel='noopener'>cioins.co.in</a>) से शिकायत कर सकते हैं। दोनों की समय-सीमाएँ और स्वीकार करने के नियम हैं, इसलिए शिकायत से पहले उन साइटों पर मौजूदा नियम पढ़ें।",
+  as_3:"अगर बीमा कंपनी आपकी शिकायत ठुकरा दे, उसे मिलने के एक महीने के भीतर जवाब न दे, या जवाब दे पर मामला न सुलझे, तो आप बीमा लोकपाल (<a href='https://www.cioins.co.in' target='_blank' rel='noopener'>cioins.co.in</a>) से शिकायत कर सकते हैं, मुफ़्त और ऑनलाइन। आप बीमा भरोसा (<a href='https://bimabharosa.irdai.gov.in' target='_blank' rel='noopener'>bimabharosa.irdai.gov.in</a>) के ज़रिए IRDAI से भी शिकायत कर सकते हैं। लोकपाल के नियमों (बीमा लोकपाल नियम 2017, नियम 14) में एक साल की सीमा है, जो बीमा कंपनी के इनकार या जवाब से गिनी जाती है, या जवाब न आने पर आपका पत्र भेजने के एक महीने बाद से। शिकायत से पहले cioins.co.in पर मौजूदा नियम पढ़ें।",
   as_4:"ClearBill आपको सवाल पूछने और पत्र का मसौदा बनाने में मदद करता है। यह क़ानूनी सलाह नहीं है।",
   sh_head:"यहाँ से शुरू करें", sh_hospital:"अस्पताल से पूछें", sh_insurer:"अपनी बीमा कंपनी से पूछें",
   sh_dups:n=>`${n} चार्ज एक से ज़्यादा बार दिखते हैं। पूछें कि क्या हर एक अलग सेवा है।`,
@@ -1567,19 +1587,20 @@ hi: {
   ld_note:"डिफ़ॉल्ट रूप से बंद। जानकारी सिर्फ़ इसी डिवाइस पर रहती है; कहीं भेजी नहीं जाती।",
   ld_state:"आपका राज्य (आपके बीमा लोकपाल का दफ़्तर जानने के लिए)", ld_state_none:"अपना राज्य चुनें",
   omb_head:st=>`आपका बीमा लोकपाल (Insurance Ombudsman) दफ़्तर (${st})`,
-  omb_split:"इस राज्य में शिकायत कौन-सा दफ़्तर देखेगा, यह इस पर निर्भर है कि आप कहाँ रहते हैं। दफ़्तर, और हर एक किस इलाके को देखता है, उन्हीं के शब्दों में:",
+  omb_split:"इस राज्य में अलग-अलग दफ़्तर अलग-अलग इलाके देखते हैं। दफ़्तर, और हर एक किस इलाके को देखता है, उन्हीं के शब्दों में:",
+  omb_branch:"आप उस दफ़्तर में शिकायत कर सकते हैं जो आपके रहने की जगह को देखता है (यहाँ दिखाया गया), या उसमें जो बीमा कंपनी की उस शाखा या दफ़्तर को देखता है जिससे आपका काम पड़ा (बीमा लोकपाल नियम 2017, नियम 14(1))।",
   omb_office:o=>`Office of the Insurance Ombudsman, ${o}`, omb_tel:"फ़ोन", omb_covers:"इलाका:",
   omb_pick:"अपने बीमा लोकपाल का दफ़्तर यहाँ देखने के लिए ऊपर \u201cआपकी जानकारी\u201d में अपना राज्य चुनें।",
   omb_src:d=>`Council for Insurance Ombudsmen की सूची (cioins.co.in) से, ${d} को पढ़ी गई। कुछ भी भेजने से पहले वहाँ जाँच लें: दफ़्तर बदलते रहते हैं।`,
   sent_on_lbl:"भेजने की तारीख़", sent_today:"आज भेजा", sent_yesterday:"कल भेजा", sent_days_ago:n=>`${n} दिन पहले भेजा`,
-  impact_line:(nf,n,amt,since)=>`${since} से मुफ़्त रीडिंग सेवा ने बिल के <b>${nf}</b> पेज़ पढ़े${amt?` &middot; IRDAI की प्रकाशित सूचियों से मेल खाते चार्ज: <b>${amt}</b>`:''}`,
+  impact_line:(nf,n,amt,since)=>`${since} से मुफ़्त रीडिंग सेवा ने बिल के <b>${nf}</b> पेज़ पढ़े${amt?` &middot; IRDAI की प्रकाशित सूचियों से मेल खाते चार्ज: <b>${amt}</b> (बिलों पर लिखी रकम, वापस मिला पैसा नहीं)`:''}`,
   reader_busy:"मुफ़्त रीडिंग सेवा आज की सीमा तक पहुँच गई है। आप अपनी मुफ़्त Gemini key से अब भी बिल पढ़ सकते हैं (नीचे दिए बॉक्स में डालें), या कल फिर कोशिश करें।",
   reader_overloaded:"पिछले कुछ मिनटों से Google की रीडिंग सेवा पर बहुत ज़्यादा भार है, इसलिए अभी फ़ोटो पढ़ना नाकाम हो सकता है। ऐसा हो तो थोड़ी देर बाद फिर कोशिश करें।",
   reader_broken:"मुफ़्त रीडिंग सेवा अभी काम नहीं कर रही है (समस्या हमारी तरफ़ है, आपकी फ़ोटो में नहीं)। आप अपनी मुफ़्त Gemini key से अब भी बिल पढ़ सकते हैं (नीचे दिए बॉक्स में डालें)।",
   broken_byo:"मुफ़्त पढ़ने की सेवा अभी काम नहीं कर रही है। नीचे अपनी मुफ़्त Gemini key डालकर फिर से Check दबाएँ।",
   mybills_limit:n=>`आपके ${n} सहेजे गए बिल हैं, जो एक खाते की सीमा है। जिनकी अब ज़रूरत नहीं है उन्हें मिटाएँ, फिर दोबारा सहेजें।`,
   share_findings_btn:"जाँचें शेयर करें",
-  share_findings_text:(exactN,exactSum,nppaN,dupN,reconTxt,url)=>`ClearBill ने मेरे अस्पताल के बिल की जाँच भारत के प्रकाशित नियमों से की।${exactN?` ${exactN} चार्ज IRDAI की न-भुगतान सूची से मेल खाते हैं (${exactSum}).`:''}${nppaN?` ${nppaN} इम्प्लांट चार्ज NPPA सीमा के विरुद्ध चिन्हित हुए।`:''}${dupN?` ${dupN} दोहरे चार्ज मिले।`:''}${reconTxt?` ${reconTxt}`:''} अपना बिल मुफ़्त जाँचें: ${url}`,
+  share_findings_text:(exactN,exactSum,nppaN,dupN,reconTxt,url,ded)=>`ClearBill ने मेरे अस्पताल के बिल की जाँच भारत के प्रकाशित नियमों से की।${ded?` सेटलमेंट के आँकड़ों के अनुसार मेरे भुगतान में से ${ded} का ब्योरा नहीं दिया गया।`:''}${exactN?` ${exactN} चार्ज IRDAI की सूची I ("वैकल्पिक मदें") में हैं (${exactSum})।`:''}${nppaN?` ${nppaN} इम्प्लांट चार्ज NPPA सीमा से ऊपर हैं।`:''}${dupN?` ${dupN} चार्ज एक से ज़्यादा बार दिखते हैं।`:''}${reconTxt?` ${reconTxt}`:''} अपना बिल मुफ़्त जाँचें: ${url}`,
   share_findings_recon:diff=>`बिल की अपनी गणना में ${diff} का अंतर।`,
   foot_html: `आधार = कुल बिल &minus; कटौती &minus; अस्पताल की छूट। को-पे सिर्फ़ आधार पर लागू होता है। काउंटर = कटौती + को-पे।<br><br>
     मॉडल सिर्फ़ बिल को पंक्तियों में पढ़ता है। इसके बाद हर निशान एक तालिका-मिलान या गणना है, जिसका स्रोत साथ दिखता है।
@@ -1643,6 +1664,12 @@ hi: {
 mr: {
   tag: "रुग्णालयाचं बिल आणि तुमचं विमा सेटलमेंट प्रकाशित नियमांशी तपासा.",
   why_summary:"याचा अर्थ आणि काय करावं", see_lines:"ओळी पहा", change_photos:"फोटो बदला",
+  clear_confirm_q:"या डिव्हाइसवर या अ‍ॅपने जतन केलेलं सगळं पुसायचं: टाकलेले आकडे, पत्राचे तपशील, जतन केलेल्या तपासण्या आणि तुमची Gemini key?",
+  clear_yes:"हो, सगळं पुसा", cancel_word:"रद्द करा",
+  eg_confirm_q:"उदाहरण उघडल्यावर या स्क्रीनवर तपासलेलं तुमचं बिल जाईल. तुमच्या जतन केलेल्या तपासण्या राहतील.",
+  eg_yes:"उदाहरण उघडा", eg_keep:"माझं बिल ठेवा",
+  eg_undo_note:"उदाहरणाने तुम्ही टाकलेले आकडे बदलले.", undo_word:"परत आणा",
+  restored_note:"हे आकडे या डिव्हाइसवरील तुमच्या मागच्या भेटीतले आहेत.", restored_clear:"ते पुसा",
   upsum:n=>`${n} ओळी वाचल्या`, upsum_example:n=>`उदाहरण बिल &middot; ${n} ओळी वाचल्या`,
   aria_language:"भाषा", aria_sections:"विभाग", aria_remove_photo:"हा फोटो काढा",
   sec_settlement: "सेटलमेंट",
@@ -1729,7 +1756,7 @@ mr: {
   bill_read_head:"बिल वाचलं",
   bill_read_sub:"वरती सेटलमेंट भरा म्हणजे कळेल की या गोष्टी तुमच्या कपातीपैकी किती स्पष्ट करतात.",
   lines_total:(n,total)=>`${n} लाइन आयटम वाचले, एकूण ${total}.`,
-  told_shown_head:"तुम्हाला काय सांगितलं &middot; बिलात काय आहे",
+  told_shown_head:"सेटलमेंट काय सांगतं &middot; बिलात काय आहे",
   told_h5:"सेटलमेंटने तुम्हाला सांगितलं", shown_h5:"तपशीलवार बिलात हे आहे",
   total_bill:"एकूण बिल", hospital_discount:"रुग्णालयाची सूट", you_paid:"तुम्ही दिलं",
   never_itemised_short:"तपशील नाही", lines_word:n=>`${n} ओळी`,
@@ -1800,7 +1827,7 @@ mr: {
   as_head:"पत्र पाठवल्यानंतर",
   as_1:"हे तुमच्या विमा कंपनीच्या तक्रार निवारण अधिकाऱ्याला ईमेलने किंवा पोस्टाने पाठवा. पत्ता तुमच्या पॉलिसी कागदपत्रांवर, क्लेम पत्रावर किंवा विमा कंपनीच्या वेबसाइटवर असतो. पुरावा राहील अशी पद्धत वापरा (जतन करता येणारा ईमेल, किंवा रजिस्टर्ड पोस्ट) आणि तारखेसह एक प्रत ठेवा.",
   as_2:"एखादा निष्कर्ष रुग्णालयाच्या स्वतःच्या बिलाबद्दल असेल (पुन्हा आलेला चार्ज, न जुळणारी एकूण रक्कम, इम्प्लांटची किंमत), तर रुग्णालयाच्या बिलिंग विभागालाही ते स्पष्ट करायला सांगा.",
-  as_3:"उत्तराने प्रश्न सुटला नाही, तर तुम्ही बिमा भरोसा (<a href='https://bimabharosa.irdai.gov.in' target='_blank' rel='noopener'>bimabharosa.irdai.gov.in</a>) मार्फत IRDAI कडे आणि विमा लोकपालाकडे (<a href='https://www.cioins.co.in' target='_blank' rel='noopener'>cioins.co.in</a>) तक्रार करू शकता. दोघांच्या वेळमर्यादा आणि स्वीकारण्याचे नियम आहेत, त्यामुळे तक्रार करण्यापूर्वी त्या साइट्सवरील सध्याचे नियम वाचा.",
+  as_3:"विमा कंपनीने तुमची तक्रार फेटाळली, ती मिळाल्यापासून एका महिन्यात उत्तर दिलं नाही, किंवा उत्तर दिलं पण प्रश्न सुटला नाही, तर तुम्ही विमा लोकपालाकडे (<a href='https://www.cioins.co.in' target='_blank' rel='noopener'>cioins.co.in</a>) तक्रार करू शकता, मोफत आणि ऑनलाइन. तुम्ही बिमा भरोसा (<a href='https://bimabharosa.irdai.gov.in' target='_blank' rel='noopener'>bimabharosa.irdai.gov.in</a>) मार्फत IRDAI कडेही तक्रार करू शकता. लोकपालाच्या नियमांमध्ये (विमा लोकपाल नियम 2017, नियम 14) एका वर्षाची मर्यादा आहे, जी विमा कंपनीच्या नकारापासून किंवा उत्तरापासून मोजली जाते, किंवा उत्तर आलं नाही तर तुमचं पत्र पाठवल्यापासून एका महिन्यानंतर. तक्रार करण्यापूर्वी cioins.co.in वरील सध्याचे नियम वाचा.",
   as_4:"ClearBill तुम्हाला प्रश्न विचारायला आणि पत्राचा मसुदा तयार करायला मदत करते. हा कायदेशीर सल्ला नाही.",
   sh_head:"इथून सुरुवात करा", sh_hospital:"रुग्णालयाला विचारा", sh_insurer:"तुमच्या विमा कंपनीला विचारा",
   sh_dups:n=>`${n} चार्जेस एकापेक्षा जास्त वेळा दिसतात. प्रत्येक वेगळी सेवा आहे का ते विचारा.`,
@@ -1890,19 +1917,20 @@ mr: {
   ld_note:"डिफॉल्टने बंद. तपशील फक्त याच डिव्हाइसवर राहतात; कुठेही पाठवले जात नाहीत.",
   ld_state:"तुमचं राज्य (तुमच्या विमा लोकपाल कार्यालयासाठी)", ld_state_none:"तुमचं राज्य निवडा",
   omb_head:st=>`तुमचं विमा लोकपाल (Insurance Ombudsman) कार्यालय (${st})`,
-  omb_split:"या राज्यात तक्रार कोणतं कार्यालय पाहील हे तुम्ही कुठे राहता यावर अवलंबून आहे. कार्यालयं, आणि प्रत्येक कोणता भाग पाहतं, त्यांच्याच शब्दांत:",
+  omb_split:"या राज्यात वेगवेगळी कार्यालयं वेगवेगळे भाग पाहतात. कार्यालयं, आणि प्रत्येक कोणता भाग पाहतं, त्यांच्याच शब्दांत:",
+  omb_branch:"तुम्ही राहता त्या भागाच्या कार्यालयाकडे (इथे दाखवलेलं) किंवा ज्या विमा कंपनीच्या शाखेशी किंवा कार्यालयाशी तुमचा व्यवहार झाला त्या भागाच्या कार्यालयाकडे तक्रार करू शकता (विमा लोकपाल नियम 2017, नियम 14(1)).",
   omb_office:o=>`Office of the Insurance Ombudsman, ${o}`, omb_tel:"फोन", omb_covers:"भाग:",
   omb_pick:"तुमचं विमा लोकपाल कार्यालय इथे पाहण्यासाठी वर \u201cतुमचे तपशील\u201d मध्ये तुमचं राज्य निवडा.",
   omb_src:d=>`Council for Insurance Ombudsmen च्या यादीतून (cioins.co.in), ${d} रोजी वाचलेलं. काहीही पाठवण्याआधी तिथे तपासा: कार्यालयं बदलतात.`,
   sent_on_lbl:"पाठवल्याची तारीख", sent_today:"आज पाठवलं", sent_yesterday:"काल पाठवलं", sent_days_ago:n=>`${n} दिवसांपूर्वी पाठवलं`,
-  impact_line:(nf,n,amt,since)=>`${since} पासून मोफत वाचन सेवेने बिलाची <b>${nf}</b> पानं वाचली${amt?` &middot; IRDAI च्या प्रकाशित यादींशी जुळणारे चार्जेस: <b>${amt}</b>`:''}`,
+  impact_line:(nf,n,amt,since)=>`${since} पासून मोफत वाचन सेवेने बिलाची <b>${nf}</b> पानं वाचली${amt?` &middot; IRDAI च्या प्रकाशित यादींशी जुळणारे चार्जेस: <b>${amt}</b> (बिलांवरील रक्कम, परत मिळालेले पैसे नव्हेत)`:''}`,
   reader_busy:"मोफत वाचन सेवेने आजची मर्यादा गाठली आहे. तुम्ही तुमच्या मोफत Gemini key ने अजूनही बिल वाचू शकता (खालच्या बॉक्समध्ये टाका), किंवा उद्या पुन्हा प्रयत्न करा.",
   reader_overloaded:"गेल्या काही मिनिटांपासून Google च्या वाचन सेवेवर खूप भार आहे, त्यामुळे आत्ता फोटो वाचणं अयशस्वी होऊ शकतं. तसं झालं तर थोड्या वेळाने पुन्हा प्रयत्न करा.",
   reader_broken:"मोफत वाचन सेवा सध्या काम करत नाही (अडचण आमच्या बाजूला आहे, तुमच्या फोटोमध्ये नाही). तुम्ही तुमच्या मोफत Gemini key ने अजूनही बिल वाचू शकता (खालच्या बॉक्समध्ये टाका).",
   broken_byo:"मोफत वाचन सेवा सध्या काम करत नाही. खाली तुमची स्वतःची मोफत Gemini key टाकून पुन्हा Check दाबा.",
   mybills_limit:n=>`तुमची ${n} बिले जतन आहेत, ही एका खात्याची मर्यादा आहे. ज्यांची आता गरज नाही ती पुसा, मग पुन्हा जतन करा.`,
   share_findings_btn:"तपासण्या शेअर करा",
-  share_findings_text:(exactN,exactSum,nppaN,dupN,reconTxt,url)=>`ClearBill ने माझं रुग्णालयाचं बिल भारताच्या प्रकाशित नियमांविरुद्ध तपासलं.${exactN?` ${exactN} चार्ज IRDAI च्या न-भरपाई यादीशी जुळतात (${exactSum}).`:''}${nppaN?` ${nppaN} इम्प्लांट चार्ज NPPA मर्यादेविरुद्ध चिन्हांकित झाले.`:''}${dupN?` ${dupN} दुहेरी चार्ज सापडले.`:''}${reconTxt?` ${reconTxt}`:''} तुमचं बिल मोफत तपासा: ${url}`,
+  share_findings_text:(exactN,exactSum,nppaN,dupN,reconTxt,url,ded)=>`ClearBill ने माझं रुग्णालयाचं बिल भारताच्या प्रकाशित नियमांविरुद्ध तपासलं.${ded?` सेटलमेंटच्या आकड्यांनुसार मी दिलेल्या रकमेपैकी ${ded} चा तपशील दिलेला नाही.`:''}${exactN?` ${exactN} चार्ज IRDAI च्या यादी I ("ऐच्छिक बाबी") मध्ये आहेत (${exactSum}).`:''}${nppaN?` ${nppaN} इम्प्लांट चार्ज NPPA मर्यादेपेक्षा जास्त आहेत.`:''}${dupN?` ${dupN} चार्ज एकापेक्षा जास्त वेळा दिसतात.`:''}${reconTxt?` ${reconTxt}`:''} तुमचं बिल मोफत तपासा: ${url}`,
   share_findings_recon:diff=>`बिलाच्या स्वतःच्या बेरजेत ${diff} चा फरक.`,
   foot_html: `आधार = एकूण बिल &minus; कपात &minus; रुग्णालयाची सूट. को-पे फक्त आधारावर लागू होतो. काउंटर = कपात + को-पे.<br><br>
     मॉडेल फक्त बिल ओळींमध्ये वाचतं. त्यानंतरचा प्रत्येक निष्कर्ष हा तक्ता-जुळवणी किंवा गणित आहे, ज्याचा स्रोत सोबत दिसतो.
@@ -2000,8 +2028,14 @@ function restoreDraft(){
     if(d.reimb) F.reimb.value=d.reimb;
     if(d.copay){ F.copay.value=d.copay; markChips(d.copay); }
     setSettleMode(d.mode==='reimb'?'reimb':'cashless',true);
+    if([d.total,d.counter,d.discount,d.copay,d.reimb].some(Boolean)) $('restoredNote').classList.remove('hide');
   }catch(e){}
 }
+$('restoredClearBtn').addEventListener('click',()=>{
+  Object.values(F).forEach(el=>{ el.value=''; }); markChips(-1); setSettleMode('cashless',true);
+  try{ localStorage.removeItem(DRAFT_LS); }catch(e){}
+  $('restoredNote').classList.add('hide'); calc(); F.total.focus();
+});
 // The labels on the result that depend on how the claim was paid.
 function settleLabels(){
   const T_=S(), re=SETTLE_MODE==='reimb';
@@ -2080,23 +2114,43 @@ $('nextBill').addEventListener('click',()=>switchTab('findings'));
 // Bring the result into view once a field is committed (on leaving the field),
 // not on every keystroke, so typing is never interrupted.
 Object.values(F).forEach(el=>el.addEventListener('change',()=>{ const o=$('settleOut'); if(!o.classList.contains('hide')) o.scrollIntoView({behavior:'smooth',block:'nearest'}); }));
-Object.values(F).forEach(el=>el.addEventListener('input',()=>{ if(el===F.copay) markChips(F.copay.value); calc(); saveDraft(); }));
+Object.values(F).forEach(el=>el.addEventListener('input',()=>{ if(el===F.copay) markChips(F.copay.value); $('restoredNote').classList.add('hide'); calc(); saveDraft(); }));
 function markChips(v){ document.querySelectorAll('#copayChips .chip').forEach(c=>{ const on=+c.dataset.v===+v; c.classList.toggle('on',on); c.setAttribute('aria-pressed',on); }); }
 document.querySelectorAll('#copayChips .chip').forEach(c=>c.addEventListener('click',()=>{ F.copay.value=c.dataset.v; markChips(c.dataset.v); calc(); saveDraft(); }));
 restoreDraft(); calc();
+// R20: loading the example used to throw away, without asking, a bill the
+// user had just had read (and its cached pages, so reading the same photos
+// again spent the free quota twice), and to overwrite typed figures.
 $('egBtn').addEventListener('click',()=>{
+  const ownBill=(window.__lastExtraction&&!_usingWorkedExample)||_pendingFiles.length>0;
+  if(ownBill){ $('egConfirm').classList.remove('hide'); $('egYesBtn').focus(); return; }
+  loadWorkedExample();
+});
+$('egYesBtn').addEventListener('click',()=>{ $('egConfirm').classList.add('hide'); loadWorkedExample(); });
+$('egKeepBtn').addEventListener('click',()=>{ $('egConfirm').classList.add('hide'); $('egBtn').focus(); });
+let _beforeExample=null;
+$('egUndoBtn').addEventListener('click',()=>{
+  const b=_beforeExample; if(!b) return;
+  F.total.value=b.total; F.counter.value=b.counter; F.discount.value=b.discount; F.copay.value=b.copay; F.reimb.value=b.reimb; markChips(b.copay);
+  setSettleMode(b.mode,true); saveDraft(); calc();
+  _beforeExample=null; $('egUndo').classList.add('hide');
+});
+function loadWorkedExample(){
+  const prev={mode:SETTLE_MODE,total:F.total.value,counter:F.counter.value,discount:F.discount.value,copay:F.copay.value,reimb:F.reimb.value};
+  const typed=[prev.total,prev.counter,prev.discount,prev.copay,prev.reimb].some(v=>v!=='') && !(prev.mode==='cashless'&&+prev.total===41396&&+prev.counter===9349&&+prev.discount===1572&&+prev.copay===10);
+  _beforeExample=typed?prev:null; $('egUndo').classList.toggle('hide',!typed); $('restoredNote').classList.add('hide');
   setSettleMode('cashless',true);
   F.total.value=41396; F.counter.value=9349; F.discount.value=1572; F.copay.value=10; markChips(10);
   // The worked example used to only fill in the settlement numbers, leaving
   // Findings and Letter empty — a demo that couldn't show its own findings
   // isn't convincing. It now loads the same real (redacted) 63-line bill
   // the settlement figures came from, so all four tabs tell one story.
-  resetUploadState();
+  resetUploadState(true); // keep the pages already read: the same photos added again cost no quota
   _usingWorkedExample=true;
   renderFilePreview(); // resetUploadState() just rendered the empty state before this flag was set — render again now it's true
   window.__lastExtraction=WORKED_EXAMPLE_BILL;
   calc(); // computes the settlement AND calls renderReport() since lastExtraction is now set
-});
+}
 
 /* checks */
 // Whole-word matching. The old substring test flagged COMBIFLAM (a medicine)
@@ -2369,13 +2423,23 @@ function sectionSums(lines){
 // The next det() call takes this id (set with the comma form
 // "(nextDetId='det-x',det)(...)"), so a finding's "See the lines" can open it.
 let nextDetId=null;
+// One analysis per bill (R20). Every keystroke in Settlement redraws the
+// report and the letter checklist, and each ran analyse() again: about
+// 0.4 s each on a 500-line bill on a slow phone. The result depends only on
+// the bill (and today's date, for the dated NPPA checks), so it is kept.
+const _analyses=new WeakMap();
+function analyseFor(data){
+  const day=new Date().toDateString(), hit=_analyses.get(data);
+  if(hit&&hit.day===day) return hit.a;
+  const a=analyse(data); _analyses.set(data,{day,a}); return a;
+}
 function det(summary,tag,body,open){
   const id=nextDetId; nextDetId=null;
   return `<details ${id?`id="${id}" `:''}${open?'open':''}><summary><span>${summary}</span>${tag||''}</summary><div class="db">${body}</div></details>`;
 }
 function renderReport(data){
   window.__lastExtraction=data;
-  const a=analyse(data), s=settleOk(), rep=$('report'), T_=S();
+  const a=analyseFor(data), s=settleOk(), rep=$('report'), T_=S();
   const ded = s? s.deduction : 0;
   const H=data.header||{};
   const co=[H.hospital_name,H.bill_datetime].filter(Boolean).join('  ·  ') || 'ITEMISED BILL';
@@ -2585,7 +2649,7 @@ function renderReport(data){
   const sfb=$('shareFindingsBtn');
   if(sfb) sfb.addEventListener('click',()=>{
     const reconTxt = a.recon ? T_.share_findings_recon(inr.format(Math.abs(a.recon.diff))) : '';
-    const summary = T_.share_findings_text(a.exact.length, inr.format(a.exactSum), a.nppa.length, a.dups.length, reconTxt, location.origin+location.pathname);
+    const summary = T_.share_findings_text(a.exact.length, inr.format(a.exactSum), a.nppa.length, a.dups.length, reconTxt, location.origin+location.pathname, s&&s.deduction>0?inr.format(s.deduction):'');
     shareText(summary,'ClearBill');
   });
   $('findingsEmpty').classList.toggle('hide', a.lines.length>0);
@@ -2746,7 +2810,7 @@ function buildLetter(a,include,noScroll){
   const reqs=[
     // R18: the rule in force today. Verified verbatim from the English PDF of
     // IRDAI/HLT/CIR/PRO/84/5/2024, para 17 (Settlement of Claims), clause (b).
-    `A line-by-line statement of every amount deducted or treated as non-payable, with the policy clause relied on for each. IRDAI's Master Circular on Health Insurance Business (29 May 2024, para 17(b)) requires that where a claim is disallowed partially, details are conveyed to the claimant "along with full details giving reference to the specific terms and conditions of the policy document".`,
+    `A line-by-line statement of every amount deducted or treated as non-payable, with the policy clause relied on for each. IRDAI's Master Circular on Health Insurance Business (29 May 2024, para 17(b)) requires that where a claim is disallowed partially, details are conveyed to the claimant "along with full details giving reference to the specific terms and conditions of the policy document"; IRDAI's Master Circular on Protection of Policyholders' Interests (5 September 2024, Part B) says the same.`,
     a.exact.length&&include.irdai
       ? `Confirmation of which of the items listed above were actually declined, whether my policy offers optional cover for any of them, and reconsideration of any amount that is not covered by an exclusion in my policy.`
       : `Reconsideration of any amount that is not covered by an exclusion in my policy.`
@@ -2758,7 +2822,8 @@ function buildLetter(a,include,noScroll){
   }
   if(a.subsumed.length&&include.subsumed) reqs.push(`Confirmation that each charge listed under IRDAI Lists II-IV was already included in the relevant room, procedure or treatment charge, and removal or refund of any that was billed separately in error.`);
   L.push(`I request:`); reqs.forEach((r,i)=>L.push(`  ${i+1}. ${r}`));
-  L.push(``,`This letter was prepared with reference to IRDAI's published lists and circulars and NPPA's ceiling prices. It is a request for explanation, not an allegation.`,``,
+  L.push(``,`I would be grateful for a reply within 14 days, the time IRDAI's Master Circular on Protection of Policyholders' Interests (5 September 2024) gives insurers to resolve a complaint.`,
+    ``,`This letter was prepared with reference to IRDAI's published lists and circulars and NPPA's ceiling prices. It is a request for explanation, not an allegation.`,``,
     `Yours faithfully,`);
   const sig=[sender,D.policy?`Policy no. ${D.policy}`:'',D.contact].filter(Boolean);
   if(sig.length) L.push(sig.join('  -  '));
@@ -2793,7 +2858,7 @@ function buildLetter(a,include,noScroll){
   const ombCard=(o,withArea)=>`<div class="ombo"><b>${esc(T_.omb_office(o.office))}</b><br>${esc(o.address)}<br>${esc(T_.omb_tel)} ${esc(o.tel)} &middot; <a href="mailto:${esc(o.email)}">${esc(o.email)}</a>${withArea?`<div class="ombj">${esc(T_.omb_covers)} ${esc(o.jurisdiction)}</div>`:''}</div>`;
   const readOn=new Date(OMBUDSMAN_READ_ON+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
   const ombHtml=!D.state ? `<p class="ombnote">${T_.omb_pick}</p>`
-    : `<div class="omb" id="ombBlock"><div class="ombh">${T_.omb_head(esc(D.state))}</div>${offices.length>1?`<p style="margin:4px 0 6px">${T_.omb_split}</p>`:''}${offices.map(o=>ombCard(o,offices.length>1)).join('')}<p class="ombsrc">${T_.omb_src(readOn)}</p></div>`;
+    : `<div class="omb" id="ombBlock"><div class="ombh">${T_.omb_head(esc(D.state))}</div>${offices.length>1?`<p style="margin:4px 0 6px">${T_.omb_split}</p>`:''}<p style="margin:4px 0 6px">${T_.omb_branch}</p>${offices.map(o=>ombCard(o,offices.length>1)).join('')}<p class="ombsrc">${T_.omb_src(readOn)}</p></div>`;
   const afterSend=`<div class="aftersend"><h4>${T_.as_head}</h4><ol><li>${T_.as_1}</li><li>${T_.as_2}</li><li>${T_.as_3}</li></ol>${ombHtml}<p style="margin:8px 0 0;color:var(--soft)">${T_.as_4}</p></div>`;
   $('letterWrap').innerHTML=`${lsum}<div class="tearline"></div><div class="letter">${langNote}<div class="lh">${T_.letter_draft_head}</div>${esc(text)}</div>
     <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
@@ -3023,9 +3088,9 @@ let _lastLetterInclude=null;  // the include-checkbox state it was generated wit
                                // switch can rebuild the same letter instead of leaving it stale
                                // or silently re-checking boxes the user had unchecked
 
-function resetUploadState(){
+function resetUploadState(keepCache){
   setUploadCompact(false);
-  _pendingFiles=[]; _pageCache.clear(); _failedNow=0;
+  _pendingFiles=[]; if(!keepCache) _pageCache.clear(); _failedNow=0;
   _usingWorkedExample=false;
   _letterGenerated=false; _lastLetterInclude=null;
   renderFilePreview();
@@ -3251,6 +3316,9 @@ function applyStaticI18n(){
   $('tagLine').innerHTML=T_.tag;
   $('langsw').setAttribute('aria-label',T_.aria_language); $('tabbar').setAttribute('aria-label',T_.aria_sections);
   $('changePhotosBtn').textContent=T_.change_photos;
+  [['egConfirmQ','eg_confirm_q'],['egYesBtn','eg_yes'],['egKeepBtn','eg_keep'],['egUndoTxt','eg_undo_note'],['egUndoBtn','undo_word'],
+   ['clearConfirmQ','clear_confirm_q'],['clearYesBtn','clear_yes'],['clearCancelBtn','cancel_word'],['restoredTxt','restored_note'],['restoredClearBtn','restored_clear']]
+    .forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
   $('secSettlement').textContent=T_.sec_settlement;
   $('lblTotal').innerHTML=T_.lbl_total;
   $('lblCounter').innerHTML=T_.lbl_counter;
@@ -3373,6 +3441,11 @@ if($('skipToFindingsBtn')) $('skipToFindingsBtn').addEventListener('click',()=>s
 // Each row is a real checkbox, not a preview. Someone requesting an
 // explanation should be able to see — and choose — exactly what they're
 // asking for, one item at a time, not just accept a fixed bundle.
+// The ticks the user set in "This letter will include", for the bill on
+// screen. The list is rebuilt whenever the report redraws (every keystroke in
+// Settlement, every language switch) and used to come back fully ticked, so
+// items the user had removed went to the insurer (R20).
+let _userIncl={}, _userInclFor=null;
 function renderLetterTab(){
   const T_=S();
   const data=window.__lastExtraction;
@@ -3380,7 +3453,8 @@ function renderLetterTab(){
   $('letterEmpty').classList.toggle('hide', !!hasData);
   $('letterConfirm').classList.toggle('hide', !hasData);
   if(!hasData) return;
-  const a=analyse(data), s=settleOk();
+  if(_userInclFor!==data){ _userIncl={}; _userInclFor=data; }
+  const a=analyseFor(data), s=settleOk();
   window.__letterA=a; // so Generate reads the exact same analysis this checklist was built from
   const rows=[];
   if(s) rows.push(['settlement', T_.letter_confirm_settlement, '✓']);
@@ -3390,16 +3464,22 @@ function renderLetterTab(){
   if(a.dups.length||a.similarDups.length) rows.push(['dup', a.dups.length?T_.letter_confirm_dup(a.dups.length)+(a.similarDups.length?' + '+T_.letter_confirm_similar(a.similarDups.length):''):T_.letter_confirm_similar(a.similarDups.length), '✓']);
   if(a.recon) rows.push(['recon', T_.letter_confirm_recon, inr.format(Math.abs(a.recon.diff))]);
   $('letterIncludes').innerHTML=
-    rows.map(([key,k,v])=>`<label class="inclrow"><input type="checkbox" ${key==='recon'&&a.partial?'':'checked'} data-inc="${key}"><span class="incltext">${k}</span><span class="v">${v}</span></label>`).join('')
+    rows.map(([key,k,v])=>`<label class="inclrow"><input type="checkbox" ${(key in _userIncl ? _userIncl[key] : !(key==='recon'&&a.partial))?'checked':''} data-inc="${key}"><span class="incltext">${k}</span><span class="v">${v}</span></label>`).join('')
     + `<div class="inclrow static"><span class="incltext">${T_.letter_confirm_sent_to}</span><span class="v">${T_.letter_confirm_sent_to_val}</span></div>`;
 }
+$('letterIncludes').addEventListener('change',e=>{ const cb=e.target.closest('input[data-inc]'); if(cb) _userIncl[cb.dataset.inc]=cb.checked; });
 // Editing a detail updates a letter that is already on screen (no scroll jump).
 document.querySelectorAll('#letterDetails input,#letterDetails textarea,#letterDetails select').forEach(el=>el.addEventListener('input',()=>{
   saveLetterDetails();
   if(_letterGenerated && window.__letterA) buildLetter(window.__letterA,_lastLetterInclude,true);
 }));
 // One button that removes everything this app keeps in the browser except the language choice.
-$('clearSavedBtn').addEventListener('click',()=>{
+// R20: it used to wipe saved checks at once, with no question, a few
+// pixels below "Load the worked example".
+$('clearSavedBtn').addEventListener('click',()=>{ $('clearConfirm').classList.remove('hide'); $('clearYesBtn').focus(); });
+$('clearCancelBtn').addEventListener('click',()=>{ $('clearConfirm').classList.add('hide'); $('clearSavedBtn').focus(); });
+$('clearYesBtn').addEventListener('click',()=>{
+  $('clearConfirm').classList.add('hide'); $('restoredNote').classList.add('hide'); $('egUndo').classList.add('hide');
   try{ localStorage.removeItem(DRAFT_LS); localStorage.removeItem(LD_KEY); sessionStorage.removeItem(LD_KEY); localStorage.removeItem(KEY_LS); localStorage.removeItem(LOCAL_LS); }catch(e){}
   if(typeof renderLocalList==='function') renderLocalList();
   Object.values(F).forEach(el=>{ el.value=''; }); markChips(-1); setSettleMode('cashless',true); $('apiKey').value='';
@@ -3410,7 +3490,7 @@ $('clearSavedBtn').addEventListener('click',()=>{
 });
 $('genLetterTab').addEventListener('click',()=>{
   if(!window.__lastExtraction) return;
-  const a=window.__letterA || analyse(window.__lastExtraction);
+  const a=window.__letterA || analyseFor(window.__lastExtraction);
   const include={};
   document.querySelectorAll('#letterIncludes input[type=checkbox]').forEach(cb=>{ include[cb.dataset.inc]=cb.checked; });
   _letterGenerated=true; _lastLetterInclude=include;
@@ -3532,7 +3612,7 @@ if($('signOutBtnTab')) $('signOutBtnTab').addEventListener('click',signOut);
 
 function buildBillPayload(){
   const data=window.__lastExtraction; if(!data) return null;
-  const a=window.__letterA || (typeof analyse==='function'?analyse(data):null); if(!a) return null;
+  const a=window.__letterA || (typeof analyse==='function'?analyseFor(data):null); if(!a) return null;
   const st=window.__settle; const ded=st?st.deduction:0;
   const H=data.header||{};
   return {
