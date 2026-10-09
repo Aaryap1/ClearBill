@@ -131,5 +131,14 @@ for (const o of c.OMBUDSMAN) {
 ok(/^\d{4}-\d{2}-\d{2}$/.test(c.OMBUDSMAN_READ_ON), 'the date the list was read is recorded (' + c.OMBUDSMAN_READ_ON + ')');
 ok(c.ombudsmanFor('') .length === 0 && c.ombudsmanFor('Atlantis').length === 0, 'no state chosen (or an unknown one) gives no office, not a guess');
 
+console.log("== R22: insurers' grievance officers (IRDAI's list)");
+ok(c.GRO.length === 34, 'the 34 non-life insurers on IRDAI\'s list that give an email (' + c.GRO.length + ')');
+ok(c.GRO.every(g => /^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(g.email)), 'every row has a well-formed email');
+ok(new Set(c.GRO.map(g => g.name)).size === c.GRO.length, 'no insurer appears twice');
+ok(c.GRO.every(g => !/E\+/i.test(g.tel) && (!g.tel || /^[\d\s\-\/+]+$/.test(g.tel))), 'no phone number is a spreadsheet artefact ("1.80043E+11" is left blank, never guessed)');
+ok(c.GRO.every(g => !g.web || /^https?:\/\//.test(g.web)), 'every grievance page is a web address');
+ok(/^\d{4}-\d{2}-\d{2}$/.test(c.GRO_READ_ON) && /^\d{4}-\d{2}-\d{2}$/.test(c.GRO_LIST_UPDATED), 'when the list was last updated and when it was read are both recorded');
+ok(c.GRO.some(g => g.name === 'Star Health and Allied' && g.email === 'gro@starhealth.in') && c.GRO.some(g => g.name === 'The New India Assurance' && g.email === 'gro@newindia.co.in'), 'spot check against the published list: Star Health and New India Assurance');
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

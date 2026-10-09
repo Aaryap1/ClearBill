@@ -293,6 +293,9 @@
   .aftersend{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:12px 14px;margin-top:14px;font-size:.88rem;line-height:1.5}
   .aftersend h4{font-family:"Archivo",sans-serif;font-size:.9rem;margin:0 0 6px} .aftersend ol{margin:0 0 0 1.1rem;padding:0} .aftersend li{margin:6px 0}
   .clearsaved{margin-top:12px}
+  details.hospnote{margin-top:14px}
+  details.hospnote .letter{border-top:1px solid var(--rule);border-radius:0 0 10px 10px;margin:0}
+  .grobox .btn{margin-top:8px}
   .bys ol{margin:8px 0 0 1.2rem;padding:0;font-size:.9rem;line-height:1.5} .bys li{margin:3px 0}
   .bys p{margin:0;font-size:.9rem;line-height:1.5}
   .bys .btn{margin-top:12px;width:100%}
@@ -544,11 +547,14 @@
         <label for="ld_name" id="ldLblName">Your name</label><input type="text" id="ld_name" autocomplete="name" maxlength="120">
         <label for="ld_address" id="ldLblAddress">Your address</label><textarea id="ld_address" rows="2" autocomplete="street-address" maxlength="300"></textarea>
         <label for="ld_insurer" id="ldLblInsurer">Insurer name</label><input type="text" id="ld_insurer" maxlength="120">
+        <label for="ld_gro" id="ldLblGro">Your insurer, to show its grievance officer's email</label><select id="ld_gro"><option value="" id="ldGroNone">Choose your insurer (optional)</option></select>
         <label for="ld_claim" id="ldLblClaim">Claim number</label><input type="text" id="ld_claim" maxlength="60">
         <label for="ld_policy" id="ldLblPolicy">Policy number</label><input type="text" id="ld_policy" maxlength="60">
         <label for="ld_contact" id="ldLblContact">Phone or email for replies</label><input type="text" id="ld_contact" autocomplete="tel" maxlength="120">
         <label for="ld_state" id="ldLblState">Your state (to find your Insurance Ombudsman office)</label><select id="ld_state"><option value="" id="ldStateNone">Choose your state</option></select>
         <label class="chk"><input type="checkbox" id="ld_asked"><span id="ldLblAsked">I have already asked the hospital or insurer for this breakdown</span></label>
+        <label class="chk"><input type="checkbox" id="ld_docs"><span id="ldLblDocs">My insurer asked me to get documents from the hospital myself</span></label>
+        <label for="ld_submitted" id="ldLblSubmitted">Date you submitted your claim (reimbursement claims only)</label><input type="date" id="ld_submitted">
         <label class="chk"><input type="checkbox" id="ld_remember"><span id="ldLblRemember">Remember these details on this device</span></label>
         <p class="ldnote" id="ldNote">Off by default. Details stay on this device only; they are never sent anywhere.</p>
       </div>
@@ -946,6 +952,50 @@ const OMBUDSMAN = [
     states:[], part:["Maharashtra"], jurisdiction:"Area of Navi Mumbai, Thane District, Raigad District, Palghar District and wards of Mumbai, M/East, M/West, N, S and T." },
 ];
 // The 28 states and 8 union territories, as offered in the letter form.
+// Insurers' grievance redressal officers (R22): IRDAI's own list, non-life
+// insurers (health insurance is sold only by general and standalone health
+// insurers), copied exactly from irdai.gov.in/list-of-gros ("Last updated on
+// October 06, 2026"), read on GRO_READ_ON. Rows the list gives no email for
+// are left out; two phone numbers the published table shows mangled by a
+// spreadsheet ("1.80043E+11") are left blank rather than guessed. The page
+// says when it was read and to check the insurer's own site before sending.
+const GRO_READ_ON='2026-10-09', GRO_LIST_UPDATED='2026-10-06';
+const GRO = [
+  {"name":"Agriculture Insurance","web":"https://www.aicofindia.com/AICEng/Pages/CreateGrievance.aspx","email":"gro@aicofindia.com","tel":"1800 116 515"},
+  {"name":"ECGC Limited","web":"http://igms.ecgc.in/ecgc/grievance/login.aspx","email":"grievances@ecgc.in","tel":""},
+  {"name":"National Insurance","web":"https://niconline.in/grievance/html/app1/home.html","email":"griho@nic.co.in","tel":"18003450330"},
+  {"name":"The New India Assurance","web":"https://www.newindia.co.in/portal/login/customer","email":"gro@newindia.co.in","tel":"18002091415"},
+  {"name":"The Oriental Insurance","web":"https://orientalinsurance.org.in/web/guest/contact-us?isSelected=contactUs&isRefresh=true","email":"gro@orientalinsurance.co.in","tel":"1800118485"},
+  {"name":"United India Insurance","web":"https://uiic.co.in/en/customercare/grievance","email":"gro@uiic.co.in","tel":""},
+  {"name":"Acko General","web":"https://www.acko.com/customer-service/grievance-redressal/","email":"gro@acko.com","tel":"91-8068843605"},
+  {"name":"Aditya Birla Health","web":"https://www.adityabirlahealth.com/healthinsurance/assets/pdf/GrievanceRedressalPolicy_New.pdf","email":"gro.healthinsurance@adityabirlacapital.com","tel":"18002707000"},
+  {"name":"Bajaj General","web":"https://www.bajajgeneralinsurance.com/about-us/customer-service.html","email":"ggro@bajajgeneral.com","tel":"8080945060"},
+  {"name":"Bharati Axa General","web":"https://www.bharti-axagi.co.in/grievance-redressal/procedure","email":"GRO.GI@bhartiaxa.com","tel":"022-48815939"},
+  {"name":"Cholamandalam MS","web":"https://www.cholainsurance.com/grievance-redressal","email":"gro@cholams.murugappa.com","tel":"1800 208 5544"},
+  {"name":"Navi General Insurance","web":"https://www.naviinsurance.com/service/","email":"gro@navi.com","tel":"18001230004"},
+  {"name":"Zuno General Insurance","web":"https://cms.hizuno.com/uploads/Policy_for_Protection_of_Policyholders_Interests_4fa28cc29e.pdf?updated_at=2023-01-31T10:01:04.069Z","email":"grievanceofficer@edelweissinsurance.com","tel":""},
+  {"name":"Generali Central","web":"https://general.futuregenerali.in/customer-service/grievance-redressal","email":"fggro@futuregenerali.in","tel":"1860 500 3333 / 1800 220 233"},
+  {"name":"Go Digit General","web":"https://www.godigit.com/claims/grievance-redressal-procedure","email":"grievance@godigit.com","tel":"1800-258-5956"},
+  {"name":"HDFC ERGO General","web":"https://www.hdfcergo.com/customer-voice/grievances","email":"gro@hdfcergo.com","tel":"18001020333"},
+  {"name":"ICICI Lombard General","web":"https://www.icicilombard.com/grievance-redressal","email":"gro@icicilombard.com","tel":"022- 66877111"},
+  {"name":"IFFCO Tokio General","web":"https://www.iffcotokio.co.in/contact-us/customer-services","email":"gro@iffcotokio.co.in","tel":"1800-103-5499"},
+  {"name":"Kshema General Insurance","web":"https://kshema.co/grievance-redressal/","email":"gro@kshema.co","tel":"040 - 69134465"},
+  {"name":"Zurich Kotak General","web":"https://www.kotakgeneralinsurance.com/customer-support/grievance-redressal-process","email":"grievanceofficer@kotak.com","tel":"1800 266 4545"},
+  {"name":"Liberty General Insurance","web":"https://www.libertyinsurance.in/customer-support/grievance-redressal.html","email":"GRO@libertyinsurance.in","tel":"1800-266-5844"},
+  {"name":"Magma General Insurance Limited","web":"https://www.magmainsurance.com/more/contact-us","email":"gro@magmainsurance.com","tel":"1800 266 3202"},
+  {"name":"Manipal Cigna","web":"https://www.manipalcigna.com/grievance-redressal","email":"gro@ManipalCigna.com","tel":"1800 - 102 - 4462"},
+  {"name":"Niva Bupa Health Insurance Company Limited","web":"https://transaction.nivabupa.com/customer-care/health-services/grievance-redressal.aspx","email":"gro@maxbupa.com","tel":"1860-500-8888"},
+  {"name":"Raheja QBE","web":"https://www.rahejaqbe.com/grievance-redressal","email":"complaintsofficer@rahejaqbe.com","tel":"18001027723"},
+  {"name":"IndusInd General Insurance","web":"https://www.reliancegeneral.co.in/Insurance/About-Us/Grievance-Redressal.aspx","email":"rgicl.grievances@relianceada.com","tel":"18003009"},
+  {"name":"Reliance Health","web":"https://www.reliancegeneral.co.in/Insurance/About-Us/Grievance-Redressal.aspx","email":"rgicl.grievances@relianceada.com","tel":"18003009"},
+  {"name":"Care Health Insurance (Formely Religare Health Insurance Co. Ltd.)","web":"https://www.careinsurance.com/customer-grievance-redressal.html","email":"gro@careinsurance.com","tel":"18001024488/18001026655"},
+  {"name":"Royal Sundaram General Insurance Co.Limited","web":"https://www.royalsundaram.in/app/customer-grievance","email":"gro@royalsundaram.in","tel":"1860 258 0000 / 1860 425 0000"},
+  {"name":"SBI General","web":"https://www.sbigeneral.in/portal/grievance-redressal","email":"gro@sbigeneral.in","tel":"1800-22-1111 / 1800-102-1111"},
+  {"name":"Shriram General","web":"https://www.shriramgi.com/grievance.html","email":"gro@shriramgi.com","tel":"0141-4828497"},
+  {"name":"Star Health and Allied","web":"https://www.starhealth.in/grievance-redressal","email":"gro@starhealth.in","tel":"18004252255"},
+  {"name":"Tata- AIG General","web":"https://www.tataaig.com/grievance-redressal-policy","email":"gro@tataaig.com","tel":"022 - 66933715"},
+  {"name":"Universal Sompo General","web":"https://www.universalsompo.com/Footer/GrievanceRedressalProcess","email":"gro@universalsompo.com","tel":"1800 224030 / 18002674030"}
+];
 const INDIA_STATES = ["Andaman and Nicobar Islands","Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chandigarh","Chhattisgarh",
   "Dadra and Nagar Haveli and Daman and Diu","Delhi","Goa","Gujarat","Haryana","Himachal Pradesh","Jammu and Kashmir","Jharkhand",
   "Karnataka","Kerala","Ladakh","Lakshadweep","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha",
@@ -1067,6 +1117,14 @@ en: {
   how_who:"A student project, open source at <a href='https://github.com/Aaryap1/ClearBill' target='_blank' rel='noopener'>github.com/Aaryap1/ClearBill</a>.",
   fb_head:"Something wrong?", fb_intro:"A line read wrongly, a check that looks wrong, a translation mistake, or a problem with the letter: tell us. Please don't include your name, policy number or bill details.",
   fb_github:"Report on GitHub", fb_email:"Report by email",
+  ld_gro:"Your insurer, to show its grievance officer's email", ld_gro_none:"Choose your insurer (optional)",
+  ld_docs:"My insurer asked me to get documents from the hospital myself", ld_submitted:"Date you submitted your claim (reimbursement claims only)",
+  gro_head:nm=>`Grievance officer: ${nm}`, gro_web:"Grievance page", gro_tel:"Phone",
+  gro_src:(u,r)=>`From IRDAI's list of grievance officers (last updated ${u}), as read on ${r}. Check it on the insurer's own website before you send: details change.`,
+  gro_copy_mail:"Copy the letter and open email", gro_copied:"Letter copied. Paste it into the email that opens.",
+  hosp_head:"A short note for the hospital's billing desk", hosp_intro:"For the questions only the hospital can answer. It is written from you; nothing is sent on your behalf.", hosp_copy:"Copy the note",
+  ls_docs:"It says the insurer, not you, should collect documents from the hospital.",
+  ls_submitted:"It asks the insurer to confirm when your claim was treated as submitted, and whether interest is due for any delay.",
   lang_note:"", lang_note_ok:"",
   copay_notsure:"Not sure", copay_not_entered:"not entered", approved_base_unknown:"Approved amount, before any co-pay", upto:v=>`up to ${v}`,
   settle_model_note_unknown:"This is the part of what you paid that these figures do not explain. Because you haven't entered a co-pay, it may include your co-pay, as well as room-rent limits, sub-limits, deductibles, policy exclusions and non-medical items; the app cannot tell them apart.",
@@ -1426,6 +1484,14 @@ hi: {
   how_who:"एक छात्र परियोजना, ओपन सोर्स: <a href='https://github.com/Aaryap1/ClearBill' target='_blank' rel='noopener'>github.com/Aaryap1/ClearBill</a>।",
   fb_head:"कुछ गलत है?", fb_intro:"कोई लाइन गलत पढ़ी गई, कोई जाँच गलत लगती है, अनुवाद में गलती है, या पत्र में कोई समस्या है: हमें बताएँ। कृपया अपना नाम, पॉलिसी नंबर या बिल का ब्योरा न लिखें।",
   fb_github:"GitHub पर बताएँ", fb_email:"ईमेल से बताएँ",
+  ld_gro:"आपकी बीमा कंपनी, उसके शिकायत अधिकारी का ईमेल दिखाने के लिए", ld_gro_none:"अपनी बीमा कंपनी चुनें (वैकल्पिक)",
+  ld_docs:"मेरी बीमा कंपनी ने मुझसे अस्पताल से दस्तावेज़ ख़ुद लाने को कहा", ld_submitted:"आपने दावा किस तारीख़ को जमा किया (सिर्फ़ रीइम्बर्समेंट दावे)",
+  gro_head:nm=>`शिकायत अधिकारी: ${nm}`, gro_web:"शिकायत पेज", gro_tel:"फ़ोन",
+  gro_src:(u,r)=>`IRDAI की शिकायत अधिकारियों की सूची से (आख़िरी बार ${u} को अपडेट), ${r} को पढ़ी गई। भेजने से पहले बीमा कंपनी की अपनी वेबसाइट पर जाँच लें: जानकारी बदलती रहती है।`,
+  gro_copy_mail:"पत्र कॉपी करें और ईमेल खोलें", gro_copied:"पत्र कॉपी हो गया। खुलने वाले ईमेल में पेस्ट करें।",
+  hosp_head:"अस्पताल के बिलिंग डेस्क के लिए एक छोटा नोट", hosp_intro:"उन सवालों के लिए जिनका जवाब सिर्फ़ अस्पताल दे सकता है। यह आपकी ओर से लिखा है; आपकी ओर से कुछ भी भेजा नहीं जाता।", hosp_copy:"नोट कॉपी करें",
+  ls_docs:"इसमें लिखा है कि अस्पताल से दस्तावेज़ बीमा कंपनी को लेने चाहिए, आपको नहीं।",
+  ls_submitted:"यह बीमा कंपनी से पूछता है कि आपका दावा किस तारीख़ से जमा माना गया, और देरी पर ब्याज बनता है या नहीं।",
   lang_note:"यह हिंदी पाठ मशीन से अनुवादित है और अभी किसी मूल वक्ता ने इसे नहीं जाँचा है। कोई गलती दिखे तो About टैब में “कुछ गलत है?” से बताएँ।", lang_note_ok:"ठीक है",
   copay_notsure:"पता नहीं", copay_not_entered:"नहीं डाला", approved_base_unknown:"मंज़ूर रकम, किसी भी को-पे से पहले", upto:v=>`${v} तक`,
   settle_model_note_unknown:"यह आपके भुगतान का वह हिस्सा है जो इन आँकड़ों से स्पष्ट नहीं होता। आपने को-पे नहीं डाला है, इसलिए इसमें आपका को-पे भी हो सकता है, साथ ही कमरे के किराए की सीमा, उप-सीमाएँ, डिडक्टिबल, पॉलिसी के अपवाद और ग़ैर-चिकित्सा चीज़ें; ऐप इनमें फ़र्क़ नहीं कर सकता।",
@@ -1786,6 +1852,14 @@ mr: {
   how_who:"एक विद्यार्थी प्रकल्प, ओपन सोर्स: <a href='https://github.com/Aaryap1/ClearBill' target='_blank' rel='noopener'>github.com/Aaryap1/ClearBill</a>.",
   fb_head:"काही चुकलं आहे?", fb_intro:"एखादी ओळ चुकीची वाचली गेली, एखादी तपासणी चुकीची वाटते, अनुवादात चूक आहे, किंवा पत्रात काही अडचण आहे: आम्हाला कळवा. कृपया तुमचं नाव, पॉलिसी नंबर किंवा बिलाचा तपशील लिहू नका.",
   fb_github:"GitHub वर कळवा", fb_email:"ईमेलने कळवा",
+  ld_gro:"तुमची विमा कंपनी, तिच्या तक्रार अधिकाऱ्याचा ईमेल दाखवण्यासाठी", ld_gro_none:"तुमची विमा कंपनी निवडा (ऐच्छिक)",
+  ld_docs:"माझ्या विमा कंपनीने मला रुग्णालयातून कागदपत्रं स्वतः आणायला सांगितलं", ld_submitted:"तुम्ही दावा कोणत्या तारखेला सादर केला (फक्त प्रतिपूर्ती दावे)",
+  gro_head:nm=>`तक्रार अधिकारी: ${nm}`, gro_web:"तक्रार पान", gro_tel:"फोन",
+  gro_src:(u,r)=>`IRDAI च्या तक्रार अधिकाऱ्यांच्या यादीतून (शेवटचं अद्ययावत ${u}), ${r} रोजी वाचलेलं. पाठवण्याआधी विमा कंपनीच्या स्वतःच्या वेबसाइटवर तपासा: तपशील बदलतात.`,
+  gro_copy_mail:"पत्र कॉपी करा आणि ईमेल उघडा", gro_copied:"पत्र कॉपी झालं. उघडणाऱ्या ईमेलमध्ये पेस्ट करा.",
+  hosp_head:"रुग्णालयाच्या बिलिंग डेस्कसाठी एक छोटी नोट", hosp_intro:"ज्या प्रश्नांची उत्तरं फक्त रुग्णालय देऊ शकतं त्यांच्यासाठी. ही तुमच्याकडून लिहिलेली आहे; तुमच्या वतीने काहीही पाठवलं जात नाही.", hosp_copy:"नोट कॉपी करा",
+  ls_docs:"त्यात असं लिहिलं आहे की रुग्णालयातून कागदपत्रं विमा कंपनीने घ्यायला हवीत, तुम्ही नव्हे.",
+  ls_submitted:"ते विमा कंपनीला विचारतं की तुमचा दावा कोणत्या तारखेपासून सादर मानला गेला, आणि उशिराबद्दल व्याज लागू आहे का.",
   lang_note:"हा मराठी मजकूर मशीनने अनुवादित केलेला आहे आणि अजून कोणत्याही मूळ भाषकाने तो तपासलेला नाही. चूक दिसली तर About टॅबमधील “काही चुकलं आहे?” मधून कळवा.", lang_note_ok:"ठीक आहे",
   copay_notsure:"माहीत नाही", copay_not_entered:"टाकलेला नाही", approved_base_unknown:"मंजूर रक्कम, कोणत्याही को-पेच्या आधी", upto:v=>`${v} पर्यंत`,
   settle_model_note_unknown:"हा तुम्ही भरलेल्या रकमेचा तो भाग आहे जो या आकड्यांवरून स्पष्ट होत नाही. तुम्ही को-पे टाकलेला नाही, त्यामुळे यात तुमचा को-पे असू शकतो, तसेच खोली भाड्याची मर्यादा, उप-मर्यादा, डिडक्टिबल, पॉलिसीचे अपवाद आणि बिगर-वैद्यकीय गोष्टी; अ‍ॅप यांच्यातला फरक ओळखू शकत नाही.",
@@ -2864,12 +2938,14 @@ function shareText(text,title){
 /* Details the sender types for the letter. Nothing is stored unless they tick
    "remember" (then localStorage); otherwise sessionStorage, which the browser
    discards when the tab closes. Never sent anywhere. */
-const LD_KEY='clearbill_letter_details', LD_FIELDS=['name','address','insurer','claim','policy','contact','state'];
+const LD_KEY='clearbill_letter_details', LD_FIELDS=['name','address','insurer','claim','policy','contact','state','gro','submitted'];
 // R13: the state list is the option list; English names (the official spelling)
 // are both the stored value and the label.
 INDIA_STATES.forEach(st=>{ const o=document.createElement('option'); o.value=st; o.textContent=st; $('ld_state').appendChild(o); });
+GRO.forEach(g=>{ const o=document.createElement('option'); o.value=g.name; o.textContent=g.name; $('ld_gro').appendChild(o); });
+$('ld_submitted').max=todayYmd();
 function readLetterDetails(){
-  const D={asked:!!$('ld_asked').checked};
+  const D={asked:!!$('ld_asked').checked, docs:!!$('ld_docs').checked};
   LD_FIELDS.forEach(f=>{ D[f]=($('ld_'+f).value||'').replace(/\s*\n\s*/g,', ').trim(); });
   return D;
 }
@@ -2887,7 +2963,7 @@ function saveLetterDetails(){
   try{
     const D=JSON.parse(raw);
     LD_FIELDS.forEach(f=>{ if(typeof D[f]==='string') $('ld_'+f).value=D[f]; });
-    $('ld_asked').checked=!!D.asked; $('ld_remember').checked=!!D.remember;
+    $('ld_asked').checked=!!D.asked; $('ld_docs').checked=!!D.docs; $('ld_remember').checked=!!D.remember;
   }catch(e){}
 })();
 function copyText(text){
@@ -2896,6 +2972,31 @@ function copyText(text){
     const t=document.createElement('textarea'); t.value=text; t.setAttribute('readonly',''); t.style.cssText='position:fixed;opacity:0;top:0';
     document.body.appendChild(t); t.select(); const ok=document.execCommand('copy'); t.remove(); return Promise.resolve(!!ok);
   }catch(e){ return Promise.resolve(false); }
+}
+// A short note for the hospital's billing desk (R22). Written from the
+// patient or family, in English, with no ClearBill heading. Without a bill it
+// asks for the itemised bill, citing the Charter of Patients' Rights (NCCE,
+// as updated 23 Aug 2021, right iii, quoted verbatim) as a right the Charter
+// lists, never as law (whether a state has adopted it varies). With a bill
+// it asks only about what the hospital can explain: repeats, its own total,
+// and Lists II-IV items. Returns '' when there is nothing to ask.
+function buildHospitalNote(a,include,D,H,pname,sender,today){
+  const inr=makeInr('en'), noBill=!a.lines.length;
+  const asks=[];
+  if(!noBill&&include.dup&&a.dups.length) asks.push(`These charges appear more than once at the same amount. Please confirm whether each is a separate service:`, ...a.dups.map(d=>`  - ${d.item} - ${inr.format(d.amount)}, ${d.n} times`), ``);
+  if(!noBill&&include.recon&&a.recon) asks.push(`The bill's printed total (${inr.format(a.recon.gross)}) differs from the sum of its own lines (${inr.format(a.recon.lineSum)}) by ${inr.format(Math.abs(a.recon.diff))}. Please explain the difference.`, ``);
+  if(!noBill&&include.subsumed&&a.subsumed.length) asks.push(`These charges are items that IRDAI's 2019-2020 standardization guidelines treat as part of the room, procedure or treatment charge. Please confirm whether each was already included in another charge:`, ...a.subsumed.map(l=>`  - ${l.item} - ${inr.format(l.total)}`), ``);
+  if(!noBill&&!asks.length) return '';
+  const who=pname?`${pname}'s`:'the patient\'s';
+  const L=[]; if(sender) L.push(sender);
+  L.push(today,``,`To: The Billing Department${H.hospital_name?`, ${H.hospital_name}`:''}`,``,
+    `Subject: ${noBill?'Request for an itemised bill':'Questions about the itemised bill'}${H.bill_number?` - Bill no. ${H.bill_number}`:''}`,``);
+  if(noBill) L.push(`Please give me a detailed, itemised bill for ${who} stay at your hospital, showing each charge with its quantity and rate.`,``,
+    `The Charter of Patients' Rights approved by the National Council for Clinical Establishments (as updated on 23 August 2021) lists the right "To access a copy of the case papers, patient records, investigation reports and detailed bill (itemized)".`,``);
+  else L.push(`I have gone through the itemised bill for ${who} stay. Please explain the following:`,``,...asks);
+  L.push(`I would be grateful for a written reply.`,``,`Yours faithfully,`);
+  const sig=[sender,D.contact].filter(Boolean); if(sig.length) L.push(sig.join('  -  '));
+  return L.join('\n');
 }
 function buildLetter(a,include,noScroll){
   // Every section below is real content or it doesn't go in — include is
@@ -2917,7 +3018,7 @@ function buildLetter(a,include,noScroll){
   if(sender) L.push(sender);
   if(D.address) L.push(D.address);
   L.push(today,``,`To: The Grievance Redressal Officer`);
-  if(D.insurer) L.push(`    ${D.insurer}`);
+  if(D.insurer||D.gro) L.push(`    ${D.insurer||D.gro}`);
   // No "Copy to: IRDAI" line (R18): writing it on a letter files nothing with
   // IRDAI, and people waited believing a complaint was lodged. Bima Bharosa
   // and the Ombudsman are the next steps, in "After you send the letter".
@@ -3019,6 +3120,13 @@ function buildLetter(a,include,noScroll){
     if(hasUnverified) reqs.push(`Confirmation of the current NPPA ceiling for the implant(s) above, and refund of any excess once confirmed.`);
   }
   if(a.subsumed.length&&include.subsumed) reqs.push(`Confirmation that each charge listed under IRDAI Lists II-IV was already included in the relevant room, procedure or treatment charge, and removal or refund of any that was billed separately in error.`);
+  // R22. Quoted from IRDAI's texts (checked verbatim): Health Master Circular
+  // 29 May 2024 para 17(c); Policyholders' Interests Master Circular 5 Sep
+  // 2024, Part B. Delay and interest are asked about, never asserted: IRDAI's
+  // own FAQ page still gives a different timeline.
+  if(D.docs) L.push(`I was asked to obtain documents from the hospital myself. IRDAI's Master Circular on Health Insurance Business (29 May 2024, para 17(c)) provides that insurers and TPAs "shall collect the required documents from the Hospitals" and that the "Policyholder shall not be required to submit the documents"; its Master Circular on Protection of Policyholders' Interests (5 September 2024, Part B) adds that "No claim shall be rejected or closed for want of documents". Please collect any documents you need from the hospital directly.`,``);
+  const subOk=/^\d{4}-\d{2}-\d{2}$/.test(D.submitted||'')&&D.submitted<=todayYmd()&&(!s||s.mode==='reimb');
+  if(subOk) L.push(`I submitted my claim on ${new Date(D.submitted+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}. IRDAI's Master Circular on Protection of Policyholders' Interests (5 September 2024, Part B) provides that claims other than cashless "shall be settled within fifteen days from submission of claim", and that if a claim is not settled within the specified timelines the claimant is "entitled for interest at bank rate plus 2 percent from the date of receipt of intimation". Please confirm the date you treat my claim as submitted, and whether interest is due on it.`,``);
   L.push(`I request:`); reqs.forEach((r,i)=>L.push(`  ${i+1}. ${r}`));
   L.push(``,`I would be grateful for a reply within 14 days, the time IRDAI's Master Circular on Protection of Policyholders' Interests (5 September 2024) gives insurers to resolve a complaint.`,
     ``,`This letter was prepared with reference to IRDAI's published lists and circulars and NPPA's ceiling prices. It is a request for explanation, not an allegation.`,``,
@@ -3045,6 +3153,8 @@ function buildLetter(a,include,noScroll){
     if(a.dups.length&&include.dup) sl.push(T_.ls_dup(a.dups.length));
     if(a.similarDups.length&&include.dup) sl.push(T_.ls_similar(a.similarDups.length));
     if(a.recon&&include.recon) sl.push(T_.ls_recon(inr.format(Math.abs(a.recon.diff))));
+    if(D.docs) sl.push(T_.ls_docs);
+    if(/^\d{4}-\d{2}-\d{2}$/.test(D.submitted||'')&&(!s||s.mode==='reimb')) sl.push(T_.ls_submitted);
     sl.push(T_.ls_asks);
     lsum=`<div class="lsum"><b>${T_.ls_head}</b><ul>${sl.map(x=>`<li>${x}</li>`).join('')}</ul><div class="notez">${T_.ls_note}</div></div>`;
   }
@@ -3058,7 +3168,12 @@ function buildLetter(a,include,noScroll){
   const ombHtml=!D.state ? `<p class="ombnote">${T_.omb_pick}</p>`
     : `<div class="omb" id="ombBlock"><div class="ombh">${T_.omb_head(esc(D.state))}</div>${offices.length>1?`<p style="margin:4px 0 6px">${T_.omb_split}</p>`:''}<p style="margin:4px 0 6px">${T_.omb_branch}</p>${offices.map(o=>ombCard(o,offices.length>1)).join('')}<p class="ombsrc">${T_.omb_src(readOn)}</p></div>`;
   const od=ombDates(todayYmd());
-  const afterSend=`<div class="aftersend"><h4>${T_.as_head}</h4><ol><li>${T_.as_1}</li><li>${T_.as_2}</li><li>${T_.as_3}<p class="asdates">${T_.dates_today(fmtYmd(todayYmd()),fmtYmd(od.reply),fmtYmd(od.opens),fmtYmd(od.deadline))}</p></li></ol>${ombHtml}<p style="margin:8px 0 0;color:var(--soft)">${T_.as_4}</p></div>`;
+  const gro=GRO.find(g=>g.name===D.gro);
+  const groHtml=!gro?'':`<div class="omb grobox"><div class="ombh">${esc(T_.gro_head(gro.name))}</div><a href="mailto:${esc(gro.email)}">${esc(gro.email)}</a>${gro.tel?` &middot; ${esc(T_.gro_tel)} ${esc(gro.tel)}`:''}${gro.web?` &middot; <a href="${esc(gro.web)}" target="_blank" rel="noopener">${esc(T_.gro_web)}</a>`:''}
+    <p class="ombsrc">${T_.gro_src(fmtYmd(GRO_LIST_UPDATED),fmtYmd(GRO_READ_ON))}</p><button class="btn sm" type="button" id="groMailBtn">${T_.gro_copy_mail}</button><p class="hide" id="groMailMsg" role="status" style="margin:6px 0 0"></p></div>`;
+  const note=buildHospitalNote(a,include,D,H,pname,sender,today);
+  const hospHtml=!note?'':`<details class="hospnote"><summary><span>${T_.hosp_head}</span></summary><div class="db"><p class="plain" style="margin-top:0">${T_.hosp_intro}</p></div><div class="letter" id="hospNoteText">${esc(note)}</div><button class="btn sm ghost" type="button" id="hospCopyBtn" style="margin-top:8px">${T_.hosp_copy}</button></details>`;
+  const afterSend=`<div class="aftersend"><h4>${T_.as_head}</h4><ol><li>${T_.as_1}${groHtml}</li><li>${T_.as_2}</li><li>${T_.as_3}<p class="asdates">${T_.dates_today(fmtYmd(todayYmd()),fmtYmd(od.reply),fmtYmd(od.opens),fmtYmd(od.deadline))}</p></li></ol>${ombHtml}<p style="margin:8px 0 0;color:var(--soft)">${T_.as_4}</p></div>${hospHtml}`;
   $('letterWrap').innerHTML=`${lsum}<div class="tearline"></div><div class="letter">${langNote}<div class="lh">${T_.letter_draft_head}</div>${esc(text)}</div>
     <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn sm" id="printLetter" style="flex:1">${T_.print_btn}</button>
@@ -3068,6 +3183,13 @@ function buildLetter(a,include,noScroll){
       <div style="display:flex;gap:8px"><button class="chip" type="button" data-days="7">${T_.remind_1w}</button><button class="chip" type="button" data-days="14">${T_.remind_2w}</button><button class="chip" type="button" data-days="30">${T_.remind_1m}</button></div>
       <p class="hide" id="remindNote" role="status" style="margin:8px 0 0;font-size:.85rem;color:var(--soft)"></p></div>${afterSend}`;
   $('printLetter').addEventListener('click',()=>{ $('printArea').textContent=text; window.print(); });
+  if($('groMailBtn')) $('groMailBtn').addEventListener('click',()=>{
+    copyText(text).then(done=>{
+      const m=$('groMailMsg'); m.textContent=done?T_.gro_copied:T_.copy_failed_btn; m.classList.remove('hide'); announce(m.textContent);
+      location.href='mailto:'+gro.email+'?subject='+encodeURIComponent('Request for a line-by-line explanation of deductions'+(D.claim?' - Claim no. '+D.claim:''));
+    });
+  });
+  if($('hospCopyBtn')) $('hospCopyBtn').addEventListener('click',()=>{ copyText(note).then(done=>{ const b=$('hospCopyBtn'); b.textContent=done?T_.copied_btn:T_.copy_failed_btn; announce(b.textContent); setTimeout(()=>{ b.textContent=T_.hosp_copy; },2000); }); });
   $('copyLetter').addEventListener('click',()=>{ copyText(text).then(done=>{const b=$('copyLetter'); b.textContent=done?T_.copied_btn:T_.copy_failed_btn; announce(b.textContent); setTimeout(()=>b.textContent=T_.copy_btn,done?1500:3500);}); });
   $('shareLetter').addEventListener('click',()=>shareText(text,'ClearBill'));
   // R12: a calendar file the user adds themselves — no account, no
@@ -3525,6 +3647,7 @@ function applyStaticI18n(){
   if($('howWho')) $('howWho').innerHTML=T_.how_who;
   if($('howList')) $('howList').innerHTML=(Sv('how_items')||[]).map(([t,d])=>'<li><b>'+esc(t)+'</b>'+esc(d)+'</li>').join('');
   setFeedbackLinks(); renderLangNote();
+  [['ldLblGro','ld_gro'],['ldGroNone','ld_gro_none'],['ldLblDocs','ld_docs'],['ldLblSubmitted','ld_submitted']].forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
   $('secSettlement').textContent=T_.sec_settlement;
   $('lblTotal').innerHTML=T_.lbl_total;
   $('lblCounter').innerHTML=T_.lbl_counter;
@@ -3692,7 +3815,7 @@ $('clearYesBtn').addEventListener('click',()=>{
   try{ localStorage.removeItem(DRAFT_LS); localStorage.removeItem(LD_KEY); sessionStorage.removeItem(LD_KEY); localStorage.removeItem(KEY_LS); localStorage.removeItem(LOCAL_LS); }catch(e){}
   if(typeof renderLocalList==='function') renderLocalList();
   Object.values(F).forEach(el=>{ el.value=''; }); markChips(-1); setSettleMode('cashless',true); $('apiKey').value='';
-  LD_FIELDS.forEach(f=>{ $('ld_'+f).value=''; }); $('ld_asked').checked=false; $('ld_remember').checked=false;
+  LD_FIELDS.forEach(f=>{ $('ld_'+f).value=''; }); $('ld_asked').checked=false; $('ld_docs').checked=false; $('ld_remember').checked=false;
   if(typeof signOut==='function') signOut(); // the My Bills sign-in session is also "saved on this device"
   calc();
   const n=$('clearedNote'); n.textContent=S().cleared_note; n.classList.remove('hide');

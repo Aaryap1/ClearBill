@@ -637,6 +637,34 @@ const STUB = `
     ok(await ev(`setLang('mr'); return !document.getElementById('langNote').classList.contains('hide') && /मशीनने अनुवादित/.test(document.getElementById('langNote').textContent)`), 'Marathi has its own note');
     ok(await ev(`setLang('en'); return document.getElementById('langNote').classList.contains('hide')`), 'English shows no such note');
 
+    console.log('== R22: grievance officer, documents and delay lines');
+    await fresh(); await ev(`setLang('en'); document.getElementById('egBtn').click();`); await sleep(500);
+    await ev(`switchTab('letter'); const g=document.getElementById('ld_gro'); g.value='Star Health and Allied'; g.dispatchEvent(new Event('input',{bubbles:true}));
+      const d=document.getElementById('ld_docs'); d.checked=true; d.dispatchEvent(new Event('input',{bubbles:true}));
+      document.getElementById('genLetterTab').click();`); await sleep(300);
+    const lg = await ev(`return {letter: document.querySelector('.letter').innerText, after: document.querySelector('.aftersend').innerText, opts: document.getElementById('ld_gro').options.length}`);
+    ok(lg.opts === 35 && /^\s*Star Health and Allied$/m.test(lg.letter), 'the insurer picker lists IRDAI\'s 34 insurers, and the chosen name heads the letter');
+    ok(/Grievance officer: Star Health and Allied/.test(lg.after) && /gro@starhealth\.in/.test(lg.after) && /last updated 6 October 2026\), as read on 9 October 2026/.test(lg.after) && /Check it on the insurer's own website/.test(lg.after), 'after the letter: its grievance officer\'s email from IRDAI\'s list, with the dates, and "check it first"');
+    ok(/para 17\(c\)\) provides that insurers and TPAs "shall collect the required documents from the Hospitals"/.test(lg.letter) && /"No claim shall be rejected or closed for want of documents"/.test(lg.letter), 'the documents line quotes para 17(c) and the policyholder-protection circular');
+    await ev(`const s=document.getElementById('ld_submitted'); s.value='2026-09-01'; s.dispatchEvent(new Event('input',{bubbles:true}));`); await sleep(200);
+    ok(!/I submitted my claim on/.test(await ev(`return document.querySelector('.letter').innerText`)), 'a submission date is not used for a cashless claim');
+    await ev(`switchTab('settlement'); document.getElementById('modeReimbBtn').click(); for(const [id,v] of [['total','41396'],['reimb','30000'],['copay','10']]){ const e=document.getElementById(id); e.value=v; e.dispatchEvent(new Event('input',{bubbles:true})); } switchTab('letter'); document.getElementById('genLetterTab').click();`); await sleep(300);
+    const rl22 = await ev(`return document.querySelector('.letter').innerText`);
+    ok(/I submitted my claim on 1 September 2026\./.test(rl22) && /"shall be settled within fifteen days from submission of claim"/.test(rl22) && /Please confirm the date you treat my claim as submitted, and whether interest is due on it\./.test(rl22), 'for a reimbursement, the letter quotes the 15 days and the interest rule, and ASKS (it does not say the insurer is late)');
+    ok(!/you are late|overdue|breach/i.test(rl22), 'it never says the insurer is late or in breach');
+
+    console.log('== R22: a note for the hospital billing desk');
+    await fresh(); await ev(`setLang('en'); document.getElementById('egBtn').click();`); await sleep(500);
+    await ev(`switchTab('letter'); document.getElementById('genLetterTab').click();`); await sleep(300);
+    const hn = await ev(`const d=document.querySelector('details.hospnote'); return d ? {open:d.open, text: document.getElementById('hospNoteText').textContent} : null;`);
+    ok(hn && !hn.open && /To: The Billing Department/.test(hn.text) && /appear more than once at the same amount/.test(hn.text) && /differs from the sum of its own lines/.test(hn.text) && /already included in another charge/.test(hn.text), 'with a bill, a short note for the billing desk asks about the repeats, the total and the Lists II-IV items (folded)');
+    ok(!/ClearBill/.test(hn.text) && !/List I \(/.test(hn.text) && !/para 17/.test(hn.text), 'it is written from the user, carries no ClearBill heading, and leaves out what only the insurer answers');
+    await fresh(); await ev(`setLang('en'); for(const [id,v] of [['total','120000'],['counter','18500'],['discount',''],['copay','']]){ const e=document.getElementById(id); e.value=v; e.dispatchEvent(new Event('input',{bubbles:true})); } switchTab('letter'); document.getElementById('genLetterTab').click();`); await sleep(300);
+    const hn2 = await ev(`return document.getElementById('hospNoteText') ? document.getElementById('hospNoteText').textContent : ''`);
+    ok(/Subject: Request for an itemised bill/.test(hn2) && /lists the right "To access a copy of the case papers, patient records, investigation reports and detailed bill \(itemized\)"/.test(hn2) && !/law|Act requires|legally/i.test(hn2), 'with no bill, it asks the hospital for the itemised bill, quoting the Charter of Patients\' Rights as a right it lists, never as law');
+    await ev(`window.__lastExtraction={header:{},line_items:[{item:'TV CHARGES',quantity:1,total:300}]}; renderReport(window.__lastExtraction); switchTab('letter'); document.getElementById('genLetterTab').click();`); await sleep(300);
+    ok(await ev(`return !document.querySelector('details.hospnote')`), 'a bill with nothing for the hospital to answer gets no note');
+
     console.log('== Hindi errors');
     await fresh();
     await ev(`setLang('hi'); window.__mode='504'; addFiles([__mk('k1.jpg','image/jpeg',41)]); document.getElementById('checkPhotosBtn').click();`); await sleep(700);

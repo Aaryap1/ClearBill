@@ -294,6 +294,50 @@ const OMBUDSMAN = [
     states:[], part:["Maharashtra"], jurisdiction:"Area of Navi Mumbai, Thane District, Raigad District, Palghar District and wards of Mumbai, M/East, M/West, N, S and T." },
 ];
 // The 28 states and 8 union territories, as offered in the letter form.
+// Insurers' grievance redressal officers (R22): IRDAI's own list, non-life
+// insurers (health insurance is sold only by general and standalone health
+// insurers), copied exactly from irdai.gov.in/list-of-gros ("Last updated on
+// October 06, 2026"), read on GRO_READ_ON. Rows the list gives no email for
+// are left out; two phone numbers the published table shows mangled by a
+// spreadsheet ("1.80043E+11") are left blank rather than guessed. The page
+// says when it was read and to check the insurer's own site before sending.
+const GRO_READ_ON='2026-10-09', GRO_LIST_UPDATED='2026-10-06';
+const GRO = [
+  {"name":"Agriculture Insurance","web":"https://www.aicofindia.com/AICEng/Pages/CreateGrievance.aspx","email":"gro@aicofindia.com","tel":"1800 116 515"},
+  {"name":"ECGC Limited","web":"http://igms.ecgc.in/ecgc/grievance/login.aspx","email":"grievances@ecgc.in","tel":""},
+  {"name":"National Insurance","web":"https://niconline.in/grievance/html/app1/home.html","email":"griho@nic.co.in","tel":"18003450330"},
+  {"name":"The New India Assurance","web":"https://www.newindia.co.in/portal/login/customer","email":"gro@newindia.co.in","tel":"18002091415"},
+  {"name":"The Oriental Insurance","web":"https://orientalinsurance.org.in/web/guest/contact-us?isSelected=contactUs&isRefresh=true","email":"gro@orientalinsurance.co.in","tel":"1800118485"},
+  {"name":"United India Insurance","web":"https://uiic.co.in/en/customercare/grievance","email":"gro@uiic.co.in","tel":""},
+  {"name":"Acko General","web":"https://www.acko.com/customer-service/grievance-redressal/","email":"gro@acko.com","tel":"91-8068843605"},
+  {"name":"Aditya Birla Health","web":"https://www.adityabirlahealth.com/healthinsurance/assets/pdf/GrievanceRedressalPolicy_New.pdf","email":"gro.healthinsurance@adityabirlacapital.com","tel":"18002707000"},
+  {"name":"Bajaj General","web":"https://www.bajajgeneralinsurance.com/about-us/customer-service.html","email":"ggro@bajajgeneral.com","tel":"8080945060"},
+  {"name":"Bharati Axa General","web":"https://www.bharti-axagi.co.in/grievance-redressal/procedure","email":"GRO.GI@bhartiaxa.com","tel":"022-48815939"},
+  {"name":"Cholamandalam MS","web":"https://www.cholainsurance.com/grievance-redressal","email":"gro@cholams.murugappa.com","tel":"1800 208 5544"},
+  {"name":"Navi General Insurance","web":"https://www.naviinsurance.com/service/","email":"gro@navi.com","tel":"18001230004"},
+  {"name":"Zuno General Insurance","web":"https://cms.hizuno.com/uploads/Policy_for_Protection_of_Policyholders_Interests_4fa28cc29e.pdf?updated_at=2023-01-31T10:01:04.069Z","email":"grievanceofficer@edelweissinsurance.com","tel":""},
+  {"name":"Generali Central","web":"https://general.futuregenerali.in/customer-service/grievance-redressal","email":"fggro@futuregenerali.in","tel":"1860 500 3333 / 1800 220 233"},
+  {"name":"Go Digit General","web":"https://www.godigit.com/claims/grievance-redressal-procedure","email":"grievance@godigit.com","tel":"1800-258-5956"},
+  {"name":"HDFC ERGO General","web":"https://www.hdfcergo.com/customer-voice/grievances","email":"gro@hdfcergo.com","tel":"18001020333"},
+  {"name":"ICICI Lombard General","web":"https://www.icicilombard.com/grievance-redressal","email":"gro@icicilombard.com","tel":"022- 66877111"},
+  {"name":"IFFCO Tokio General","web":"https://www.iffcotokio.co.in/contact-us/customer-services","email":"gro@iffcotokio.co.in","tel":"1800-103-5499"},
+  {"name":"Kshema General Insurance","web":"https://kshema.co/grievance-redressal/","email":"gro@kshema.co","tel":"040 - 69134465"},
+  {"name":"Zurich Kotak General","web":"https://www.kotakgeneralinsurance.com/customer-support/grievance-redressal-process","email":"grievanceofficer@kotak.com","tel":"1800 266 4545"},
+  {"name":"Liberty General Insurance","web":"https://www.libertyinsurance.in/customer-support/grievance-redressal.html","email":"GRO@libertyinsurance.in","tel":"1800-266-5844"},
+  {"name":"Magma General Insurance Limited","web":"https://www.magmainsurance.com/more/contact-us","email":"gro@magmainsurance.com","tel":"1800 266 3202"},
+  {"name":"Manipal Cigna","web":"https://www.manipalcigna.com/grievance-redressal","email":"gro@ManipalCigna.com","tel":"1800 - 102 - 4462"},
+  {"name":"Niva Bupa Health Insurance Company Limited","web":"https://transaction.nivabupa.com/customer-care/health-services/grievance-redressal.aspx","email":"gro@maxbupa.com","tel":"1860-500-8888"},
+  {"name":"Raheja QBE","web":"https://www.rahejaqbe.com/grievance-redressal","email":"complaintsofficer@rahejaqbe.com","tel":"18001027723"},
+  {"name":"IndusInd General Insurance","web":"https://www.reliancegeneral.co.in/Insurance/About-Us/Grievance-Redressal.aspx","email":"rgicl.grievances@relianceada.com","tel":"18003009"},
+  {"name":"Reliance Health","web":"https://www.reliancegeneral.co.in/Insurance/About-Us/Grievance-Redressal.aspx","email":"rgicl.grievances@relianceada.com","tel":"18003009"},
+  {"name":"Care Health Insurance (Formely Religare Health Insurance Co. Ltd.)","web":"https://www.careinsurance.com/customer-grievance-redressal.html","email":"gro@careinsurance.com","tel":"18001024488/18001026655"},
+  {"name":"Royal Sundaram General Insurance Co.Limited","web":"https://www.royalsundaram.in/app/customer-grievance","email":"gro@royalsundaram.in","tel":"1860 258 0000 / 1860 425 0000"},
+  {"name":"SBI General","web":"https://www.sbigeneral.in/portal/grievance-redressal","email":"gro@sbigeneral.in","tel":"1800-22-1111 / 1800-102-1111"},
+  {"name":"Shriram General","web":"https://www.shriramgi.com/grievance.html","email":"gro@shriramgi.com","tel":"0141-4828497"},
+  {"name":"Star Health and Allied","web":"https://www.starhealth.in/grievance-redressal","email":"gro@starhealth.in","tel":"18004252255"},
+  {"name":"Tata- AIG General","web":"https://www.tataaig.com/grievance-redressal-policy","email":"gro@tataaig.com","tel":"022 - 66933715"},
+  {"name":"Universal Sompo General","web":"https://www.universalsompo.com/Footer/GrievanceRedressalProcess","email":"gro@universalsompo.com","tel":"1800 224030 / 18002674030"}
+];
 const INDIA_STATES = ["Andaman and Nicobar Islands","Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chandigarh","Chhattisgarh",
   "Dadra and Nagar Haveli and Daman and Diu","Delhi","Goa","Gujarat","Haryana","Himachal Pradesh","Jammu and Kashmir","Jharkhand",
   "Karnataka","Kerala","Ladakh","Lakshadweep","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha",
@@ -631,4 +675,4 @@ function readingChecks(a){
   return {rows,suppressed};
 }
 
-module.exports = { NON_PAYABLE, SUBSUMED, NPPA, OMBUDSMAN, OMBUDSMAN_READ_ON, INDIA_STATES, ombudsmanFor, IS19493_HEADER, GSTIN_RE, money, bestMatch, bestMatchIn, parseAmount, billDateRange, analyse, readingChecks };
+module.exports = { NON_PAYABLE, SUBSUMED, NPPA, OMBUDSMAN, OMBUDSMAN_READ_ON, GRO, GRO_READ_ON, GRO_LIST_UPDATED, INDIA_STATES, ombudsmanFor, IS19493_HEADER, GSTIN_RE, money, bestMatch, bestMatchIn, parseAmount, billDateRange, analyse, readingChecks };
