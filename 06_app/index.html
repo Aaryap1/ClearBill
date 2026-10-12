@@ -316,6 +316,25 @@
   .rcform .btn{margin:6px 12px 0 0}
   .rcerr{color:var(--red)}
   .rcdone{margin-top:10px}
+  .ldf input[type=date]{width:100%;min-height:44px;border:1.5px solid var(--ctl);border-radius:9px;padding:9px 12px;font-size:.95rem;font-family:"Spectral",serif;color:var(--ink);background:var(--field);outline:none}
+  .ldf input[type=date]:focus{border-color:var(--ink);background:var(--card);box-shadow:0 0 0 3px var(--ochre-bg)}
+  details.replycard{margin-top:16px}
+  details.replycard[open]>summary{margin-bottom:8px}
+  .rpbody p.plain{margin:0 0 4px;font-size:.88rem}
+  #rpPhotoBtn{margin-top:8px}
+  #rpCheckBtn{margin-top:14px;width:100%}
+  .rpstatus{font-size:.84rem;margin:8px 0 0} .rpstatus.err{color:var(--red)}
+  .rpchk{border:none;padding:0;margin:16px 0 0;min-width:0}
+  .rpchk legend{font-family:"Archivo",sans-serif;font-size:.8rem;font-weight:600;padding:0;margin-bottom:2px}
+  .rpchk label.chk b{font-family:"Archivo",sans-serif;font-size:.84rem;display:block}
+  .rpchk small{display:block;color:var(--soft);font-size:.8rem;margin-top:3px;line-height:1.45;overflow-wrap:anywhere}
+  .rpsays{font-size:.84rem;margin:12px 0 0;overflow-wrap:anywhere} .rpsays q{font-style:italic}
+  .rpnote{font-size:.86rem;margin:12px 0 0}
+  .rpwarn{color:var(--red);font-size:.86rem;margin:10px 0 0}
+  .rpacts{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+  .rpbox{margin-top:18px;padding-top:14px;border-top:1px dashed var(--rule)}
+  .rpbox .letter{margin-top:10px}
+  .rpbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px} .rpbtns .btn{flex:1}
   .bdates{display:block;font-size:.78rem;color:var(--soft);margin-top:4px;font-weight:400}
   .asdates{margin:8px 0 0;font-size:.86rem}
   .inlineconfirm{margin-top:8px;padding:10px 12px;border:1px solid var(--rule);border-radius:9px;background:var(--field);font-size:.86rem}
@@ -570,6 +589,40 @@
       <button class="btn" id="genLetterTab">Generate the letter</button>
     </div>
     <div id="letterWrap"></div>
+    <details class="card gcdet replycard hide" id="replyCard">
+      <summary><span id="rpHead">The insurer replied, or hasn't</span></summary>
+      <div class="ldf rpbody">
+        <p class="plain" id="rpIntro">Check whether the insurer's reply answers what you asked, then draft a follow-up or a complaint to the Insurance Ombudsman. Nothing is sent from here.</p>
+        <label for="rp_sent" id="rpLblSent">Date you sent your letter</label><input type="date" id="rp_sent">
+        <div class="k" id="rpStatusLbl" style="margin:14px 0 6px">Has the insurer replied?</div>
+        <div class="chips seg" id="rpStatusSeg" role="group" aria-labelledby="rpStatusLbl">
+          <button type="button" class="chip" data-rp="yes" aria-pressed="false" id="rpYesBtn">Yes, it replied</button>
+          <button type="button" class="chip" data-rp="no" aria-pressed="false" id="rpNoBtn">No reply yet</button>
+        </div>
+        <div id="rpReplied" class="hide">
+          <label for="rp_text" id="rpLblText">The reply</label>
+          <textarea id="rp_text" rows="7" maxlength="20000"></textarea>
+          <p class="ldnote" id="rpTextNote" style="margin-left:0">Paste the email, or read a photo of the letter. Check the text against the letter, and correct it, before checking.</p>
+          <input type="file" id="rp_file" accept="image/*" multiple class="hide">
+          <button class="btn sm ghost" type="button" id="rpPhotoBtn">Read a photo of the reply</button>
+          <p class="rpstatus hide" id="rpReadStatus" role="status"></p>
+          <label for="rp_date" id="rpLblDate">Date of the reply</label><input type="date" id="rp_date">
+          <label for="rp_ref" id="rpLblRef">Its reference number, if any</label><input type="text" id="rp_ref" maxlength="80">
+          <button class="btn" type="button" id="rpCheckBtn">Check the reply</button>
+        </div>
+        <div id="rpResult"></div>
+        <div id="rpFollowBox" class="hide rpbox"><div class="k" id="rpFHead">Follow-up to the insurer</div><div id="rpFOut"></div></div>
+        <div id="rpComplaintBox" class="hide rpbox">
+          <div class="k" id="rpCHead">Complaint to the Insurance Ombudsman</div>
+          <p class="plain" id="rpCIntro">The Insurance Ombudsman Rules 2017 (rule 14(2)) ask a complaint to state who you are, the insurer's branch or office, the facts with documents, your loss, and what you ask for. Filing is free.</p>
+          <label for="rp_branch" id="rpLblBranch">The insurer's branch or office that handled your claim (on your policy or claim letters)</label><input type="text" id="rp_branch" maxlength="160">
+          <label for="rp_amount" id="rpLblAmount">Amount you are asking for (&#8377;)</label><input type="text" inputmode="decimal" id="rp_amount" maxlength="20">
+          <p class="ldnote" id="rpAmountNote" style="margin-left:0"></p>
+          <label class="chk"><input type="checkbox" id="rp_court"><span id="rpLblCourt">This matter is not before a court, consumer commission or arbitrator, and none of them has decided it</span></label>
+          <div id="rpCOut"></div>
+        </div>
+      </div>
+    </details>
   </div>
 
   <!-- TAB 4: ABOUT -->
@@ -1063,6 +1116,14 @@ Copy every value exactly as printed. Do not calculate, correct, round, or invent
 Use null for any field not present on the bill. Keep negative amounts negative.
 {"is_hospital_bill":true,"header":{"hospital_name":null,"hospital_address":null,"hospital_gstin":null,"hospital_contact":null,"hospital_registration":null,"hospital_accreditation":null,"bill_number":null,"bill_datetime":null,"patient_name":null,"patient_age":null,"patient_gender":null,"patient_hospital_id":null,"patient_uhid":null,"patient_address":null,"patient_gstin":null,"admission_datetime":null,"discharge_datetime":null,"admission_type":null,"gross_amount":null,"discount_amount":null,"tax_amount":null,"net_payable":null,"payment_mode":null,"insurance_info":null,"patient_signature":false,"authorised_signature":false},"line_items":[{"item":"","unit":null,"quantity":0,"rate":0,"total":0,"section":""}],"printed_subtotals":{}}
 Rules: one line_items object per charge row; "section" = the section heading it sits under; "unit" = null if the bill has no unit column; "printed_subtotals" = each "Total for <section>" figure printed on the bill, copied even if it does not match the sum of the lines. "patient_signature" / "authorised_signature" = true only if that signature block is visibly present on the page. A cover letter, TPA authorisation letter, or payment receipt that is NOT itself an itemised charge listing should also get "is_hospital_bill": false — those are valid hospital documents, just not the bill this tool checks. Numbers as numbers, no symbols, no commas.`;
+// R24: the insurer's reply, photographed. Gemini only copies the text; the
+// checks are the app's own (checkReply). Kept identical to server.js's
+// REPLY_PROMPT (lib/test_server.js checks).
+const REPLY_PROMPT = `Look at this image. First decide: is it a letter, email, notice or message from an insurance company or a TPA (third party administrator) about a claim or a complaint? If it is not (a hospital bill, a person, a landscape, an unrelated document, a blank or unreadable page), set "is_insurer_letter" to false, leave "text" empty, and stop - do not invent content.
+If it IS such a letter, copy its text. Return ONLY valid JSON, no markdown, no commentary.
+Copy the words exactly as printed, in reading order, keeping line breaks. Do not summarise, correct, translate, complete or invent anything. Keep amounts, clause numbers and dates exactly as printed.
+{"is_insurer_letter":true,"text":"","letter_date":null,"reference":null}
+"letter_date" = the date printed on the letter, as written, or null. "reference" = a claim, complaint or reference number printed on it, as written, or null.`;
 
 const money = n => Math.round((Number(n)+Number.EPSILON)*100)/100;
 const $ = id => document.getElementById(id);
@@ -1095,7 +1156,8 @@ const LOCAL_LS='clearbill_local_checks', LOCAL_MAX=20; // R12: checks kept on th
 // Declared here, before calc() first runs at load and draws the Letter tab (R20/R21).
 let _userIncl={}, _userInclFor=null;
 const NO_BILL={header:{},line_items:[]};
-let _rcOpen=false; // R23: keep "Rows to check" open after a correction
+let _rcOpen=false;
+let RP={status:null,checked:false,err:false,res:null,ans:{},outcome:null,docs:false,show:null}; // R24: the reply card // R23: keep "Rows to check" open after a correction
 const _analyses=new WeakMap(); // analyseFor() cache (R20)
 let _myBills=[], BILLS_ON=false, GOOGLE_CLIENT_ID=null, ID_TOKEN=null, ID_TOKEN_NAME=null;
 let READER_STATE='ok', _impact=null; // R14: from /api/config and /api/impact
@@ -1158,6 +1220,51 @@ en: {
   rc_changed:(a,b)=>`read as ${a}, corrected to ${b}`,
   rc_dropped:"left out: not a charge",
   rc_saved:"Row corrected. The checks have run again.", rc_undone:"Correction undone. The checks have run again.",
+  rp_head:"The insurer replied, or hasn't",
+  rp_intro:"Check whether the insurer's reply answers what you asked, then draft a follow-up or a complaint to the Insurance Ombudsman. Nothing is sent from here.",
+  rp_sent:"Date you sent your letter", rp_status_q:"Has the insurer replied?", rp_yes:"Yes, it replied", rp_no:"No reply yet",
+  rp_text:"The reply", rp_text_note:"Paste the email, or read a photo of the letter. Check the text against the letter, and correct it, before checking.",
+  rp_photo:"Read a photo of the reply", rp_date:"Date of the reply", rp_ref:"Its reference number, if any", rp_check:"Check the reply",
+  rp_follow_head:"Follow-up to the insurer", rp_c_head:"Complaint to the Insurance Ombudsman",
+  rp_c_intro:"The Insurance Ombudsman Rules 2017 (rule 14(2)) ask a complaint to state who you are, the insurer's branch or office, the facts with documents, your loss, and what you ask for. Filing is free.",
+  rp_branch:"The insurer's branch or office that handled your claim (on your policy or claim letters)", rp_amount:"Amount you are asking for (₹)",
+  rp_court:"This matter is not before a court, consumer commission or arbitrator, and none of them has decided it",
+  rp_need_sent:"Enter the date you sent your letter to see the dates that apply to you.",
+  rp_wait:(reply,opens)=>`A reply is due around ${reply}. If none comes, you can go to the Insurance Ombudsman on or after ${opens} (Insurance Ombudsman Rules 2017, rule 14(3)).`,
+  rp_noreply_open:d=>`More than a month has passed with no reply. You can take this to the Insurance Ombudsman until ${d} (Insurance Ombudsman Rules 2017, rule 14(3)).`,
+  rp_late:(opens,d)=>`The one-year limit, counted from ${opens}, ended on ${d}. The Ombudsman can still accept a late complaint if it decides to condone the delay (rule 14(4)).`,
+  rp_late_reply:d=>`The one-year limit, counted from the reply, ended on ${d}. The Ombudsman can still accept a late complaint if it decides to condone the delay (rule 14(4)).`,
+  rp_too_early:d=>`A month has not passed since you sent your letter: the Ombudsman can take this on or after ${d} if there is no reply. You can prepare it now.`,
+  rp_btn_complaint:"Prepare an Ombudsman complaint", rp_btn_remind:"Draft a reminder to the insurer", rp_btn_follow:"Draft a follow-up to the insurer",
+  rp_empty:"Paste the reply, or read a photo of it, first.",
+  rp_chk_head:"What IRDAI says a reply should contain. Tick each one the reply gives.",
+  rp_k_reasons:"Reasons, with the specific terms of your policy", rp_k_breakdown:"The amounts deducted, line by line", rp_k_omb:"The Insurance Ombudsman's details",
+  rp_found:x=>`Found: ${x}`, rp_found_reasons_hint:"Is this a term of your policy, given as the reason? A law or an IRDAI circular is not.",
+  rp_none_reasons:"Not found: the reply names no clause, section or exclusion of the policy. \"As per policy terms\" alone is not a specific reference.",
+  rp_found_amounts:n=>`The reply lists ${n} different amounts.`, rp_none_breakdown:"Not found: no line-by-line list of the amounts deducted.",
+  rp_none_omb:"Not found: the reply does not mention the Insurance Ombudsman.",
+  rp_says:"The reply says:", rp_outcome_q:"What did the insurer decide?", rp_o_pay:"It will pay more", rp_o_keep:"It kept all or part of the deduction",
+  rp_docs:"It asks me to get documents from the hospital",
+  rp_days:n=>`The reply is dated ${n} day${n===1?'':'s'} after you sent your letter. IRDAI's circular says insurers should resolve a complaint within 14 days.`,
+  rp_paid_ok:"Keep the reply. If the payment does not arrive, come back here: you can still follow up or go to the Ombudsman.",
+  rp_until:d=>`If you are not satisfied, you can take this to the Insurance Ombudsman until ${d} (Insurance Ombudsman Rules 2017, rule 14(3)(b)).`,
+  rp_until_nodate:"If you are not satisfied, you can take this to the Insurance Ombudsman within one year of the reply (Insurance Ombudsman Rules 2017, rule 14(3)(b)). Enter the reply's date to see the last day.",
+  rp_copy:"Copy", rp_download:"Download as a text file", rp_note_en:"Drafted in English, like the letter.",
+  rp_amount_pre:x=>`Filled in from your settlement figures: ${x} not itemised. Change it to the amount you believe should have been paid.`,
+  rp_amount_unknown:"Your co-pay is not known, so this cannot be worked out from your figures. Enter the amount you believe should have been paid.",
+  rp_m_name:"your name", rp_m_address:"your address", rp_m_insurer:"the insurer's name", rp_m_policy:"the policy number", rp_m_branch:"the insurer's branch or office",
+  rp_m_state:"your state (for the right Ombudsman office)", rp_m_sent:"the date you sent your letter", rp_m_amount:"the amount you are asking for",
+  rp_missing:x=>`Add these before you file: ${x}.`, rp_go_details:"Go to your details",
+  rp_over_cap:"The Ombudsman cannot award more than ₹50 lakh (rule 17(3)). For a larger amount, take advice on where to file.",
+  rp_court_needed:"Tick the box above to see the complaint. If the same matter is before a court, consumer commission or arbitrator, or one of them has decided it, the Ombudsman cannot take it (rule 14(5)).",
+  rp_where_head:"Where to file",
+  rp_where:"Free. Online at <a href=\"https://www.cioins.co.in/Complaint/Online\" target=\"_blank\" rel=\"noopener\">cioins.co.in</a> (the form asks for these same details: copy each part into it), by email to your office below, or by post. Attach the documents listed.",
+  rp_not_legal:"This is a draft to check and complete, not legal advice.",
+  rp_need_key:"Reading a photo needs the free reading service, which is not available right now, or your own free Gemini key on the Settlement tab. You can paste the text instead.",
+  rp_busy:"The free reading service is busy. Paste the text instead, or add your own free Gemini key on the Settlement tab.",
+  rp_reading:(i,n)=>`Reading photo ${i} of ${n}…`, rp_read_done:n=>`Read ${n} photo${n>1?'s':''}. Check the text against the letter before going on.`,
+  rp_read_notletter:n=>`${n} photo${n>1?'s':''} did not look like a letter from an insurer and ${n>1?'were':'was'} left out.`,
+  rp_read_none:"No letter text could be read. Try a clearer photo, or paste the text.", rp_read_err:"A photo could not be read. Try again, or paste the text.",
   dates_today:(today,reply,opens,deadline)=>`If you send it today (${today}): a reply is due around ${reply}, within 14 days. If none comes, you can go to the Ombudsman one month after the insurer receives your letter, so on or after ${opens}, and you have until ${deadline} (Insurance Ombudsman Rules 2017, rule 14(3)). If the insurer does reply, the year counts from its reply. Sending on another day? Enter that date under "Sent on" in My Bills and the dates follow it.`,
   dates_sent:(reply,opens,deadline)=>`Reply due around ${reply}. No reply: the Ombudsman route opens on or after ${opens}, until ${deadline}.`,
   upsum:n=>`${n} lines read`, upsum_example:n=>`Worked example &middot; ${n} lines read`,
@@ -1534,6 +1641,51 @@ hi: {
   rc_changed:(a,b)=>`${a} पढ़ा गया था, ${b} किया गया`,
   rc_dropped:"हटाया गया: यह चार्ज नहीं है",
   rc_saved:"लाइन सुधारी गई। जाँचें फिर से चलाई गईं।", rc_undone:"सुधार वापस लिया गया। जाँचें फिर से चलाई गईं।",
+  rp_head:"बीमा कंपनी ने जवाब दिया, या नहीं दिया",
+  rp_intro:"देखें कि बीमा कंपनी के जवाब में आपके सवालों का उत्तर है या नहीं, फिर बीमा कंपनी को दोबारा पत्र या बीमा लोकपाल (Insurance Ombudsman) को शिकायत तैयार करें। यहाँ से कुछ भी भेजा नहीं जाता।",
+  rp_sent:"आपने पत्र किस तारीख़ को भेजा", rp_status_q:"क्या बीमा कंपनी ने जवाब दिया?", rp_yes:"हाँ, जवाब आया", rp_no:"अभी जवाब नहीं आया",
+  rp_text:"जवाब", rp_text_note:"ईमेल यहाँ चिपकाएँ, या पत्र की फ़ोटो पढ़वाएँ। जाँचने से पहले लिखे हुए को पत्र से मिलाकर सुधार लें।",
+  rp_photo:"जवाब की फ़ोटो पढ़वाएँ", rp_date:"जवाब की तारीख़", rp_ref:"उसका संदर्भ (reference) नंबर, अगर हो", rp_check:"जवाब जाँचें",
+  rp_follow_head:"बीमा कंपनी को दोबारा पत्र", rp_c_head:"बीमा लोकपाल को शिकायत",
+  rp_c_intro:"बीमा लोकपाल नियम 2017 (नियम 14(2)) के अनुसार शिकायत में लिखा हो कि आप कौन हैं, बीमा कंपनी की शाखा या कार्यालय, दस्तावेज़ों के साथ तथ्य, आपका नुक़सान, और आप क्या माँगते हैं। शिकायत करना मुफ़्त है।",
+  rp_branch:"बीमा कंपनी की वह शाखा या कार्यालय जिसने आपका दावा देखा (पॉलिसी या दावे के पत्रों पर लिखा होता है)", rp_amount:"आप कितनी रकम माँग रहे हैं (₹)",
+  rp_court:"यह मामला किसी अदालत, उपभोक्ता आयोग या मध्यस्थ (arbitrator) के पास नहीं है, और उनमें से किसी ने इस पर फ़ैसला नहीं दिया है",
+  rp_need_sent:"आप पर लागू तारीख़ें देखने के लिए पत्र भेजने की तारीख़ डालें।",
+  rp_wait:(reply,opens)=>`जवाब लगभग ${reply} तक आना चाहिए। अगर न आए, तो आप ${opens} को या उसके बाद बीमा लोकपाल के पास जा सकते हैं (बीमा लोकपाल नियम 2017, नियम 14(3))।`,
+  rp_noreply_open:d=>`एक महीने से ज़्यादा हो गया और जवाब नहीं आया। आप ${d} तक यह मामला बीमा लोकपाल के पास ले जा सकते हैं (बीमा लोकपाल नियम 2017, नियम 14(3))।`,
+  rp_late:(opens,d)=>`${opens} से गिनी गई एक साल की सीमा ${d} को ख़त्म हो गई। लोकपाल चाहे तो देरी माफ़ करके देर से आई शिकायत भी ले सकता है (नियम 14(4))।`,
+  rp_late_reply:d=>`जवाब से गिनी गई एक साल की सीमा ${d} को ख़त्म हो गई। लोकपाल चाहे तो देरी माफ़ करके देर से आई शिकायत भी ले सकता है (नियम 14(4))।`,
+  rp_too_early:d=>`पत्र भेजे अभी एक महीना नहीं हुआ: जवाब न आने पर लोकपाल ${d} को या उसके बाद यह शिकायत ले सकता है। आप इसे अभी तैयार कर सकते हैं।`,
+  rp_btn_complaint:"लोकपाल को शिकायत तैयार करें", rp_btn_remind:"बीमा कंपनी को याद-पत्र तैयार करें", rp_btn_follow:"बीमा कंपनी को दोबारा पत्र तैयार करें",
+  rp_empty:"पहले जवाब चिपकाएँ, या उसकी फ़ोटो पढ़वाएँ।",
+  rp_chk_head:"IRDAI के अनुसार जवाब में क्या होना चाहिए। जवाब में जो दिया गया है, उस पर सही का निशान लगाएँ।",
+  rp_k_reasons:"कारण, आपकी पॉलिसी की ख़ास शर्तों के हवाले से", rp_k_breakdown:"काटी गई रकमें, एक-एक लाइन में", rp_k_omb:"बीमा लोकपाल का विवरण",
+  rp_found:x=>`मिला: ${x}`, rp_found_reasons_hint:"क्या यह आपकी पॉलिसी की शर्त है, जो कारण के रूप में दी गई है? कोई क़ानून या IRDAI का सर्कुलर पॉलिसी की शर्त नहीं है।",
+  rp_none_reasons:"नहीं मिला: जवाब में पॉलिसी का कोई क्लॉज़, सेक्शन या अपवाद (exclusion) नहीं बताया गया। सिर्फ़ \"पॉलिसी की शर्तों के अनुसार\" ख़ास हवाला नहीं है।",
+  rp_found_amounts:n=>`जवाब में ${n} अलग-अलग रकमें लिखी हैं।`, rp_none_breakdown:"नहीं मिला: काटी गई रकमों की एक-एक लाइन की सूची नहीं है।",
+  rp_none_omb:"नहीं मिला: जवाब में बीमा लोकपाल का ज़िक्र नहीं है।",
+  rp_says:"जवाब में लिखा है:", rp_outcome_q:"बीमा कंपनी ने क्या फ़ैसला किया?", rp_o_pay:"वह और भुगतान करेगी", rp_o_keep:"उसने पूरी या कुछ कटौती बनाए रखी",
+  rp_docs:"वह मुझसे अस्पताल से दस्तावेज़ लाने को कहती है",
+  rp_days:n=>`जवाब आपके पत्र भेजने के ${n} दिन बाद की तारीख़ का है। IRDAI के सर्कुलर के अनुसार बीमा कंपनियों को शिकायत 14 दिन में सुलझानी चाहिए।`,
+  rp_paid_ok:"जवाब संभालकर रखें। अगर भुगतान न आए, तो यहाँ लौटें: आप फिर भी दोबारा पत्र भेज सकते हैं या लोकपाल के पास जा सकते हैं।",
+  rp_until:d=>`अगर आप संतुष्ट नहीं हैं, तो ${d} तक यह मामला बीमा लोकपाल के पास ले जा सकते हैं (बीमा लोकपाल नियम 2017, नियम 14(3)(b))।`,
+  rp_until_nodate:"अगर आप संतुष्ट नहीं हैं, तो जवाब के एक साल के भीतर यह मामला बीमा लोकपाल के पास ले जा सकते हैं (बीमा लोकपाल नियम 2017, नियम 14(3)(b))। आख़िरी दिन देखने के लिए जवाब की तारीख़ डालें।",
+  rp_copy:"कॉपी करें", rp_download:"टेक्स्ट फ़ाइल के रूप में डाउनलोड करें", rp_note_en:"यह पत्र की तरह अंग्रेज़ी में तैयार किया गया है।",
+  rp_amount_pre:x=>`आपके सेटलमेंट आँकड़ों से भरा गया: ${x} का ब्योरा नहीं दिया गया। इसे उस रकम में बदलें जो आपके हिसाब से मिलनी चाहिए थी।`,
+  rp_amount_unknown:"आपका को-पे पता नहीं है, इसलिए यह रकम आपके आँकड़ों से नहीं निकाली जा सकती। वह रकम डालें जो आपके हिसाब से मिलनी चाहिए थी।",
+  rp_m_name:"आपका नाम", rp_m_address:"आपका पता", rp_m_insurer:"बीमा कंपनी का नाम", rp_m_policy:"पॉलिसी नंबर", rp_m_branch:"बीमा कंपनी की शाखा या कार्यालय",
+  rp_m_state:"आपका राज्य (सही लोकपाल कार्यालय के लिए)", rp_m_sent:"पत्र भेजने की तारीख़", rp_m_amount:"आप कितनी रकम माँग रहे हैं",
+  rp_missing:x=>`शिकायत करने से पहले ये जोड़ें: ${x}।`, rp_go_details:"अपने विवरण पर जाएँ",
+  rp_over_cap:"लोकपाल ₹50 लाख से ज़्यादा का फ़ैसला नहीं दे सकता (नियम 17(3))। इससे बड़ी रकम के लिए सलाह लें कि शिकायत कहाँ करें।",
+  rp_court_needed:"शिकायत देखने के लिए ऊपर वाले बॉक्स पर निशान लगाएँ। अगर यही मामला किसी अदालत, उपभोक्ता आयोग या मध्यस्थ के पास है, या उनमें से किसी ने फ़ैसला दे दिया है, तो लोकपाल इसे नहीं ले सकता (नियम 14(5))।",
+  rp_where_head:"शिकायत कहाँ करें",
+  rp_where:"मुफ़्त। ऑनलाइन <a href=\"https://www.cioins.co.in/Complaint/Online\" target=\"_blank\" rel=\"noopener\">cioins.co.in</a> पर (फ़ॉर्म में यही विवरण माँगे जाते हैं: हर हिस्सा उसमें कॉपी करें), नीचे दिए आपके कार्यालय को ईमेल से, या डाक से। सूची में लिखे दस्तावेज़ साथ लगाएँ।",
+  rp_not_legal:"यह जाँचने और पूरा करने के लिए एक मसौदा है, क़ानूनी सलाह नहीं।",
+  rp_need_key:"फ़ोटो पढ़ने के लिए मुफ़्त पढ़ने वाली सेवा चाहिए, जो अभी उपलब्ध नहीं है, या सेटलमेंट टैब पर आपकी अपनी मुफ़्त Gemini key। आप इसकी जगह टेक्स्ट चिपका सकते हैं।",
+  rp_busy:"मुफ़्त पढ़ने वाली सेवा अभी व्यस्त है। टेक्स्ट चिपकाएँ, या सेटलमेंट टैब पर अपनी मुफ़्त Gemini key डालें।",
+  rp_reading:(i,n)=>`${n} में से फ़ोटो ${i} पढ़ी जा रही है…`, rp_read_done:n=>`${n} फ़ोटो पढ़ी गई। आगे बढ़ने से पहले लिखे हुए को पत्र से मिला लें।`,
+  rp_read_notletter:n=>`${n} फ़ोटो बीमा कंपनी के पत्र जैसी नहीं लगी और छोड़ दी गई।`,
+  rp_read_none:"पत्र का कोई टेक्स्ट नहीं पढ़ा जा सका। साफ़ फ़ोटो लें, या टेक्स्ट चिपकाएँ।", rp_read_err:"एक फ़ोटो पढ़ी नहीं जा सकी। फिर कोशिश करें, या टेक्स्ट चिपकाएँ।",
   dates_today:(today,reply,opens,deadline)=>`अगर आप इसे आज (${today}) भेजें: जवाब लगभग ${reply} तक, 14 दिनों में आना चाहिए। जवाब न आए तो बीमा कंपनी को पत्र मिलने के एक महीने बाद, यानी ${opens} या उसके बाद, आप लोकपाल के पास जा सकते हैं, और ${deadline} तक (बीमा लोकपाल नियम 2017, नियम 14(3))। अगर बीमा कंपनी जवाब दे, तो साल उसके जवाब से गिना जाता है। किसी और दिन भेज रहे हैं? My Bills में "भेजने की तारीख़" में वह तारीख़ डालें, तारीख़ें उसी से चलेंगी।`,
   dates_sent:(reply,opens,deadline)=>`जवाब लगभग ${reply} तक। जवाब न आए तो लोकपाल का रास्ता ${opens} या उसके बाद, ${deadline} तक।`,
   upsum:n=>`${n} लाइनें पढ़ी गईं`, upsum_example:n=>`उदाहरण बिल &middot; ${n} लाइनें पढ़ी गईं`,
@@ -1911,6 +2063,51 @@ mr: {
   rc_changed:(a,b)=>`${a} असं वाचलं होतं, ${b} केलं`,
   rc_dropped:"वगळलं: हा चार्ज नाही",
   rc_saved:"ओळ दुरुस्त केली. तपासण्या पुन्हा चालवल्या.", rc_undone:"दुरुस्ती परत घेतली. तपासण्या पुन्हा चालवल्या.",
+  rp_head:"विमा कंपनीने उत्तर दिलं, किंवा दिलं नाही",
+  rp_intro:"विमा कंपनीच्या उत्तरात तुमच्या प्रश्नांची उत्तरं आहेत का ते पहा, मग विमा कंपनीला पुन्हा पत्र किंवा विमा लोकपालाकडे (Insurance Ombudsman) तक्रार तयार करा. इथून काहीही पाठवलं जात नाही.",
+  rp_sent:"तुम्ही पत्र कोणत्या तारखेला पाठवलं", rp_status_q:"विमा कंपनीने उत्तर दिलं का?", rp_yes:"हो, उत्तर आलं", rp_no:"अजून उत्तर आलं नाही",
+  rp_text:"उत्तर", rp_text_note:"ईमेल इथे पेस्ट करा, किंवा पत्राचा फोटो वाचून घ्या. तपासण्याआधी मजकूर पत्राशी जुळवून दुरुस्त करा.",
+  rp_photo:"उत्तराचा फोटो वाचून घ्या", rp_date:"उत्तराची तारीख", rp_ref:"त्याचा संदर्भ (reference) क्रमांक, असल्यास", rp_check:"उत्तर तपासा",
+  rp_follow_head:"विमा कंपनीला पुन्हा पत्र", rp_c_head:"विमा लोकपालाकडे तक्रार",
+  rp_c_intro:"विमा लोकपाल नियम 2017 (नियम 14(2)) नुसार तक्रारीत तुम्ही कोण आहात, विमा कंपनीची शाखा किंवा कार्यालय, कागदपत्रांसह तथ्यं, तुमचं नुकसान आणि तुम्ही काय मागता हे लिहायला हवं. तक्रार करणं मोफत आहे.",
+  rp_branch:"तुमचा दावा पाहणारी विमा कंपनीची शाखा किंवा कार्यालय (पॉलिसी किंवा दाव्याच्या पत्रांवर असतं)", rp_amount:"तुम्ही किती रक्कम मागत आहात (₹)",
+  rp_court:"हे प्रकरण कोणत्याही न्यायालयात, ग्राहक आयोगात किंवा लवादाकडे (arbitrator) नाही, आणि त्यांपैकी कोणीही त्यावर निर्णय दिलेला नाही",
+  rp_need_sent:"तुम्हाला लागू होणाऱ्या तारखा पाहण्यासाठी पत्र पाठवल्याची तारीख टाका.",
+  rp_wait:(reply,opens)=>`उत्तर साधारण ${reply} पर्यंत यायला हवं. ते न आल्यास तुम्ही ${opens} रोजी किंवा त्यानंतर विमा लोकपालाकडे जाऊ शकता (विमा लोकपाल नियम 2017, नियम 14(3)).`,
+  rp_noreply_open:d=>`एका महिन्याहून जास्त काळ झाला आणि उत्तर आलं नाही. तुम्ही ${d} पर्यंत हे प्रकरण विमा लोकपालाकडे नेऊ शकता (विमा लोकपाल नियम 2017, नियम 14(3)).`,
+  rp_late:(opens,d)=>`${opens} पासून मोजलेली एक वर्षाची मुदत ${d} रोजी संपली. लोकपालाने विलंब माफ केला तर उशिरा आलेली तक्रारही स्वीकारली जाऊ शकते (नियम 14(4)).`,
+  rp_late_reply:d=>`उत्तरापासून मोजलेली एक वर्षाची मुदत ${d} रोजी संपली. लोकपालाने विलंब माफ केला तर उशिरा आलेली तक्रारही स्वीकारली जाऊ शकते (नियम 14(4)).`,
+  rp_too_early:d=>`पत्र पाठवून अजून एक महिना झाला नाही: उत्तर न आल्यास लोकपाल ${d} रोजी किंवा त्यानंतर ही तक्रार घेऊ शकतो. तुम्ही ती आताच तयार करू शकता.`,
+  rp_btn_complaint:"लोकपालाकडे तक्रार तयार करा", rp_btn_remind:"विमा कंपनीला स्मरणपत्र तयार करा", rp_btn_follow:"विमा कंपनीला पुन्हा पत्र तयार करा",
+  rp_empty:"आधी उत्तर पेस्ट करा, किंवा त्याचा फोटो वाचून घ्या.",
+  rp_chk_head:"IRDAI नुसार उत्तरात काय असायला हवं. उत्तरात जे दिलं आहे त्यावर खूण करा.",
+  rp_k_reasons:"कारणं, तुमच्या पॉलिसीच्या विशिष्ट अटींच्या संदर्भासह", rp_k_breakdown:"कापलेल्या रकमा, ओळीनुसार", rp_k_omb:"विमा लोकपालाचा तपशील",
+  rp_found:x=>`सापडलं: ${x}`, rp_found_reasons_hint:"ही तुमच्या पॉलिसीची अट आहे का, जी कारण म्हणून दिली आहे? कायदा किंवा IRDAI चं परिपत्रक ही पॉलिसीची अट नाही.",
+  rp_none_reasons:"सापडलं नाही: उत्तरात पॉलिसीचं कोणतंही कलम, विभाग किंवा अपवाद (exclusion) सांगितलेलं नाही. फक्त \"पॉलिसीच्या अटींनुसार\" हा विशिष्ट संदर्भ नाही.",
+  rp_found_amounts:n=>`उत्तरात ${n} वेगवेगळ्या रकमा दिल्या आहेत.`, rp_none_breakdown:"सापडलं नाही: कापलेल्या रकमांची ओळीनुसार यादी नाही.",
+  rp_none_omb:"सापडलं नाही: उत्तरात विमा लोकपालाचा उल्लेख नाही.",
+  rp_says:"उत्तरात लिहिलं आहे:", rp_outcome_q:"विमा कंपनीने काय निर्णय घेतला?", rp_o_pay:"ती आणखी रक्कम देईल", rp_o_keep:"तिने संपूर्ण किंवा काही कपात कायम ठेवली",
+  rp_docs:"ती मला रुग्णालयातून कागदपत्रं आणायला सांगते",
+  rp_days:n=>`उत्तर तुम्ही पत्र पाठवल्यानंतर ${n} दिवसांच्या तारखेचं आहे. IRDAI च्या परिपत्रकानुसार विमा कंपन्यांनी तक्रार 14 दिवसांत सोडवायला हवी.`,
+  rp_paid_ok:"उत्तर जपून ठेवा. रक्कम न आल्यास इथे परत या: तुम्ही तरीही पुन्हा पत्र पाठवू शकता किंवा लोकपालाकडे जाऊ शकता.",
+  rp_until:d=>`तुमचं समाधान झालं नसेल, तर ${d} पर्यंत हे प्रकरण विमा लोकपालाकडे नेऊ शकता (विमा लोकपाल नियम 2017, नियम 14(3)(b)).`,
+  rp_until_nodate:"तुमचं समाधान झालं नसेल, तर उत्तरापासून एका वर्षाच्या आत हे प्रकरण विमा लोकपालाकडे नेऊ शकता (विमा लोकपाल नियम 2017, नियम 14(3)(b)). शेवटचा दिवस पाहण्यासाठी उत्तराची तारीख टाका.",
+  rp_copy:"कॉपी करा", rp_download:"टेक्स्ट फाइल म्हणून डाउनलोड करा", rp_note_en:"हे पत्राप्रमाणेच इंग्रजीत तयार केलं आहे.",
+  rp_amount_pre:x=>`तुमच्या सेटलमेंट आकड्यांवरून भरलं: ${x} चा तपशील दिलेला नाही. ती रक्कम तुमच्या मते मिळायला हवी होती त्या रकमेत बदला.`,
+  rp_amount_unknown:"तुमचा को-पे माहीत नाही, म्हणून ही रक्कम तुमच्या आकड्यांवरून काढता येत नाही. तुमच्या मते मिळायला हवी होती ती रक्कम टाका.",
+  rp_m_name:"तुमचं नाव", rp_m_address:"तुमचा पत्ता", rp_m_insurer:"विमा कंपनीचं नाव", rp_m_policy:"पॉलिसी क्रमांक", rp_m_branch:"विमा कंपनीची शाखा किंवा कार्यालय",
+  rp_m_state:"तुमचं राज्य (योग्य लोकपाल कार्यालयासाठी)", rp_m_sent:"पत्र पाठवल्याची तारीख", rp_m_amount:"तुम्ही मागत असलेली रक्कम",
+  rp_missing:x=>`तक्रार करण्याआधी हे भरा: ${x}.`, rp_go_details:"तुमच्या तपशिलाकडे जा",
+  rp_over_cap:"लोकपाल ₹50 लाखांपेक्षा जास्त रकमेचा निर्णय देऊ शकत नाही (नियम 17(3)). यापेक्षा मोठ्या रकमेसाठी तक्रार कुठे करायची याचा सल्ला घ्या.",
+  rp_court_needed:"तक्रार पाहण्यासाठी वरच्या बॉक्सवर खूण करा. हेच प्रकरण न्यायालयात, ग्राहक आयोगात किंवा लवादाकडे असेल, किंवा त्यांपैकी कोणी निर्णय दिला असेल, तर लोकपाल ते घेऊ शकत नाही (नियम 14(5)).",
+  rp_where_head:"तक्रार कुठे करायची",
+  rp_where:"मोफत. ऑनलाइन <a href=\"https://www.cioins.co.in/Complaint/Online\" target=\"_blank\" rel=\"noopener\">cioins.co.in</a> वर (फॉर्ममध्ये हाच तपशील मागितला जातो: प्रत्येक भाग त्यात कॉपी करा), खालील तुमच्या कार्यालयाला ईमेलने, किंवा पोस्टाने. यादीतील कागदपत्रं जोडा.",
+  rp_not_legal:"हा तपासून पूर्ण करायचा मसुदा आहे, कायदेशीर सल्ला नाही.",
+  rp_need_key:"फोटो वाचण्यासाठी मोफत वाचन सेवा लागते, जी सध्या उपलब्ध नाही, किंवा सेटलमेंट टॅबवर तुमची स्वतःची मोफत Gemini key. त्याऐवजी तुम्ही मजकूर पेस्ट करू शकता.",
+  rp_busy:"मोफत वाचन सेवा सध्या व्यस्त आहे. मजकूर पेस्ट करा, किंवा सेटलमेंट टॅबवर तुमची मोफत Gemini key टाका.",
+  rp_reading:(i,n)=>`${n} पैकी फोटो ${i} वाचला जात आहे…`, rp_read_done:n=>`${n} फोटो वाचले. पुढे जाण्याआधी मजकूर पत्राशी जुळवून पहा.`,
+  rp_read_notletter:n=>`${n} फोटो विमा कंपनीच्या पत्रासारखे वाटले नाहीत आणि वगळले.`,
+  rp_read_none:"पत्राचा कोणताही मजकूर वाचता आला नाही. स्पष्ट फोटो घ्या, किंवा मजकूर पेस्ट करा.", rp_read_err:"एक फोटो वाचता आला नाही. पुन्हा प्रयत्न करा, किंवा मजकूर पेस्ट करा.",
   dates_today:(today,reply,opens,deadline)=>`तुम्ही हे आज (${today}) पाठवलं तर: उत्तर साधारण ${reply} पर्यंत, 14 दिवसांत यायला हवं. उत्तर आलं नाही तर विमा कंपनीला पत्र मिळाल्यानंतर एका महिन्याने, म्हणजे ${opens} किंवा त्यानंतर, तुम्ही लोकपालाकडे जाऊ शकता, आणि ${deadline} पर्यंत (विमा लोकपाल नियम 2017, नियम 14(3)). विमा कंपनीने उत्तर दिलं तर वर्ष त्या उत्तरापासून मोजलं जातं. दुसऱ्या दिवशी पाठवताय? My Bills मध्ये "पाठवल्याची तारीख" मध्ये ती तारीख टाका, तारखा त्यानुसार बदलतील.`,
   dates_sent:(reply,opens,deadline)=>`उत्तर साधारण ${reply} पर्यंत. उत्तर न आल्यास लोकपालाचा मार्ग ${opens} किंवा त्यानंतर, ${deadline} पर्यंत.`,
   upsum:n=>`${n} ओळी वाचल्या`, upsum_example:n=>`उदाहरण बिल &middot; ${n} ओळी वाचल्या`,
@@ -2714,6 +2911,43 @@ function readingChecks(a){
   });
   return {rows,suppressed};
 }
+// R24: what an insurer's reply contains, read from its text. These are only
+// signals, each with the words it was found in: the user confirms every one
+// on screen, and only their answers go into a follow-up or a complaint. What
+// is looked for is what IRDAI says a resolution must contain:
+//  - Master Circular on Protection of Policyholders' Interests (5 Sep 2024),
+//    Part B: resolution "along with the reasons for not accepting the
+//    complaint with specific reference to the relevant terms and conditions of
+//    the policy", and the Ombudsman's name and address "shall also be provided
+//    in the resolution letter given by the insurer";
+//  - Master Circular on Health Insurance Business (29 May 2024), para 17(b):
+//    a partial disallowance explained with full details.
+// "As per policy terms and conditions" with no clause named is NOT a specific
+// reference, so it is not counted. A statute or a circular is not a policy
+// term either; the screen asks the user to judge what was found.
+const RP_CLAUSE=/\b(?:clause|section|condition|exclusion|excl\.?|annexure)\s*(?:no\.?\s*|number\s*)?\(?[a-z]?\d+[a-z0-9.()\/-]*|\bexcl\s?\d{2}\b|\blist\s*-?\s*(?:iv|i{1,3})\b/gi;
+const RP_AMOUNT=/(?:₹|\brs(?![a-z])\.?|\binr(?![a-z]))\s*\.?\s*\d[\d,]*(?:\.\d{1,2})?/gi;
+const RP_BREAKUP=/\b(?:break[\s-]?up|itemi[sz]ed|line[\s-]by[\s-]line|details? of (?:the )?deductions?|deduction details)\b/i;
+const RP_OMB=/\b(?:ombudsman|cioins|bima\s*bharosa)/i;
+const RP_PAY=/\b(?:will|shall)\s+be\s+(?:paid|reimbursed|credited|released|settled|refunded)\b|\b(?:has|have)\s+been\s+(?:paid|reimbursed|credited|released|refunded)\b|\b(?:additional|differential|balance)\s+(?:amount|payment|sum)\b/i;
+const RP_KEEP=/\b(?:regret|unable to (?:consider|accede|accept|entertain)|not (?:payable|admissible|tenable|covered)|non[\s-]?payable|inadmissible|repudiat\w*|rejected|declined|denied|stands? (?:good|valid|justified|correct)|upheld|(?:deducted|disallowed) as per)\b/i;
+const RP_DOCS=/\b(?:submit|provide|furnish|send|share|upload|obtain)\b[^.]{0,60}?\b(?:documents?|bills?|reports?|certificates?|discharge summary|receipts?|prescriptions?)\b/i;
+function checkReply(text){
+  const flat=String(text||'').replace(/\s+/g,' ').trim();
+  // About 45 characters either side, widened to whole words.
+  const snip=m=>{ let a=Math.max(0,m.index-45), b=Math.min(flat.length,m.index+m[0].length+45);
+    while(a>0&&flat[a-1]!==' ') a--; while(b<flat.length&&flat[b]!==' ') b++;
+    return (a>0?'…':'')+flat.slice(a,b).trim()+(b<flat.length?'…':''); };
+  const first=re=>{ const m=re.exec(flat); return m?snip(m):null; };
+  // One quote per stretch of text: matches close together share one excerpt.
+  const reasons=[]; let last=-1e9;
+  for(const m of flat.matchAll(RP_CLAUSE)){ if(m.index-last<90){ continue; } last=m.index; reasons.push(snip(m)); if(reasons.length>=3) break; }
+  const amounts=new Set();
+  for(const m of flat.matchAll(RP_AMOUNT)){ const n=parseAmount(m[0].replace(/^(?:₹|rs|inr)\s*\.?\s*\.?/i,'')).n; if(n!=null&&n>0) amounts.add(n); }
+  const breakup=first(RP_BREAKUP);
+  return { empty:flat.length<20, reasons, amountCount:amounts.size, breakupAt:breakup,
+    breakdown:amounts.size>=4||!!breakup, ombudsman:first(RP_OMB), pay:first(RP_PAY), keep:first(RP_KEEP), docs:first(RP_DOCS) };
+}
 function sectionSums(lines){
   const m={}; lines.forEach(l=>{ const k=l.section||'Uncategorised'; m[k]=(m[k]||0)+(l.total||0); });
   return Object.entries(m).map(([k,v])=>[k,money(v)]);
@@ -3274,6 +3508,253 @@ function buildLetter(a,include,noScroll){
   if(!noScroll) $('letterWrap').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
+/* R24: "The insurer replied, or hasn't". The reply is pasted, or read from a
+   photo (the server only copies its text: /api/read-reply). checkReply() then
+   looks for what IRDAI says a resolution must contain; the user confirms each
+   item, and only those answers go into the follow-up or the complaint. The
+   complaint follows rule 14(2) of the Insurance Ombudsman Rules 2017 (who, the
+   insurer's branch or office, the facts with documents, the loss, the relief
+   sought) and states rule 14(3)/(5) conditions only when the dates show them.
+   A missing detail is listed on screen, never left as a blank in the text.
+   Both drafts are in English, like the letter. Nothing is sent or stored. */
+const okYmd=v=>typeof v==='string'&&validSentOn(v);
+const fmtEnYmd=v=>new Date(v+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+const MONTHS_EN=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+// The date printed on a reply, if it can be read without guessing: a numeric
+// date is used only when day and month cannot be swapped (DD/MM vs MM/DD).
+function rpDate(v){
+  const t=String(v||'').trim(); let y,m,d,x;
+  if((x=/^(\d{4})-(\d{2})-(\d{2})/.exec(t))){ y=+x[1]; m=+x[2]; d=+x[3]; }
+  else if((x=/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/.exec(t))){ const a=+x[1], b=+x[2]; if(a!==b&&a<=12&&b<=12) return null; if(a>12){ d=a; m=b; } else if(b>12){ d=b; m=a; } else { d=a; m=b; } y=+x[3]; }
+  else if((x=/^(\d{1,2})(?:st|nd|rd|th)?[\s.-]+([a-z]{3,9})[\s.,-]+(\d{4})$/i.exec(t))){ d=+x[1]; m=MONTHS_EN.indexOf(x[2].slice(0,3).toLowerCase())+1; y=+x[3]; }
+  else if((x=/^([a-z]{3,9})\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})$/i.exec(t))){ m=MONTHS_EN.indexOf(x[1].slice(0,3).toLowerCase())+1; d=+x[2]; y=+x[3]; }
+  else return null;
+  const p=n=>String(n).padStart(2,'0'), out=y+'-'+p(m)+'-'+p(d);
+  return m>=1&&okYmd(out)?out:null;
+}
+function rpContext(){
+  const D=readLetterDetails(), s=settleOk();
+  const hasBill=!!(window.__lastExtraction&&window.__lastExtraction.line_items&&window.__lastExtraction.line_items.length);
+  const H=(hasBill&&window.__lastExtraction.header)||{};
+  const pname=(typeof H.patient_name==='string'&&H.patient_name.trim()&&!/^(n\/?a|nil|none|-|--)$/i.test(H.patient_name.trim()))?H.patient_name.trim():null;
+  const v=id=>$(id).value.trim();
+  return {D,s,hasBill,H,pname,sender:D.name||pname||'',insurer:D.insurer||D.gro||'',
+    sent:okYmd(v('rp_sent'))?v('rp_sent'):null, rdate:RP.status==='yes'&&okYmd(v('rp_date'))?v('rp_date'):null,
+    ref:RP.status==='yes'?v('rp_ref'):'', today:fmtEnYmd(todayYmd()), now:todayYmd()};
+}
+// Where the case stands under rule 14(3): can it go to the Ombudsman, from and until when.
+function rpWindow(c){
+  if(RP.status==='no'){
+    if(!c.sent) return {known:false};
+    const od=ombDates(c.sent);
+    return {known:true,noReply:true,reply:od.reply,opens:od.opens,deadline:od.deadline,open:c.now>=od.opens,late:c.now>od.deadline};
+  }
+  if(!c.rdate) return {known:false,noReply:false};
+  const deadline=addMonthsYmd(c.rdate,12);
+  return {known:true,noReply:false,open:true,deadline,late:c.now>deadline};
+}
+function rpMissing(){ const m=RP.ans||{}; return {reasons:!m.reasons,breakdown:!m.breakdown,omb:!m.omb}; }
+function buildFollowUp(c){
+  const {D}=c, L=[], noReply=RP.status==='no', miss=rpMissing();
+  if(c.sender) L.push(c.sender); if(D.address) L.push(D.address);
+  L.push(c.today,``,`To: The Grievance Redressal Officer`); if(c.insurer) L.push(`    ${c.insurer}`);
+  L.push(``,`Subject: ${noReply?'Reminder':'Follow-up'}: request for a line-by-line explanation of deductions${D.claim?` - Claim no. ${D.claim}`:''}${!noReply&&c.ref?` (your reference ${c.ref})`:''}`,``);
+  if(noReply) L.push(`I wrote to you${c.sent?` on ${fmtEnYmd(c.sent)}`:''} asking for a line-by-line explanation of the deductions from my claim, with the policy terms relied on for each. I have not received a reply. I attach a copy of my letter.`,``,
+    `IRDAI's Master Circular on Protection of Policyholders' Interests (5 September 2024, Part B) provides that insurers "should provide resolution to the complaint within 14 days". Please reply to my letter.`,``);
+  else {
+    L.push(`Thank you for your reply${c.rdate?` dated ${fmtEnYmd(c.rdate)}`:''} to my letter${c.sent?` of ${fmtEnYmd(c.sent)}`:''}. It does not yet give the following, which I ask you to send:`,``);
+    let n=0;
+    if(miss.reasons) L.push(`  ${++n}. The reasons for not accepting my request, with reference to the specific terms and conditions of my policy. IRDAI's Master Circular on Protection of Policyholders' Interests (5 September 2024, Part B) provides that insurers should resolve a complaint "along with the reasons for not accepting the complaint with specific reference to the relevant terms and conditions of the policy".`);
+    if(miss.breakdown) L.push(`  ${++n}. A line-by-line statement of every amount deducted, with the policy clause relied on for each. IRDAI's Master Circular on Health Insurance Business (29 May 2024, para 17(b)) requires that where a claim is disallowed partially, details are conveyed to the claimant "along with full details giving reference to the specific terms and conditions of the policy document".`);
+    if(miss.omb) L.push(`  ${++n}. The name and address of the Insurance Ombudsman of competent jurisdiction, which the same Master Circular on Protection of Policyholders' Interests (Part B) says "shall also be provided in the resolution letter given by the insurer".`);
+    L.push(``);
+  }
+  if(!noReply&&RP.docs) L.push(`You asked me to obtain documents from the hospital. IRDAI's Master Circular on Health Insurance Business (29 May 2024, para 17(c)) provides that insurers and TPAs "shall collect the required documents from the Hospitals" and that the "Policyholder shall not be required to submit the documents". Please collect any documents you need from the hospital directly.`,``);
+  L.push(`I would be grateful for a reply within 14 days. If the matter is not resolved, I may approach the Insurance Ombudsman under the Insurance Ombudsman Rules, 2017.`,``,`Yours faithfully,`);
+  const sig=[c.sender,D.policy?`Policy no. ${D.policy}`:'',D.contact].filter(Boolean); if(sig.length) L.push(sig.join('  -  '));
+  return L.join('\n');
+}
+function buildComplaint(c,o){
+  const {D,s}=c, inr=makeInr('en'), L=[], reimb=!!(s&&s.mode==='reimb'), w=o.win, noReply=RP.status==='no';
+  [c.sender,D.address,D.contact].filter(Boolean).forEach(x=>L.push(x));
+  L.push(c.today,``);
+  const off=o.offices.length===1?o.offices[0]:null;
+  L.push(`To: The Insurance Ombudsman${off?`, ${off.office}`:''}`); if(off) L.push(`    ${off.address}`,`    ${off.email}`);
+  L.push(``,`Subject: Complaint under rule 14 of the Insurance Ombudsman Rules, 2017${c.insurer?` - ${c.insurer}`:''}${D.claim?`, claim no. ${D.claim}`:''}`,``);
+  let n=0; const sec=t=>L.push(`${++n}. ${t}`);
+  const who=[c.sender,D.address,D.contact].filter(Boolean);
+  if(who.length){ sec('Complainant'); who.forEach(x=>L.push(`   ${x}`)); L.push(``); }
+  const ins=[[c.insurer,o.branch].filter(Boolean).join(', '),D.policy?`Policy no. ${D.policy}`:'',D.claim?`Claim no. ${D.claim}`:''].filter(Boolean);
+  if(ins.length){ sec('Insurer complained against'); ins.forEach(x=>L.push(`   ${x}`)); L.push(``); }
+  sec('Facts'); const F=[];
+  const at=c.H.hospital_name?` at ${c.H.hospital_name}`:'', dt=(c.H.admission_datetime&&c.H.discharge_datetime)?` between ${c.H.admission_datetime} and ${c.H.discharge_datetime}`:'';
+  F.push(`${c.pname||'The patient'} was hospitalised${at}${dt}, and a claim was made under the policy above.`);
+  if(s){
+    F.push(reimb
+      ? `I paid the hospital's bill of ${inr.format(s.total)} and claimed it back. The insurer reimbursed ${inr.format(s.insurer)}, leaving ${inr.format(s.counter)} not reimbursed.`
+      : `The hospital's bill was ${inr.format(s.total)}. The insurer approved ${inr.format(s.insurer)}${s.disc?` and the hospital allowed a discount of ${inr.format(s.disc)}`:''}; I paid ${inr.format(s.counter)} at discharge.`);
+    F.push(s.copayUnknown
+      ? `I do not know how much of the ${inr.format(s.counter)} was co-payment under my policy; the insurer has not shown how it was split.`
+      : `By my calculation, ${inr.format(s.copayAmt)} of this was co-payment and ${inr.format(s.deduction)} was deducted without an itemised explanation.`);
+  }
+  F.push(`${c.sent?`On ${fmtEnYmd(c.sent)} I`:'I'} wrote to the insurer's grievance redressal officer asking for a line-by-line explanation of the deductions, with the policy terms relied on for each (copy attached).`);
+  if(noReply) F.push(w.known&&w.open?`I have not received a reply, and more than one month has passed since I sent my letter.`:`I have not received a reply.`);
+  else {
+    F.push(`The insurer replied${c.rdate?` on ${fmtEnYmd(c.rdate)}`:''}${c.ref?` (reference ${c.ref})`:''}${RP.outcome==='keep'?' and did not withdraw the deduction':''}.`);
+    const miss=rpMissing(), gaps=[miss.reasons&&'give its reasons with reference to the specific terms and conditions of my policy',miss.breakdown&&'show the amounts deducted line by line',miss.omb&&"give the Insurance Ombudsman's details"].filter(Boolean);
+    if(gaps.length) F.push(`The reply does not ${gaps.length>1?gaps.slice(0,-1).join(', ')+' or '+gaps[gaps.length-1]:gaps[0]}. IRDAI's Master Circular on Protection of Policyholders' Interests (5 September 2024, Part B) and its Master Circular on Health Insurance Business (29 May 2024, para 17(b)) provide for these.`);
+  }
+  F.forEach((x,i)=>L.push(`   ${String.fromCharCode(97+i)}) ${x}`)); L.push(``);
+  sec('Documents attached');
+  const docs=[`My health insurance policy`, c.hasBill?`The hospital's final bill and itemised bill`:`The hospital's final bill`,
+    reimb?`The insurer's settlement letter`:`The insurer's settlement letter and my payment receipt from the hospital`,
+    `My letter to the insurer${c.sent?` dated ${fmtEnYmd(c.sent)}`:''}`];
+  if(!noReply) docs.push(`The insurer's reply${c.rdate?` dated ${fmtEnYmd(c.rdate)}`:''}`);
+  docs.forEach(x=>L.push(`   - ${x}`)); L.push(``);
+  if(o.amount>0){
+    sec('Nature and extent of the loss'); L.push(`   ${inr.format(o.amount)}, ${reimb?'not reimbursed':'deducted from my claim'}, without an explanation with reference to the terms and conditions of my policy.`,``);
+    sec('Relief sought'); L.push(`   I request the Insurance Ombudsman to direct the insurer to pay ${inr.format(o.amount)}, with interest as provided in rule 17(7) of the Insurance Ombudsman Rules, 2017, or, for any part it maintains is not payable, to state the specific terms and conditions of my policy relied on.`,``);
+  } else {
+    sec('Relief sought'); L.push(`   I request the Insurance Ombudsman to direct the insurer to pay the amount deducted without a basis in my policy, with interest as provided in rule 17(7) of the Insurance Ombudsman Rules, 2017, or to state the specific terms and conditions of my policy relied on for each deduction.`,``);
+  }
+  sec('Declaration');
+  if(c.sent) L.push(`   I made a written representation to the insurer on ${fmtEnYmd(c.sent)} (rule 14(3)(a)).`);
+  if(w.known&&w.open&&!w.late) L.push(noReply?`   This complaint is made within one year after one month from the date I sent it (rule 14(3)(b)(iii)).`:`   This complaint is made within one year of the insurer's reply (rule 14(3)(b)).`);
+  L.push(`   The same subject matter is not pending before, and has not been decided by, any court, consumer forum or arbitrator (rule 14(5)).`,``,`Yours faithfully,`);
+  if(c.sender) L.push(c.sender);
+  return L.join('\n');
+}
+// The status part of the card: dates, the checklist, and what to do next.
+function rpRender(){
+  const T_=S(), c=rpContext(), w=rpWindow(c), out=$('rpResult');
+  if(!RP.status){ out.innerHTML=''; return; }
+  let h='';
+  if(RP.status==='no'){
+    h+=!w.known?`<p class="rpnote">${T_.rp_need_sent}</p>`
+      : w.late?`<p class="rpwarn">${T_.rp_late(fmtYmd(w.opens),fmtYmd(w.deadline))}</p>`
+      : w.open?`<p class="rpnote">${T_.rp_noreply_open(fmtYmd(w.deadline))}</p>`
+      : `<p class="rpnote">${T_.rp_wait(fmtYmd(w.reply),fmtYmd(w.opens))}</p>`;
+    h+=`<div class="rpacts">${w.known&&!w.open?'':`<button class="btn sm" type="button" data-rpact="complaint">${T_.rp_btn_complaint}</button>`}<button class="btn sm ghost" type="button" data-rpact="follow">${T_.rp_btn_remind}</button></div>`;
+    out.innerHTML=h; return;
+  }
+  if(RP.err){ out.innerHTML=`<p class="rpwarn" role="alert">${T_.rp_empty}</p>`; return; }
+  if(!RP.checked){ out.innerHTML=''; return; }
+  const r=RP.res, q=x=>`&ldquo;${esc(x)}&rdquo;`;
+  const item=(k,title,found,none,hint)=>`<label class="chk"><input type="checkbox" data-rpk="${k}"${RP.ans[k]?' checked':''}><span><b>${title}</b><small>${found?found+(hint?' '+hint:''):none}</small></span></label>`;
+  h+=`<fieldset class="rpchk" id="rpChecks"><legend tabindex="-1">${T_.rp_chk_head}</legend>`
+    +item('reasons',T_.rp_k_reasons,r.reasons.length?r.reasons.map(x=>T_.rp_found(q(x))).join('<br>'):'',T_.rp_none_reasons,T_.rp_found_reasons_hint)
+    +item('breakdown',T_.rp_k_breakdown,r.amountCount>=4?T_.rp_found_amounts(r.amountCount):r.breakupAt?T_.rp_found(q(r.breakupAt)):'',T_.rp_none_breakdown)
+    +item('omb',T_.rp_k_omb,r.ombudsman?T_.rp_found(q(r.ombudsman)):'',T_.rp_none_omb)
+    +`</fieldset>`;
+  const says=[r.keep,r.pay].filter(Boolean);
+  if(says.length) h+=`<p class="rpsays">${T_.rp_says} ${says.map(q).join(' &middot; ')}</p>`;
+  h+=`<div class="k" id="rpOutcomeLbl" style="margin:14px 0 6px">${T_.rp_outcome_q}</div><div class="chips seg" role="group" aria-labelledby="rpOutcomeLbl">`
+    +[['pay',T_.rp_o_pay],['keep',T_.rp_o_keep]].map(([v,l])=>`<button type="button" class="chip${RP.outcome===v?' on':''}" data-rpo="${v}" aria-pressed="${RP.outcome===v}">${l}</button>`).join('')+`</div>`;
+  h+=`<label class="chk"><input type="checkbox" id="rpDocs"${RP.docs?' checked':''}><span>${T_.rp_docs}</span></label>`;
+  if(c.sent&&c.rdate&&c.rdate>=c.sent){ const days=Math.round((Date.parse(c.rdate)-Date.parse(c.sent))/864e5); h+=`<p class="rpnote">${T_.rp_days(days)}</p>`; }
+  h+=`<div id="rpActs"></div>`;
+  out.innerHTML=h; rpRenderActs();
+}
+function rpRenderActs(){
+  const el=$('rpActs'); if(!el) return;
+  const T_=S(), c=rpContext(), w=rpWindow(c), m=rpMissing(), gaps=m.reasons||m.breakdown||m.omb;
+  let h='';
+  if(RP.outcome==='pay'&&!gaps) h+=`<p class="rpnote">${T_.rp_paid_ok}</p>`;
+  else h+=`<p class="rpnote">${w.known?(w.late?T_.rp_late_reply(fmtYmd(w.deadline)):T_.rp_until(fmtYmd(w.deadline))):T_.rp_until_nodate}</p>`;
+  h+=`<div class="rpacts">${gaps?`<button class="btn sm ghost" type="button" data-rpact="follow">${T_.rp_btn_follow}</button>`:''}${(RP.outcome!=='pay'||gaps)?`<button class="btn sm" type="button" data-rpact="complaint">${T_.rp_btn_complaint}</button>`:''}</div>`;
+  el.innerHTML=h;
+}
+// The drafts. Inputs in the complaint box are static, so typing never loses focus.
+function rpRenderOut(){
+  const T_=S(), c=rpContext();
+  $('rpFollowBox').classList.toggle('hide',RP.show!=='follow'); $('rpComplaintBox').classList.toggle('hide',RP.show!=='complaint');
+  const tools=(id,name)=>`<div class="rpbtns"><button class="btn sm ghost" type="button" data-rpcopy="${id}">${T_.rp_copy}</button>${name?`<button class="btn sm ghost" type="button" data-rpdl="${id}" data-name="${name}">${T_.rp_download}</button>`:''}</div>`;
+  const en=LANG!=='en'?`<p class="ldnote" style="margin-left:0">${T_.rp_note_en}</p>`:'';
+  if(RP.show==='follow'){ $('rpFOut').innerHTML=`${en}<div class="letter" id="rpFollowText">${esc(buildFollowUp(c))}</div>${tools('rpFollowText')}`; return; }
+  if(RP.show!=='complaint') return;
+  const w=rpWindow(c), offices=ombudsmanFor(c.D.state), branch=$('rp_branch').value.trim();
+  const amt=parseAmount($('rp_amount').value).n, amount=amt!=null&&amt>0?money(amt):0;
+  const s=c.s; $('rpAmountNote').textContent=!s?'':s.copayUnknown?T_.rp_amount_unknown:s.deduction>0?T_.rp_amount_pre(makeInr(LANG).format(s.deduction)):'';
+  const miss=[[!c.sender,'rp_m_name'],[!c.D.address,'rp_m_address'],[!c.insurer,'rp_m_insurer'],[!c.D.policy,'rp_m_policy'],[!branch,'rp_m_branch'],[!c.D.state,'rp_m_state'],[!c.sent,'rp_m_sent'],[!(amount>0),'rp_m_amount']].filter(x=>x[0]).map(x=>T_[x[1]]);
+  let h='';
+  if(RP.status==='no'&&w.known&&!w.open) h+=`<p class="rpwarn">${T_.rp_too_early(fmtYmd(w.opens))}</p>`;
+  if(w.known&&w.late) h+=`<p class="rpwarn">${RP.status==='no'?T_.rp_late(fmtYmd(w.opens),fmtYmd(w.deadline)):T_.rp_late_reply(fmtYmd(w.deadline))}</p>`;
+  if(amount>5000000) h+=`<p class="rpwarn">${T_.rp_over_cap}</p>`;
+  if(miss.length) h+=`<p class="rpnote">${T_.rp_missing(miss.join(', '))} <button class="link" type="button" id="rpGoDetails">${T_.rp_go_details}</button></p>`;
+  if(!$('rp_court').checked){ $('rpCOut').innerHTML=h+`<p class="rpnote">${T_.rp_court_needed}</p>`; return; }
+  const readOn=fmtYmd(OMBUDSMAN_READ_ON);
+  h+=`${en}<div class="letter" id="rpComplaintText">${esc(buildComplaint(c,{offices,branch,amount,win:w}))}</div>${tools('rpComplaintText','ombudsman-complaint.txt')}`
+    +`<div class="k" style="margin:16px 0 6px">${T_.rp_where_head}</div><p class="rpnote" style="margin-top:0">${T_.rp_where}</p>`
+    +(!c.D.state?`<p class="ombnote">${T_.omb_pick}</p>`:`${offices.length>1?`<p class="rpnote">${T_.omb_split}</p>`:''}${offices.map(o=>`<div class="ombo"><b>${esc(T_.omb_office(o.office))}</b><br>${esc(o.address)}<br>${esc(T_.omb_tel)} ${esc(o.tel)} &middot; <a href="mailto:${esc(o.email)}">${esc(o.email)}</a></div>`).join('')}<p class="ombsrc">${T_.omb_src(readOn)}</p>`)
+    +`<p class="ldnote" style="margin-left:0">${T_.rp_not_legal}</p>`;
+  $('rpCOut').innerHTML=h;
+}
+$('rp_sent').max=todayYmd(); $('rp_date').max=todayYmd();
+document.querySelectorAll('#rpStatusSeg [data-rp]').forEach(b=>b.addEventListener('click',()=>{
+  RP.status=b.dataset.rp; RP.show=null; RP.err=false;
+  document.querySelectorAll('#rpStatusSeg [data-rp]').forEach(x=>{ const on=x===b; x.classList.toggle('on',on); x.setAttribute('aria-pressed',String(on)); });
+  $('rpReplied').classList.toggle('hide',RP.status!=='yes'); rpRender(); rpRenderOut();
+}));
+$('rpCheckBtn').addEventListener('click',()=>{
+  const r=checkReply($('rp_text').value);
+  if(r.empty){ RP.err=true; RP.checked=false; }
+  else { RP.err=false; RP.checked=true; RP.res=r; RP.ans={reasons:r.reasons.length>0,breakdown:r.breakdown,omb:!!r.ombudsman}; RP.docs=!!r.docs; RP.outcome=null; }
+  RP.show=null; rpRender(); rpRenderOut();
+  const lg=document.querySelector('#rpChecks legend'); if(lg) lg.focus();
+});
+['rp_sent','rp_date','rp_ref'].forEach(id=>$(id).addEventListener('input',()=>{ if(RP.status==='no'||RP.checked){ if(RP.status==='no') rpRender(); else rpRenderActs(); } if(RP.show) rpRenderOut(); }));
+['rp_branch','rp_amount','rp_court'].forEach(id=>$(id).addEventListener(id==='rp_court'?'change':'input',rpRenderOut));
+$('replyCard').addEventListener('change',e=>{
+  const k=e.target.closest('input[data-rpk]'); if(k){ RP.ans[k.dataset.rpk]=k.checked; rpRenderActs(); if(RP.show) rpRenderOut(); return; }
+  if(e.target.id==='rpDocs'){ RP.docs=e.target.checked; if(RP.show) rpRenderOut(); }
+});
+$('replyCard').addEventListener('click',e=>{
+  const o=e.target.closest('[data-rpo]');
+  if(o){ RP.outcome=o.dataset.rpo; o.parentNode.querySelectorAll('[data-rpo]').forEach(x=>{ const on=x===o; x.classList.toggle('on',on); x.setAttribute('aria-pressed',String(on)); }); rpRenderActs(); if(RP.show) rpRenderOut(); return; }
+  const a=e.target.closest('[data-rpact]');
+  if(a){ RP.show=a.dataset.rpact;
+    if(RP.show==='complaint'&&!$('rp_amount').value.trim()){ const s=settleOk(); if(s&&!s.copayUnknown&&s.deduction>0) $('rp_amount').value=String(s.deduction); }
+    rpRenderOut(); const box=$(RP.show==='follow'?'rpFollowBox':'rpComplaintBox'); box.scrollIntoView({behavior:'smooth',block:'start'});
+    const hd=box.querySelector('.k'); if(hd){ hd.tabIndex=-1; hd.focus({preventScroll:true}); } return; }
+  const cp=e.target.closest('[data-rpcopy]');
+  if(cp){ const T_=S(); copyText($(cp.dataset.rpcopy).textContent).then(done=>{ cp.textContent=done?T_.copied_btn:T_.copy_failed_btn; announce(cp.textContent); setTimeout(()=>{ cp.textContent=T_.rp_copy; },2000); }); return; }
+  const dl=e.target.closest('[data-rpdl]');
+  if(dl){ downloadText($(dl.dataset.rpdl).textContent,dl.dataset.name,'text/plain;charset=utf-8'); return; }
+  if(e.target.closest('#rpGoDetails')){ $('letterDetails').scrollIntoView({behavior:'smooth',block:'start'}); $('ld_name').focus({preventScroll:true}); }
+});
+// A photo of the reply: read with the same reader, limits and own-key path as
+// bill pages, but through /api/read-reply, which only copies the text.
+let _rpReading=false;
+$('rpPhotoBtn').addEventListener('click',()=>$('rp_file').click());
+$('rp_file').addEventListener('change',()=>{ const files=[...$('rp_file').files].filter(isPhoto).slice(0,4); $('rp_file').value=''; if(files.length) rpReadPhotos(files); });
+async function rpReadPhotos(files){
+  if(_rpReading) return; _rpReading=true;
+  const T_=S(), st=$('rpReadStatus'), say=(m,err)=>{ st.textContent=m; st.classList.remove('hide'); st.classList.toggle('err',!!err); };
+  $('rpPhotoBtn').disabled=true;
+  try{
+    await configReady;
+    const key=$('apiKey').value.trim();
+    if(!USE_PROXY&&!key){ say(T_.rp_need_key,true); return; }
+    say(T_.rp_reading(1,files.length));
+    const toSend=await Promise.all(files.map(downscaleImage));
+    const results=await readPages(toSend,{key,useProxy:USE_PROXY,proxyState:_proxyState,fetchFn:(u,o)=>fetch(u,o),toB64,stripFence,
+      directRequest:directReplyRequest,endpoint:'api/read-reply',timeoutMs:READ_TIMEOUT_MS,onProgress:(i,n)=>say(T_.rp_reading(i+1,n))});
+    const texts=[]; let notLetter=0, failKind=null;
+    results.forEach(r=>{
+      if(r.status==='ok'){ const p=r.page;
+        if(p.is_insurer_letter===false||typeof p.text!=='string'||!p.text.trim()){ notLetter++; return; }
+        texts.push(p.text.trim().slice(0,8000));
+        if(!$('rp_ref').value.trim()&&typeof p.reference==='string'&&p.reference.trim()) $('rp_ref').value=p.reference.trim().slice(0,80);
+        const d=rpDate(p.letter_date); if(d&&!$('rp_date').value) $('rp_date').value=d;
+      } else if(r.status==='failed'||r.status==='skipped') failKind=failKind||r.kind;
+    });
+    if(texts.length){ const ta=$('rp_text'); ta.value=((ta.value.trim()?ta.value.trim()+'\n\n':'')+texts.join('\n\n')).slice(0,20000); }
+    if(!texts.length){ say(failKind==='busy'||failKind==='broken'?T_.rp_busy:failKind==='key'||failKind==='quota'?T_.rp_need_key:failKind?T_.rp_read_err:notLetter?T_.rp_read_notletter(notLetter):T_.rp_read_none,true); return; }
+    say(T_.rp_read_done(texts.length)+(notLetter?' '+T_.rp_read_notletter(notLetter):'')+(failKind?' '+T_.rp_read_err:''));
+  }catch(e){ say(S().rp_read_err,true); }
+  finally{ _rpReading=false; $('rpPhotoBtn').disabled=false; }
+}
+
 /* upload + Gemini */
 const KEY_LS='clearbill_gemini_key';
 let USE_PROXY=false;
@@ -3337,7 +3818,8 @@ function kindForStatus(status,direct,code){
   return 'server';
 }
 // One page in, one structured object out; a failure is an Error with .kind.
-// o: {key,useProxy,proxyState,fetchFn,toB64,stripFence,directRequest,signal,timeoutMs,isOffline}
+// o: {key,useProxy,proxyState,fetchFn,toB64,stripFence,directRequest,signal,timeoutMs,isOffline,endpoint}
+// endpoint (R24): the server route; 'api/read-bill' unless a caller names another.
 async function readOnePage(file,o){
   const mime=fileMime(file);
   const b64=await o.toB64(file);
@@ -3350,7 +3832,7 @@ async function readOnePage(file,o){
     // If the free service says it is busy (429), the user can paste their own
     // free Gemini key and continue — then this page goes direct to Google.
     if(o.useProxy && !(o.proxyState.busy && o.key)){
-      const res=await o.fetchFn('api/read-bill',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mime_type:mime,data:b64}),signal:ac.signal});
+      const res=await o.fetchFn(o.endpoint||'api/read-bill',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mime_type:mime,data:b64}),signal:ac.signal});
       txt=await res.text();
       if(!res.ok){ let code=''; try{ code=JSON.parse(txt).error||''; }catch(e){}
         const kind=kindForStatus(res.status,false,code); if(kind==='busy'||kind==='broken') o.proxyState.busy=true; throw mkErr(kind,res.status); }
@@ -3578,6 +4060,7 @@ function directRequest(key,mime,b64){
     body:{contents:[{parts:[{text:EXTRACT_PROMPT},{inline_data:{mime_type:mime,data:b64}}]}],generationConfig:{temperature:0,response_mime_type:"application/json"}}
   };
 }
+function directReplyRequest(key,mime,b64){ const r=directRequest(key,mime,b64); r.body.contents[0].parts[0].text=REPLY_PROMPT; return r; }
 function setReadingUi(on){
   document.body.classList.toggle('is-reading',on);
   $('cancelReadBtn').classList.toggle('hide',!on);
@@ -3720,6 +4203,10 @@ function applyStaticI18n(){
   if($('howList')) $('howList').innerHTML=(Sv('how_items')||[]).map(([t,d])=>'<li><b>'+esc(t)+'</b>'+esc(d)+'</li>').join('');
   setFeedbackLinks(); renderLangNote();
   [['ldLblGro','ld_gro'],['ldGroNone','ld_gro_none'],['ldLblDocs','ld_docs'],['ldLblSubmitted','ld_submitted']].forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
+  [['rpHead','rp_head'],['rpIntro','rp_intro'],['rpLblSent','rp_sent'],['rpStatusLbl','rp_status_q'],['rpYesBtn','rp_yes'],['rpNoBtn','rp_no'],['rpLblText','rp_text'],['rpTextNote','rp_text_note'],
+   ['rpPhotoBtn','rp_photo'],['rpLblDate','rp_date'],['rpLblRef','rp_ref'],['rpCheckBtn','rp_check'],['rpFHead','rp_follow_head'],['rpCHead','rp_c_head'],['rpCIntro','rp_c_intro'],
+   ['rpLblBranch','rp_branch'],['rpLblAmount','rp_amount'],['rpLblCourt','rp_court']].forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
+  if(typeof rpRender==='function'&&RP.status){ rpRender(); if(RP.show) rpRenderOut(); }
   $('secSettlement').textContent=T_.sec_settlement;
   $('lblTotal').innerHTML=T_.lbl_total;
   $('lblCounter').innerHTML=T_.lbl_counter;
@@ -3874,6 +4361,7 @@ function renderLetterTab(){
   const s=settleOk(), canWrite = hasBill || !!s;
   $('letterEmpty').classList.toggle('hide', canWrite);
   $('letterConfirm').classList.toggle('hide', !canWrite);
+  $('replyCard').classList.toggle('hide', !canWrite);
   if(!canWrite) return;
   if(_userInclFor!==data){ _userIncl={}; _userInclFor=data; }
   const a=analyseFor(data);
@@ -3895,6 +4383,7 @@ $('letterIncludes').addEventListener('change',e=>{ const cb=e.target.closest('in
 document.querySelectorAll('#letterDetails input,#letterDetails textarea,#letterDetails select').forEach(el=>el.addEventListener('input',()=>{
   saveLetterDetails();
   if(_letterGenerated && window.__letterA) buildLetter(window.__letterA,_lastLetterInclude,true);
+  if(RP.show) rpRenderOut();
 }));
 // One button that removes everything this app keeps in the browser except the language choice.
 // R20: it used to wipe saved checks at once, with no question, a few
@@ -4188,6 +4677,7 @@ function openLocalCheck(r){
   markChips(F.copay.value); saveDraft();
   window.__lastExtraction=r.extraction.line_items.length?r.extraction:null;
   calc();                                  // renders the report from the restored extraction
+  if(validSentOn(r.sentOn)) $('rp_sent').value=r.sentOn;  // R24: the reply card's dates start from it
   switchTab('findings');
   const d=r.savedAt?new Date(r.savedAt).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'}):'';
   setStatus(S().local_opened(d),false);

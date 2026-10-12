@@ -27,6 +27,11 @@ const STUB = `
     u = String(u);
     if (u.includes('api/config')) { await wait(window.__cfgDelay); let rd = 'ok'; try { rd = localStorage.getItem('__test_reader') || 'ok'; } catch (e) {} return new Response(JSON.stringify({ proxy: true, reader: rd }), { status: 200 }); }
     if (u.includes('api/impact')) { let b = '{"enabled":false}'; try { b = localStorage.getItem('__test_impact') || b; } catch (e) {} return new Response(b, { status: 200 }); }
+    if (u.includes('api/read-reply')) { // R24: photo 1 is the insurer's letter, photo 2 is not a letter
+      window.__replyCalls = (window.__replyCalls || 0) + 1;
+      if (window.__mode === 'broken') return new Response(JSON.stringify({ error: 'broken' }), { status: 502 });
+      return new Response(JSON.stringify(window.__replyCalls % 2 ? { is_insurer_letter: true, text: 'We regret that the deduction of Rs. 5,962 stands as per policy terms.', letter_date: '2 October 2026', reference: 'GRV-88' } : { is_insurer_letter: false, text: '', letter_date: null, reference: null }), { status: 200 });
+    }
     if (u.includes('api/read-bill')) {
       const b = o && o.body ? JSON.parse(o.body) : null;
       window.__calls.push(b ? b.mime_type : '?');
@@ -670,6 +675,72 @@ const STUB = `
     ok(await ev(`return window.__lastExtraction.line_items.length===3 && window.__lastExtraction.line_items[1].item==='BALANCE BROUGHT FORWARD' && !window.__lastExtraction._orig`), 'Undo puts the left-out row back in its place');
     await ev(`window.__lastExtraction={header:{},line_items:[{item:'X',total:5}],_orig:[{item:'<img src=x onerror="window.__xss23=1">',total:5}],_edits:{'0':{total:'<b>bad</b>',quantity:'<i>'},'7':{drop:true},'__proto__':{drop:true}}}; calc(); switchTab('findings'); document.getElementById('readChecks').open=true;`); await sleep(300);
     ok(await ev(`return !document.querySelector('#readChecks img') && !window.__xss23 && !document.querySelector('#readChecks b, #readChecks i') && /You corrected 1 row/.test(document.querySelector('#readChecks summary').textContent)`), 'corrections from a file are re-checked: text shown as text, out-of-range rows ignored, values read as numbers only');
+
+    console.log('== R24: no reply from the insurer: reminder, then the Ombudsman');
+    await fresh(); await ev(`setLang('en'); document.getElementById('egBtn').click();`); await sleep(500);
+    await ev(`switchTab('letter');`); await sleep(150);
+    ok(await ev(`const c=document.getElementById('replyCard'); return !c.classList.contains('hide') && !c.open && /The insurer replied, or hasn't/.test(c.querySelector('summary').textContent)`), 'the Letter tab has a folded "The insurer replied, or hasn\'t" card once there is a check');
+    await ev(`const c=document.getElementById('replyCard'); c.open=true; const s=document.getElementById('rp_sent'); s.value=addDaysYmd(todayYmd(),-5); s.dispatchEvent(new Event('input',{bubbles:true})); document.getElementById('rpNoBtn').click();`); await sleep(150);
+    const nr1 = await ev(`return {t: document.getElementById('rpResult').textContent, complaintBtn: !!document.querySelector('#rpResult [data-rpact="complaint"]'), pressed: document.getElementById('rpNoBtn').getAttribute('aria-pressed')}`);
+    ok(nr1.pressed === 'true' && /A reply is due around .* If none comes, you can go to the Insurance Ombudsman on or after/.test(nr1.t) && !nr1.complaintBtn, 'sent 5 days ago: it gives the reply date and when the Ombudsman route opens, and offers no complaint yet');
+    await ev(`const s=document.getElementById('rp_sent'); s.value=addDaysYmd(todayYmd(),-40); s.dispatchEvent(new Event('input',{bubbles:true}));`); await sleep(150);
+    const nr2 = await ev(`return {t: document.getElementById('rpResult').textContent, dl: fmtYmd(ombDates(addDaysYmd(todayYmd(),-40)).deadline)}`);
+    ok(nr2.t.includes('More than a month has passed with no reply. You can take this to the Insurance Ombudsman until ' + nr2.dl), 'sent 40 days ago: the Ombudsman route is open, with its last day (rule 14(3)): ' + nr2.dl);
+    await ev(`document.querySelector('#rpResult [data-rpact="follow"]').click();`); await sleep(200);
+    const rem = await ev(`return document.getElementById('rpFollowText').textContent`);
+    ok(/Subject: Reminder: request for a line-by-line explanation of deductions/.test(rem) && /I have not received a reply/.test(rem) && /"should provide resolution to the complaint within 14 days"/.test(rem) && !/[\[\]]|undefined|null/.test(rem), 'the reminder says no reply came, quotes the 14 days, and has no blanks');
+    await ev(`document.querySelector('#rpResult [data-rpact="complaint"]').click();`); await sleep(200);
+    const c0 = await ev(`return {box: !document.getElementById('rpComplaintBox').classList.contains('hide'), follow: document.getElementById('rpFollowBox').classList.contains('hide'), amt: document.getElementById('rp_amount').value, out: document.getElementById('rpCOut').textContent, draft: !!document.getElementById('rpComplaintText'), note: document.getElementById('rpAmountNote').textContent}`);
+    ok(c0.box && c0.follow && c0.amt === '5962.89' && /₹5,962\.89 not itemised/.test(c0.note), 'the complaint form opens with the amount not itemised filled in (₹5,962.89), and says where it came from');
+    ok(!c0.draft && /Tick the box above .*\(rule 14\(5\)\)/.test(c0.out), 'no complaint is drafted until the user confirms the matter is not before a court, consumer commission or arbitrator (rule 14(5))');
+    await ev(`const b=document.getElementById('rp_court'); b.checked=true; b.dispatchEvent(new Event('change',{bubbles:true}));`); await sleep(150);
+    let ct = await ev(`return {t: document.getElementById('rpComplaintText').textContent, out: document.getElementById('rpCOut').textContent}`);
+    ok(/Subject: Complaint under rule 14 of the Insurance Ombudsman Rules, 2017/.test(ct.t) && /I have not received a reply, and more than one month has passed since I sent my letter\./.test(ct.t) && /within one year after one month from the date I sent it \(rule 14\(3\)\(b\)\(iii\)\)/.test(ct.t) && /not pending before, and has not been decided by, any court, consumer forum or arbitrator \(rule 14\(5\)\)/.test(ct.t), 'the complaint states the no-reply route and both time limits only because the dates show them, and the rule 14(5) declaration');
+    ok(/Nature and extent of the loss\n   ₹5,962\.89, deducted from my claim/.test(ct.t) && /direct the insurer to pay ₹5,962\.89, with interest as provided in rule 17\(7\)/.test(ct.t) && /Documents attached/.test(ct.t) && /The hospital's final bill and itemised bill/.test(ct.t), 'it has the parts rule 14(2) asks for: facts, documents, the loss and the relief sought');
+    ok(/Add these before you file: your name, your address, the insurer's name, the policy number, the insurer's branch or office, your state/.test(ct.out) && !/[\[\]]|undefined|null/.test(ct.t), 'missing details are listed on screen, never left as blanks in the text');
+    const st1 = await ev(`return INDIA_STATES.find(s=>ombudsmanFor(s).length===1)`);
+    await ev(`for(const [id,v] of [['ld_name','Asha Rao'],['ld_address','12 Lake Road'],['ld_insurer','Star Health and Allied'],['ld_policy','P-991']]){ const e=document.getElementById(id); e.value=v; e.dispatchEvent(new Event('input',{bubbles:true})); }
+      const st=document.getElementById('ld_state'); st.value=${JSON.stringify(st1)}; st.dispatchEvent(new Event('input',{bubbles:true}));
+      const br=document.getElementById('rp_branch'); br.value='Pune branch'; br.dispatchEvent(new Event('input',{bubbles:true}));`); await sleep(200);
+    ct = await ev(`const o=ombudsmanFor(${JSON.stringify(st1)})[0]; return {t: document.getElementById('rpComplaintText').textContent, out: document.getElementById('rpCOut').textContent, office: o.office, email: o.email}`);
+    ok(new RegExp('To: The Insurance Ombudsman, ' + ct.office).test(ct.t) && ct.t.includes(ct.email) && /Star Health and Allied, Pune branch\n   Policy no\. P-991/.test(ct.t) && /^Asha Rao\n12 Lake Road/.test(ct.t) && !/Add these before you file/.test(ct.out), 'typing the details completes it: addressed to the state\'s office, insurer with branch, no list of missing details: ' + ct.office);
+    ok(/cioins\.co\.in/.test(ct.out) && /Free\./.test(ct.out) && /not legal advice/.test(ct.out), 'it says where to file (free, online or by email or post) and that it is a draft, not legal advice');
+    await ev(`const a=document.getElementById('rp_amount'); a.value='6000000'; a.dispatchEvent(new Event('input',{bubbles:true}));`); await sleep(100);
+    ok(/more than ₹50 lakh \(rule 17\(3\)\)/.test(await ev(`return document.getElementById('rpCOut').textContent`)), 'above ₹50 lakh it warns that the Ombudsman cannot award that much');
+
+    console.log('== R24: the insurer replied: check it, follow up');
+    await ev(`document.getElementById('rpYesBtn').click(); document.getElementById('rpCheckBtn').click();`); await sleep(150);
+    ok(await ev(`return document.getElementById('rpComplaintBox').classList.contains('hide') && /Paste the reply, or read a photo of it, first\./.test(document.getElementById('rpResult').textContent)`), 'checking an empty reply asks for the reply first, and closes the drafts');
+    await ev(`const t=document.getElementById('rp_text'); t.value='Dear Sir, with reference to your complaint, we regret to inform you that the deduction of Rs. 5,962/- stands valid as per policy terms and conditions. Thanking you.';
+      const d=document.getElementById('rp_date'); d.value=addDaysYmd(todayYmd(),-20); const r=document.getElementById('rp_ref'); r.value='GRV-77'; document.getElementById('rpCheckBtn').click();`); await sleep(200);
+    const ck = await ev(`return {boxes: [...document.querySelectorAll('#rpChecks input[data-rpk]')].map(b=>b.dataset.rpk+':'+b.checked).join(','), t: document.getElementById('rpResult').textContent, focus: document.activeElement===document.querySelector('#rpChecks legend'), acts: [...document.querySelectorAll('#rpActs [data-rpact]')].map(b=>b.dataset.rpact).join(',')}`);
+    ok(ck.boxes === 'reasons:false,breakdown:false,omb:false' && /Not found: the reply names no clause, section or exclusion/.test(ck.t) && /"As per policy terms" alone is not a specific reference/.test(ck.t), 'a vague reply: none of the three is found, and "as per policy terms" is explained as not specific');
+    ok(/The reply says: “.*we regret to inform you/.test(ck.t) && /The reply is dated 20 days after you sent your letter\. IRDAI's circular says insurers should resolve a complaint within 14 days\./.test(ck.t) && ck.focus, 'it quotes what the reply decided, gives the days it took against the 14 days (no accusation), and moves focus to the checklist');
+    ok(ck.acts === 'follow,complaint', 'with gaps, both a follow-up and a complaint are offered');
+    await ev(`document.querySelector('#rpActs [data-rpact="follow"]').click();`); await sleep(150);
+    const fu = await ev(`return document.getElementById('rpFollowText').textContent`);
+    ok(/Subject: Follow-up: request for a line-by-line explanation of deductions \(your reference GRV-77\)/.test(fu) && /  1\. The reasons for not accepting my request/.test(fu) && /  2\. A line-by-line statement/.test(fu) && /  3\. The name and address of the Insurance Ombudsman/.test(fu), 'the follow-up asks for exactly the three missing things, with the reply\'s reference');
+    ok(/"along with the reasons for not accepting the complaint with specific reference to the relevant terms and conditions of the policy"/.test(fu) && /"shall also be provided in the resolution letter given by the insurer"/.test(fu) && /para 17\(b\)/.test(fu), 'each is quoted from IRDAI\'s circulars (Part B; para 17(b))');
+    await ev(`const b=document.querySelector('#rpChecks input[data-rpk="omb"]'); b.checked=true; b.dispatchEvent(new Event('change',{bubbles:true})); const d=document.getElementById('rpDocs'); d.checked=true; d.dispatchEvent(new Event('change',{bubbles:true}));`); await sleep(150);
+    const fu2 = await ev(`return document.getElementById('rpFollowText').textContent`);
+    ok(!/Insurance Ombudsman of competent jurisdiction/.test(fu2) && /para 17\(c\)\) provides that insurers and TPAs "shall collect the required documents from the Hospitals"/.test(fu2), 'ticking an item takes it out of the follow-up at once; "asks me to get documents" adds para 17(c)');
+    await ev(`const t=document.getElementById('rp_text'); t.value='As per Clause 4.2 and Code-Excl01 of your policy, items under List I are not payable. Details: Rs 300, Rs 160, Rs. 1,260, INR 850. You may approach the Insurance Ombudsman.'; document.getElementById('rpCheckBtn').click();`); await sleep(150);
+    const ck2 = await ev(`return {boxes: [...document.querySelectorAll('#rpChecks input[data-rpk]')].map(b=>b.dataset.rpk+':'+b.checked).join(','), t: document.getElementById('rpResult').textContent, follow: document.getElementById('rpFollowBox').classList.contains('hide')}`);
+    ok(ck2.boxes === 'reasons:true,breakdown:true,omb:true' && /Found: “As per Clause 4\.2/.test(ck2.t) && /The reply lists 4 different amounts/.test(ck2.t) && /A law or an IRDAI circular is not/.test(ck2.t) && ck2.follow, 'a full reply: all three found and quoted, with "is this a term of your policy?" (a new check closes the old draft)');
+    await ev(`document.querySelector('#rpResult [data-rpo="pay"]').click();`); await sleep(100);
+    ok(await ev(`return document.querySelector('#rpResult [data-rpo="pay"]').getAttribute('aria-pressed')==='true' && /Keep the reply\. If the payment does not arrive/.test(document.getElementById('rpActs').textContent) && !document.querySelector('#rpActs [data-rpact]')`), '"It will pay more" with everything answered: keep the reply, nothing to draft');
+    await ev(`document.querySelector('#rpResult [data-rpo="keep"]').click(); document.querySelector('#rpActs [data-rpact="complaint"]').click();`); await sleep(150);
+    ct = await ev(`return document.getElementById('rpComplaintText').textContent`);
+    ok(/The insurer replied on .* \(reference GRV-77\) and did not withdraw the deduction\./.test(ct) && /within one year of the insurer's reply \(rule 14\(3\)\(b\)\)/.test(ct) && /The insurer's reply dated/.test(ct) && !/The reply does not/.test(ct), 'a complaint after a reply: the reply\'s date and reference, the one-year rule from the reply, the reply among the documents');
+
+    console.log('== R24: a photo of the reply');
+    await ev(`document.getElementById('rp_text').value=''; document.getElementById('rp_ref').value=''; document.getElementById('rp_date').value=''; rpReadPhotos([__mk('r1.jpg','image/jpeg',91), __mk('r2.jpg','image/jpeg',92)]);`); await sleep(700);
+    const ph = await ev(`return {text: document.getElementById('rp_text').value, ref: document.getElementById('rp_ref').value, date: document.getElementById('rp_date').value, st: document.getElementById('rpReadStatus').textContent, calls: window.__replyCalls}`);
+    ok(ph.calls === 2 && /We regret that the deduction/.test(ph.text) && ph.ref === 'GRV-88' && ph.date === '2026-10-02', 'a photo is read through api/read-reply: its text, reference and date (2 October 2026) are filled in for the user to check');
+    ok(/Read 1 photo\. Check the text against the letter/.test(ph.st) && /1 photo did not look like a letter from an insurer and was left out/.test(ph.st), 'a photo that is not an insurer\'s letter is left out, and the status says so');
+    ok(await ev(`return rpDate('05/06/2026')===null && rpDate('15/06/2026')==='2026-06-15' && rpDate('June 5, 2026')==='2026-06-05' && rpDate('5th Jun 2026')==='2026-06-05' && rpDate('2099-01-01')===null`), 'a printed date is used only when it cannot be misread (05/06 could be May or June) and is not in the future');
+    await ev(`window.__mode='broken'; document.getElementById('rp_text').value=''; rpReadPhotos([__mk('r3.jpg','image/jpeg',93)]);`); await sleep(500);
+    ok(/The free reading service is busy\. Paste the text instead/.test(await ev(`return document.getElementById('rpReadStatus').textContent`)), 'when the free reader is busy or broken, it says to paste the text (or use one\'s own key)');
 
     console.log('== R22: grievance officer, documents and delay lines');
     await fresh(); await ev(`setLang('en'); document.getElementById('egBtn').click();`); await sleep(500);

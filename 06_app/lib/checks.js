@@ -674,5 +674,42 @@ function readingChecks(a){
   });
   return {rows,suppressed};
 }
+// R24: what an insurer's reply contains, read from its text. These are only
+// signals, each with the words it was found in: the user confirms every one
+// on screen, and only their answers go into a follow-up or a complaint. What
+// is looked for is what IRDAI says a resolution must contain:
+//  - Master Circular on Protection of Policyholders' Interests (5 Sep 2024),
+//    Part B: resolution "along with the reasons for not accepting the
+//    complaint with specific reference to the relevant terms and conditions of
+//    the policy", and the Ombudsman's name and address "shall also be provided
+//    in the resolution letter given by the insurer";
+//  - Master Circular on Health Insurance Business (29 May 2024), para 17(b):
+//    a partial disallowance explained with full details.
+// "As per policy terms and conditions" with no clause named is NOT a specific
+// reference, so it is not counted. A statute or a circular is not a policy
+// term either; the screen asks the user to judge what was found.
+const RP_CLAUSE=/\b(?:clause|section|condition|exclusion|excl\.?|annexure)\s*(?:no\.?\s*|number\s*)?\(?[a-z]?\d+[a-z0-9.()\/-]*|\bexcl\s?\d{2}\b|\blist\s*-?\s*(?:iv|i{1,3})\b/gi;
+const RP_AMOUNT=/(?:₹|\brs(?![a-z])\.?|\binr(?![a-z]))\s*\.?\s*\d[\d,]*(?:\.\d{1,2})?/gi;
+const RP_BREAKUP=/\b(?:break[\s-]?up|itemi[sz]ed|line[\s-]by[\s-]line|details? of (?:the )?deductions?|deduction details)\b/i;
+const RP_OMB=/\b(?:ombudsman|cioins|bima\s*bharosa)/i;
+const RP_PAY=/\b(?:will|shall)\s+be\s+(?:paid|reimbursed|credited|released|settled|refunded)\b|\b(?:has|have)\s+been\s+(?:paid|reimbursed|credited|released|refunded)\b|\b(?:additional|differential|balance)\s+(?:amount|payment|sum)\b/i;
+const RP_KEEP=/\b(?:regret|unable to (?:consider|accede|accept|entertain)|not (?:payable|admissible|tenable|covered)|non[\s-]?payable|inadmissible|repudiat\w*|rejected|declined|denied|stands? (?:good|valid|justified|correct)|upheld|(?:deducted|disallowed) as per)\b/i;
+const RP_DOCS=/\b(?:submit|provide|furnish|send|share|upload|obtain)\b[^.]{0,60}?\b(?:documents?|bills?|reports?|certificates?|discharge summary|receipts?|prescriptions?)\b/i;
+function checkReply(text){
+  const flat=String(text||'').replace(/\s+/g,' ').trim();
+  // About 45 characters either side, widened to whole words.
+  const snip=m=>{ let a=Math.max(0,m.index-45), b=Math.min(flat.length,m.index+m[0].length+45);
+    while(a>0&&flat[a-1]!==' ') a--; while(b<flat.length&&flat[b]!==' ') b++;
+    return (a>0?'…':'')+flat.slice(a,b).trim()+(b<flat.length?'…':''); };
+  const first=re=>{ const m=re.exec(flat); return m?snip(m):null; };
+  // One quote per stretch of text: matches close together share one excerpt.
+  const reasons=[]; let last=-1e9;
+  for(const m of flat.matchAll(RP_CLAUSE)){ if(m.index-last<90){ continue; } last=m.index; reasons.push(snip(m)); if(reasons.length>=3) break; }
+  const amounts=new Set();
+  for(const m of flat.matchAll(RP_AMOUNT)){ const n=parseAmount(m[0].replace(/^(?:₹|rs|inr)\s*\.?\s*\.?/i,'')).n; if(n!=null&&n>0) amounts.add(n); }
+  const breakup=first(RP_BREAKUP);
+  return { empty:flat.length<20, reasons, amountCount:amounts.size, breakupAt:breakup,
+    breakdown:amounts.size>=4||!!breakup, ombudsman:first(RP_OMB), pay:first(RP_PAY), keep:first(RP_KEEP), docs:first(RP_DOCS) };
+}
 
-module.exports = { NON_PAYABLE, SUBSUMED, NPPA, OMBUDSMAN, OMBUDSMAN_READ_ON, GRO, GRO_READ_ON, GRO_LIST_UPDATED, NPPA_KNEE_VALID_TO, NPPA_STENT_REVIEW_FROM, INDIA_STATES, ombudsmanFor, IS19493_HEADER, GSTIN_RE, money, bestMatch, bestMatchIn, parseAmount, billDateRange, analyse, readingChecks };
+module.exports = { NON_PAYABLE, SUBSUMED, NPPA, OMBUDSMAN, OMBUDSMAN_READ_ON, GRO, GRO_READ_ON, GRO_LIST_UPDATED, NPPA_KNEE_VALID_TO, NPPA_STENT_REVIEW_FROM, INDIA_STATES, checkReply, ombudsmanFor, IS19493_HEADER, GSTIN_RE, money, bestMatch, bestMatchIn, parseAmount, billDateRange, analyse, readingChecks };

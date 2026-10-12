@@ -116,6 +116,13 @@ const base = (fetchFn, over = {}) => ({
   try { vm.runInNewContext(src + '\nreadPages([], {});', { AbortController, setTimeout, clearTimeout, JSON, Error, Map, Promise }); } catch (e) { threw = e; }
   ok(!threw, 'it loads and runs with no page, storage or navigator objects available', threw && threw.message);
 
+  console.log('== R24: a caller can name the server route (the insurer\'s reply)');
+  f = mockFetch([[200, JSON.stringify({ is_insurer_letter: true, text: 'We regret' })]]);
+  res = await R.readPages([file('reply')], base(f, { endpoint: 'api/read-reply', cache: undefined }));
+  ok(f.calls[0].url === 'api/read-reply' && res[0].page.is_insurer_letter === true, 'with endpoint set, the photo goes to that route');
+  f = mockFetch([[200, GOOD]]); await R.readPages([file('p9')], base(f));
+  ok(f.calls[0].url === 'api/read-bill', 'without it, bills still go to api/read-bill');
+
   console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(2); });

@@ -9,7 +9,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 
 const OK_JSON = JSON.stringify({ is_hospital_bill: true, header: {}, line_items: [{ item: 'X', total: 1 }] });
-let upstreamCalls = 0, upstreamClosed = false;
+let upstreamCalls = 0, upstreamClosed = false, lastPrompt = '';
 // R16: the key check (GET models/<model>) answers modelsStatus; reads of
 // "slow..." images take 400 ms and record how many ran at the same time.
 let modelsStatus = 200, modelsCalls = 0, active = 0, maxActive = 0;
@@ -22,6 +22,7 @@ const mock = http.createServer((req, res) => {
     }
     upstreamCalls++;
     const j = JSON.parse(Buffer.concat(c).toString());
+    lastPrompt = j.contents[0].parts[0].text;
     const img = Buffer.from(j.contents[0].parts[1].inline_data.data, 'base64').toString();
     if (img.startsWith('slow')) {
       active++; maxActive = Math.max(maxActive, active);
@@ -44,6 +45,7 @@ const mock = http.createServer((req, res) => {
       impact: { is_hospital_bill: true, header: {}, line_items: [{ item: 'GLOVES EXAMINATION', quantity: 1, total: 200 }, { item: 'ADMISSION SERVICES 10003', quantity: 1, total: 410 }, { item: 'ROOM RENT', quantity: 1, total: 4500 }] },
       huge: { is_hospital_bill: true, header: {}, line_items: [{ item: 'GLOVES EXAMINATION', quantity: 1, total: 5000000 }] },
       notbill: { is_hospital_bill: false, header: {}, line_items: [] },
+      reply: { is_insurer_letter: true, text: 'We regret that the deduction stands as per clause 4.2 of your policy.', letter_date: '05/10/2026', reference: 'GRV-123' },
     };
     if (PAGES[img]) { res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify(PAGES[img]) }] } }] })); }
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -406,6 +408,19 @@ async function start(port, env) {
     await post(P + 8, 'a photo');
     r = await req(P + 8, 'GET', '/api/config'); ok(JSON.parse(text(r)).reader === 'busy', 'once today\'s cap is used: "busy", before anyone has to try and fail');
     r = await req(P + 3, 'GET', '/api/config'); ok(JSON.parse(text(r)).reader === 'off', 'with no server key: "off"');
+    console.log("== R24: the insurer's reply, read with the same protections as a bill page");
+    const promptOf = (src, name) => { const m = new RegExp('const ' + name + ' ?= ?`([\\s\\S]*?)`;').exec(src); return m && m[1]; };
+    const pageSrc = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8'), srvSrc = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+    ok(!!promptOf(pageSrc, 'REPLY_PROMPT') && promptOf(pageSrc, 'REPLY_PROMPT') === promptOf(srvSrc, 'REPLY_PROMPT'), 'the reply prompt in the page (own key) and on the server are the same text');
+    const postReply = (port, image, mime) => req(port, 'POST', '/api/read-reply', { body: JSON.stringify({ mime_type: mime || 'image/jpeg', data: Buffer.from(image).toString('base64') }), headers: { 'Content-Type': 'application/json' } });
+    const pagesBefore = impStore.pages;
+    r = await postReply(P + 7, 'reply'); const rj = r.status === 200 ? JSON.parse(text(r)) : {};
+    ok(r.status === 200 && rj.is_insurer_letter === true && /clause 4.2/.test(rj.text) && rj.reference === 'GRV-123', 'a photo of the reply is read and its text returned');
+    ok(/is_insurer_letter/.test(lastPrompt) && /Do not summarise/.test(lastPrompt) && !/is_hospital_bill/.test(lastPrompt), 'it is read with the reply prompt (copy the text exactly), not the bill prompt');
+    await sleep(300); ok(impStore.pages === pagesBefore, 'a reply is never counted as a bill page read');
+    r = await postReply(P + 7, 'reply', 'application/pdf'); ok(r.status === 415, 'only photos are accepted, as for bills');
+    r = await postReply(P + 7, 'badjson'); ok(r.status === 502 && JSON.parse(text(r)).error === 'unreadable', 'a cut-off answer is a plain "unreadable" error, as for bills');
+    r = await postReply(P + 8, 'reply'); ok(r.status === 429, 'it shares the daily cap with bill reading (no second free quota)');
     impSrv.close();
 
     console.log('== R16: security headers and Content Security Policy');

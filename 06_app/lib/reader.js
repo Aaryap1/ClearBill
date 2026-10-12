@@ -33,7 +33,8 @@ function kindForStatus(status,direct,code){
   return 'server';
 }
 // One page in, one structured object out; a failure is an Error with .kind.
-// o: {key,useProxy,proxyState,fetchFn,toB64,stripFence,directRequest,signal,timeoutMs,isOffline}
+// o: {key,useProxy,proxyState,fetchFn,toB64,stripFence,directRequest,signal,timeoutMs,isOffline,endpoint}
+// endpoint (R24): the server route; 'api/read-bill' unless a caller names another.
 async function readOnePage(file,o){
   const mime=fileMime(file);
   const b64=await o.toB64(file);
@@ -46,7 +47,7 @@ async function readOnePage(file,o){
     // If the free service says it is busy (429), the user can paste their own
     // free Gemini key and continue — then this page goes direct to Google.
     if(o.useProxy && !(o.proxyState.busy && o.key)){
-      const res=await o.fetchFn('api/read-bill',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mime_type:mime,data:b64}),signal:ac.signal});
+      const res=await o.fetchFn(o.endpoint||'api/read-bill',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mime_type:mime,data:b64}),signal:ac.signal});
       txt=await res.text();
       if(!res.ok){ let code=''; try{ code=JSON.parse(txt).error||''; }catch(e){}
         const kind=kindForStatus(res.status,false,code); if(kind==='busy'||kind==='broken') o.proxyState.busy=true; throw mkErr(kind,res.status); }

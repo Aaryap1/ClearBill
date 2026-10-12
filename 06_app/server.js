@@ -398,7 +398,20 @@ async function deleteBillHandler(req, res, billId) {
   catch (e) { console.log('[bills] delete error', String(e.message || e)); sendJson(res, e.status || 500, { error: 'server', message: 'Could not delete that bill right now.' }); }
 }
 
-async function readBill(req, res) {
+// R24: the insurer's reply to the user's letter, photographed. Gemini is asked
+// only to copy the text as printed; the app's own code then looks for what
+// IRDAI says a resolution must contain. Kept identical to index.html's
+// REPLY_PROMPT (lib/test_server.js checks). Same limits, queue and size cap as
+// a bill page, and never counted in the impact counter.
+const REPLY_PROMPT = `Look at this image. First decide: is it a letter, email, notice or message from an insurance company or a TPA (third party administrator) about a claim or a complaint? If it is not (a hospital bill, a person, a landscape, an unrelated document, a blank or unreadable page), set "is_insurer_letter" to false, leave "text" empty, and stop - do not invent content.
+If it IS such a letter, copy its text. Return ONLY valid JSON, no markdown, no commentary.
+Copy the words exactly as printed, in reading order, keeping line breaks. Do not summarise, correct, translate, complete or invent anything. Keep amounts, clause numbers and dates exactly as printed.
+{"is_insurer_letter":true,"text":"","letter_date":null,"reference":null}
+"letter_date" = the date printed on the letter, as written, or null. "reference" = a claim, complaint or reference number printed on it, as written, or null.`;
+const READ_BILL = { prompt: EXTRACT_PROMPT, count: true };
+const READ_REPLY = { prompt: REPLY_PROMPT, count: false };
+
+async function readBill(req, res, kind = READ_BILL) {
   if (!KEY) return sendJson(res, 501, { error: 'not_configured', message: 'Server has no GEMINI_API_KEY set.' });
   if (!admitAttempt(req)) { console.log('[limit] attempts'); req.resume(); return sendJson(res, 429, BUSY, { 'Retry-After': '300', Connection: 'close' }); }
   const gate = admit(req, false);
@@ -441,7 +454,7 @@ async function readBill(req, res) {
       if (!IMAGE_MIME.test(mime)) return sendJson(res, 415, { error: 'unsupported', message: 'Only photos (JPG, PNG, WebP) can be read.' });
 
       const body = {
-        contents: [{ parts: [{ text: EXTRACT_PROMPT }, { inline_data: { mime_type: mime, data } }] }],
+        contents: [{ parts: [{ text: kind.prompt }, { inline_data: { mime_type: mime, data } }] }],
         generationConfig: { temperature: 0, response_mime_type: 'application/json' }
       };
       // The request is valid: count it now (see admit()).
@@ -494,7 +507,7 @@ async function readBill(req, res) {
       if (!ok) return sendJson(res, 502, { error: 'unreadable', message: 'The photo could not be read (unreadable answer). Try a clearer photo.' });
       lastUpstreamOkAt = Date.now();
       send(res, 200, cleaned, TYPES['.json']);
-      countImpact(cleaned); // after the answer is sent: counting can never slow down or break a read
+      if (kind.count) countImpact(cleaned); // after the answer is sent: counting can never slow down or break a read
     } catch (e) {
       console.log('[error]', String(e.message || e));
       sendJson(res, 500, { error: 'server', message: 'Something went wrong. Please try again.' });
@@ -558,6 +571,7 @@ const BILL_ID_PATH = /^\/api\/bills\/([A-Za-z0-9_-]{1,80})$/;
 http.createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
   if (req.method === 'POST' && url.pathname === '/api/read-bill') return readBill(req, res);
+  if (req.method === 'POST' && url.pathname === '/api/read-reply') return readBill(req, res, READ_REPLY);
   if (url.pathname === '/api/config') return sendJson(res, 200, { proxy: !!KEY, reader: readerState(), bills: BILLS_ON, googleClientId: BILLS_ON ? GOOGLE_CLIENT_ID : null });
   if (req.method === 'GET' && url.pathname === '/api/impact') return impactHandler(req, res);
   if (req.method === 'GET' && url.pathname === '/api/health') return healthHandler(req, res);
