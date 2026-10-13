@@ -325,5 +325,24 @@ console.log('== R26: room rent above the policy limit (figures that depend on th
   ok(mr.detRate === 6000 && mr.detDays === 3 && mr.roomSum === 16000 && mr.roomExcess === 7000 && mr.rates.length === 2, 'two room rates: the highest is used for the ratio, and the excess is what was charged above the limit for each day (Rs 16,000 - 3 x Rs 3,000)');
 }
 
+console.log('== R28: a rejected claim - the suggested reason, and months of cover');
+{
+  const R = checks.rejectionReason, M = checks.coverMonths;
+  const cases = [
+    ['Your claim is repudiated due to non-disclosure of pre-existing diabetes.', 'ped'],
+    ['The claim falls within the 30 days waiting period and is not payable.', 'waiting'],
+    ['Treatment for this condition is excluded under Code-Excl02 and not covered.', 'excl'],
+    ['The claim is closed as documents were not submitted within the time allowed.', 'docs'],
+    ['There was delay in intimation of the claim beyond 48 hours.', 'docs'],
+    ['Hospitalisation was not justified; the treatment could be done on an OPD basis.', 'need'],
+    ['The insured is not enrolled as a member under the group policy of the employer.', 'group'],
+    ['We regret we cannot consider the claim.', null],
+  ];
+  const got = cases.map(([t]) => R(t));
+  ok(got.every((g, i) => g === cases[i][1]), 'the reason is suggested from the letter\'s words (pre-existing, waiting period, exclusion, documents, late intimation, not needed, group member), and none when it gives none: ' + got.join(','));
+  ok(R('Pre-existing disease: the condition is not covered under the policy.') === 'ped', 'a more specific reason wins over a general "not covered"');
+  ok(M('2020-01-15', '2025-01-15') === 60 && M('2020-01-15', '2025-01-14') === 59 && M('2021-03-31', '2026-03-30') === 59 && M('bad', '2026-01-01') === null, 'months of continuous cover count whole months (60 on the day, 59 the day before), and a bad date gives none');
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -115,3 +115,22 @@ Cross-checking the Lists II-IV item names against the rest of the app's table (`
 - **Withdrawn:** the Annexure to the Master Circular on Health Insurance Business (IRDAI/HLT/CIR/PRO/84/5/2024, 29 May 2024), read from the copy hosted by the Institute of Actuaries of India, lists that circular as Annexure-6 item 19, among the circulars it supersedes. A search of the 17-page Master Circular finds no restatement of these norms ("proportion" occurs only for premium refunds).
 - **Current rule used instead:** Master Circular on Protection of Policyholders' Interests (5 Sep 2024), Schedule-C, 3.1(ix): a health policy shall clearly state "The sub-limits, Proportionate Deductions and the existence of Package rates if any, with cross reference to the concerned policy section".
 - **How the app uses this:** the 2020 norms are shown as what policies filed under them say, and the letter asks whether the policy follows them. They are never presented as current law.
+
+## Rejected claims (R28), checked 13 Oct 2026
+
+Read in the current texts:
+- **Health Master Circular (29 May 2024):**
+  - para 17(a): "No claim shall be repudiated without the approval of PMC or a three-member sub-group of PMC called the Claims Review Committee (CRC)";
+  - para 17(b): full details with reference to the specific policy terms;
+  - para 17(c): documents are collected from the hospitals;
+  - paras 11-12: waiting-period and moratorium credits carry over on migration and portability;
+  - para 13: the moratorium;
+  - para 19: the insurer's response to a grievance includes the Ombudsman's contact details.
+- **Master Circular on Protection of Policyholders' Interests (5 Sep 2024), Part B:**
+  - IV.8: no policy or claim contestable on non-disclosure or misrepresentation "except for established fraud, after the completion of the Moratorium Period, i.e. 60 months of continuous coverage";
+  - V.1(ii): no claim rejected or closed for want of documents or for delayed intimation;
+  - V.4: on employer group policies, "No claim shall be denied for non-availability of details of members of the group".
+
+Not used:
+- **"Legally tenable evidence":** the line "No claim shall be repudiated by the insurer without obtaining legally tenable evidence" is in Part A (life insurance), so it is not cited for health claims.
+- **A maximum waiting period:** no current text setting one was found, so the letter asks the insurer to state the period applied rather than asserting a limit.

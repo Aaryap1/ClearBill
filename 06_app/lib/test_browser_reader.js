@@ -833,6 +833,55 @@ const STUB = `
     await ev(`setLang('en'); document.getElementById('clearSavedBtn').click(); document.getElementById('clearYesBtn').click();`); await sleep(200);
     ok(await ev(`return !HS.kind && document.getElementById('hs_patient').value==='' && !sessionStorage.getItem('clearbill_hospital')`), '"Clear what this app saved" clears it too');
 
+    console.log('== R28: the whole claim was rejected');
+    await fresh(); await ev(`setLang('en');`);
+    ok(await ev(`return /Was your whole claim rejected\\? Start here/.test(document.getElementById('bysRejectedBtn').textContent)`), 'the first screen has a way in: "Was your whole claim rejected? Start here"');
+    await ev(`document.getElementById('bysRejectedBtn').click();`); await sleep(300);
+    const r0 = await ev(`return {tab: document.getElementById('page-letter').classList.contains('on'), open: document.getElementById('rejCard').open, empty: !document.getElementById('letterEmpty').classList.contains('hide'), reply: document.getElementById('replyCard').classList.contains('hide')}`);
+    ok(r0.tab && r0.open && r0.empty && r0.reply, 'it opens the card on the Letter tab, with no bill or figures needed');
+    await ev(`const t=document.getElementById('rj_text'); t.value='Dear Sir, your claim is repudiated due to non-disclosure of pre-existing diabetes under clause 4.1.'; t.dispatchEvent(new Event('input',{bubbles:true}));`); await sleep(150);
+    const r1 = await ev(`return {kind: RJ.kind, sug: document.getElementById('rjSuggest').textContent, pressed: document.getElementById('rjRped').getAttribute('aria-pressed'), form: !document.getElementById('rjForm').classList.contains('hide'), out: document.getElementById('rjOut').textContent,
+      empty: document.getElementById('letterEmpty').classList.contains('hide'), confirm: !document.getElementById('letterConfirm').classList.contains('hide'), incl: document.getElementById('letterInclCard').classList.contains('hide'), gen: document.getElementById('genLetterTab').classList.contains('hide'), reply: !document.getElementById('replyCard').classList.contains('hide')}`);
+    ok(r1.kind === 'ped' && /Suggested from the letter: "A pre-existing illness, or something not disclosed"\. Change it if it is wrong\./.test(r1.sug) && r1.pressed === 'true' && r1.form, 'pasting the letter suggests the reason (pre-existing illness / not disclosed), marked as a suggestion');
+    ok(/Enter when your cover began to check the five-year rule/.test(r1.out), 'it asks when the cover began, to check the five-year rule');
+    ok(r1.empty && r1.confirm && r1.incl && r1.gen && r1.reply, '"Your details" and the reply card become available; the bill checklist and its Generate button stay hidden');
+    await ev(`for(const [id,v] of [['rj_since','2019-04-01'],['rj_date',addDaysYmd(todayYmd(),-12)],['rj_ref','RJ-501'],['rj_amount','120000']]){ const e=document.getElementById(id); e.value=v; e.dispatchEvent(new Event('input',{bubbles:true})); }`); await sleep(150);
+    const r2 = await ev(`return {out: document.getElementById('rjOut').textContent, l: document.getElementById('rjLetter').textContent}`);
+    ok(/\d+ months of continuous cover\. After 60 months, IRDAI's rules say a claim cannot be contested/.test(r2.out), 'more than 60 months of cover: the five-year rule is explained');
+    ok(/"No policy and claim of health insurance shall be contestable on any grounds of non-disclosure and\/or misrepresentation except for established fraud, after the completion of the Moratorium Period, i\.e\. 60 months of continuous coverage"/.test(r2.l) && /whether you allege established fraud\. If you do not, please withdraw the rejection and settle the claim\./.test(r2.l), 'the letter quotes the five-year rule word for word and asks whether established fraud is alleged');
+    ok(/Subject: Request to review the rejection of my claim \(your reference RJ-501\)/.test(r2.l) && /My claim was rejected by your letter dated .* on the ground of a pre-existing disease or non-disclosure\. I ask you to review this decision\. I attach a copy of your letter\./.test(r2.l), 'it states the rejection, its date, reference and reason');
+    ok(/para 17\(b\)\) requires that where a claim is repudiated, details are conveyed to the claimant "along with full details giving reference to the specific terms and conditions of the policy document"/.test(r2.l) && /"No claim shall be repudiated without the approval of PMC or a three-member sub-group of PMC called the Claims Review Committee \(CRC\)"/.test(r2.l) && /para 19 of the same Master Circular requires your response to include/.test(r2.l) && /settlement of my claim of ₹1,20,000/.test(r2.l), 'it asks for the policy terms (17(b)), the committee approval (17(a)), the Ombudsman details (para 19) and settlement of ₹1,20,000');
+    ok(!/[\[\]]|undefined|null|legally tenable/.test(r2.l), 'no blanks, and nothing from the life-insurance part of the circular');
+    await ev(`const e=document.getElementById('rj_since'); e.value='2024-01-01'; e.dispatchEvent(new Event('input',{bubbles:true}));`); await sleep(100);
+    const r3 = await ev(`return {out: document.getElementById('rjOut').textContent, l: document.getElementById('rjLetter').textContent}`);
+    ok(/months of continuous cover: the five-year rule \(60 months\) does not apply yet/.test(r3.out) && !/Moratorium Period/.test(r3.l) && /Please send the evidence that the condition existed before my cover began/.test(r3.l), 'under 60 months: no five-year claim; it asks for the evidence and the waiting period instead');
+    await ev(`document.getElementById('rjRdocs').click();`); await sleep(100);
+    const r4 = await ev(`return document.getElementById('rjLetter').textContent`);
+    ok(/"No claim shall be rejected or closed for want of documents or for delayed intimation of claim"/.test(r4) && /"shall collect the required documents from the Hospitals"/.test(r4) && !/Suggested/.test(await ev(`return document.getElementById('rjSuggest').classList.contains('hide')?'':'Suggested'`)), 'missing documents or late intimation: both rules quoted; choosing a reason by hand clears the suggestion');
+    await ev(`document.getElementById('rjRgroup').click(); const c=document.getElementById('rj_cashless'); c.checked=true; c.dispatchEvent(new Event('change',{bubbles:true}));`); await sleep(100);
+    const r5 = await ev(`return document.getElementById('rjLetter').textContent`);
+    ok(/"No claim shall be denied for non-availability of details of members of the group"/.test(r5) && /Subject: Request to review the rejection of my cashless request/.test(r5) && /My request for cashless treatment was rejected/.test(r5), 'group policy: the members\' details rule; a refused cashless request is worded as such');
+    await ev(`document.getElementById('rjRped').click(); const c=document.getElementById('rj_cashless'); c.checked=false; c.dispatchEvent(new Event('change',{bubbles:true}));
+      for(const [id,v] of [['ld_name','Ravi Kumar'],['ld_insurer','Star Health and Allied'],['ld_policy','P-77']]){ const e=document.getElementById(id); e.value=v; e.dispatchEvent(new Event('input',{bubbles:true})); }`); await sleep(150);
+    ok(await ev(`return /^Ravi Kumar\\n/.test(document.getElementById('rjLetter').textContent) && /Star Health and Allied/.test(document.getElementById('rjLetter').textContent) && !/Add these in Your details/.test(document.getElementById('rjOut').textContent)`), 'typing "Your details" fills the letter at once, and the list of missing details goes');
+
+    console.log('== R28: the reply card, worded for a rejection');
+    await ev(`const c=document.getElementById('replyCard'); c.open=true; const s=document.getElementById('rp_sent'); s.value=addDaysYmd(todayYmd(),-40); s.dispatchEvent(new Event('input',{bubbles:true})); document.getElementById('rpNoBtn').click();
+      document.querySelector('#rpResult [data-rpact="follow"]').click();`); await sleep(150);
+    ok(/Subject: Reminder: request to review the rejection of my claim/.test(await ev(`return document.getElementById('rpFollowText').textContent`)), 'the reminder is about reviewing the rejection');
+    await ev(`document.querySelector('#rpResult [data-rpact="complaint"]').click(); const k=document.getElementById('rp_court'); k.checked=true; k.dispatchEvent(new Event('change',{bubbles:true}));`); await sleep(200);
+    const rcj = await ev(`return {t: document.getElementById('rpComplaintText').textContent, amt: document.getElementById('rp_amount').value}`);
+    ok(rcj.amt === '120000' && /The insurer rejected the claim by its letter dated .* \(reference RJ-501\), on the ground of a pre-existing disease or non-disclosure\./.test(rcj.t) && /asking it to review the rejection, with the policy terms relied on \(copy attached\)/.test(rcj.t), 'the Ombudsman complaint states the rejection and the request to review it');
+    ok(/The insurer's rejection letter dated/.test(rcj.t) && /₹1,20,000, the amount of the claim that was rejected/.test(rcj.t) && !/deducted without an itemised explanation|line-by-line explanation of the deductions/.test(rcj.t), 'it lists the rejection letter as a document, the claimed amount as the loss, and nothing about deductions');
+    await ev(`document.getElementById('rpYesBtn').click(); document.getElementById('rp_text').value='We regret that the rejection stands as per policy terms and conditions.'; document.getElementById('rpCheckBtn').click();`); await sleep(150);
+    ok(await ev(`return [...document.querySelectorAll('#rpChecks input[data-rpk]')].map(b=>b.dataset.rpk).join(',')==='reasons,omb'`), 'checking the insurer\'s reply: no line-by-line breakdown is asked for after a full rejection');
+    await send('Page.navigate', { url: `http://127.0.0.1:${port}/#rejected` }); await sleep(1300);
+    ok(await ev(`return document.getElementById('page-letter').classList.contains('on') && document.getElementById('rejCard').open && RJ.kind==='ped' && document.getElementById('rj_ref').value==='RJ-501'`), 'a link ending in #rejected opens it; what was entered is kept for this browser session');
+    await ev(`setLang('mr');`); await sleep(100);
+    ok(await ev(`return /संपूर्ण दावा नाकारला गेला का/.test(document.getElementById('rjHead').textContent) && /आधीपासूनचा आजार/.test(document.getElementById('rjRped').textContent)`), 'in Marathi');
+    await ev(`setLang('en'); switchTab('settlement'); document.getElementById('clearSavedBtn').click(); document.getElementById('clearYesBtn').click();`); await sleep(200);
+    ok(await ev(`return !RJ.kind && document.getElementById('rj_ref').value==='' && !sessionStorage.getItem('clearbill_rejection') && document.getElementById('replyCard').classList.contains('hide')`), '"Clear what this app saved" clears it too');
+
     console.log('== R22: grievance officer, documents and delay lines');
     await fresh(); await ev(`setLang('en'); document.getElementById('egBtn').click();`); await sleep(500);
     await ev(`switchTab('letter'); const g=document.getElementById('ld_gro'); g.value='Star Health and Allied'; g.dispatchEvent(new Event('input',{bubbles:true}));

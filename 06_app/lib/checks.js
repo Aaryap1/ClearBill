@@ -768,5 +768,24 @@ function roomRentCheck(a,inp){
   out.cut2020=lines.length?money((1-out.ratio)*groups.other.sum):null;
   return out;
 }
+// R28: the likely reason in an insurer's rejection letter, from its words. A
+// suggestion only: the user picks the reason on screen. Order matters: a
+// group-membership or pre-existing-disease letter often also says "not
+// covered", so the more specific reasons are tried first.
+const RJ_RE=[
+  ['group',/\b(?:not (?:enrolled|enlisted|found|listed|part of)\b[^.]{0,40}\b(?:member|employee|group)|member(?:ship)? details?|employee (?:data|details|list)|not (?:a )?(?:member|employee) (?:of|under) (?:the )?group)/i],
+  ['ped',/\b(?:pre[\s-]?existing|ped\b|non[\s-]?disclosure|not disclosed|misrepresent\w*|suppression|concealment)/i],
+  ['waiting',/\bwaiting period\b/i],
+  ['docs',/\b(?:documents?|papers)\b[^.]{0,40}\b(?:not (?:submitted|received|provided)|pending|awaited|incomplete)|\b(?:delay(?:ed)? (?:in )?intimation|intimated (?:late|after)|late intimation|not intimated)\b/i],
+  ['need',/\b(?:not (?:medically )?(?:necessary|justified|required|warranted)|(?:on |as )?(?:an )?(?:opd|out[\s-]?patient) basis|for (?:investigation|diagnostic|evaluation) purposes?|observation only|hospitali[sz]ation (?:was )?not (?:required|necessary|justified))/i],
+  ['excl',/\b(?:exclu\w*|excl\s?\d{2}|not covered|not payable under|outside the scope|permanent(?:ly)? exclu\w*)/i],
+];
+function rejectionReason(text){ const t=String(text||''); for(const [k,re] of RJ_RE) if(re.test(t)) return k; return null; }
+// Whole months of continuous cover from one YYYY-MM-DD date to another.
+function coverMonths(since,to){
+  const a=String(since).split('-').map(Number), b=String(to).split('-').map(Number);
+  if(a.length!==3||b.length!==3||a.some(isNaN)||b.some(isNaN)) return null;
+  let m=(b[0]-a[0])*12+(b[1]-a[1]); if(b[2]<a[2]) m--; return m;
+}
 
-module.exports = { NON_PAYABLE, SUBSUMED, NPPA, OMBUDSMAN, OMBUDSMAN_READ_ON, GRO, GRO_READ_ON, GRO_LIST_UPDATED, NPPA_KNEE_VALID_TO, NPPA_STENT_REVIEW_FROM, INDIA_STATES, checkReply, roomRentCheck, roomKind, ombudsmanFor, IS19493_HEADER, GSTIN_RE, money, bestMatch, bestMatchIn, parseAmount, billDateRange, analyse, readingChecks };
+module.exports = { NON_PAYABLE, SUBSUMED, NPPA, OMBUDSMAN, OMBUDSMAN_READ_ON, GRO, GRO_READ_ON, GRO_LIST_UPDATED, NPPA_KNEE_VALID_TO, NPPA_STENT_REVIEW_FROM, INDIA_STATES, checkReply, roomRentCheck, roomKind, rejectionReason, coverMonths, ombudsmanFor, IS19493_HEADER, GSTIN_RE, money, bestMatch, bestMatchIn, parseAmount, billDateRange, analyse, readingChecks };

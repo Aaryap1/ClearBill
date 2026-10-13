@@ -317,6 +317,9 @@
   .rcerr{color:var(--red)}
   .rcdone{margin-top:10px}
   details.hospcard{margin-bottom:12px}
+  details.rejcard{margin-bottom:14px}
+  details.rejcard[open]>summary{margin-bottom:8px}
+  .rjreasons{flex-direction:column} .rjreasons .chip{text-align:left;padding:8px 12px}
   details.hospcard[open]>summary{margin-bottom:8px}
   .hsseg{flex-wrap:wrap} .hsseg .hsdeath{flex-basis:100%}
   .hsrow{display:flex;gap:8px;align-items:stretch} .hsrow input{flex:1;min-width:0} .hsrow .btn{flex:none;width:auto;padding:0 18px}
@@ -486,6 +489,7 @@
       <p id="bysIntro">ClearBill checks a hospital bill and your insurance settlement against the published rules, and drafts a letter you can send. Keep these papers to hand:</p>
       <ol><li id="bys1">The hospital's final bill, and its itemised (detailed) bill</li><li id="bys2">Your insurer's or TPA's settlement letter</li><li id="bys3">Your payment receipt from the hospital</li></ol>
       <button class="btn ghost sm" type="button" id="bysExampleBtn">No papers to hand? See the worked example</button>
+      <button class="link" type="button" id="bysRejectedBtn" style="display:block;margin-top:12px">Was your whole claim rejected? Start here &rarr;</button>
     </div>
     <details class="card gcdet hospcard" id="hospCard">
       <summary><span id="hsHead">Still in hospital? Time limits for cashless approval</span></summary>
@@ -613,8 +617,36 @@
   <div class="tabpage" id="page-letter">
     <h2 class="sec-label" id="secLetter">Letter</h2>
     <p class="emptystate" id="letterEmpty">Enter your settlement figures, or check your itemised bill in Findings, to draft a letter.</p>
+    <details class="card gcdet rejcard" id="rejCard">
+      <summary><span id="rjHead">Was the whole claim rejected?</span></summary>
+      <div class="ldf rjbody">
+        <p class="plain" id="rjIntro">If the insurer refused the whole claim, or a request for cashless treatment, ClearBill drafts a letter to its grievance officer asking it to review the decision, quoting IRDAI's rules. Nothing is sent from here.</p>
+        <label for="rj_text" id="rjLblText">The rejection letter (optional)</label>
+        <textarea id="rj_text" rows="4" maxlength="20000"></textarea>
+        <p class="ldnote" id="rjTextNote" style="margin-left:0">Paste its text, and ClearBill suggests the reason. It stays in this browser.</p>
+        <div class="k" id="rjReasonLbl" style="margin:14px 0 6px">What reason did the insurer give?</div>
+        <div class="chips seg rjreasons" id="rjReasons" role="group" aria-labelledby="rjReasonLbl">
+          <button type="button" class="chip" data-rj="ped" aria-pressed="false" id="rjRped">A pre-existing illness, or something not disclosed</button>
+          <button type="button" class="chip" data-rj="waiting" aria-pressed="false" id="rjRwaiting">A waiting period</button>
+          <button type="button" class="chip" data-rj="excl" aria-pressed="false" id="rjRexcl">Not covered, or an exclusion</button>
+          <button type="button" class="chip" data-rj="docs" aria-pressed="false" id="rjRdocs">Missing documents, or the claim was reported late</button>
+          <button type="button" class="chip" data-rj="need" aria-pressed="false" id="rjRneed">The stay or treatment was not needed</button>
+          <button type="button" class="chip" data-rj="group" aria-pressed="false" id="rjRgroup">Not on the employer's list (group policy)</button>
+          <button type="button" class="chip" data-rj="other" aria-pressed="false" id="rjRother">Another reason, or none given</button>
+        </div>
+        <p class="rpnote hide" id="rjSuggest" role="status"></p>
+        <div id="rjForm" class="hide">
+          <label class="chk"><input type="checkbox" id="rj_cashless"><span id="rjLblCashless">It was a request for cashless treatment that was refused</span></label>
+          <label for="rj_date" id="rjLblDate">Date of the rejection letter</label><input type="date" id="rj_date">
+          <label for="rj_ref" id="rjLblRef">Its reference number, if any</label><input type="text" id="rj_ref" maxlength="80">
+          <label for="rj_amount" id="rjLblAmount">Amount claimed (&#8377;)</label><input type="text" inputmode="decimal" id="rj_amount" maxlength="20">
+          <label for="rj_since" id="rjLblSince">Your cover has been continuous since (counting renewals, and ported or migrated policies)</label><input type="date" id="rj_since">
+        </div>
+        <div id="rjOut"></div>
+      </div>
+    </details>
     <div id="letterConfirm" class="hide">
-      <div class="card">
+      <div class="card" id="letterInclCard">
         <div class="k" id="letterConfirmHead" style="margin-bottom:8px">This letter will include</div>
         <div id="letterIncludes"></div>
       </div>
@@ -1212,6 +1244,7 @@ const LOCAL_LS='clearbill_local_checks', LOCAL_MAX=20; // R12: checks kept on th
 let _userIncl={}, _userInclFor=null;
 const NO_BILL={header:{},line_items:[]};
 let _rcOpen=false;
+let RJ={kind:null,suggested:null}; // R28: a rejected claim
 const HS_LS='clearbill_hospital'; let HS={kind:null}, _hsTimer=null; // R27: "Still in hospital?"
 let _openedLocalId=null; // R25: the saved check now open, so reply work is saved back to it
 const IS_BACKUP=!!document.querySelector('meta[name="clearbill-backup"]'); // R25: the GitHub Pages copy
@@ -1333,6 +1366,25 @@ en: {
   rp_saved_upd:"Saved with the check you opened, on this device.", rp_saved_new:"Saved on this device as a new check, with your reply work. Open it again from My Bills.",
   rr_head:"Room-rent limit in your policy (optional)",
   hs_head:"Still in hospital? Time limits for cashless approval",
+  rj_head:"Was the whole claim rejected?",
+  rj_intro:"If the insurer refused the whole claim, or a request for cashless treatment, ClearBill drafts a letter to its grievance officer asking it to review the decision, quoting IRDAI's rules. Nothing is sent from here.",
+  rj_text:"The rejection letter (optional)", rj_text_note:"Paste its text, and ClearBill suggests the reason. It stays in this browser.",
+  rj_reason_q:"What reason did the insurer give?",
+  rj_r_ped:"A pre-existing illness, or something not disclosed", rj_r_waiting:"A waiting period", rj_r_excl:"Not covered, or an exclusion",
+  rj_r_docs:"Missing documents, or the claim was reported late", rj_r_need:"The stay or treatment was not needed", rj_r_group:"Not on the employer's list (group policy)", rj_r_other:"Another reason, or none given",
+  rj_suggested:r=>`Suggested from the letter: "${r}". Change it if it is wrong.`,
+  rj_cashless:"It was a request for cashless treatment that was refused", rj_date:"Date of the rejection letter", rj_amount:"Amount claimed (₹)",
+  rj_since:"Your cover has been continuous since (counting renewals, and ported or migrated policies)",
+  rj_start:"Was your whole claim rejected? Start here →",
+  rj_need_since:"Enter when your cover began to check the five-year rule.",
+  rj_mor_yes:n=>`${n} months of continuous cover. After 60 months, IRDAI's rules say a claim cannot be contested for non-disclosure or misrepresentation except for established fraud. The letter quotes this and asks the insurer to confirm.`,
+  rj_mor_no:n=>`${n} months of continuous cover: the five-year rule (60 months) does not apply yet. The letter asks for the evidence and the waiting period applied.`,
+  rj_hint_docs:"IRDAI's rules say no claim shall be rejected for want of documents or for late intimation, and that insurers collect documents from the hospital. The letter quotes both.",
+  rj_hint_group:"For employer group policies, IRDAI's rules say no claim shall be denied because the insurer lacks the members' details. The letter quotes this.",
+  rj_hint_ask:"The letter asks for the exact term of your policy relied on, and confirmation that the insurer's claims review committee approved the rejection, as IRDAI's rules require.",
+  rj_missing:x=>`Add these in Your details on this tab: ${x}.`,
+  rj_letter_head:"Letter to the insurer's grievance officer", rj_copy:"Copy the letter",
+  rj_next:"Send it to your insurer's grievance officer: choose your insurer in Your details on this tab to see the email. If the reply does not settle it, or none comes within a month, use \"The insurer replied, or hasn't\" at the end of this tab to draft a follow-up or an Ombudsman complaint.",
   hs_intro:"IRDAI sets time limits for insurers on cashless claims. Note when the hospital sent its request: ClearBill shows the time limit, and a message you can show the insurance desk or send your insurer.",
   hs_which:"What are you waiting for?", hs_admit:"Approval to start treatment", hs_discharge:"Final approval to go home", hs_death:"The patient has died during treatment",
   hs_when:"When the hospital sent the request", hs_now:"Now", hs_patient:"Patient's name (optional)", hs_hospital:"Hospital (optional)",
@@ -1794,6 +1846,25 @@ hi: {
   rp_saved_upd:"आपने जो जाँच खोली थी, उसके साथ इस डिवाइस पर सहेजा गया।", rp_saved_new:"आपके जवाब वाले काम के साथ, इस डिवाइस पर नई जाँच के रूप में सहेजा गया। इसे मेरे बिल से फिर खोलें।",
   rr_head:"आपकी पॉलिसी में कमरे के किराए की सीमा (वैकल्पिक)",
   hs_head:"अभी अस्पताल में हैं? कैशलेस मंज़ूरी की समय-सीमा",
+  rj_head:"क्या पूरा दावा ठुकरा दिया गया?",
+  rj_intro:"अगर बीमा कंपनी ने पूरा दावा, या कैशलेस इलाज का अनुरोध, ठुकरा दिया है, तो ClearBill उसके शिकायत अधिकारी को पत्र तैयार करता है जिसमें IRDAI के नियमों के हवाले से फ़ैसले की दोबारा जाँच माँगी जाती है। यहाँ से कुछ भी भेजा नहीं जाता।",
+  rj_text:"दावा ठुकराने का पत्र (वैकल्पिक)", rj_text_note:"उसका टेक्स्ट चिपकाएँ, ClearBill कारण सुझाएगा। यह इसी ब्राउज़र में रहता है।",
+  rj_reason_q:"बीमा कंपनी ने क्या कारण बताया?",
+  rj_r_ped:"पहले से मौजूद बीमारी, या कुछ बताया नहीं गया", rj_r_waiting:"वेटिंग पीरियड (प्रतीक्षा अवधि)", rj_r_excl:"कवर नहीं, या कोई अपवाद (exclusion)",
+  rj_r_docs:"दस्तावेज़ नहीं, या दावे की सूचना देर से दी गई", rj_r_need:"भर्ती या इलाज की ज़रूरत नहीं थी", rj_r_group:"नियोक्ता की सूची में नाम नहीं (ग्रुप पॉलिसी)", rj_r_other:"कोई और कारण, या कोई कारण नहीं बताया",
+  rj_suggested:r=>`पत्र से सुझाया गया: "${r}"। ग़लत हो तो बदल दें।`,
+  rj_cashless:"यह कैशलेस इलाज का अनुरोध था जो ठुकराया गया", rj_date:"दावा ठुकराने के पत्र की तारीख़", rj_amount:"दावे की रकम (₹)",
+  rj_since:"आपका कवर कब से लगातार है (रिन्यूअल और पोर्ट या माइग्रेट की गई पॉलिसियाँ गिनकर)",
+  rj_start:"क्या आपका पूरा दावा ठुकरा दिया गया? यहाँ से शुरू करें →",
+  rj_need_since:"पाँच साल वाला नियम जाँचने के लिए डालें कि आपका कवर कब शुरू हुआ।",
+  rj_mor_yes:n=>`${n} महीने का लगातार कवर। 60 महीने के बाद, IRDAI के नियमों के अनुसार किसी दावे पर जानकारी न बताने या ग़लत बताने के आधार पर सवाल नहीं उठाया जा सकता, सिवाय साबित धोखाधड़ी के। पत्र इसका हवाला देता है और बीमा कंपनी से पुष्टि माँगता है।`,
+  rj_mor_no:n=>`${n} महीने का लगातार कवर: पाँच साल (60 महीने) वाला नियम अभी लागू नहीं होता। पत्र सबूत और लगाई गई प्रतीक्षा अवधि माँगता है।`,
+  rj_hint_docs:"IRDAI के नियमों के अनुसार कोई दावा दस्तावेज़ों की कमी या देर से सूचना के कारण ठुकराया नहीं जा सकता, और दस्तावेज़ बीमा कंपनी अस्पताल से लेती है। पत्र दोनों का हवाला देता है।",
+  rj_hint_group:"नियोक्ता की ग्रुप पॉलिसियों के लिए, IRDAI के नियमों के अनुसार सदस्यों का विवरण न होने पर कोई दावा ठुकराया नहीं जा सकता। पत्र इसका हवाला देता है।",
+  rj_hint_ask:"पत्र आपकी पॉलिसी की वह शर्त माँगता है जिसके आधार पर दावा ठुकराया गया, और यह पुष्टि कि बीमा कंपनी की क्लेम रिव्यू कमेटी ने इसे मंज़ूरी दी, जैसा IRDAI के नियम कहते हैं।",
+  rj_missing:x=>`इस टैब पर अपने विवरण में ये जोड़ें: ${x}।`,
+  rj_letter_head:"बीमा कंपनी के शिकायत अधिकारी को पत्र", rj_copy:"पत्र कॉपी करें",
+  rj_next:"इसे अपनी बीमा कंपनी के शिकायत अधिकारी को भेजें: ईमेल देखने के लिए इस टैब पर अपने विवरण में बीमा कंपनी चुनें। अगर जवाब से मामला न सुलझे, या एक महीने में जवाब न आए, तो दोबारा पत्र या लोकपाल को शिकायत तैयार करने के लिए इस टैब के अंत में \"बीमा कंपनी ने जवाब दिया, या नहीं दिया\" का उपयोग करें।",
   hs_intro:"IRDAI ने कैशलेस दावों पर बीमा कंपनियों के लिए समय-सीमा तय की है। अस्पताल ने अनुरोध कब भेजा, वह दर्ज करें: ClearBill समय-सीमा दिखाता है, और एक संदेश जो आप बीमा डेस्क को दिखा सकते हैं या बीमा कंपनी को भेज सकते हैं।",
   hs_which:"आप किसका इंतज़ार कर रहे हैं?", hs_admit:"इलाज शुरू करने की मंज़ूरी", hs_discharge:"घर जाने की अंतिम मंज़ूरी", hs_death:"इलाज के दौरान मरीज़ की मृत्यु हो गई है",
   hs_when:"अस्पताल ने अनुरोध कब भेजा", hs_now:"अभी", hs_patient:"मरीज़ का नाम (वैकल्पिक)", hs_hospital:"अस्पताल (वैकल्पिक)",
@@ -2256,6 +2327,25 @@ mr: {
   rp_saved_upd:"तुम्ही उघडलेल्या तपासणीसोबत या डिव्हाइसवर जतन केलं.", rp_saved_new:"तुमच्या उत्तराच्या कामासह, या डिव्हाइसवर नवी तपासणी म्हणून जतन केलं. माझी बिले मधून ती पुन्हा उघडा.",
   rr_head:"तुमच्या पॉलिसीतील खोलीभाड्याची मर्यादा (ऐच्छिक)",
   hs_head:"अजून रुग्णालयात आहात? कॅशलेस मंजुरीची वेळमर्यादा",
+  rj_head:"संपूर्ण दावा नाकारला गेला का?",
+  rj_intro:"विमा कंपनीने संपूर्ण दावा, किंवा कॅशलेस उपचाराची विनंती, नाकारली असेल, तर ClearBill तिच्या तक्रार अधिकाऱ्याला पत्र तयार करतं, ज्यात IRDAI च्या नियमांच्या आधारे निर्णयाचा फेरविचार मागितला जातो. इथून काहीही पाठवलं जात नाही.",
+  rj_text:"दावा नाकारल्याचं पत्र (ऐच्छिक)", rj_text_note:"त्याचा मजकूर पेस्ट करा, ClearBill कारण सुचवेल. तो याच ब्राउझरमध्ये राहतो.",
+  rj_reason_q:"विमा कंपनीने कोणतं कारण दिलं?",
+  rj_r_ped:"आधीपासूनचा आजार, किंवा काहीतरी सांगितलं नाही", rj_r_waiting:"वेटिंग पीरियड (प्रतीक्षा कालावधी)", rj_r_excl:"कव्हर नाही, किंवा एखादा अपवाद (exclusion)",
+  rj_r_docs:"कागदपत्रं नाहीत, किंवा दाव्याची सूचना उशिरा दिली", rj_r_need:"दाखल होण्याची किंवा उपचाराची गरज नव्हती", rj_r_group:"नियोक्त्याच्या यादीत नाव नाही (ग्रुप पॉलिसी)", rj_r_other:"दुसरं कारण, किंवा कारण दिलं नाही",
+  rj_suggested:r=>`पत्रावरून सुचवलं: "${r}". चुकीचं असेल तर बदला.`,
+  rj_cashless:"ही कॅशलेस उपचाराची विनंती होती जी नाकारली गेली", rj_date:"दावा नाकारल्याच्या पत्राची तारीख", rj_amount:"दाव्याची रक्कम (₹)",
+  rj_since:"तुमचं कव्हर कधीपासून सलग आहे (नूतनीकरण, आणि पोर्ट किंवा मायग्रेट केलेल्या पॉलिसी धरून)",
+  rj_start:"तुमचा संपूर्ण दावा नाकारला गेला का? इथून सुरुवात करा →",
+  rj_need_since:"पाच वर्षांचा नियम तपासण्यासाठी तुमचं कव्हर कधी सुरू झालं ते टाका.",
+  rj_mor_yes:n=>`${n} महिन्यांचं सलग कव्हर. 60 महिन्यांनंतर, IRDAI च्या नियमांनुसार माहिती न सांगणं किंवा चुकीची सांगणं या कारणावरून दाव्यावर आक्षेप घेता येत नाही, सिद्ध झालेली फसवणूक वगळता. पत्र याचा हवाला देतं आणि विमा कंपनीकडून खात्री मागतं.`,
+  rj_mor_no:n=>`${n} महिन्यांचं सलग कव्हर: पाच वर्षांचा (60 महिने) नियम अजून लागू होत नाही. पत्र पुरावा आणि लावलेला प्रतीक्षा कालावधी मागतं.`,
+  rj_hint_docs:"IRDAI च्या नियमांनुसार कागदपत्रांच्या अभावी किंवा उशिरा सूचनेमुळे कोणताही दावा नाकारता येत नाही, आणि कागदपत्रं विमा कंपनी रुग्णालयाकडून घेते. पत्र दोन्हींचा हवाला देतं.",
+  rj_hint_group:"नियोक्त्याच्या ग्रुप पॉलिसींसाठी, IRDAI च्या नियमांनुसार सदस्यांचा तपशील नसल्यामुळे कोणताही दावा नाकारता येत नाही. पत्र याचा हवाला देतं.",
+  rj_hint_ask:"पत्र तुमच्या पॉलिसीची ती अट मागतं जिच्या आधारे दावा नाकारला, आणि विमा कंपनीच्या क्लेम रिव्ह्यू कमिटीने त्याला मंजुरी दिल्याची खात्री, जसं IRDAI चे नियम सांगतात.",
+  rj_missing:x=>`या टॅबवरील तुमच्या तपशिलात हे भरा: ${x}.`,
+  rj_letter_head:"विमा कंपनीच्या तक्रार अधिकाऱ्याला पत्र", rj_copy:"पत्र कॉपी करा",
+  rj_next:"ते तुमच्या विमा कंपनीच्या तक्रार अधिकाऱ्याला पाठवा: ईमेल पाहण्यासाठी या टॅबवरील तुमच्या तपशिलात विमा कंपनी निवडा. उत्तराने प्रश्न सुटला नाही, किंवा महिनाभरात उत्तर आलं नाही, तर पुन्हा पत्र किंवा लोकपालाकडे तक्रार तयार करण्यासाठी या टॅबच्या शेवटी \"विमा कंपनीने उत्तर दिलं, किंवा दिलं नाही\" वापरा.",
   hs_intro:"IRDAI ने कॅशलेस दाव्यांवर विमा कंपन्यांसाठी वेळमर्यादा ठरवली आहे. रुग्णालयाने विनंती कधी पाठवली ते नोंदवा: ClearBill वेळमर्यादा दाखवतं, आणि विमा डेस्कला दाखवण्यासाठी किंवा विमा कंपनीला पाठवण्यासाठी एक संदेश.",
   hs_which:"तुम्ही कशाची वाट पाहत आहात?", hs_admit:"उपचार सुरू करण्याची मंजुरी", hs_discharge:"घरी जाण्याची अंतिम मंजुरी", hs_death:"उपचारादरम्यान रुग्णाचा मृत्यू झाला आहे",
   hs_when:"रुग्णालयाने विनंती कधी पाठवली", hs_now:"आता", hs_patient:"रुग्णाचं नाव (ऐच्छिक)", hs_hospital:"रुग्णालय (ऐच्छिक)",
@@ -3191,6 +3281,25 @@ function roomRentCheck(a,inp){
   out.cut2020=lines.length?money((1-out.ratio)*groups.other.sum):null;
   return out;
 }
+// R28: the likely reason in an insurer's rejection letter, from its words. A
+// suggestion only: the user picks the reason on screen. Order matters: a
+// group-membership or pre-existing-disease letter often also says "not
+// covered", so the more specific reasons are tried first.
+const RJ_RE=[
+  ['group',/\b(?:not (?:enrolled|enlisted|found|listed|part of)\b[^.]{0,40}\b(?:member|employee|group)|member(?:ship)? details?|employee (?:data|details|list)|not (?:a )?(?:member|employee) (?:of|under) (?:the )?group)/i],
+  ['ped',/\b(?:pre[\s-]?existing|ped\b|non[\s-]?disclosure|not disclosed|misrepresent\w*|suppression|concealment)/i],
+  ['waiting',/\bwaiting period\b/i],
+  ['docs',/\b(?:documents?|papers)\b[^.]{0,40}\b(?:not (?:submitted|received|provided)|pending|awaited|incomplete)|\b(?:delay(?:ed)? (?:in )?intimation|intimated (?:late|after)|late intimation|not intimated)\b/i],
+  ['need',/\b(?:not (?:medically )?(?:necessary|justified|required|warranted)|(?:on |as )?(?:an )?(?:opd|out[\s-]?patient) basis|for (?:investigation|diagnostic|evaluation) purposes?|observation only|hospitali[sz]ation (?:was )?not (?:required|necessary|justified))/i],
+  ['excl',/\b(?:exclu\w*|excl\s?\d{2}|not covered|not payable under|outside the scope|permanent(?:ly)? exclu\w*)/i],
+];
+function rejectionReason(text){ const t=String(text||''); for(const [k,re] of RJ_RE) if(re.test(t)) return k; return null; }
+// Whole months of continuous cover from one YYYY-MM-DD date to another.
+function coverMonths(since,to){
+  const a=String(since).split('-').map(Number), b=String(to).split('-').map(Number);
+  if(a.length!==3||b.length!==3||a.some(isNaN)||b.some(isNaN)) return null;
+  let m=(b[0]-a[0])*12+(b[1]-a[1]); if(b[2]<a[2]) m--; return m;
+}
 function sectionSums(lines){
   const m={}; lines.forEach(l=>{ const k=l.section||'Uncategorised'; m[k]=(m[k]||0)+(l.total||0); });
   return Object.entries(m).map(([k,v])=>[k,money(v)]);
@@ -3806,7 +3915,7 @@ function rpWindow(c){
   const deadline=addMonthsYmd(c.rdate,12);
   return {known:true,noReply:false,open:true,deadline,late:c.now>deadline};
 }
-function rpMissing(){ const m=RP.ans||{}; return {reasons:!m.reasons,breakdown:!m.breakdown,omb:!m.omb}; }
+function rpMissing(){ const m=RP.ans||{}; return {reasons:!m.reasons,breakdown:!m.breakdown&&!RJ.kind,omb:!m.omb}; } // no line-by-line breakdown to ask for after a full rejection (R28)
 function buildFollowUp(c){
   const {D}=c, L=[], noReply=RP.status==='no', miss=rpMissing();
   if(c.sender) L.push(c.sender); if(D.address) L.push(D.address);
@@ -3842,7 +3951,9 @@ function buildComplaint(c,o){
   sec('Facts'); const F=[];
   const at=c.H.hospital_name?` at ${c.H.hospital_name}`:'', dt=(c.H.admission_datetime&&c.H.discharge_datetime)?` between ${c.H.admission_datetime} and ${c.H.discharge_datetime}`:'';
   F.push(`${c.pname||'The patient'} was hospitalised${at}${dt}, and a claim was made under the policy above.`);
-  if(s){
+  const rj=typeof rjFacts==='function'?rjFacts():null; // R28
+  if(rj) F.push(...rj.facts);
+  else if(s){
     F.push(reimb
       ? `I paid the hospital's bill of ${inr.format(s.total)} and claimed it back. The insurer reimbursed ${inr.format(s.insurer)}, leaving ${inr.format(s.counter)} not reimbursed.`
       : `The hospital's bill was ${inr.format(s.total)}. The insurer approved ${inr.format(s.insurer)}${s.disc?` and the hospital allowed a discount of ${inr.format(s.disc)}`:''}; I paid ${inr.format(s.counter)} at discharge.`);
@@ -3850,7 +3961,7 @@ function buildComplaint(c,o){
       ? `I do not know how much of the ${inr.format(s.counter)} was co-payment under my policy; the insurer has not shown how it was split.`
       : `By my calculation, ${inr.format(s.copayAmt)} of this was co-payment and ${inr.format(s.deduction)} was deducted without an itemised explanation.`);
   }
-  F.push(`${c.sent?`On ${fmtEnYmd(c.sent)} I`:'I'} wrote to the insurer's grievance redressal officer asking for a line-by-line explanation of the deductions, with the policy terms relied on for each (copy attached).`);
+  F.push(`${c.sent?`On ${fmtEnYmd(c.sent)} I`:'I'} wrote to the insurer's grievance redressal officer ${rj?'asking it to review the rejection, with the policy terms relied on':'asking for a line-by-line explanation of the deductions, with the policy terms relied on for each'} (copy attached).`);
   if(noReply) F.push(w.known&&w.open?`I have not received a reply, and more than one month has passed since I sent my letter.`:`I have not received a reply.`);
   else {
     F.push(`The insurer replied${c.rdate?` on ${fmtEnYmd(c.rdate)}`:''}${c.ref?` (reference ${c.ref})`:''}${RP.outcome==='keep'?' and did not withdraw the deduction':''}.`);
@@ -3862,10 +3973,11 @@ function buildComplaint(c,o){
   const docs=[`My health insurance policy`, c.hasBill?`The hospital's final bill and itemised bill`:`The hospital's final bill`,
     reimb?`The insurer's settlement letter`:`The insurer's settlement letter and my payment receipt from the hospital`,
     `My letter to the insurer${c.sent?` dated ${fmtEnYmd(c.sent)}`:''}`];
+  if(rj) docs.push(rj.doc);
   if(!noReply) docs.push(`The insurer's reply${c.rdate?` dated ${fmtEnYmd(c.rdate)}`:''}`);
   docs.forEach(x=>L.push(`   - ${x}`)); L.push(``);
   if(o.amount>0){
-    sec('Nature and extent of the loss'); L.push(`   ${inr.format(o.amount)}, ${reimb?'not reimbursed':'deducted from my claim'}, without an explanation with reference to the terms and conditions of my policy.`,``);
+    sec('Nature and extent of the loss'); L.push(`   ${inr.format(o.amount)}, ${rj?'the amount of the claim that was rejected':reimb?'not reimbursed':'deducted from my claim'}, without an explanation with reference to the terms and conditions of my policy.`,``);
     sec('Relief sought'); L.push(`   I request the Insurance Ombudsman to direct the insurer to pay ${inr.format(o.amount)}, with interest as provided in rule 17(7) of the Insurance Ombudsman Rules, 2017, or, for any part it maintains is not payable, to state the specific terms and conditions of my policy relied on.`,``);
   } else {
     sec('Relief sought'); L.push(`   I request the Insurance Ombudsman to direct the insurer to pay the amount deducted without a basis in my policy, with interest as provided in rule 17(7) of the Insurance Ombudsman Rules, 2017, or to state the specific terms and conditions of my policy relied on for each deduction.`,``);
@@ -3907,7 +4019,9 @@ function rpRender(){
   h+=`<label class="chk"><input type="checkbox" id="rpDocs"${RP.docs?' checked':''}><span>${T_.rp_docs}</span></label>`;
   if(c.sent&&c.rdate&&c.rdate>=c.sent){ const days=Math.round((Date.parse(c.rdate)-Date.parse(c.sent))/864e5); h+=`<p class="rpnote">${T_.rp_days(days)}</p>`; }
   h+=`<div id="rpActs"></div>`;
-  out.innerHTML=h; rpRenderActs();
+  out.innerHTML=h;
+  if(RJ.kind){ const b=out.querySelector('input[data-rpk="breakdown"]'); if(b) b.closest('label').remove(); }
+  rpRenderActs();
 }
 function rpRenderActs(){
   const el=$('rpActs'); if(!el) return;
@@ -3928,7 +4042,7 @@ function rpRenderOut(){
   if(RP.show!=='complaint') return;
   const w=rpWindow(c), offices=ombudsmanFor(c.D.state), branch=$('rp_branch').value.trim();
   const amt=parseAmount($('rp_amount').value).n, amount=amt!=null&&amt>0?money(amt):0;
-  const s=c.s; $('rpAmountNote').textContent=!s?'':s.copayUnknown?T_.rp_amount_unknown:s.deduction>0?T_.rp_amount_pre(makeInr(LANG).format(s.deduction)):'';
+  const s=RJ.kind?null:c.s; $('rpAmountNote').textContent=!s?'':s.copayUnknown?T_.rp_amount_unknown:s.deduction>0?T_.rp_amount_pre(makeInr(LANG).format(s.deduction)):'';
   const miss=[[!c.sender,'rp_m_name'],[!c.D.address,'rp_m_address'],[!c.insurer,'rp_m_insurer'],[!c.D.policy,'rp_m_policy'],[!branch,'rp_m_branch'],[!c.D.state,'rp_m_state'],[!c.sent,'rp_m_sent'],[!(amount>0),'rp_m_amount']].filter(x=>x[0]).map(x=>T_[x[1]]);
   let h='';
   if(RP.status==='no'&&w.known&&!w.open) h+=`<p class="rpwarn">${T_.rp_too_early(fmtYmd(w.opens))}</p>`;
@@ -3967,7 +4081,7 @@ $('replyCard').addEventListener('click',e=>{
   if(o){ RP.outcome=o.dataset.rpo; o.parentNode.querySelectorAll('[data-rpo]').forEach(x=>{ const on=x===o; x.classList.toggle('on',on); x.setAttribute('aria-pressed',String(on)); }); rpRenderActs(); if(RP.show) rpRenderOut(); return; }
   const a=e.target.closest('[data-rpact]');
   if(a){ RP.show=a.dataset.rpact;
-    if(RP.show==='complaint'&&!$('rp_amount').value.trim()){ const s=settleOk(); if(s&&!s.copayUnknown&&s.deduction>0) $('rp_amount').value=String(s.deduction); }
+    if(RP.show==='complaint'&&!$('rp_amount').value.trim()){ const rjA=RJ.kind?parseAmount($('rj_amount').value).n:null; if(rjA>0) $('rp_amount').value=String(money(rjA)); const s=RJ.kind?null:settleOk(); if(s&&!s.copayUnknown&&s.deduction>0) $('rp_amount').value=String(s.deduction); }
     rpRenderOut(); const box=$(RP.show==='follow'?'rpFollowBox':'rpComplaintBox'); box.scrollIntoView({behavior:'smooth',block:'start'});
     const hd=box.querySelector('.k'); if(hd){ hd.tabIndex=-1; hd.focus({preventScroll:true}); } return; }
   const cp=e.target.closest('[data-rpcopy]');
@@ -4498,6 +4612,10 @@ function applyStaticI18n(){
   if($('backupNote')){ $('backupNote').classList.toggle('hide',!IS_BACKUP); $('backupNoteTxt').textContent=T_.backup_note; $('backupMainLink').textContent=T_.backup_main; }
   if($('gcStrip')&&IS_BACKUP) $('gcStrip').classList.add('hide');
   if($('backupAbout')){ $('backupAbout').classList.toggle('hide',IS_BACKUP||!BACKUP_URL); $('backupAboutTxt').textContent=T_.backup_about; $('backupAboutLink').href=BACKUP_URL; $('backupAboutLink').textContent=BACKUP_URL.replace(/^https:\/\/|\/$/g,''); }
+  [['rjHead','rj_head'],['rjIntro','rj_intro'],['rjLblText','rj_text'],['rjTextNote','rj_text_note'],['rjReasonLbl','rj_reason_q'],['rjRped','rj_r_ped'],['rjRwaiting','rj_r_waiting'],['rjRexcl','rj_r_excl'],
+   ['rjRdocs','rj_r_docs'],['rjRneed','rj_r_need'],['rjRgroup','rj_r_group'],['rjRother','rj_r_other'],['rjLblCashless','rj_cashless'],['rjLblDate','rj_date'],['rjLblRef','rp_ref'],['rjLblAmount','rj_amount'],
+   ['rjLblSince','rj_since'],['bysRejectedBtn','rj_start']].forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
+  if(window.__rjReady) rjRender();
   [['hsHead','hs_head'],['hsIntro','hs_intro'],['hsWhichLbl','hs_which'],['hsAdmitBtn','hs_admit'],['hsDischargeBtn','hs_discharge'],['hsDeathBtn','hs_death'],['hsLblWhen','hs_when'],['hsNowBtn','hs_now'],
    ['hsLblPatient','hs_patient'],['hsLblHospital','hs_hospital'],['hsLblRef','hs_ref'],['hsLblIns','hs_ins'],['hsInsNone','hs_ins_none']].forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
   if(typeof hsRender==='function') hsRender();
@@ -4687,9 +4805,11 @@ function renderLetterTab(){
   const hasBill = !!(window.__lastExtraction && window.__lastExtraction.line_items && window.__lastExtraction.line_items.length>0);
   const data = hasBill ? window.__lastExtraction : NO_BILL;
   const s=settleOk(), canWrite = hasBill || !!s;
-  $('letterEmpty').classList.toggle('hide', canWrite);
-  $('letterConfirm').classList.toggle('hide', !canWrite);
-  $('replyCard').classList.toggle('hide', !canWrite);
+  const rj=!!RJ.kind; // R28: a rejected claim needs "Your details" and the reply card, with no bill
+  $('letterEmpty').classList.toggle('hide', canWrite||rj);
+  $('letterConfirm').classList.toggle('hide', !canWrite&&!rj);
+  $('letterInclCard').classList.toggle('hide', !canWrite); $('genLetterTab').classList.toggle('hide', !canWrite);
+  $('replyCard').classList.toggle('hide', !canWrite&&!rj);
   if(!canWrite) return;
   if(_userInclFor!==data){ _userIncl={}; _userInclFor=data; }
   const a=analyseFor(data);
@@ -4724,7 +4844,7 @@ $('clearYesBtn').addEventListener('click',()=>{
   try{ localStorage.removeItem(DRAFT_LS); localStorage.removeItem(LD_KEY); sessionStorage.removeItem(LD_KEY); localStorage.removeItem(KEY_LS); localStorage.removeItem(LOCAL_LS); }catch(e){}
   if(typeof renderLocalList==='function') renderLocalList();
   _openedLocalId=null; if(typeof rpRestore==='function') rpRestore(null);
-  try{ sessionStorage.removeItem(HS_LS); }catch(e){} HS.kind=null; ['hs_when','hs_patient','hs_hospital','hs_ref','hs_ins'].forEach(id=>{ $(id).value=''; }); hsRender();
+  try{ sessionStorage.removeItem(HS_LS); sessionStorage.removeItem('clearbill_rejection'); }catch(e){} RJ.kind=null; RJ.suggested=null; ['rj_text','rj_date','rj_ref','rj_amount','rj_since'].forEach(id=>{ $(id).value=''; }); $('rj_cashless').checked=false; if(typeof rjRender==='function') rjRender(); HS.kind=null; ['hs_when','hs_patient','hs_hospital','hs_ref','hs_ins'].forEach(id=>{ $(id).value=''; }); hsRender();
   Object.values(F).forEach(el=>{ el.value=''; }); Object.values(RR).forEach(el=>{ el.value=''; }); markChips(-1); setSettleMode('cashless',true); $('apiKey').value='';
   LD_FIELDS.forEach(f=>{ $('ld_'+f).value=''; }); $('ld_asked').checked=false; $('ld_docs').checked=false; $('ld_remember').checked=false;
   if(typeof signOut==='function') signOut(); // the My Bills sign-in session is also "saved on this device"
@@ -5242,10 +5362,118 @@ $('hsOut').addEventListener('click',e=>{
 });
 // #hospital opens it directly (a link someone can send from the ward).
 const openHospitalFromHash=()=>{ if(location.hash==='#hospital'){ switchTab('settlement'); $('hospCard').open=true; $('hospCard').scrollIntoView({block:'start'}); } };
+/* R28: "Was the whole claim rejected?" A letter to the insurer's grievance
+   officer asking it to review a full rejection (or a refused cashless
+   request), quoting only rules read in the current texts on 13 Oct 2026:
+     Health Master Circular, 29 May 2024: para 17(a) (no repudiation without
+     the PMC or its Claims Review Committee), 17(b) (full details with the
+     specific policy terms), 17(c) (documents collected from the hospital),
+     paras 11-12 (waiting-period and moratorium credits carry over on
+     migration and portability), para 19 (the response includes the
+     Ombudsman's contact details);
+     Policyholders' Interests Master Circular, 5 Sep 2024, Part B: no claim
+     contestable for non-disclosure or misrepresentation after 60 months of
+     continuous coverage except for established fraud; no rejection for want
+     of documents or delayed intimation; on employer group policies, no claim
+     denied for want of members' details; 14 days to resolve a complaint.
+   (Part A's "legally tenable evidence" line is about life insurance and is
+   not used.) Everything else is asked, not asserted. Kept for this browser
+   session only. The reply card (R24) then continues it, worded for a
+   rejection: rjFacts() feeds its follow-up and Ombudsman complaint. */
+const RJ_LS='clearbill_rejection';
+const RJ_PHRASE={ped:'on the ground of a pre-existing disease or non-disclosure',waiting:'on the ground of a waiting period',excl:'on the ground that the treatment is not covered or is excluded',
+  docs:'on the ground of missing documents or late intimation of the claim',need:'on the ground that the hospitalisation or treatment was not needed',group:"on the ground that I was not on the group policy's list of members",other:''};
+function rjCtx(){
+  const v=id=>$(id).value.trim(), D=readLetterDetails(), n=parseAmount(v('rj_amount')).n, date=okYmd(v('rj_date'))?v('rj_date'):null, since=okYmd(v('rj_since'))?v('rj_since'):null;
+  return {D,date,ref:v('rj_ref'),since,amount:n!=null&&n>0?money(n):0,cashless:$('rj_cashless').checked,insurer:D.insurer||D.gro||'',
+    months:since?coverMonths(since,date||todayYmd()):null};
+}
+function rjFacts(){
+  if(!RJ.kind) return null;
+  const c=rjCtx(), ph=RJ_PHRASE[RJ.kind];
+  return {facts:[`The insurer rejected the ${c.cashless?'request for cashless treatment':'claim'}${c.date?` by its letter dated ${fmtEnYmd(c.date)}`:''}${c.ref?` (reference ${c.ref})`:''}${ph?`, ${ph}`:''}.`],
+    doc:`The insurer's rejection letter${c.date?` dated ${fmtEnYmd(c.date)}`:''}`};
+}
+function buildRejectionLetter(){
+  const c=rjCtx(), D=c.D, inr=makeInr('en'), L=[], what=c.cashless?'request for cashless treatment':'claim';
+  if(D.name) L.push(D.name); if(D.address) L.push(D.address);
+  L.push(fmtEnYmd(todayYmd()),``,`To: The Grievance Redressal Officer`); if(c.insurer) L.push(`    ${c.insurer}`);
+  L.push(``,`Subject: Request to review the rejection of my ${c.cashless?'cashless request':'claim'}${D.claim?` - Claim no. ${D.claim}`:''}${c.ref?` (your reference ${c.ref})`:''}`,``);
+  L.push(`My ${what} was rejected${c.date?` by your letter dated ${fmtEnYmd(c.date)}`:''}${RJ_PHRASE[RJ.kind]?` ${RJ_PHRASE[RJ.kind]}`:''}. I ask you to review this decision.${c.date?' I attach a copy of your letter.':''}`,``);
+  const k=RJ.kind;
+  if(k==='ped'&&c.months!=null&&c.months>=60) L.push(`My health insurance cover has been continuous since ${fmtEnYmd(c.since)}, counting renewals and any ported or migrated policies. IRDAI's Master Circular on Protection of Policyholders' Interests (5 September 2024, Part B) provides that "No policy and claim of health insurance shall be contestable on any grounds of non-disclosure and/or misrepresentation except for established fraud, after the completion of the Moratorium Period, i.e. 60 months of continuous coverage". Please confirm whether 60 months of continuous coverage had been completed when this claim arose and, if so, whether you allege established fraud. If you do not, please withdraw the rejection and settle the claim.`,``);
+  else if(k==='ped') L.push(`Please send the evidence that the condition existed before my cover began, and the waiting period you applied to it, with the date from which you counted it, including the credit for any earlier, renewed, ported or migrated policies.`,``);
+  if(k==='waiting') L.push(`Please state the waiting period you applied, the date from which you counted it, and whether you counted the credit from my earlier, renewed, ported or migrated policies. IRDAI's Master Circular on Health Insurance Business (29 May 2024, paras 11 and 12) provides that on migration and portability the credits gained carry over, including "Specific Waiting periods, waiting period for pre-existing diseases, Moratorium period".`,``);
+  if(k==='excl') L.push(`Please quote the exclusion or the term of my policy relied on, with its number and wording, and explain how it applies to this treatment.`,``);
+  if(k==='docs') L.push(`IRDAI's Master Circular on Protection of Policyholders' Interests (5 September 2024, Part B) provides that "No claim shall be rejected or closed for want of documents or for delayed intimation of claim", and its Master Circular on Health Insurance Business (29 May 2024, para 17(c)) that insurers and TPAs "shall collect the required documents from the Hospitals". Please withdraw the rejection, and collect any documents you need from the hospital.`,``);
+  if(k==='need') L.push(`Please send the medical opinion relied on, who gave it, and the term of my policy under which the hospitalisation or treatment is not payable.`,``);
+  if(k==='group') L.push(`IRDAI's Master Circular on Protection of Policyholders' Interests (5 September 2024, Part B) provides, for employer group policies, that "No claim shall be denied for non-availability of details of members of the group". Please confirm my membership with the employer and settle the claim.`,``);
+  const reqs=[
+    `The specific terms and conditions of my policy relied on for the rejection. IRDAI's Master Circular on Health Insurance Business (29 May 2024, para 17(b)) requires that where a claim is repudiated, details are conveyed to the claimant "along with full details giving reference to the specific terms and conditions of the policy document".`,
+    `Confirmation that the rejection was approved by your Product Management Committee or its Claims Review Committee: para 17(a) of the same Master Circular provides that "No claim shall be repudiated without the approval of PMC or a three-member sub-group of PMC called the Claims Review Committee (CRC)".`,
+    `A review of the decision, and settlement of my ${what}${c.amount?` of ${inr.format(c.amount)}`:''}.`,
+    `The contact details of the Insurance Ombudsman, which para 19 of the same Master Circular requires your response to include.`];
+  L.push(`I request:`); reqs.forEach((r,i)=>L.push(`  ${i+1}. ${r}`));
+  L.push(``,`I would be grateful for a reply within 14 days, the time IRDAI's Master Circular on Protection of Policyholders' Interests (5 September 2024) gives insurers to resolve a complaint. If the rejection is not withdrawn, I may approach the Insurance Ombudsman under the Insurance Ombudsman Rules, 2017.`,``,`Yours faithfully,`);
+  const sig=[D.name,D.policy?`Policy no. ${D.policy}`:'',D.contact].filter(Boolean); if(sig.length) L.push(sig.join('  -  '));
+  return L.join('\n');
+}
+function rjRender(){
+  const T_=S(), out=$('rjOut'); if(!out) return;
+  document.querySelectorAll('#rjReasons [data-rj]').forEach(b=>{ const on=b.dataset.rj===RJ.kind; b.classList.toggle('on',on); b.setAttribute('aria-pressed',String(on)); });
+  $('rjSuggest').classList.toggle('hide',!RJ.suggested);
+  if(RJ.suggested) $('rjSuggest').textContent=T_.rj_suggested(T_['rj_r_'+RJ.suggested]);
+  $('rjForm').classList.toggle('hide',!RJ.kind);
+  if(!RJ.kind){ out.innerHTML=''; return; }
+  const c=rjCtx(); let h='';
+  if(RJ.kind==='ped') h+=`<p class="rpnote">${c.months==null?T_.rj_need_since:c.months>=60?T_.rj_mor_yes(c.months):T_.rj_mor_no(Math.max(0,c.months))}</p>`;
+  h+=`<p class="rpnote">${RJ.kind==='docs'?T_.rj_hint_docs:RJ.kind==='group'?T_.rj_hint_group:T_.rj_hint_ask}</p>`;
+  const miss=[[!c.D.name,'rp_m_name'],[!c.insurer,'rp_m_insurer'],[!c.D.policy,'rp_m_policy']].filter(x=>x[0]).map(x=>T_[x[1]]);
+  if(miss.length) h+=`<p class="rpnote">${T_.rj_missing(miss.join(', '))} <button class="link" type="button" id="rjGoDetails">${T_.rp_go_details}</button></p>`;
+  h+=`<div class="k" style="margin:14px 0 6px">${T_.rj_letter_head}</div>${LANG!=='en'?`<p class="ldnote" style="margin-left:0">${T_.rp_note_en}</p>`:''}<div class="letter" id="rjLetter">${esc(buildRejectionLetter())}</div>`
+    +`<div class="rpbtns"><button class="btn sm" type="button" id="rjCopyBtn">${T_.rj_copy}</button><button class="btn sm ghost" type="button" id="rjDlBtn">${T_.rp_download}</button></div>`
+    +`<p class="rpnote">${T_.rj_next}</p><p class="ldnote" style="margin-left:0">${T_.rp_not_legal}</p>`;
+  out.innerHTML=h;
+}
+function rjSave(){ try{ sessionStorage.setItem(RJ_LS,JSON.stringify({kind:RJ.kind,text:$('rj_text').value,date:$('rj_date').value,ref:$('rj_ref').value,amount:$('rj_amount').value,since:$('rj_since').value,cashless:$('rj_cashless').checked})); }catch(e){} }
+function rjChanged(){ rjRender(); rjSave(); renderLetterTab(); if(RP.show) rpRenderOut(); }
+(function rjInit(){
+  $('rj_date').max=todayYmd(); $('rj_since').max=todayYmd();
+  try{ const d=JSON.parse(sessionStorage.getItem(RJ_LS)||'null'); if(d&&typeof d==='object'){
+    const str=(v,n)=>typeof v==='string'?v.slice(0,n):'';
+    RJ.kind=Object.prototype.hasOwnProperty.call(RJ_PHRASE,d.kind)?d.kind:null;
+    $('rj_text').value=str(d.text,20000); $('rj_date').value=okYmd(d.date)?d.date:''; $('rj_since').value=okYmd(d.since)?d.since:'';
+    $('rj_ref').value=str(d.ref,80); $('rj_amount').value=str(d.amount,20); $('rj_cashless').checked=d.cashless===true;
+    if(RJ.kind) $('rejCard').open=true;
+  } }catch(e){}
+  rjRender(); window.__rjReady=true;
+})();
+document.querySelectorAll('#rjReasons [data-rj]').forEach(b=>b.addEventListener('click',()=>{ RJ.kind=b.dataset.rj; RJ.suggested=null; rjChanged(); }));
+$('rj_text').addEventListener('input',()=>{ const k=rejectionReason($('rj_text').value); if(k&&(!RJ.kind||RJ.suggested)){ RJ.kind=k; RJ.suggested=k; } rjChanged(); });
+['rj_date','rj_ref','rj_amount','rj_since'].forEach(id=>$(id).addEventListener('input',rjChanged));
+$('rj_cashless').addEventListener('change',rjChanged);
+$('rejCard').addEventListener('click',e=>{
+  const T_=S();
+  if(e.target.closest('#rjCopyBtn')){ const b=$('rjCopyBtn'); copyText($('rjLetter').textContent).then(done=>{ b.textContent=done?T_.copied_btn:T_.copy_failed_btn; announce(b.textContent); setTimeout(()=>{ b.textContent=T_.rj_copy; },2000); }); }
+  if(e.target.closest('#rjDlBtn')) downloadText($('rjLetter').textContent,'clearbill-rejection-letter.txt','text/plain;charset=utf-8');
+  if(e.target.closest('#rjGoDetails')){ $('letterDetails').scrollIntoView({behavior:'smooth',block:'start'}); $('ld_name').focus({preventScroll:true}); }
+});
+// A detail typed in "Your details" updates the letter here too.
+document.querySelectorAll('#letterDetails input,#letterDetails textarea,#letterDetails select').forEach(el=>el.addEventListener('input',()=>{ if(RJ.kind) rjRender(); }));
+// The reply card, worded for a rejection when one is being handled.
+const _buildFollowUpCore=buildFollowUp;
+buildFollowUp=function(c){
+  const t=_buildFollowUpCore(c); if(!RJ.kind) return t;
+  return t.replace('request for a line-by-line explanation of deductions','request to review the rejection of my '+($('rj_cashless').checked?'cashless request':'claim'))
+    .replace('asking for a line-by-line explanation of the deductions from my claim, with the policy terms relied on for each','asking you to review the rejection of my claim, with the policy terms relied on');
+};
+const openRejectedFromHash=()=>{ if(location.hash==='#rejected'){ switchTab('letter'); $('rejCard').open=true; $('rejCard').scrollIntoView({block:'start'}); } };
+$('bysRejectedBtn').addEventListener('click',()=>{ switchTab('letter'); $('rejCard').open=true; $('rejCard').scrollIntoView({behavior:'smooth',block:'start'}); });
 
 const openExampleFromHash=()=>{ if(location.hash==='#example'){ loadWorkedExample(); switchTab('findings'); } };
 openExampleFromHash(); window.addEventListener('hashchange',openExampleFromHash);
 openHospitalFromHash(); window.addEventListener('hashchange',openHospitalFromHash);
+openRejectedFromHash(); window.addEventListener('hashchange',openRejectedFromHash);
 renderBeforeStart();
 </script>
 </body>
