@@ -147,7 +147,7 @@
   .omb .ombh{font-weight:600;margin-bottom:6px}
   .omb .ombo{margin:6px 0;font-size:.88rem;line-height:1.45}
   .omb .ombj{margin-top:4px;color:var(--soft);font-size:.8rem}
-  .omb .ombsrc,.ombnote{margin:8px 0 0;color:var(--soft);font-size:.8rem}
+  .ombsrc,.ombnote{margin:8px 0 0;color:var(--soft);font-size:.8rem}
   .impact{margin:6px 0 0;font-size:.78rem;color:var(--soft);max-width:34ch}
   .impact b{color:var(--ink);font-weight:600}
   #readerNote{margin:0 0 10px}
@@ -316,6 +316,13 @@
   .rcform .btn{margin:6px 12px 0 0}
   .rcerr{color:var(--red)}
   .rcdone{margin-top:10px}
+  details.hospcard{margin-bottom:12px}
+  details.hospcard[open]>summary{margin-bottom:8px}
+  .hsseg{flex-wrap:wrap} .hsseg .hsdeath{flex-basis:100%}
+  .hsrow{display:flex;gap:8px;align-items:stretch} .hsrow input{flex:1;min-width:0} .hsrow .btn{flex:none;width:auto;padding:0 18px}
+  .ldf input[type=datetime-local]{width:100%;min-height:44px;border:1.5px solid var(--ctl);border-radius:9px;padding:9px 12px;font-size:.95rem;font-family:"Spectral",serif;color:var(--ink);background:var(--field);outline:none}
+  .ldf input[type=datetime-local]:focus{border-color:var(--ink);background:var(--card);box-shadow:0 0 0 3px var(--ochre-bg)}
+  .hsby{font-size:.92rem;margin:14px 0 0} .hsby b{font-family:"Archivo",sans-serif} .hsby b.hsover{color:var(--red)}
   .rrdet .db2 label{margin-top:12px}
   .rrout{margin-top:12px;font-size:.88rem;line-height:1.5}
   .rrout p{margin:0 0 8px}
@@ -480,6 +487,27 @@
       <ol><li id="bys1">The hospital's final bill, and its itemised (detailed) bill</li><li id="bys2">Your insurer's or TPA's settlement letter</li><li id="bys3">Your payment receipt from the hospital</li></ol>
       <button class="btn ghost sm" type="button" id="bysExampleBtn">No papers to hand? See the worked example</button>
     </div>
+    <details class="card gcdet hospcard" id="hospCard">
+      <summary><span id="hsHead">Still in hospital? Time limits for cashless approval</span></summary>
+      <div class="ldf hsbody">
+        <p class="plain" id="hsIntro">IRDAI sets time limits for insurers on cashless claims. Note when the hospital sent its request: ClearBill shows the time limit, and a message you can show the insurance desk or send your insurer.</p>
+        <div class="k" id="hsWhichLbl" style="margin:12px 0 6px">What are you waiting for?</div>
+        <div class="chips seg hsseg" id="hsSeg" role="group" aria-labelledby="hsWhichLbl">
+          <button type="button" class="chip" data-hs="admit" aria-pressed="false" id="hsAdmitBtn">Approval to start treatment</button>
+          <button type="button" class="chip" data-hs="discharge" aria-pressed="false" id="hsDischargeBtn">Final approval to go home</button>
+          <button type="button" class="chip hsdeath" data-hs="death" aria-pressed="false" id="hsDeathBtn">The patient has died during treatment</button>
+        </div>
+        <div id="hsForm" class="hide">
+          <div id="hsWhenRow"><label for="hs_when" id="hsLblWhen">When the hospital sent the request</label>
+            <div class="hsrow"><input type="datetime-local" id="hs_when"><button class="btn sm ghost" type="button" id="hsNowBtn">Now</button></div></div>
+          <label for="hs_patient" id="hsLblPatient">Patient's name (optional)</label><input type="text" id="hs_patient" maxlength="120" autocomplete="off">
+          <label for="hs_hospital" id="hsLblHospital">Hospital (optional)</label><input type="text" id="hs_hospital" maxlength="160">
+          <label for="hs_ref" id="hsLblRef">Claim or pre-authorisation number (optional)</label><input type="text" id="hs_ref" maxlength="60">
+          <label for="hs_ins" id="hsLblIns">Your insurer, to show its grievance contact (optional)</label><select id="hs_ins"><option value="" id="hsInsNone">Choose your insurer (optional)</option></select>
+        </div>
+        <div id="hsOut"></div>
+      </div>
+    </details>
     <button class="link" id="skipToFindingsBtn" style="margin:-2px 0 12px;display:block">Have the itemised bill but not these numbers? Check it directly &rarr;</button>
     <div class="card">
       <p class="notez hide" id="restoredNote" role="status" style="margin:0 0 12px"><span id="restoredTxt"></span> <button class="link" type="button" id="restoredClearBtn"></button></p>
@@ -1184,6 +1212,7 @@ const LOCAL_LS='clearbill_local_checks', LOCAL_MAX=20; // R12: checks kept on th
 let _userIncl={}, _userInclFor=null;
 const NO_BILL={header:{},line_items:[]};
 let _rcOpen=false;
+const HS_LS='clearbill_hospital'; let HS={kind:null}, _hsTimer=null; // R27: "Still in hospital?"
 let _openedLocalId=null; // R25: the saved check now open, so reply work is saved back to it
 const IS_BACKUP=!!document.querySelector('meta[name="clearbill-backup"]'); // R25: the GitHub Pages copy
 // R25: the backup copy's address, shown on the About tab. Empty until GitHub
@@ -1303,6 +1332,23 @@ en: {
   rp_save:"Save on this device", rp_save_note:"Keeps the reply, your ticks and the complaint details with this check, on this device only. Nothing is sent.",
   rp_saved_upd:"Saved with the check you opened, on this device.", rp_saved_new:"Saved on this device as a new check, with your reply work. Open it again from My Bills.",
   rr_head:"Room-rent limit in your policy (optional)",
+  hs_head:"Still in hospital? Time limits for cashless approval",
+  hs_intro:"IRDAI sets time limits for insurers on cashless claims. Note when the hospital sent its request: ClearBill shows the time limit, and a message you can show the insurance desk or send your insurer.",
+  hs_which:"What are you waiting for?", hs_admit:"Approval to start treatment", hs_discharge:"Final approval to go home", hs_death:"The patient has died during treatment",
+  hs_when:"When the hospital sent the request", hs_now:"Now", hs_patient:"Patient's name (optional)", hs_hospital:"Hospital (optional)",
+  hs_ref:"Claim or pre-authorisation number (optional)", hs_ins:"Your insurer, to show its grievance contact (optional)", hs_ins_none:"Choose your insurer (optional)",
+  hs_need_when:"Enter when the hospital sent the request (the desk can tell you), or press Now.",
+  hs_future:"That time is in the future. Check the date and time.",
+  hs_by_admit:t=>`The insurer should decide by ${t}: within one hour of the request.`,
+  hs_by_discharge:t=>`The insurer should give final approval by ${t}: within three hours of the request.`,
+  hs_hm:(h,m)=>`${h?h+' h ':''}${m} min`, hs_left:x=>`${x} left.`, hs_over:x=>`That time passed ${x} ago.`,
+  hs_extra:"If final approval comes later than that, any extra the hospital charges for the wait should be borne by the insurer, not you. Note the times, and ask the hospital to show any such charge separately on the bill.",
+  hs_death_note:"If the patient has died during treatment, the insurer must process the claim and have the body released from the hospital immediately. The message below asks for that.",
+  hs_msg_head:"A message to show the insurance desk or send your insurer", hs_note_en:"The message is in English, like the letter.",
+  hs_copy:"Copy the message", hs_share:"Share",
+  hs_who:"Show it at the hospital's insurance (TPA) desk, or send it to your insurer.",
+  hs_src:"From IRDAI's Master Circular on Health Insurance Business (29 May 2024), paras 15 and 16, and its Master Circular on Protection of Policyholders' Interests (5 September 2024), Part B. Checked on 13 October 2026.",
+  hs_not_legal:"This helps you ask; it is not legal advice.",
   rr_intro:"Many policies pay room rent only up to a limit per day, stated in the policy schedule or Customer Information Sheet as an amount or a share of the sum insured (1% of ₹3,00,000 is ₹3,000). Above it, you pay the difference, and some policies also cut other charges in the same proportion.",
   rr_limit:"Room rent your policy allows per day", rr_rate:"Room charged per day", rr_rate_hint:"— leave blank to use the bill", rr_days:"Days in the room",
   rr_detected:(rate,days,rates)=>`Your bill shows a room at ${rate} a day${days?` for ${days} day${days==1?'':'s'}`:''}${rates?` (more than one rate: ${rates}; the highest is used)`:''}.`,
@@ -1747,6 +1793,23 @@ hi: {
   rp_save:"इस डिवाइस पर सहेजें", rp_save_note:"जवाब, आपके निशान और शिकायत का विवरण इस जाँच के साथ सिर्फ़ इसी डिवाइस पर रहते हैं। कुछ भी भेजा नहीं जाता।",
   rp_saved_upd:"आपने जो जाँच खोली थी, उसके साथ इस डिवाइस पर सहेजा गया।", rp_saved_new:"आपके जवाब वाले काम के साथ, इस डिवाइस पर नई जाँच के रूप में सहेजा गया। इसे मेरे बिल से फिर खोलें।",
   rr_head:"आपकी पॉलिसी में कमरे के किराए की सीमा (वैकल्पिक)",
+  hs_head:"अभी अस्पताल में हैं? कैशलेस मंज़ूरी की समय-सीमा",
+  hs_intro:"IRDAI ने कैशलेस दावों पर बीमा कंपनियों के लिए समय-सीमा तय की है। अस्पताल ने अनुरोध कब भेजा, वह दर्ज करें: ClearBill समय-सीमा दिखाता है, और एक संदेश जो आप बीमा डेस्क को दिखा सकते हैं या बीमा कंपनी को भेज सकते हैं।",
+  hs_which:"आप किसका इंतज़ार कर रहे हैं?", hs_admit:"इलाज शुरू करने की मंज़ूरी", hs_discharge:"घर जाने की अंतिम मंज़ूरी", hs_death:"इलाज के दौरान मरीज़ की मृत्यु हो गई है",
+  hs_when:"अस्पताल ने अनुरोध कब भेजा", hs_now:"अभी", hs_patient:"मरीज़ का नाम (वैकल्पिक)", hs_hospital:"अस्पताल (वैकल्पिक)",
+  hs_ref:"दावा या प्री-ऑथराइज़ेशन नंबर (वैकल्पिक)", hs_ins:"आपकी बीमा कंपनी, उसका शिकायत संपर्क दिखाने के लिए (वैकल्पिक)", hs_ins_none:"अपनी बीमा कंपनी चुनें (वैकल्पिक)",
+  hs_need_when:"अस्पताल ने अनुरोध कब भेजा, वह डालें (डेस्क बता सकता है), या 'अभी' दबाएँ।",
+  hs_future:"यह समय आगे का है। तारीख़ और समय जाँचें।",
+  hs_by_admit:t=>`बीमा कंपनी को ${t} तक फ़ैसला करना चाहिए: अनुरोध के एक घंटे के भीतर।`,
+  hs_by_discharge:t=>`बीमा कंपनी को ${t} तक अंतिम मंज़ूरी देनी चाहिए: अनुरोध के तीन घंटे के भीतर।`,
+  hs_hm:(h,m)=>`${h?h+' घंटे ':''}${m} मिनट`, hs_left:x=>`${x} बाक़ी।`, hs_over:x=>`यह समय ${x} पहले निकल गया।`,
+  hs_extra:"अगर अंतिम मंज़ूरी इसके बाद आती है, तो इंतज़ार के लिए अस्पताल जो भी अतिरिक्त चार्ज ले, वह बीमा कंपनी को देना चाहिए, आपको नहीं। समय नोट करें, और अस्पताल से ऐसा कोई चार्ज बिल में अलग से दिखाने को कहें।",
+  hs_death_note:"अगर इलाज के दौरान मरीज़ की मृत्यु हो गई है, तो बीमा कंपनी को दावा तुरंत निपटाना चाहिए और पार्थिव शरीर अस्पताल से तुरंत छुड़वाना चाहिए। नीचे का संदेश यही माँगता है।",
+  hs_msg_head:"बीमा डेस्क को दिखाने या बीमा कंपनी को भेजने के लिए संदेश", hs_note_en:"संदेश पत्र की तरह अंग्रेज़ी में है।",
+  hs_copy:"संदेश कॉपी करें", hs_share:"शेयर करें",
+  hs_who:"इसे अस्पताल के बीमा (TPA) डेस्क पर दिखाएँ, या अपनी बीमा कंपनी को भेजें।",
+  hs_src:"IRDAI के स्वास्थ्य बीमा व्यवसाय पर मास्टर सर्कुलर (29 मई 2024), पैरा 15 और 16, और पॉलिसीधारकों के हितों की सुरक्षा पर मास्टर सर्कुलर (5 सितंबर 2024), भाग B से। 13 अक्टूबर 2026 को जाँचा गया।",
+  hs_not_legal:"यह पूछने में मदद करता है; यह क़ानूनी सलाह नहीं है।",
   rr_intro:"कई पॉलिसियाँ कमरे का किराया रोज़ की एक सीमा तक ही देती हैं, जो पॉलिसी शेड्यूल या कस्टमर इन्फ़ॉर्मेशन शीट में रकम या बीमा राशि के हिस्से के रूप में लिखी होती है (₹3,00,000 का 1% यानी ₹3,000)। इससे ऊपर का अंतर आप देते हैं, और कुछ पॉलिसियाँ दूसरे चार्ज भी उसी अनुपात में काटती हैं।",
   rr_limit:"आपकी पॉलिसी रोज़ कितना कमरे का किराया देती है", rr_rate:"कमरे का रोज़ का चार्ज", rr_rate_hint:"— बिल से लेने के लिए ख़ाली छोड़ें", rr_days:"कमरे में कितने दिन",
   rr_detected:(rate,days,rates)=>`आपके बिल में कमरा ${rate} प्रति दिन${days?`, ${days} दिन के लिए`:''} दिखता है${rates?` (एक से ज़्यादा दरें: ${rates}; सबसे ऊँची ली गई है)`:''}।`,
@@ -2192,6 +2255,23 @@ mr: {
   rp_save:"या डिव्हाइसवर जतन करा", rp_save_note:"उत्तर, तुमच्या खुणा आणि तक्रारीचा तपशील या तपासणीसोबत फक्त याच डिव्हाइसवर राहतात. काहीही पाठवलं जात नाही.",
   rp_saved_upd:"तुम्ही उघडलेल्या तपासणीसोबत या डिव्हाइसवर जतन केलं.", rp_saved_new:"तुमच्या उत्तराच्या कामासह, या डिव्हाइसवर नवी तपासणी म्हणून जतन केलं. माझी बिले मधून ती पुन्हा उघडा.",
   rr_head:"तुमच्या पॉलिसीतील खोलीभाड्याची मर्यादा (ऐच्छिक)",
+  hs_head:"अजून रुग्णालयात आहात? कॅशलेस मंजुरीची वेळमर्यादा",
+  hs_intro:"IRDAI ने कॅशलेस दाव्यांवर विमा कंपन्यांसाठी वेळमर्यादा ठरवली आहे. रुग्णालयाने विनंती कधी पाठवली ते नोंदवा: ClearBill वेळमर्यादा दाखवतं, आणि विमा डेस्कला दाखवण्यासाठी किंवा विमा कंपनीला पाठवण्यासाठी एक संदेश.",
+  hs_which:"तुम्ही कशाची वाट पाहत आहात?", hs_admit:"उपचार सुरू करण्याची मंजुरी", hs_discharge:"घरी जाण्याची अंतिम मंजुरी", hs_death:"उपचारादरम्यान रुग्णाचा मृत्यू झाला आहे",
+  hs_when:"रुग्णालयाने विनंती कधी पाठवली", hs_now:"आता", hs_patient:"रुग्णाचं नाव (ऐच्छिक)", hs_hospital:"रुग्णालय (ऐच्छिक)",
+  hs_ref:"दावा किंवा प्री-ऑथरायझेशन क्रमांक (ऐच्छिक)", hs_ins:"तुमची विमा कंपनी, तिचा तक्रार संपर्क दाखवण्यासाठी (ऐच्छिक)", hs_ins_none:"तुमची विमा कंपनी निवडा (ऐच्छिक)",
+  hs_need_when:"रुग्णालयाने विनंती कधी पाठवली ते टाका (डेस्क सांगू शकतो), किंवा 'आता' दाबा.",
+  hs_future:"ही वेळ पुढची आहे. तारीख आणि वेळ तपासा.",
+  hs_by_admit:t=>`विमा कंपनीने ${t} पर्यंत निर्णय घ्यायला हवा: विनंतीपासून एका तासाच्या आत.`,
+  hs_by_discharge:t=>`विमा कंपनीने ${t} पर्यंत अंतिम मंजुरी द्यायला हवी: विनंतीपासून तीन तासांच्या आत.`,
+  hs_hm:(h,m)=>`${h?h+' तास ':''}${m} मिनिटं`, hs_left:x=>`${x} बाकी.`, hs_over:x=>`ही वेळ ${x} पूर्वी उलटून गेली.`,
+  hs_extra:"अंतिम मंजुरी त्यानंतर आली, तर थांबण्यासाठी रुग्णालय जे जास्तीचं शुल्क लावेल ते विमा कंपनीने भरायला हवं, तुम्ही नाही. वेळा नोंदवा, आणि असं कोणतंही शुल्क बिलात वेगळं दाखवायला रुग्णालयाला सांगा.",
+  hs_death_note:"उपचारादरम्यान रुग्णाचा मृत्यू झाला असेल, तर विमा कंपनीने दावा तात्काळ निकाली काढायला हवा आणि पार्थिव रुग्णालयातून तात्काळ सोडवायला हवं. खालचा संदेश हेच मागतो.",
+  hs_msg_head:"विमा डेस्कला दाखवण्यासाठी किंवा विमा कंपनीला पाठवण्यासाठी संदेश", hs_note_en:"संदेश पत्राप्रमाणेच इंग्रजीत आहे.",
+  hs_copy:"संदेश कॉपी करा", hs_share:"शेअर करा",
+  hs_who:"तो रुग्णालयाच्या विमा (TPA) डेस्कवर दाखवा, किंवा तुमच्या विमा कंपनीला पाठवा.",
+  hs_src:"IRDAI च्या आरोग्य विमा व्यवसायावरील मास्टर परिपत्रकातून (29 मे 2024), परिच्छेद 15 आणि 16, आणि पॉलिसीधारकांच्या हितांच्या संरक्षणावरील मास्टर परिपत्रकातून (5 सप्टेंबर 2024), भाग B. 13 ऑक्टोबर 2026 रोजी तपासलं.",
+  hs_not_legal:"हे विचारायला मदत करतं; हा कायदेशीर सल्ला नाही.",
   rr_intro:"अनेक पॉलिसी खोलीभाडं दररोजच्या एका मर्यादेपर्यंतच देतात, जी पॉलिसी शेड्यूल किंवा कस्टमर इन्फॉर्मेशन शीटमध्ये रक्कम किंवा विमा रकमेचा हिस्सा म्हणून लिहिलेली असते (₹3,00,000 चा 1% म्हणजे ₹3,000). त्यापेक्षा जास्तीचा फरक तुम्ही भरता, आणि काही पॉलिसी इतर चार्जेसही त्याच प्रमाणात कापतात.",
   rr_limit:"तुमची पॉलिसी दररोज किती खोलीभाडं देते", rr_rate:"खोलीचा दररोजचा चार्ज", rr_rate_hint:"— बिलातून घेण्यासाठी रिकामं ठेवा", rr_days:"खोलीत किती दिवस",
   rr_detected:(rate,days,rates)=>`तुमच्या बिलात खोली ${rate} प्रतिदिन${days?`, ${days} दिवसांसाठी`:''} दिसते${rates?` (एकापेक्षा जास्त दर: ${rates}; सर्वात जास्त वापरला आहे)`:''}.`,
@@ -4418,6 +4498,9 @@ function applyStaticI18n(){
   if($('backupNote')){ $('backupNote').classList.toggle('hide',!IS_BACKUP); $('backupNoteTxt').textContent=T_.backup_note; $('backupMainLink').textContent=T_.backup_main; }
   if($('gcStrip')&&IS_BACKUP) $('gcStrip').classList.add('hide');
   if($('backupAbout')){ $('backupAbout').classList.toggle('hide',IS_BACKUP||!BACKUP_URL); $('backupAboutTxt').textContent=T_.backup_about; $('backupAboutLink').href=BACKUP_URL; $('backupAboutLink').textContent=BACKUP_URL.replace(/^https:\/\/|\/$/g,''); }
+  [['hsHead','hs_head'],['hsIntro','hs_intro'],['hsWhichLbl','hs_which'],['hsAdmitBtn','hs_admit'],['hsDischargeBtn','hs_discharge'],['hsDeathBtn','hs_death'],['hsLblWhen','hs_when'],['hsNowBtn','hs_now'],
+   ['hsLblPatient','hs_patient'],['hsLblHospital','hs_hospital'],['hsLblRef','hs_ref'],['hsLblIns','hs_ins'],['hsInsNone','hs_ins_none']].forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
+  if(typeof hsRender==='function') hsRender();
   [['rrHead','rr_head'],['rrIntro','rr_intro'],['rrLblLimit','rr_limit'],['rrRateHint','rr_rate_hint'],['rrLblDays','rr_days']].forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
   if($('rrLblRate')&&$('rrRateHint')) $('rrLblRate').firstChild.textContent=T_.rr_rate+' ';
   [['ldLblGro','ld_gro'],['ldGroNone','ld_gro_none'],['ldLblDocs','ld_docs'],['ldLblSubmitted','ld_submitted']].forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
@@ -4641,6 +4724,7 @@ $('clearYesBtn').addEventListener('click',()=>{
   try{ localStorage.removeItem(DRAFT_LS); localStorage.removeItem(LD_KEY); sessionStorage.removeItem(LD_KEY); localStorage.removeItem(KEY_LS); localStorage.removeItem(LOCAL_LS); }catch(e){}
   if(typeof renderLocalList==='function') renderLocalList();
   _openedLocalId=null; if(typeof rpRestore==='function') rpRestore(null);
+  try{ sessionStorage.removeItem(HS_LS); }catch(e){} HS.kind=null; ['hs_when','hs_patient','hs_hospital','hs_ref','hs_ins'].forEach(id=>{ $(id).value=''; }); hsRender();
   Object.values(F).forEach(el=>{ el.value=''; }); Object.values(RR).forEach(el=>{ el.value=''; }); markChips(-1); setSettleMode('cashless',true); $('apiKey').value='';
   LD_FIELDS.forEach(f=>{ $('ld_'+f).value=''; }); $('ld_asked').checked=false; $('ld_docs').checked=false; $('ld_remember').checked=false;
   if(typeof signOut==='function') signOut(); // the My Bills sign-in session is also "saved on this device"
@@ -5072,8 +5156,96 @@ configReady.then(renderReaderNote);
 $('bysExampleBtn').addEventListener('click',()=>{ $('egBtn').click(); });
 $('langNoteOk').addEventListener('click',()=>{ try{ localStorage.setItem('clearbill_langnote_'+LANG,'1'); }catch(e){} renderLangNote(); });
 // A shared link to the worked example (R22): #example opens it on Findings.
+/* R27: "Still in hospital?" The time limits IRDAI sets for cashless claims,
+   read from the current texts (checked 13 Oct 2026, with no later change found
+   on irdai.gov.in):
+     Health Master Circular, 29 May 2024, para 15(b): decide on a cashless
+       request "immediately but not more than one hour of receipt of request";
+     para 16(a)/(b): final authorisation for discharge "within three hours",
+       "In no case, the policyholder shall be made to wait to be discharged",
+       and beyond three hours "the additional amount if any charged by the
+       hospital shall be borne by the insurer";
+     para 16(c): on death during treatment, "immediately process the request
+       for claim settlement" and "get the mortal remains (dead body) released
+       from the hospital immediately".
+   The same text is in the Policyholders' Interests Master Circular (5 Sep 2024),
+   Part B, V.3(i)-(ii). The user notes when the hospital sent the request; the
+   screen shows the deadline and a message in English to show or send. Kept in
+   this browser session only (it can name the patient). */
+const hsFmt=d=>d.toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'})+' on '+d.toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+const hsFmtLocal=d=>d.toLocaleTimeString(LOCALE_TAG[LANG]||'en-IN',{hour:'numeric',minute:'2-digit'})+', '+d.toLocaleDateString(LOCALE_TAG[LANG]||'en-IN',{day:'numeric',month:'long',year:'numeric'});
+function hsWhen(){ const v=$('hs_when').value; if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(v)) return null; const d=new Date(v); return isNaN(d)?null:d; }
+function hsMessage(){
+  const p=$('hs_patient').value.trim(), h=$('hs_hospital').value.trim(), ref=$('hs_ref').value.trim(), w=hsWhen(), now=Date.now();
+  const L=[`To: The insurance (TPA) desk${h?`, ${h}`:''}`];
+  if(HS.kind==='death'){
+    L.push(`Re: Death of the patient during treatment${ref?` - ref. ${ref}`:''}`,``,
+      `${p||'The patient'} died during treatment${h?` at ${h}`:''}. IRDAI's Master Circular on Health Insurance Business (29 May 2024, para 16(c)) provides that in such a case the insurer shall "immediately process the request for claim settlement" and "get the mortal remains (dead body) released from the hospital immediately".`,``,
+      `Please process the claim and arrange the release now.`);
+    return L.join('\n');
+  }
+  const admit=HS.kind==='admit', limit=admit?60:180, passed=w&&now>w.getTime()+limit*60000;
+  L.push(`Re: ${admit?'Cashless authorisation':'Final authorisation for discharge'}${p?` - ${p}`:''}${ref?` - ref. ${ref}`:''}`,``);
+  L.push(`The hospital sent the request for ${admit?'cashless authorisation':'final authorisation for discharge'}${w?` at ${hsFmt(w)}`:''}.`+(passed?(admit?' More than an hour has passed and there is no decision yet.':' More than three hours have passed and the final authorisation has not been given.'):''),``);
+  if(admit) L.push(`IRDAI's Master Circular on Health Insurance Business (29 May 2024, para 15(b)) provides: "Insurer shall decide on the request for cashless authorization immediately but not more than one hour of receipt of request."`,``,
+    `Please let us know the decision now, or the reason for any delay.`);
+  else L.push(`IRDAI's Master Circular on Health Insurance Business (29 May 2024, para 16) provides: "Insurer shall grant final authorization within three hours of the receipt of discharge authorization request from the hospital. In no case, the policyholder shall be made to wait to be discharged from the Hospital." It also provides that if there is any delay beyond three hours, "the additional amount if any charged by the hospital shall be borne by the insurer".`,``,
+    `Please give the final authorisation now. Any additional charge caused by a delay beyond three hours should be borne by the insurer, not by us.`);
+  return L.join('\n');
+}
+function hsRender(){
+  const T_=S(), out=$('hsOut'); if(!out) return;
+  document.querySelectorAll('#hsSeg [data-hs]').forEach(b=>{ const on=b.dataset.hs===HS.kind; b.classList.toggle('on',on); b.setAttribute('aria-pressed',String(on)); });
+  $('hsForm').classList.toggle('hide',!HS.kind); $('hsWhenRow').classList.toggle('hide',HS.kind==='death');
+  if(!HS.kind){ out.innerHTML=''; return; }
+  let h='';
+  if(HS.kind==='death') h+=`<p class="rpnote">${T_.hs_death_note}</p>`;
+  else {
+    const w=hsWhen(), limit=HS.kind==='admit'?60:180;
+    if(!w) h+=`<p class="rpnote">${T_.hs_need_when}</p>`;
+    else if(w.getTime()>Date.now()+5*60000) h+=`<p class="rpwarn">${T_.hs_future}</p>`;
+    else {
+      const by=new Date(w.getTime()+limit*60000), diff=Math.round((by.getTime()-Date.now())/60000), hm=m=>T_.hs_hm(Math.floor(Math.abs(m)/60),Math.abs(m)%60);
+      h+=`<p class="hsby">${(HS.kind==='admit'?T_.hs_by_admit:T_.hs_by_discharge)(hsFmtLocal(by))} <b class="${diff<0?'hsover':''}">${diff>=0?T_.hs_left(hm(diff)):T_.hs_over(hm(diff))}</b></p>`;
+    }
+    if(HS.kind==='discharge') h+=`<p class="rpnote">${T_.hs_extra}</p>`;
+  }
+  const gro=GRO.find(g=>g.name===$('hs_ins').value);
+  h+=`<div class="k" style="margin:14px 0 6px">${T_.hs_msg_head}</div>${LANG!=='en'?`<p class="ldnote" style="margin-left:0">${T_.hs_note_en}</p>`:''}<div class="letter" id="hsMsg">${esc(hsMessage())}</div>`
+    +`<div class="rpbtns"><button class="btn sm" type="button" id="hsCopyBtn">${T_.hs_copy}</button><button class="btn sm ghost" type="button" id="hsShareBtn">${T_.hs_share}</button></div>`
+    +`<p class="rpnote">${T_.hs_who}</p>`
+    +(gro?`<p class="rpnote" style="margin-top:4px"><a href="mailto:${esc(gro.email)}">${esc(gro.email)}</a>${gro.tel?` &middot; ${esc(T_.gro_tel)} <a href="tel:${esc(gro.tel.replace(/[^\d+]/g,''))}">${esc(gro.tel)}</a>`:''}</p>`:'')
+    +`<p class="ombsrc">${T_.hs_src}</p><p class="ldnote" style="margin-left:0">${T_.hs_not_legal}</p>`;
+  out.innerHTML=h;
+}
+function hsSave(){ try{ sessionStorage.setItem(HS_LS,JSON.stringify({kind:HS.kind,when:$('hs_when').value,patient:$('hs_patient').value,hospital:$('hs_hospital').value,ref:$('hs_ref').value,ins:$('hs_ins').value})); }catch(e){} }
+function hsTick(){ clearInterval(_hsTimer); _hsTimer=null; if($('hospCard').open&&HS.kind&&HS.kind!=='death'&&hsWhen()) _hsTimer=setInterval(hsRender,30000); }
+(function hsInit(){
+  const sel=$('hs_ins'); GRO.forEach(g=>{ const o=document.createElement('option'); o.value=g.name; o.textContent=g.name; sel.appendChild(o); });
+  try{ const d=JSON.parse(sessionStorage.getItem(HS_LS)||'null'); if(d&&typeof d==='object'){
+    HS.kind=['admit','discharge','death'].includes(d.kind)?d.kind:null;
+    const str=(v,n)=>typeof v==='string'?v.slice(0,n):'';
+    $('hs_when').value=/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(d.when||'')?d.when:''; $('hs_patient').value=str(d.patient,120); $('hs_hospital').value=str(d.hospital,160); $('hs_ref').value=str(d.ref,60);
+    if(GRO.some(g=>g.name===d.ins)) sel.value=d.ins;
+  } }catch(e){}
+  hsRender();
+})();
+document.querySelectorAll('#hsSeg [data-hs]').forEach(b=>b.addEventListener('click',()=>{ HS.kind=b.dataset.hs; hsRender(); hsSave(); hsTick(); }));
+['hs_when','hs_patient','hs_hospital','hs_ref'].forEach(id=>$(id).addEventListener('input',()=>{ hsRender(); hsSave(); hsTick(); }));
+$('hs_ins').addEventListener('change',()=>{ hsRender(); hsSave(); });
+$('hsNowBtn').addEventListener('click',()=>{ const d=new Date(), p=x=>String(x).padStart(2,'0'); $('hs_when').value=`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; hsRender(); hsSave(); hsTick(); });
+$('hospCard').addEventListener('toggle',hsTick);
+$('hsOut').addEventListener('click',e=>{
+  const T_=S();
+  if(e.target.closest('#hsCopyBtn')){ const b=$('hsCopyBtn'); copyText($('hsMsg').textContent).then(done=>{ b.textContent=done?T_.copied_btn:T_.copy_failed_btn; announce(b.textContent); setTimeout(()=>{ b.textContent=T_.hs_copy; },2000); }); }
+  if(e.target.closest('#hsShareBtn')) shareText($('hsMsg').textContent,'ClearBill');
+});
+// #hospital opens it directly (a link someone can send from the ward).
+const openHospitalFromHash=()=>{ if(location.hash==='#hospital'){ switchTab('settlement'); $('hospCard').open=true; $('hospCard').scrollIntoView({block:'start'}); } };
+
 const openExampleFromHash=()=>{ if(location.hash==='#example'){ loadWorkedExample(); switchTab('findings'); } };
 openExampleFromHash(); window.addEventListener('hashchange',openExampleFromHash);
+openHospitalFromHash(); window.addEventListener('hashchange',openHospitalFromHash);
 renderBeforeStart();
 </script>
 </body>
