@@ -191,8 +191,8 @@ const STUB = `
     ok(/Lists II-IV/.test(lt3) && /Should be part of Treatment cost \(List IV\)/.test(lt3) && /Admission\/Registration Charges/.test(lt3), 'the letter has its own Lists II-IV paragraph, grouped by which list, with the ADMISSION SERVICES line under Treatment cost');
     ok(/3\. Confirmation that each charge listed under IRDAI Lists II-IV was already included/.test(lt3), 'the Lists II-IV request is numbered after the IRDAI List I and NPPA requests (the worked example has no NPPA lines)');
     const rep2 = await ev(`switchTab('findings'); return document.getElementById('report').innerText`);
-    ok(/should already be part of another charge/.test(rep2) && /IRDAI Lists II-IV/.test(rep2), 'the report has its own "should be in another charge" check card');
-    ok(/should already be part of another charge, not billed on their own/.test(await ev(`return document.querySelector('.starthere').textContent`)), '"Start here" also lists it under "Ask the hospital"');
+    ok(/listed by IRDAI \(2019–2020\) as part of another charge/.test(rep2) && /IRDAI Lists II-IV/.test(rep2) && await ev(`return /ask whether your policy still applies them/.test(document.getElementById('report').textContent)`), 'the report has its own "should be in another charge" card, naming the 2019-2020 guidelines and asking whether they still apply (R29)');
+    ok(/IRDAI's 2019–2020 guidelines listed as part of another charge .*Ask whether (they were|it was) already included/.test(await ev(`return document.querySelector('.starthere').textContent`)), '"Start here" also lists it under "Ask the hospital", as a question (R29)');
     ok(/6 \/ 6/.test(await ev(`return document.querySelector('.kpis').textContent`)), 'Checks run now counts 6 checks, and all 6 ran on the worked example');
     ok(await ev(`return document.querySelector('[data-inc=subsumed]') !== null`), 'the letter checklist has its own row for this');
     { const nonOverlap = await ev(`const a=analyse(WORKED_EXAMPLE_BILL); return a.exact.some(l=>l.matched==='Admission/Registration Charges'||l.matched==='Alcohol Swabs'||l.matched==='Scrub Solution / Sterillium')`);
@@ -217,7 +217,7 @@ const STUB = `
     await ev(`setLang('hi');`); await sleep(300);
     const hs = await ev(`window.__pr=null; const op=window.print; window.print=()=>{ window.__pr=document.getElementById('printArea').textContent; }; document.getElementById('printLetter').click(); window.print=op; const s=document.querySelector('.lsum'); return {sum: s?s.textContent:'', lettertext: document.querySelector('.letter').textContent, printed: window.__pr, order: s ? (s.compareDocumentPosition(document.querySelector('.letter')) & 4) : 0}`);
     ok(/[ऀ-ॿ]/.test(hs.sum) && /IRDAI/.test(hs.sum) && hs.order === 4, 'in Hindi a plain-language summary sits above the letter');
-    ok(/किसी और चार्ज में शामिल होना चाहिए/.test(hs.sum), 'the Hindi summary also mentions the Lists II-IV items, not just IRDAI List I');
+    ok(/2019–2020 गाइडलाइंस ने किसी और चार्ज का हिस्सा बताया था/.test(hs.sum), 'the Hindi summary also mentions the Lists II-IV items, not just IRDAI List I');
     ok(!/[ऀ-ॿ]/.test(hs.printed) && !/इस पत्र में क्या/.test(hs.printed), 'the summary is not part of the text that is printed');
     await ev(`setLang('en'); localStorage.setItem('clearbill_settlement_draft','{"total":"5"}'); localStorage.setItem('clearbill_gemini_key','KEY'); document.getElementById('ld_name').value='Someone'; document.getElementById('ld_remember').checked=true; document.getElementById('ld_name').dispatchEvent(new Event('input',{bubbles:true}));`);
     ok(await ev(`return !!localStorage.getItem('clearbill_letter_details')`), 'letter details are remembered when the box is ticked (setup for the next check)');
@@ -525,7 +525,7 @@ const STUB = `
     await ev(`document.getElementById('genLetterTab').click();`); await sleep(300);
     const lt20 = await ev(`return document.querySelector('.letter').innerText`);
     ok(!/appear more than once at the same amount/.test(lt20) && !/differs from the sum of its own printed lines/.test(lt20) && /List I/.test(lt20), 'so the letter leaves out the repeats and the arithmetic gap you removed');
-    ok(/reply within 14 days, the time IRDAI.s Master Circular on Protection of Policyholders. Interests \(5 September 2024\) gives insurers to resolve a complaint/.test(lt20) && /Part B\) says the same/.test(lt20), 'the letter asks for a reply within the 14 days IRDAI sets, and cites the policyholder-protection circular too');
+    ok(/reply within 14 days, the time IRDAI.s Master Circular on Protection of Policyholders. Interests \(5 September 2024, Part B, VI\.2\(i\)\) gives insurers to resolve a complaint/.test(lt20) && /Part B, V\.3\(iii\)\(5\)\) says the same/.test(lt20) && /IRDAI\/PP&GR\/CIR\/MISC\/117\/9\/2024/.test(lt20) && /IRDAI\/HLT\/CIR\/PRO\/84\/5\/2024/.test(lt20), 'the letter asks for a reply within the 14 days IRDAI sets, cites the exact paragraphs, and gives both circulars\' reference numbers (R29)');
     await ev(`localStorage.clear(); window.__lastExtraction={header:{},line_items:[{item:'TV CHARGES',quantity:1,total:300}]}; renderReport(window.__lastExtraction); switchTab('letter');`); await sleep(150);
     ok(await ev(`return document.querySelector('[data-inc=irdai]') && document.querySelector('[data-inc=irdai]').checked`), 'a different bill starts with every box ticked again');
 
@@ -606,10 +606,10 @@ const STUB = `
     const dm = await ev(`return [addMonthsYmd('2027-01-31',1), addMonthsYmd('2028-01-31',1), addMonthsYmd('2026-12-31',1), addDaysYmd('2026-12-25',14), JSON.stringify(ombDates('2026-10-09')), JSON.stringify(ombDates('2027-01-31'))].join(' | ')`);
     ok(dm === '2027-02-28 | 2028-02-29 | 2027-01-31 | 2027-01-08 | {"reply":"2026-10-23","opens":"2026-11-09","deadline":"2027-11-09"} | {"reply":"2027-02-14","opens":"2027-02-28","deadline":"2028-02-28"}', 'calendar months clamp to the month\'s end (31 Jan + 1 month = 28 Feb, or 29 Feb in a leap year), across a year end too: ' + dm);
     const as21 = await ev(`return document.querySelector('.aftersend').innerText`);
-    ok(/If you send it today \(/.test(as21) && /a reply is due around/.test(as21) && /on or after/.test(as21) && /rule 14\(3\)/.test(as21) && /the year counts from its reply/.test(as21), 'after the letter: the dates if you send it today, each with its rule');
+    ok(/If you send it today \(/.test(as21) && /a reply is due around/.test(as21) && /a month has passed after the insurer receives your letter: about .* if you email it today, a little later by post/.test(as21) && /counts from one month after the day you send it/.test(as21) && /rule 14\(3\)/.test(as21) && /the year counts from its reply/.test(as21), 'after the letter: the dates if you send it today, each with its rule');
     await ev(`switchTab('mybills'); document.getElementById('saveLocalBtn').click();`); await sleep(200);
     const sd = await ev(`const i=document.querySelector('#localList .bsentin'); i.value='2026-10-01'; i.dispatchEvent(new Event('change',{bubbles:true})); return document.querySelector('#localList .bdates').textContent;`);
-    ok(/Reply due around 15 October 2026\. No reply: the Ombudsman route opens on or after 1 November 2026, until 1 November 2027\./.test(sd), 'a saved check with a "sent on" date shows its own dates: ' + sd);
+    ok(/Reply due around 15 October 2026\. No reply: the Ombudsman route opens a month after the insurer receives your letter \(about 1 November 2026 if emailed\), until 1 November 2027\./.test(sd), 'a saved check with a "sent on" date shows its own dates: ' + sd);
 
     console.log('== R22: the first screen');
     await fresh(); await send('Page.navigate', { url: `http://127.0.0.1:${port}/` }); await sleep(1200); await ev(`setLang('en');`);
@@ -683,7 +683,7 @@ const STUB = `
     ok(await ev(`const c=document.getElementById('replyCard'); return !c.classList.contains('hide') && !c.open && /The insurer replied, or hasn't/.test(c.querySelector('summary').textContent)`), 'the Letter tab has a folded "The insurer replied, or hasn\'t" card once there is a check');
     await ev(`const c=document.getElementById('replyCard'); c.open=true; const s=document.getElementById('rp_sent'); s.value=addDaysYmd(todayYmd(),-5); s.dispatchEvent(new Event('input',{bubbles:true})); document.getElementById('rpNoBtn').click();`); await sleep(150);
     const nr1 = await ev(`return {t: document.getElementById('rpResult').textContent, complaintBtn: !!document.querySelector('#rpResult [data-rpact="complaint"]'), pressed: document.getElementById('rpNoBtn').getAttribute('aria-pressed')}`);
-    ok(nr1.pressed === 'true' && /A reply is due around .* If none comes, you can go to the Insurance Ombudsman on or after/.test(nr1.t) && !nr1.complaintBtn, 'sent 5 days ago: it gives the reply date and when the Ombudsman route opens, and offers no complaint yet');
+    ok(nr1.pressed === 'true' && /A reply is due around .* If none comes, you can go to the Insurance Ombudsman once a month has passed after the insurer receives your letter: about/.test(nr1.t) && !nr1.complaintBtn, 'sent 5 days ago: it gives the reply date and when the Ombudsman route opens, and offers no complaint yet');
     await ev(`const s=document.getElementById('rp_sent'); s.value=addDaysYmd(todayYmd(),-40); s.dispatchEvent(new Event('input',{bubbles:true}));`); await sleep(150);
     const nr2 = await ev(`return {t: document.getElementById('rpResult').textContent, dl: fmtYmd(ombDates(addDaysYmd(todayYmd(),-40)).deadline)}`);
     ok(nr2.t.includes('More than a month has passed with no reply. You can take this to the Insurance Ombudsman until ' + nr2.dl), 'sent 40 days ago: the Ombudsman route is open, with its last day (rule 14(3)): ' + nr2.dl);
@@ -696,7 +696,7 @@ const STUB = `
     ok(!c0.draft && /Tick the box above .*\(rule 14\(5\)\)/.test(c0.out), 'no complaint is drafted until the user confirms the matter is not before a court, consumer commission or arbitrator (rule 14(5))');
     await ev(`const b=document.getElementById('rp_court'); b.checked=true; b.dispatchEvent(new Event('change',{bubbles:true}));`); await sleep(150);
     let ct = await ev(`return {t: document.getElementById('rpComplaintText').textContent, out: document.getElementById('rpCOut').textContent}`);
-    ok(/Subject: Complaint under rule 14 of the Insurance Ombudsman Rules, 2017/.test(ct.t) && /I have not received a reply, and more than one month has passed since I sent my letter\./.test(ct.t) && /within one year after one month from the date I sent it \(rule 14\(3\)\(b\)\(iii\)\)/.test(ct.t) && /not pending before, and has not been decided by, any court, consumer forum or arbitrator \(rule 14\(5\)\)/.test(ct.t), 'the complaint states the no-reply route and both time limits only because the dates show them, and the rule 14(5) declaration');
+    ok(/Subject: Complaint under rule 14 of the Insurance Ombudsman Rules, 2017/.test(ct.t) && /I sent my letter on \d+ \w+ \d{4} and have not received a reply; more than one month has passed since then\./.test(ct.t) && /within one year after one month from the date I sent it \(rule 14\(3\)\(b\)\(iii\)\)/.test(ct.t) && /not pending before, and has not been decided by, any court, consumer forum or arbitrator \(rule 14\(5\)\)/.test(ct.t), 'the complaint states the no-reply route and both time limits only because the dates show them, and the rule 14(5) declaration');
     ok(/Nature and extent of the loss\n   ₹5,962\.89, deducted from my claim/.test(ct.t) && /direct the insurer to pay ₹5,962\.89, with interest as provided in rule 17\(7\)/.test(ct.t) && /Documents attached/.test(ct.t) && /The hospital's final bill and itemised bill/.test(ct.t), 'it has the parts rule 14(2) asks for: facts, documents, the loss and the relief sought');
     ok(/Add these before you file: your name, your address, the insurer's name, the policy number, the insurer's branch or office, your state/.test(ct.out) && !/[\[\]]|undefined|null/.test(ct.t), 'missing details are listed on screen, never left as blanks in the text');
     const st1 = await ev(`return INDIA_STATES.find(s=>ombudsmanFor(s).length===1)`);
@@ -707,7 +707,7 @@ const STUB = `
     ok(new RegExp('To: The Insurance Ombudsman, ' + ct.office).test(ct.t) && ct.t.includes(ct.email) && /Star Health and Allied, Pune branch\n   Policy no\. P-991/.test(ct.t) && /^Asha Rao\n12 Lake Road/.test(ct.t) && !/Add these before you file/.test(ct.out), 'typing the details completes it: addressed to the state\'s office, insurer with branch, no list of missing details: ' + ct.office);
     ok(/cioins\.co\.in/.test(ct.out) && /Free\./.test(ct.out) && /not legal advice/.test(ct.out), 'it says where to file (free, online or by email or post) and that it is a draft, not legal advice');
     await ev(`const a=document.getElementById('rp_amount'); a.value='6000000'; a.dispatchEvent(new Event('input',{bubbles:true}));`); await sleep(100);
-    ok(/more than ₹50 lakh \(rule 17\(3\)\)/.test(await ev(`return document.getElementById('rpCOut').textContent`)), 'above ₹50 lakh it warns that the Ombudsman cannot award that much');
+    ok(/up to ₹50 lakh \(IRDAI's policyholder circular, Part B, VI\.3\(i\)\), and cannot award more than that \(rule 17\(3\)\)/.test(await ev(`return document.getElementById('rpCOut').textContent`)), 'above ₹50 lakh it warns that the Ombudsman cannot award that much');
 
     console.log('== R24: the insurer replied: check it, follow up');
     await ev(`document.getElementById('rpYesBtn').click(); document.getElementById('rpCheckBtn').click();`); await sleep(150);
@@ -725,9 +725,9 @@ const STUB = `
     await ev(`const b=document.querySelector('#rpChecks input[data-rpk="omb"]'); b.checked=true; b.dispatchEvent(new Event('change',{bubbles:true})); const d=document.getElementById('rpDocs'); d.checked=true; d.dispatchEvent(new Event('change',{bubbles:true}));`); await sleep(150);
     const fu2 = await ev(`return document.getElementById('rpFollowText').textContent`);
     ok(!/Insurance Ombudsman of competent jurisdiction/.test(fu2) && /para 17\(c\)\) provides that insurers and TPAs "shall collect the required documents from the Hospitals"/.test(fu2), 'ticking an item takes it out of the follow-up at once; "asks me to get documents" adds para 17(c)');
-    await ev(`const t=document.getElementById('rp_text'); t.value='As per Clause 4.2 and Code-Excl01 of your policy, items under List I are not payable. Details: Rs 300, Rs 160, Rs. 1,260, INR 850. You may approach the Insurance Ombudsman.'; document.getElementById('rpCheckBtn').click();`); await sleep(150);
+    await ev(`const t=document.getElementById('rp_text'); t.value='As per Clause 4.2 and Code-Excl01 of your policy, items under List I are not payable. Break-up of deductions: Rs 300, Rs 160, Rs. 1,260, INR 850. You may approach the Insurance Ombudsman.'; document.getElementById('rpCheckBtn').click();`); await sleep(150);
     const ck2 = await ev(`return {boxes: [...document.querySelectorAll('#rpChecks input[data-rpk]')].map(b=>b.dataset.rpk+':'+b.checked).join(','), t: document.getElementById('rpResult').textContent, follow: document.getElementById('rpFollowBox').classList.contains('hide')}`);
-    ok(ck2.boxes === 'reasons:true,breakdown:true,omb:true' && /Found: “As per Clause 4\.2/.test(ck2.t) && /The reply lists 4 different amounts/.test(ck2.t) && /A law or an IRDAI circular is not/.test(ck2.t) && ck2.follow, 'a full reply: all three found and quoted, with "is this a term of your policy?" (a new check closes the old draft)');
+    ok(ck2.boxes === 'reasons:true,breakdown:true,omb:true' && /Found: “As per Clause 4\.2/.test(ck2.t) && /Break-up of deductions/.test(ck2.t) && /A law or an IRDAI circular is not/.test(ck2.t) && ck2.follow, 'a full reply: all three found and quoted, with "is this a term of your policy?" (a new check closes the old draft)');
     await ev(`document.querySelector('#rpResult [data-rpo="pay"]').click();`); await sleep(100);
     ok(await ev(`return document.querySelector('#rpResult [data-rpo="pay"]').getAttribute('aria-pressed')==='true' && /Keep the reply\. If the payment does not arrive/.test(document.getElementById('rpActs').textContent) && !document.querySelector('#rpActs [data-rpact]')`), '"It will pay more" with everything answered: keep the reply, nothing to draft');
     await ev(`document.querySelector('#rpResult [data-rpo="keep"]').click(); document.querySelector('#rpActs [data-rpact="complaint"]').click();`); await sleep(150);
@@ -776,14 +776,14 @@ const STUB = `
     ok(!rr0.open && /Your bill shows a room at ₹4,500 a day for 1 day\./.test(rr0.out) && rr0.ph === '4500/1' && !/room/.test(rr0.rows), 'folded and optional; with no limit entered it only notes the room on the bill (₹4,500 a day for 1 day), and the letter has no room item');
     await ev(`document.getElementById('rrDet').open=true; const e=document.getElementById('rr_limit'); e.value='3000'; e.dispatchEvent(new Event('input',{bubbles:true}));`); await sleep(200);
     const rr1 = await ev(`return document.getElementById('rrOut').textContent`);
-    ok(/Room rent above your limit: ₹1,500 \(₹4,500 a day against ₹3,000, for 1 day\)\. This part is yours to pay\./.test(rr1) && /Your policy covers 67% of the room's daily rate/.test(rr1), 'limit ₹3,000: the room rent above the limit (₹1,500) and the share the policy covers (67%)');
+    ok(/Room rent above your limit: ₹1,500 \(₹4,500 a day against ₹3,000, for 1 day\)\. Under a room-rent limit, the insurer usually does not pay this part: check your policy\./.test(rr1) && !/yours to pay/.test(rr1) && /Your policy covers 67% of the room's daily rate/.test(rr1), 'limit ₹3,000: the room rent above the limit (₹1,500) and the share the policy covers (67%)');
     ok(/If your policy's wording follows IRDAI's 2020 norms, that cut could apply only to 10 of your charges .* at most ₹8,770\./.test(rr1) && /Medicines and consumables: ₹/.test(rr1) && /Diagnostics \(tests and scans\): ₹6,265/.test(rr1), 'the most a 2020-norms cut could be (₹8,770, on 10 charges), and what such a wording could not cut');
     ok(/could account for up to ₹5,962\.89 of the ₹5,962\.89 not itemised/.test(rr1) && /withdrawn in May 2024, so whether they apply depends on your policy's wording/.test(rr1), 'it says how much of the unexplained amount these could account for, and that the 2020 norms were withdrawn and depend on the policy wording');
     await ev(`switchTab('letter');`); await sleep(100);
     ok(await ev(`return /Room above your policy's limit: ask for the clause and the charges cut/.test(document.getElementById('letterIncludes').textContent)`), 'the letter checklist gains "Room above your policy\'s limit"');
     await ev(`document.getElementById('genLetterTab').click();`); await sleep(300);
     const rl26 = await ev(`return {l: document.querySelector('.letter').textContent, h: document.getElementById('hospNoteText') ? document.getElementById('hospNoteText').textContent : ''}`);
-    ok(/My room was charged at ₹4,500 a day for 1 day, above the room-rent limit of ₹3,000 a day in my policy; I understand that the room rent above the limit \(₹1,500\) is mine to pay\./.test(rl26.l), 'the letter states the room against the limit, and accepts the room rent above it');
+    ok(/My room was charged at ₹4,500 a day for 1 day, above the room-rent limit of ₹3,000 a day in my policy\.\n/.test(rl26.l) && !/mine to pay|I understand that/.test(rl26.l), 'the letter states the room against the limit, and concedes nothing about the room rent above it (R29)');
     ok(/Schedule-C, para 3\.1\(ix\)\) requires a health insurance policy to state "The sub-limits, Proportionate Deductions and the existence of Package rates if any, with cross reference to the concerned policy section"/.test(rl26.l) && /please state the clause of my policy that provides for it, its definition of 'associated medical expenses', and the charges it was applied to/.test(rl26.l), 'it quotes the 2024 rule word for word and asks for the clause, the definition and the charges');
     ok(/Policies filed under IRDAI's norms on proportionate deductions of 11 June 2020 could not include .* Please confirm whether my policy follows these terms\./.test(rl26.l) && !/(prohibit|not permitted|illegal|IRDAI does not allow)/i.test(rl26.l), 'the 2020 norms are described as what policies filed under them say, and asked about, never claimed as current law');
     ok(/vary with the room category, and which are the same whatever the room/.test(rl26.h), 'the hospital note asks which charges vary with the room category');
@@ -842,9 +842,13 @@ const STUB = `
     await ev(`const t=document.getElementById('rj_text'); t.value='Dear Sir, your claim is repudiated due to non-disclosure of pre-existing diabetes under clause 4.1.'; t.dispatchEvent(new Event('input',{bubbles:true}));`); await sleep(150);
     const r1 = await ev(`return {kind: RJ.kind, sug: document.getElementById('rjSuggest').textContent, pressed: document.getElementById('rjRped').getAttribute('aria-pressed'), form: !document.getElementById('rjForm').classList.contains('hide'), out: document.getElementById('rjOut').textContent,
       empty: document.getElementById('letterEmpty').classList.contains('hide'), confirm: !document.getElementById('letterConfirm').classList.contains('hide'), incl: document.getElementById('letterInclCard').classList.contains('hide'), gen: document.getElementById('genLetterTab').classList.contains('hide'), reply: !document.getElementById('replyCard').classList.contains('hide')}`);
-    ok(r1.kind === 'ped' && /Suggested from the letter: "A pre-existing illness, or something not disclosed"\. Change it if it is wrong\./.test(r1.sug) && r1.pressed === 'true' && r1.form, 'pasting the letter suggests the reason (pre-existing illness / not disclosed), marked as a suggestion');
-    ok(/Enter when your cover began to check the five-year rule/.test(r1.out), 'it asks when the cover began, to check the five-year rule');
-    ok(r1.empty && r1.confirm && r1.incl && r1.gen && r1.reply, '"Your details" and the reply card become available; the bill checklist and its Generate button stay hidden');
+    ok(r1.kind === null && /From the letter's words, the reason looks like: "A pre-existing illness, or something not disclosed"\./.test(r1.sug) && /Use this reason/.test(r1.sug) && r1.pressed === 'false' && !r1.form, 'pasting the letter only suggests the reason (pre-existing illness / not disclosed); nothing is chosen for the user (R29)');
+    await ev(`document.getElementById('rjUseBtn').click();`); await sleep(150);
+    const r1b = await ev(`return {kind: RJ.kind, pressed: document.getElementById('rjRped').getAttribute('aria-pressed'), form: !document.getElementById('rjForm').classList.contains('hide'), out: document.getElementById('rjOut').textContent, sug: document.getElementById('rjSuggest').classList.contains('hide'),
+      empty: document.getElementById('letterEmpty').classList.contains('hide'), confirm: !document.getElementById('letterConfirm').classList.contains('hide'), incl: document.getElementById('letterInclCard').classList.contains('hide'), gen: document.getElementById('genLetterTab').classList.contains('hide'), reply: !document.getElementById('replyCard').classList.contains('hide')}`);
+    ok(r1b.kind === 'ped' && r1b.pressed === 'true' && r1b.form && r1b.sug, '"Use this reason" chooses it');
+    ok(/Enter when your cover began to check the five-year rule\. Your policy schedule must show the date your continuous cover began/.test(r1b.out), 'it asks when the cover began, and says the policy schedule must show that date (Schedule-C 3.1(vii))');
+    ok(r1b.empty && r1b.confirm && r1b.incl && r1b.gen && r1b.reply, '"Your details" and the reply card become available; the bill checklist and its Generate button stay hidden');
     await ev(`for(const [id,v] of [['rj_since','2019-04-01'],['rj_date',addDaysYmd(todayYmd(),-12)],['rj_ref','RJ-501'],['rj_amount','120000']]){ const e=document.getElementById(id); e.value=v; e.dispatchEvent(new Event('input',{bubbles:true})); }`); await sleep(150);
     const r2 = await ev(`return {out: document.getElementById('rjOut').textContent, l: document.getElementById('rjLetter').textContent}`);
     ok(/\d+ months of continuous cover\. After 60 months, IRDAI's rules say a claim cannot be contested/.test(r2.out), 'more than 60 months of cover: the five-year rule is explained');
@@ -881,6 +885,56 @@ const STUB = `
     ok(await ev(`return /संपूर्ण दावा नाकारला गेला का/.test(document.getElementById('rjHead').textContent) && /आधीपासूनचा आजार/.test(document.getElementById('rjRped').textContent)`), 'in Marathi');
     await ev(`setLang('en'); switchTab('settlement'); document.getElementById('clearSavedBtn').click(); document.getElementById('clearYesBtn').click();`); await sleep(200);
     ok(await ev(`return !RJ.kind && document.getElementById('rj_ref').value==='' && !sessionStorage.getItem('clearbill_rejection') && document.getElementById('replyCard').classList.contains('hide')`), '"Clear what this app saved" clears it too');
+
+    console.log('== R29: one case at a time (council round 5)');
+    await fresh(); await ev(`setLang('en'); switchTab('letter'); document.getElementById('rejCard').open=true; document.getElementById('rjRped').click(); const r=document.getElementById('rj_ref'); r.value='RJ-9'; r.dispatchEvent(new Event('input',{bubbles:true}));`); await sleep(150);
+    ok(await ev(`return RJ.kind==='ped'`), 'a rejection is being drafted');
+    await ev(`switchTab('settlement'); document.getElementById('egBtn').click();`); await sleep(500);
+    const c29 = await ev(`switchTab('letter'); return {kind: RJ.kind, ref: document.getElementById('rj_ref').value, incl: document.getElementById('letterInclCard').classList.contains('hide')}`);
+    ok(c29.kind === null && c29.ref === 'RJ-9' && !c29.incl, 'loading another bill switches the rejection off (keeping what was typed), so its letters can never say "rejected"');
+    await ev(`const c=document.getElementById('replyCard'); c.open=true; const s=document.getElementById('rp_sent'); s.value=addDaysYmd(todayYmd(),-40); s.dispatchEvent(new Event('input',{bubbles:true})); document.getElementById('rpNoBtn').click();
+      document.querySelector('#rpResult [data-rpact="complaint"]').click(); const k=document.getElementById('rp_court'); k.checked=true; k.dispatchEvent(new Event('change',{bubbles:true}));`); await sleep(200);
+    ok(await ev(`const t=document.getElementById('rpComplaintText').textContent; return !/rejected/.test(t) && /deducted without an itemised explanation/.test(t)`), 'the complaint for that bill is about the deduction, not a rejection');
+    await ev(`document.getElementById('rpSaveBtn').click();`); await sleep(150);
+    await ev(`switchTab('settlement'); document.getElementById('egBtn').click(); document.getElementById('egYesBtn')&&document.getElementById('egYesBtn').click();`); await sleep(500);
+    ok(await ev(`return _openedLocalId===null && !RP.status && document.getElementById('rp_sent').value===''`), 'loading a new bill starts a new case: the reply card is empty and nothing will be saved into the earlier check');
+
+    console.log('== R29: a corrected row keeps the letter as the user set it');
+    await fresh(); await ev(`setLang('en'); document.getElementById('egBtn').click();`); await sleep(500);
+    await ev(`switchTab('letter'); const cb=document.querySelector('#letterIncludes input[data-inc="dup"]'); cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true}));
+      switchTab('findings'); document.getElementById('readChecks').open=true; document.querySelector('#readChecks .rcfix').click(); document.querySelector('.rcform input[id^="rc_t_"]').value='63.27'; document.querySelector('.rcsave').click();`); await sleep(300);
+    ok(await ev(`switchTab('letter'); return document.querySelector('#letterIncludes input[data-inc="dup"]').checked===false`), 'an item removed from the letter stays removed after a row is corrected (E36 promise kept)');
+
+    console.log('== R29: what the complaint and the rejection letter say');
+    await fresh(); await ev(`setLang('en'); document.getElementById('egBtn').click();`); await sleep(500);
+    await ev(`switchTab('letter'); const c=document.getElementById('replyCard'); c.open=true; const s=document.getElementById('rp_sent'); s.value=addDaysYmd(todayYmd(),-30); s.dispatchEvent(new Event('input',{bubbles:true}));
+      document.getElementById('rpYesBtn').click(); document.getElementById('rp_text').value='As per Clause 4.2 of your policy the deduction stands. You may approach the Insurance Ombudsman.'; document.getElementById('rpCheckBtn').click();
+      await new Promise(r=>setTimeout(r,150)); document.querySelector('#rpResult [data-rpo="keep"]').click(); document.querySelector('#rpActs [data-rpact="complaint"]').click();
+      const k=document.getElementById('rp_court'); k.checked=true; k.dispatchEvent(new Event('change',{bubbles:true}));`); await sleep(200);
+    const ct29 = await ev(`return document.getElementById('rpComplaintText').textContent`);
+    ok(/deducted from my claim, which I dispute\./.test(ct29) && !/without an explanation with reference/.test(ct29), 'when the reply gave its reasons, the complaint says the loss is disputed, not that no explanation was given');
+    await fresh(); await ev(`setLang('en'); switchTab('letter'); document.getElementById('rejCard').open=true; document.getElementById('rjRped').click();
+      for(const [id,v] of [['rj_since','2021-06-01'],['rj_date','2026-10-01']]){ const e=document.getElementById(id); e.value=v; e.dispatchEvent(new Event('input',{bubbles:true})); }`); await sleep(150);
+    const m1 = await ev(`return {out: document.getElementById('rjOut').textContent, l: document.getElementById('rjLetter').textContent}`);
+    ok(/64 months of continuous cover/.test(m1.out) && /Counted to the date of the rejection letter: enter the admission date/.test(m1.out), 'without an admission date it counts to the rejection letter and says so');
+    await ev(`const e=document.getElementById('rj_admit'); e.value='2026-05-01'; e.dispatchEvent(new Event('input',{bubbles:true}));`); await sleep(150);
+    const m2 = await ev(`return {out: document.getElementById('rjOut').textContent, l: document.getElementById('rjLetter').textContent}`);
+    ok(/59 months of continuous cover: the five-year rule \(60 months\) does not apply yet/.test(m2.out) && !/Moratorium Period/.test(m2.l), 'admitted at 59 months: the five-year rule is not claimed, even though the rejection came after 60 months');
+    await ev(`const e=document.getElementById('rj_admit'); e.value='2026-06-05'; e.dispatchEvent(new Event('input',{bubbles:true}));`); await sleep(150);
+    ok(/The patient was admitted on 5 June 2026\. IRDAI's Master Circular on Protection of Policyholders' Interests \(IRDAI\/PP&GR\/CIR\/MISC\/117\/9\/2024, 5 September 2024, Part B, IV\.8\) provides that "No policy and claim/.test(await ev(`return document.getElementById('rjLetter').textContent`)), 'admitted after 60 months: the five-year rule, with the admission date, the exact paragraph and the circular\'s reference number');
+
+    console.log('== R29: a rejected claim can be saved on its own, and cleared');
+    await ev(`document.getElementById('rjRdocs').click(); document.getElementById('rjSaveBtn').click();`); await sleep(200);
+    ok(await ev(`const l=readLocalChecks(); return l.length===1 && l[0].rejection && l[0].rejection.kind==='docs' && l[0].rejection.admit==='2026-06-05' && /Saved on this device as a new check/.test(document.getElementById('rjSaveMsg').textContent)`), 'with no bill or figures, the rejection is saved on this device');
+    await send('Page.navigate', { url: `http://127.0.0.1:${port}/` }); await sleep(1200);
+    await ev(`sessionStorage.clear(); switchTab('mybills'); renderLocalList(); document.querySelector('#localList .lopen').click();`); await sleep(500);
+    ok(await ev(`return document.getElementById('page-letter').classList.contains('on') && RJ.kind==='docs' && document.getElementById('rj_admit').value==='2026-06-05' && document.getElementById('rejCard').open`), 'opening it brings the rejection back, on the Letter tab');
+    await ev(`document.getElementById('rjRnone').click();`); await sleep(150);
+    ok(await ev(`return RJ.kind===null && document.getElementById('rjForm').classList.contains('hide') && document.getElementById('replyCard').classList.contains('hide')`), '"Not a full rejection" switches the rejection off');
+
+    console.log('== R29: honest wording');
+    ok(await ev(`setLang('en'); return /Saved with your Google sign-in/.test(document.getElementById('accountHead').textContent) && /ClearBill's server \\(Google Firestore\\)/.test(S().mybills_signin_prompt) && /except a photo you choose to read, which goes to Google's Gemini/.test(S().rp_intro)`), 'My Bills says where saved bills really are, and the reply card says a photo goes to Gemini');
+    ok(await ev(`return /दावे की प्रक्रिया तुरंत करनी चाहिए/.test(STRINGS.hi.hs_death_note) && /दाव्याची प्रक्रिया तात्काळ करायला हवी/.test(STRINGS.mr.hs_death_note)`), 'the Hindi and Marathi death note says "process", as para 16(c) does');
 
     console.log('== R22: grievance officer, documents and delay lines');
     await fresh(); await ev(`setLang('en'); document.getElementById('egBtn').click();`); await sleep(500);

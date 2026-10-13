@@ -1,8 +1,14 @@
 # ClearBill
 
-Making hospital bills checkable. Patchamomma 2026.
+**A free web app that checks an Indian hospital bill and your health-insurance settlement against IRDAI's published rules, and drafts the letters to ask about what doesn't add up.** English, Hindi and Marathi.
 
-**Lock submission: 7 September 2026. No extensions.**
+**Use it: https://clearbill-e7sodufiva-el.a.run.app/**
+
+- Photograph the itemised bill, or type the settlement figures. See which charges match IRDAI's lists, repeats, totals that don't add up, and what is not itemised.
+- Draft a letter to the insurer's grievance officer. Check the insurer's reply, then draft a follow-up or a complaint to the Insurance Ombudsman (free to file).
+- Still in hospital? See the one-hour and three-hour time limits for cashless approval. Whole claim rejected? Draft a request for review.
+
+It quotes the rules word for word and asks rather than asserts. It is not legal advice. Made for Patchamomma 2026; see `07_change_log` for what changed after the submission.
 
 ---
 
@@ -33,7 +39,7 @@ Making hospital bills checkable. Patchamomma 2026.
 | file | what it is |
 |---|---|
 | `irdai_non_payables.csv` | 129 rows. Items insurers don't pay for. Each row carries match keywords, a source, an effective date, and a confidence grade. |
-| `nppa_ceilings.csv` | 16 rows. Statutory maximum prices for stents and knee implants. A charge above these is a legal violation, not an opinion. |
+| `nppa_ceilings.csv` | 16 rows. Ceiling prices NPPA sets for coronary stents and knee implants. A charge above one is worth asking the hospital to explain; the knee-implant ceilings have not been independently re-confirmed by this project. |
 | `build_irdai.py`, `build_nppa.py` | Regenerate the CSVs. Edit these, not the CSVs, so provenance survives. |
 | `README.md` | Column meanings and what still needs verifying. |
 

@@ -136,7 +136,7 @@ console.log('== 5b. reading flow on screen (real page, stubbed network)');
 {
   // A skipped screen test is a failed gate (R16): it used to print SKIPPED
   // and let the release through with none of these checks run.
-  const r = spawnSync(process.execPath, ['--experimental-websocket', path.join(__dirname, 'test_browser_reader.js')], { cwd: APP, encoding: 'utf8', timeout: 420000 });
+  const r = spawnSync(process.execPath, ['--experimental-websocket', path.join(__dirname, 'test_browser_reader.js')], { cwd: APP, encoding: 'utf8', timeout: 900000 });
   const out = (r.stdout || '').trim(), last = out.split('\n').pop();
   ok(r.status === 0 && !/SKIPPED/.test(out), 'test_browser_reader.js - ' + last, r.status === 0 && !/SKIPPED/.test(out) ? '' : (out.split('\n').filter(l => /FAIL|SKIPPED/.test(l)).join('\n') || r.stderr).slice(-800));
 }

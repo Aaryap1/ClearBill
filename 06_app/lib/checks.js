@@ -709,7 +709,7 @@ function checkReply(text){
   for(const m of flat.matchAll(RP_AMOUNT)){ const n=parseAmount(m[0].replace(/^(?:₹|rs|inr)\s*\.?\s*\.?/i,'')).n; if(n!=null&&n>0) amounts.add(n); }
   const breakup=first(RP_BREAKUP);
   return { empty:flat.length<20, reasons, amountCount:amounts.size, breakupAt:breakup,
-    breakdown:amounts.size>=4||!!breakup, ombudsman:first(RP_OMB), pay:first(RP_PAY), keep:first(RP_KEEP), docs:first(RP_DOCS) };
+    breakdown:!!breakup, ombudsman:first(RP_OMB), pay:first(RP_PAY), keep:first(RP_KEEP), docs:first(RP_DOCS) };
 }
 // R26: a room above the policy's room-rent limit. The user gives the limit
 // (from the policy schedule or Customer Information Sheet); the room's rate
@@ -773,9 +773,9 @@ function roomRentCheck(a,inp){
 // group-membership or pre-existing-disease letter often also says "not
 // covered", so the more specific reasons are tried first.
 const RJ_RE=[
-  ['group',/\b(?:not (?:enrolled|enlisted|found|listed|part of)\b[^.]{0,40}\b(?:member|employee|group)|member(?:ship)? details?|employee (?:data|details|list)|not (?:a )?(?:member|employee) (?:of|under) (?:the )?group)/i],
   ['ped',/\b(?:pre[\s-]?existing|ped\b|non[\s-]?disclosure|not disclosed|misrepresent\w*|suppression|concealment)/i],
   ['waiting',/\bwaiting period\b/i],
+  ['group',/\b(?:not (?:enrolled|enlisted|found|listed|covered|part of)\b[^.]{0,40}\b(?:members?|employees?)\b[^.]{0,30}\b(?:list|data|group|policy)|(?:member|employee)(?:ship)? (?:details?|data) (?:is |are |was |were )?not (?:available|received|found|provided)|not (?:a )?(?:member|employee) (?:of|under) (?:the )?group)/i],
   ['docs',/\b(?:documents?|papers)\b[^.]{0,40}\b(?:not (?:submitted|received|provided)|pending|awaited|incomplete)|\b(?:delay(?:ed)? (?:in )?intimation|intimated (?:late|after)|late intimation|not intimated)\b/i],
   ['need',/\b(?:not (?:medically )?(?:necessary|justified|required|warranted)|(?:on |as )?(?:an )?(?:opd|out[\s-]?patient) basis|for (?:investigation|diagnostic|evaluation) purposes?|observation only|hospitali[sz]ation (?:was )?not (?:required|necessary|justified))/i],
   ['excl',/\b(?:exclu\w*|excl\s?\d{2}|not covered|not payable under|outside the scope|permanent(?:ly)? exclu\w*)/i],

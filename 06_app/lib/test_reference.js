@@ -139,6 +139,28 @@ ok(c.GRO.every(g => !/E\+/i.test(g.tel) && (!g.tel || /^[\d\s\-\/+]+$/.test(g.te
 ok(c.GRO.every(g => !g.web || /^https?:\/\//.test(g.web)), 'every grievance page is a web address');
 ok(/^\d{4}-\d{2}-\d{2}$/.test(c.GRO_READ_ON) && /^\d{4}-\d{2}-\d{2}$/.test(c.GRO_LIST_UPDATED), 'when the list was last updated and when it was read are both recorded');
 {
+  console.log('== R29: wording the council found harmful never comes back (council round 5)');
+  const page = require('fs').readFileSync(require('path').join(__dirname, '..', 'index.html'), 'utf8');
+  const BANNED = [
+    ['is mine to pay', 'a letter conceding the room rent above the limit'],
+    ['This part is yours to pay', 'the screen telling the user the room excess is theirs to pay'],
+    ['non-payable list', 'the name IRDAI does not use for List I ("Optional Items")'],
+    ['न-भुगतान सूची', 'the same, in Hindi'], ['न-भरणा यादी', 'the same, in Marathi'],
+    ['only you can see them', 'My Bills claiming more privacy than the server gives'],
+    ['In your Google account', 'My Bills saying bills are in the user\'s Google account'],
+    ['IRDAI says must be folded', 'superseded Lists II-IV shown as a current rule'],
+    ["IRDAI's guidelines say hospitals should already include", 'the same'],
+    ['दावा तुरंत निपटाना', 'the Hindi death note saying "settle" where para 16(c) says "process"'],
+    ['दावा तात्काळ निकाली', 'the same, in Marathi'],
+    ['legally tenable evidence', 'a Part A (life insurance) rule cited for health'],
+  ];
+  for (const [phrase, why] of BANNED) ok(!page.includes(phrase), 'not in the app: "' + phrase + '" (' + why + ')');
+  const readme = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'README.md'), 'utf8');
+  ok(!/legal violation, not an opinion/.test(readme), 'not in the README: "a legal violation, not an opinion" (stronger than the app says)');
+  const ver = +(/const APP_VERSION='R(\d+)/.exec(page) || [])[1], newest = Math.max(...[...page.matchAll(/\bR(\d{2})\b/g)].map(m => +m[1]).filter(n => n < 90));
+  ok(ver >= newest, 'APP_VERSION (R' + ver + ') is not older than the newest release named in the code (R' + newest + '), so feedback names the right release');
+}
+{
   console.log('== R23: the monthly reference check (offline: the comparison only)');
   const fr = require('./freshness.js');
   const em = fr.extractEmails('<td>gro@starhealth.in</td><td>GRO@NewIndia.co.in.</td> grievance[at]acko[dot]com <a href="mailto:gro@starhealth.in">x</a>');

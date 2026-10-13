@@ -294,8 +294,11 @@ console.log('== R24: what an insurer\'s reply contains (signals the user confirm
   const R = checks.checkReply;
   const vague = R('Dear Sir, with reference to your complaint dated 01/10/2026, we regret to inform you that the deduction of Rs. 5,962/- stands valid as per policy terms and conditions. The non-payable items were deducted as per the IRDAI guidelines. Thanking you.');
   ok(vague.reasons.length === 0 && !vague.breakdown && !vague.ombudsman && /regret/.test(vague.keep), 'a vague reply ("as per policy terms and conditions") gives no specific term, no breakdown, no Ombudsman; its refusal is quoted');
-  const full = R('As per Clause 4.2 and Code-Excl01 of your policy, items under List I are not payable. Details: Rs 300, Rs 160, Rs. 1,260, INR 850. You may approach the Insurance Ombudsman. Please submit the discharge summary.');
-  ok(full.reasons.length === 1 && /Clause 4[.]2/.test(full.reasons[0]) && full.breakdown && full.amountCount === 4 && /Ombudsman/.test(full.ombudsman) && /discharge summary/.test(full.docs), 'a full reply: the clause is quoted once, 4 amounts make a breakdown, the Ombudsman and a request for documents are found');
+  const full = R('As per Clause 4.2 and Code-Excl01 of your policy, items under List I are not payable. Break-up of deductions: Rs 300, Rs 160, Rs. 1,260, INR 850. You may approach the Insurance Ombudsman. Please submit the discharge summary.');
+  ok(full.reasons.length === 1 && /Clause 4[.]2/.test(full.reasons[0]) && full.breakdown && full.amountCount === 4 && /Ombudsman/.test(full.ombudsman) && /discharge summary/.test(full.docs), 'a full reply: the clause is quoted once, a stated break-up of 4 amounts, the Ombudsman and a request for documents are found');
+  const settle = R('Claim amount Rs 41,396. Approved Rs 30,476. Deducted Rs 5,962. TDS Rs 0. Paid to hospital Rs 30,476 on 02/10/2026. Hospital discount Rs 1,572.');
+  ok(!settle.breakdown && settle.amountCount >= 4, 'R29: an ordinary settlement letter with several amounts is NOT taken as a line-by-line breakdown (council round 5)');
+  ok(checks.rejectionReason('Member Details: Name XYZ, Employee ID 1234. Your claim is repudiated due to non-disclosure of pre-existing hypertension.') === 'ped', 'R29: a "Member Details" header does not turn a pre-existing-disease rejection into a group-policy one');
   ok(R('Your pin code 400001 is noted.').reasons.length === 0, 'a PIN code is not a policy clause');
   ok(R('Please find the break-up of the deductions attached to this mail.').breakdown, 'a reply that says it attaches a break-up counts as a breakdown to confirm');
   ok(R('We have reconsidered and an additional amount of Rs 2,000 will be paid.').pay !== null, 'a promise to pay more is quoted');
