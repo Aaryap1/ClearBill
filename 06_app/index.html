@@ -316,6 +316,13 @@
   .rcform .btn{margin:6px 12px 0 0}
   .rcerr{color:var(--red)}
   .rcdone{margin-top:10px}
+  .rrdet .db2 label{margin-top:12px}
+  .rrout{margin-top:12px;font-size:.88rem;line-height:1.5}
+  .rrout p{margin:0 0 8px}
+  .rrout .rrbig{font-family:"Archivo",sans-serif;font-weight:600}
+  .rrout ul{margin:4px 0 8px;padding-left:18px} .rrout li{margin:2px 0}
+  .rrout details summary{padding:6px 0;font-size:.8rem;color:var(--soft)}
+  .rrout .rrnote{color:var(--soft);font-size:.8rem}
   .ldf input[type=date]{width:100%;min-height:44px;border:1.5px solid var(--ctl);border-radius:9px;padding:9px 12px;font-size:.95rem;font-family:"Spectral",serif;color:var(--ink);background:var(--field);outline:none}
   .ldf input[type=date]:focus{border-color:var(--ink);background:var(--card);box-shadow:0 0 0 3px var(--ochre-bg)}
   details.replycard{margin-top:16px}
@@ -505,6 +512,19 @@
           <p id="findNumsDiscountP"><b id="findNumsDiscountLbl">Hospital discount</b> <span id="findNumsDiscountTxt">&mdash; look for "MOU Discount", "PPN Discount" or "Package Discount" on the bill. Leave as 0 if you don't see one.</span></p>
           <p><b id="findNumsCopayLbl">Co-pay percentage</b> <span id="findNumsCopayTxt">&mdash; check your policy schedule, or "Co-Payment %" on the claim settlement letter. Try 0 first if you can't find it.</span></p>
           <p id="findNumsNote" class="note2">Different insurers and hospitals word these differently &mdash; this is a guide, not an exact match for every document.</p>
+        </div>
+      </details>
+      <details class="findnums rrdet" id="rrDet">
+        <summary id="rrHead">Room-rent limit in your policy (optional)</summary>
+        <div class="db2">
+          <p id="rrIntro">Many policies pay room rent only up to a limit per day, stated in the policy schedule or Customer Information Sheet as an amount or a share of the sum insured (1% of &#8377;3,00,000 is &#8377;3,000). Above it, you pay the difference, and some policies also cut other charges in the same proportion.</p>
+          <label for="rr_limit" id="rrLblLimit">Room rent your policy allows per day</label>
+          <div class="fin"><span class="pfx">&#8377;</span><input type="number" id="rr_limit" step="any" min="0" placeholder="0"></div>
+          <label for="rr_rate" id="rrLblRate">Room charged per day <span class="hint" id="rrRateHint">&mdash; leave blank to use the bill</span></label>
+          <div class="fin"><span class="pfx">&#8377;</span><input type="number" id="rr_rate" step="any" min="0" placeholder="0"></div>
+          <label for="rr_days" id="rrLblDays">Days in the room</label>
+          <div class="fin"><span class="pfx">#</span><input type="number" id="rr_days" step="any" min="0" placeholder="0"></div>
+          <div id="rrOut" class="rrout" aria-live="polite"></div>
         </div>
       </details>
       <div style="margin-top:14px"><button class="link" id="egBtn">Load the worked example</button>
@@ -1282,6 +1302,25 @@ en: {
   backup_about:"If this site is ever down, a backup copy runs free on GitHub:",
   rp_save:"Save on this device", rp_save_note:"Keeps the reply, your ticks and the complaint details with this check, on this device only. Nothing is sent.",
   rp_saved_upd:"Saved with the check you opened, on this device.", rp_saved_new:"Saved on this device as a new check, with your reply work. Open it again from My Bills.",
+  rr_head:"Room-rent limit in your policy (optional)",
+  rr_intro:"Many policies pay room rent only up to a limit per day, stated in the policy schedule or Customer Information Sheet as an amount or a share of the sum insured (1% of ₹3,00,000 is ₹3,000). Above it, you pay the difference, and some policies also cut other charges in the same proportion.",
+  rr_limit:"Room rent your policy allows per day", rr_rate:"Room charged per day", rr_rate_hint:"— leave blank to use the bill", rr_days:"Days in the room",
+  rr_detected:(rate,days,rates)=>`Your bill shows a room at ${rate} a day${days?` for ${days} day${days==1?'':'s'}`:''}${rates?` (more than one rate: ${rates}; the highest is used)`:''}.`,
+  rr_need_rate:"Enter the room charged per day (on the bill or the hospital's tariff) to compare it with your limit.",
+  rr_need_days:"Enter the days in the room to work out the room rent above your limit.",
+  rr_within:(rate,limit)=>`Your room (${rate} a day) is within your policy's limit (${limit} a day), so no proportionate deduction for the room should arise. If one was applied, the letter asks for the reason.`,
+  rr_excess:(x,rate,limit,days)=>`Room rent above your limit: ${x} (${rate} a day against ${limit}, for ${days} day${days==1?'':'s'}). This part is yours to pay.`,
+  rr_ratio:pct=>`Your policy covers ${pct}% of the room's daily rate. A policy with a proportionate deduction may also pay some other charges at ${pct}%.`,
+  rr_cut:(x,n)=>`If your policy's wording follows IRDAI's 2020 norms, that cut could apply only to ${n} of your charges (doctors, procedures, nursing and similar), and come to at most ${x}.`,
+  rr_notcut:"A wording that follows those norms could not cut:",
+  rr_g_pharmacy:"Medicines and consumables", rr_g_implant:"Implants and medical devices", rr_g_diagnostic:"Diagnostics (tests and scans)", rr_g_icu:"ICU charges", rr_g_other:"Charges such a cut could apply to",
+  rr_explains:(x,d)=>`Together, the room rent above your limit and such a cut could account for up to ${x} of the ${d} not itemised.`,
+  rr_lines:"See which charges are in each group", rr_lines_note:"Grouped by the words on each line. A line can land in the wrong group, so check it against your bill.",
+  rr_cut_nobill:"With the itemised bill checked, ClearBill can show which charges such a cut could apply to.",
+  rr_rule:"IRDAI's rules today require your policy to state any proportionate deduction and the section that sets it out. The 2020 norms that kept medicines, consumables, implants, diagnostics and ICU charges out of it were withdrawn in May 2024, so whether they apply depends on your policy's wording. The letter asks your insurer for the clause, and which charges it cut.",
+  letter_confirm_room:"Room above your policy's limit: ask for the clause and the charges cut", letter_confirm_room_ok:"Room within your policy's limit",
+  ls_room:"It asks which clause of your policy allows a proportionate deduction for your room, how it defines 'associated medical expenses', and which charges were cut.",
+  ls_room_ok:"It says your room was within your policy's limit, and asks the reason for any proportionate deduction.",
   dates_today:(today,reply,opens,deadline)=>`If you send it today (${today}): a reply is due around ${reply}, within 14 days. If none comes, you can go to the Ombudsman one month after the insurer receives your letter, so on or after ${opens}, and you have until ${deadline} (Insurance Ombudsman Rules 2017, rule 14(3)). If the insurer does reply, the year counts from its reply. Sending on another day? Enter that date under "Sent on" in My Bills and the dates follow it.`,
   dates_sent:(reply,opens,deadline)=>`Reply due around ${reply}. No reply: the Ombudsman route opens on or after ${opens}, until ${deadline}.`,
   upsum:n=>`${n} lines read`, upsum_example:n=>`Worked example &middot; ${n} lines read`,
@@ -1707,6 +1746,25 @@ hi: {
   backup_about:"अगर यह साइट कभी बंद हो, तो GitHub पर एक मुफ़्त बैकअप कॉपी चलती है:",
   rp_save:"इस डिवाइस पर सहेजें", rp_save_note:"जवाब, आपके निशान और शिकायत का विवरण इस जाँच के साथ सिर्फ़ इसी डिवाइस पर रहते हैं। कुछ भी भेजा नहीं जाता।",
   rp_saved_upd:"आपने जो जाँच खोली थी, उसके साथ इस डिवाइस पर सहेजा गया।", rp_saved_new:"आपके जवाब वाले काम के साथ, इस डिवाइस पर नई जाँच के रूप में सहेजा गया। इसे मेरे बिल से फिर खोलें।",
+  rr_head:"आपकी पॉलिसी में कमरे के किराए की सीमा (वैकल्पिक)",
+  rr_intro:"कई पॉलिसियाँ कमरे का किराया रोज़ की एक सीमा तक ही देती हैं, जो पॉलिसी शेड्यूल या कस्टमर इन्फ़ॉर्मेशन शीट में रकम या बीमा राशि के हिस्से के रूप में लिखी होती है (₹3,00,000 का 1% यानी ₹3,000)। इससे ऊपर का अंतर आप देते हैं, और कुछ पॉलिसियाँ दूसरे चार्ज भी उसी अनुपात में काटती हैं।",
+  rr_limit:"आपकी पॉलिसी रोज़ कितना कमरे का किराया देती है", rr_rate:"कमरे का रोज़ का चार्ज", rr_rate_hint:"— बिल से लेने के लिए ख़ाली छोड़ें", rr_days:"कमरे में कितने दिन",
+  rr_detected:(rate,days,rates)=>`आपके बिल में कमरा ${rate} प्रति दिन${days?`, ${days} दिन के लिए`:''} दिखता है${rates?` (एक से ज़्यादा दरें: ${rates}; सबसे ऊँची ली गई है)`:''}।`,
+  rr_need_rate:"अपनी सीमा से मिलाने के लिए कमरे का रोज़ का चार्ज डालें (बिल या अस्पताल की दर-सूची से)।",
+  rr_need_days:"सीमा से ऊपर का किराया निकालने के लिए कमरे में बिताए दिन डालें।",
+  rr_within:(rate,limit)=>`आपका कमरा (${rate} प्रति दिन) आपकी पॉलिसी की सीमा (${limit} प्रति दिन) के भीतर है, इसलिए कमरे की वजह से अनुपातिक कटौती नहीं होनी चाहिए। अगर हुई है, तो पत्र उसका कारण पूछता है।`,
+  rr_excess:(x,rate,limit,days)=>`सीमा से ऊपर का कमरे का किराया: ${x} (${limit} के मुक़ाबले ${rate} प्रति दिन, ${days} दिन)। यह हिस्सा आपको देना होता है।`,
+  rr_ratio:pct=>`आपकी पॉलिसी कमरे की रोज़ की दर का ${pct}% देती है। अनुपातिक कटौती वाली पॉलिसी कुछ दूसरे चार्ज भी ${pct}% पर दे सकती है।`,
+  rr_cut:(x,n)=>`अगर आपकी पॉलिसी की शर्तें IRDAI के 2020 के नियमों के अनुसार हैं, तो यह कटौती आपके सिर्फ़ ${n} चार्ज (डॉक्टर, प्रक्रिया, नर्सिंग जैसे) पर लग सकती है, और ज़्यादा से ज़्यादा ${x} होगी।`,
+  rr_notcut:"उन नियमों वाली शर्तें इन्हें नहीं काट सकतीं:",
+  rr_g_pharmacy:"दवाएँ और कंज़्यूमेबल", rr_g_implant:"इम्प्लांट और मेडिकल डिवाइस", rr_g_diagnostic:"जाँचें (टेस्ट और स्कैन)", rr_g_icu:"ICU चार्ज", rr_g_other:"चार्ज जिन पर ऐसी कटौती लग सकती है",
+  rr_explains:(x,d)=>`सीमा से ऊपर का कमरे का किराया और ऐसी कटौती मिलकर, ब्योरा न दिए गए ${d} में से ${x} तक समझा सकते हैं।`,
+  rr_lines:"देखें कि कौन-से चार्ज किस समूह में हैं", rr_lines_note:"हर लाइन के शब्दों से समूह बनाए गए हैं। कोई लाइन ग़लत समूह में जा सकती है, इसलिए अपने बिल से मिलाएँ।",
+  rr_cut_nobill:"आइटमवार बिल जाँचने पर ClearBill दिखा सकता है कि ऐसी कटौती किन चार्ज पर लग सकती है।",
+  rr_rule:"IRDAI के आज के नियमों के अनुसार आपकी पॉलिसी में कोई भी अनुपातिक कटौती और उसका सेक्शन लिखा होना चाहिए। दवाओं, कंज़्यूमेबल, इम्प्लांट, जाँचों और ICU को इससे बाहर रखने वाले 2020 के नियम मई 2024 में वापस ले लिए गए, इसलिए वे लागू हैं या नहीं, यह आपकी पॉलिसी की शर्तों पर निर्भर है। पत्र बीमा कंपनी से क्लॉज़ और काटे गए चार्ज पूछता है।",
+  letter_confirm_room:"कमरा पॉलिसी की सीमा से ऊपर: क्लॉज़ और काटे गए चार्ज पूछें", letter_confirm_room_ok:"कमरा पॉलिसी की सीमा के भीतर",
+  ls_room:"यह पूछता है कि आपकी पॉलिसी का कौन-सा क्लॉज़ कमरे की वजह से अनुपातिक कटौती की अनुमति देता है, 'associated medical expenses' की परिभाषा क्या है, और कौन-से चार्ज काटे गए।",
+  ls_room_ok:"यह कहता है कि आपका कमरा पॉलिसी की सीमा के भीतर था, और किसी भी अनुपातिक कटौती का कारण पूछता है।",
   dates_today:(today,reply,opens,deadline)=>`अगर आप इसे आज (${today}) भेजें: जवाब लगभग ${reply} तक, 14 दिनों में आना चाहिए। जवाब न आए तो बीमा कंपनी को पत्र मिलने के एक महीने बाद, यानी ${opens} या उसके बाद, आप लोकपाल के पास जा सकते हैं, और ${deadline} तक (बीमा लोकपाल नियम 2017, नियम 14(3))। अगर बीमा कंपनी जवाब दे, तो साल उसके जवाब से गिना जाता है। किसी और दिन भेज रहे हैं? My Bills में "भेजने की तारीख़" में वह तारीख़ डालें, तारीख़ें उसी से चलेंगी।`,
   dates_sent:(reply,opens,deadline)=>`जवाब लगभग ${reply} तक। जवाब न आए तो लोकपाल का रास्ता ${opens} या उसके बाद, ${deadline} तक।`,
   upsum:n=>`${n} लाइनें पढ़ी गईं`, upsum_example:n=>`उदाहरण बिल &middot; ${n} लाइनें पढ़ी गईं`,
@@ -2133,6 +2191,25 @@ mr: {
   backup_about:"ही साइट कधी बंद पडली, तर GitHub वर एक मोफत बॅकअप प्रत चालते:",
   rp_save:"या डिव्हाइसवर जतन करा", rp_save_note:"उत्तर, तुमच्या खुणा आणि तक्रारीचा तपशील या तपासणीसोबत फक्त याच डिव्हाइसवर राहतात. काहीही पाठवलं जात नाही.",
   rp_saved_upd:"तुम्ही उघडलेल्या तपासणीसोबत या डिव्हाइसवर जतन केलं.", rp_saved_new:"तुमच्या उत्तराच्या कामासह, या डिव्हाइसवर नवी तपासणी म्हणून जतन केलं. माझी बिले मधून ती पुन्हा उघडा.",
+  rr_head:"तुमच्या पॉलिसीतील खोलीभाड्याची मर्यादा (ऐच्छिक)",
+  rr_intro:"अनेक पॉलिसी खोलीभाडं दररोजच्या एका मर्यादेपर्यंतच देतात, जी पॉलिसी शेड्यूल किंवा कस्टमर इन्फॉर्मेशन शीटमध्ये रक्कम किंवा विमा रकमेचा हिस्सा म्हणून लिहिलेली असते (₹3,00,000 चा 1% म्हणजे ₹3,000). त्यापेक्षा जास्तीचा फरक तुम्ही भरता, आणि काही पॉलिसी इतर चार्जेसही त्याच प्रमाणात कापतात.",
+  rr_limit:"तुमची पॉलिसी दररोज किती खोलीभाडं देते", rr_rate:"खोलीचा दररोजचा चार्ज", rr_rate_hint:"— बिलातून घेण्यासाठी रिकामं ठेवा", rr_days:"खोलीत किती दिवस",
+  rr_detected:(rate,days,rates)=>`तुमच्या बिलात खोली ${rate} प्रतिदिन${days?`, ${days} दिवसांसाठी`:''} दिसते${rates?` (एकापेक्षा जास्त दर: ${rates}; सर्वात जास्त वापरला आहे)`:''}.`,
+  rr_need_rate:"तुमच्या मर्यादेशी तुलना करण्यासाठी खोलीचा दररोजचा चार्ज टाका (बिल किंवा रुग्णालयाच्या दरपत्रकातून).",
+  rr_need_days:"मर्यादेपेक्षा जास्तीचं भाडं काढण्यासाठी खोलीत राहिलेले दिवस टाका.",
+  rr_within:(rate,limit)=>`तुमची खोली (${rate} प्रतिदिन) पॉलिसीच्या मर्यादेत (${limit} प्रतिदिन) आहे, त्यामुळे खोलीमुळे प्रमाणशीर कपात होऊ नये. झाली असल्यास, पत्र त्याचं कारण विचारतं.`,
+  rr_excess:(x,rate,limit,days)=>`मर्यादेपेक्षा जास्तीचं खोलीभाडं: ${x} (${limit} च्या तुलनेत ${rate} प्रतिदिन, ${days} दिवस). हा भाग तुम्हाला भरावा लागतो.`,
+  rr_ratio:pct=>`तुमची पॉलिसी खोलीच्या दररोजच्या दराचा ${pct}% देते. प्रमाणशीर कपात असलेली पॉलिसी काही इतर चार्जेसही ${pct}% ने देऊ शकते.`,
+  rr_cut:(x,n)=>`तुमच्या पॉलिसीच्या अटी IRDAI च्या 2020 च्या नियमांनुसार असतील, तर ही कपात तुमच्या फक्त ${n} चार्जेसवर (डॉक्टर, प्रक्रिया, नर्सिंग इत्यादी) लागू शकते, आणि जास्तीत जास्त ${x} होईल.`,
+  rr_notcut:"त्या नियमांनुसार असलेल्या अटी हे कापू शकत नाहीत:",
+  rr_g_pharmacy:"औषधं आणि कन्झ्युमेबल्स", rr_g_implant:"इम्प्लांट आणि वैद्यकीय उपकरणं", rr_g_diagnostic:"तपासण्या (टेस्ट आणि स्कॅन)", rr_g_icu:"ICU चार्जेस", rr_g_other:"अशी कपात लागू शकणारे चार्जेस",
+  rr_explains:(x,d)=>`मर्यादेपेक्षा जास्तीचं खोलीभाडं आणि अशी कपात मिळून, तपशील न दिलेल्या ${d} पैकी ${x} पर्यंत स्पष्ट करू शकतात.`,
+  rr_lines:"कोणते चार्जेस कोणत्या गटात आहेत ते पहा", rr_lines_note:"प्रत्येक ओळीतील शब्दांवरून गट केले आहेत. एखादी ओळ चुकीच्या गटात जाऊ शकते, म्हणून तुमच्या बिलाशी जुळवून पहा.",
+  rr_cut_nobill:"आयटमनिहाय बिल तपासल्यावर ClearBill अशी कपात कोणत्या चार्जेसवर लागू शकते ते दाखवू शकतं.",
+  rr_rule:"IRDAI च्या आजच्या नियमांनुसार तुमच्या पॉलिसीत कोणतीही प्रमाणशीर कपात आणि ती ठरवणारा विभाग लिहिलेला असायला हवा. औषधं, कन्झ्युमेबल्स, इम्प्लांट, तपासण्या आणि ICU यातून वगळणारे 2020 चे नियम मे 2024 मध्ये मागे घेतले गेले, त्यामुळे ते लागू आहेत की नाही हे तुमच्या पॉलिसीच्या अटींवर अवलंबून आहे. पत्र विमा कंपनीकडे कलम आणि कापलेले चार्जेस विचारतं.",
+  letter_confirm_room:"खोली पॉलिसीच्या मर्यादेपेक्षा जास्त: कलम आणि कापलेले चार्जेस विचारा", letter_confirm_room_ok:"खोली पॉलिसीच्या मर्यादेत",
+  ls_room:"ते विचारतं की तुमच्या पॉलिसीचं कोणतं कलम खोलीमुळे प्रमाणशीर कपातीला परवानगी देतं, 'associated medical expenses' ची व्याख्या काय आहे, आणि कोणते चार्जेस कापले.",
+  ls_room_ok:"ते सांगतं की तुमची खोली पॉलिसीच्या मर्यादेत होती, आणि कोणत्याही प्रमाणशीर कपातीचं कारण विचारतं.",
   dates_today:(today,reply,opens,deadline)=>`तुम्ही हे आज (${today}) पाठवलं तर: उत्तर साधारण ${reply} पर्यंत, 14 दिवसांत यायला हवं. उत्तर आलं नाही तर विमा कंपनीला पत्र मिळाल्यानंतर एका महिन्याने, म्हणजे ${opens} किंवा त्यानंतर, तुम्ही लोकपालाकडे जाऊ शकता, आणि ${deadline} पर्यंत (विमा लोकपाल नियम 2017, नियम 14(3)). विमा कंपनीने उत्तर दिलं तर वर्ष त्या उत्तरापासून मोजलं जातं. दुसऱ्या दिवशी पाठवताय? My Bills मध्ये "पाठवल्याची तारीख" मध्ये ती तारीख टाका, तारखा त्यानुसार बदलतील.`,
   dates_sent:(reply,opens,deadline)=>`उत्तर साधारण ${reply} पर्यंत. उत्तर न आल्यास लोकपालाचा मार्ग ${opens} किंवा त्यानंतर, ${deadline} पर्यंत.`,
   upsum:n=>`${n} ओळी वाचल्या`, upsum_example:n=>`उदाहरण बिल &middot; ${n} ओळी वाचल्या`,
@@ -2481,8 +2558,9 @@ let SETTLE_MODE='cashless';
 // worked example fills the fields programmatically and calls calc() directly,
 // never through these listeners, so loading the demo never overwrites a
 // real draft).
+const RR={limit:$('rr_limit'),rate:$('rr_rate'),days:$('rr_days')}; // R26: room-rent limit
 const DRAFT_LS='clearbill_settlement_draft';
-function saveDraft(){ try{ localStorage.setItem(DRAFT_LS, JSON.stringify({mode:SETTLE_MODE,total:F.total.value,counter:F.counter.value,discount:F.discount.value,copay:F.copay.value,reimb:F.reimb.value})); }catch(e){} }
+function saveDraft(){ try{ localStorage.setItem(DRAFT_LS, JSON.stringify({mode:SETTLE_MODE,total:F.total.value,counter:F.counter.value,discount:F.discount.value,copay:F.copay.value,reimb:F.reimb.value,rrLimit:RR.limit.value,rrRate:RR.rate.value,rrDays:RR.days.value})); }catch(e){} }
 function restoreDraft(){
   try{
     const raw=localStorage.getItem(DRAFT_LS); if(!raw) return;
@@ -2492,12 +2570,14 @@ function restoreDraft(){
     if(d.discount) F.discount.value=d.discount;
     if(d.reimb) F.reimb.value=d.reimb;
     if(d.copay){ F.copay.value=d.copay; markChips(d.copay); }
+    const rn=v=>(v===''||v==null||isNaN(+v)||+v<0)?'':String(+v);
+    RR.limit.value=rn(d.rrLimit); RR.rate.value=rn(d.rrRate); RR.days.value=rn(d.rrDays); if(RR.limit.value) $('rrDet').open=true;
     setSettleMode(d.mode==='reimb'?'reimb':'cashless',true);
     if([d.total,d.counter,d.discount,d.copay,d.reimb].some(Boolean)) $('restoredNote').classList.remove('hide');
   }catch(e){}
 }
 $('restoredClearBtn').addEventListener('click',()=>{
-  Object.values(F).forEach(el=>{ el.value=''; }); markChips(-1); setSettleMode('cashless',true);
+  Object.values(F).forEach(el=>{ el.value=''; }); Object.values(RR).forEach(el=>{ el.value=''; }); markChips(-1); setSettleMode('cashless',true);
   try{ localStorage.removeItem(DRAFT_LS); }catch(e){}
   $('restoredNote').classList.add('hide'); calc(); F.total.focus();
 });
@@ -2586,6 +2666,7 @@ $('nextBill').addEventListener('click',()=>switchTab('findings'));
 // not on every keystroke, so typing is never interrupted.
 Object.values(F).forEach(el=>el.addEventListener('change',()=>{ const o=$('settleOut'); if(!o.classList.contains('hide')) o.scrollIntoView({behavior:'smooth',block:'nearest'}); }));
 Object.values(F).forEach(el=>el.addEventListener('input',()=>{ if(el===F.copay) markChips(F.copay.value); $('restoredNote').classList.add('hide'); calc(); saveDraft(); }));
+Object.values(RR).forEach(el=>el.addEventListener('input',()=>{ renderLetterTab(); saveDraft(); if(_letterGenerated && window.__letterA) buildLetter(window.__letterA,_lastLetterInclude,true); }));
 function markChips(v){ const blank=v==null||String(v).trim()===''; document.querySelectorAll('#copayChips .chip').forEach(c=>{ const on=c.dataset.v===''?(blank&&v!==-1):(!blank&&+c.dataset.v===+v); c.classList.toggle('on',on); c.setAttribute('aria-pressed',on); }); }
 document.querySelectorAll('#copayChips .chip').forEach(c=>c.addEventListener('click',()=>{ F.copay.value=c.dataset.v; markChips(c.dataset.v); calc(); saveDraft(); }));
 restoreDraft(); calc();
@@ -2973,6 +3054,63 @@ function checkReply(text){
   return { empty:flat.length<20, reasons, amountCount:amounts.size, breakupAt:breakup,
     breakdown:amounts.size>=4||!!breakup, ombudsman:first(RP_OMB), pay:first(RP_PAY), keep:first(RP_KEEP), docs:first(RP_DOCS) };
 }
+// R26: a room above the policy's room-rent limit. The user gives the limit
+// (from the policy schedule or Customer Information Sheet); the room's rate
+// and days are read from the bill unless typed. Worked out:
+//  - the room rent above the limit (the policy pays the limit for each day);
+//  - the share of the room's rate the policy covers (limit / rate);
+//  - the most a proportionate cut could come to if the policy follows IRDAI's
+//    2020 norms (IRDAI/HLT/REG/CIR/151/06/2020, 11 Jun 2020): those kept the
+//    cost of pharmacy and consumables, implants and medical devices, and
+//    diagnostics out of "associated medical expenses", and ICU charges out of
+//    the deduction. That circular was withdrawn by the 29 May 2024 Health
+//    Master Circular (Annexure-6, item 19) without restating it, so these
+//    figures depend on the policy's own wording and are never presented as
+//    current law. What is current: a policy must state "the sub-limits,
+//    Proportionate Deductions ... with cross reference to the concerned policy
+//    section" (Policyholders' Interests Master Circular, 5 Sep 2024,
+//    Schedule-C, 3.1(ix)), so the letter asks for the clause.
+// Lines are grouped by their words (and section, when the bill has one); a
+// line can land in the wrong group, which the screen says.
+const RR_ICU=/\b(?:icu|iccu|nicu|picu|micu|sicu|ccu|hdu|intensive care)\b/i;
+const RR_ROOM=/\b(?:room|ward|accommodation|boarding|bed (?:charges?|rent))\b/i;
+const RR_NOTROOM=/\b(?:operation|theatre|theater|recovery|labour|labor|procedure|emergency|freshener|spray|sheet|pan)\b/i;
+const RR_IMPLANT=/\b(?:implants?|stents?|prosthes[ie]s|prosthetic|valves?|iol|intra[\s-]?ocular lens|mesh|plates?|screws?|pacemaker|graft|k[\s-]?wire|femoral component|tibial (?:component|tray|insert)|acetabular|patellar? (?:component|button))\b/i;
+const RR_DIAG=/\b(?:x[\s-]?ray|ct|mri|usg|ultrasound|ultrasonography|sonography|ecg|ekg|2d echo|echo|doppler|cbc|hb|hba1c|lft|kft|rft|culture|biopsy|histopath\w*|serum|urine|blood (?:test|sugar|group\w*)|lipid|thyroid|tsh|crp|esr|inr|aptt|scan|test|profile|panel|creatinine|electrolytes?|bilirubin|sgot|sgpt|albumin|glucose|radiology|pathology|laboratory|lab|investigations?)\b/i;
+const RR_DRUG=/\b(?:tab|tabs|tablets?|cap|caps|capsules?|inj|injections?|syp|syrup|susp|suspension|ointment|oint|cream|gel|lotion|drops?|vial|amp|ampoule|infusion|nebul\w*|inhaler|respules?|sachet|cannula|syringes?|needles?|gloves?|glove|gauze|bandage|dressing|catheters?|swabs?|cotton|mask|tegaderm|plaster|tape|sutures?|blade|drape|kit|strips?|lancet|electrodes?|tubing|tube|iv set|set|bags?|sheets?|linen|gown|apron|sanitizer|alcorub|povidone|spirit|betadine|medicines?|drugs?|pharmacy)\b|\b\d+(?:\.\d+)?\s?(?:mg|ml|mcg|gm|iu)\b/i;
+const RR_SEC={icu:/\bicu\b|intensive/i, implant:/implant|prosthe|device/i, diagnostic:/lab|patholog|radiolog|investigat|diagnos|imaging|scan/i, pharmacy:/pharm|medicin|drug|consumab|disposab/i};
+function roomKind(l){
+  const t=String(l.item||''), s=String(l.section||'');
+  if(RR_ICU.test(t)||RR_SEC.icu.test(s)) return 'icu';
+  if(RR_ROOM.test(t)&&!RR_NOTROOM.test(t)) return 'room';
+  if(RR_IMPLANT.test(t)||RR_SEC.implant.test(s)) return 'implant';
+  if(RR_SEC.diagnostic.test(s)||RR_DIAG.test(t)) return 'diagnostic';
+  if(RR_SEC.pharmacy.test(s)||RR_DRUG.test(t)) return 'pharmacy';
+  return 'other';
+}
+function roomRentCheck(a,inp){
+  inp=inp||{};
+  const listI=new Set(((a&&a.exact)||[]).map(l=>l.item+'|'+l.total));
+  const lines=((a&&a.lines)||[]).filter(l=>l.total!=null&&l.total>0);
+  const byKind={room:[],icu:[],implant:[],diagnostic:[],pharmacy:[],other:[]};
+  lines.forEach(l=>byKind[roomKind(l)].push(l));
+  const per=l=>l.rate>0?l.rate:(l.quantity>0?l.total/l.quantity:l.total);
+  const rates=[...new Set(byKind.room.map(l=>money(per(l))))].sort((x,y)=>y-x);
+  const detRate=rates[0]||null;
+  const detDays=byKind.room.length?money(byKind.room.reduce((s,l)=>s+(l.quantity>0?l.quantity:l.total/per(l)),0)):null;
+  const roomSum=money(byKind.room.reduce((s,l)=>s+l.total,0));
+  const rate=inp.rate>0?money(inp.rate):detRate, days=inp.days>0?inp.days:detDays, limit=inp.limit>0?money(inp.limit):null;
+  const group=k=>{ const ls=byKind[k].filter(l=>k!=='other'||!listI.has(l.item+'|'+l.total)); return {n:ls.length,sum:money(ls.reduce((s,l)=>s+l.total,0)),items:ls.map(l=>l.item)}; };
+  const groups={}; ['other','pharmacy','implant','diagnostic','icu'].forEach(k=>{ groups[k]=group(k); });
+  const out={hasBill:lines.length>0,detRate,detDays,rates,roomSum,rate,days,limit,groups,over:false,ratio:null,roomExcess:null,cut2020:null};
+  if(!(limit>0&&rate>0)) return out;
+  out.over=rate>limit+0.005; out.ratio=Math.min(1,limit/rate);
+  if(!out.over){ out.roomExcess=0; out.cut2020=0; return out; }
+  const charged=inp.rate>0&&days>0?money(rate*days):(roomSum>0?roomSum:(days>0?money(rate*days):null));
+  out.roomExcess=charged!=null&&days>0?Math.max(0,money(charged-limit*days)):null;
+  out.cut2020=lines.length?money((1-out.ratio)*groups.other.sum):null;
+  return out;
+}
 function sectionSums(lines){
   const m={}; lines.forEach(l=>{ const k=l.section||'Uncategorised'; m[k]=(m[k]||0)+(l.total||0); });
   return Object.entries(m).map(([k,v])=>[k,money(v)]);
@@ -3317,6 +3455,7 @@ function buildHospitalNote(a,include,D,H,pname,sender,today){
   if(!noBill&&include.dup&&a.dups.length) asks.push(`These charges appear more than once at the same amount. Please confirm whether each is a separate service:`, ...a.dups.map(d=>`  - ${d.item} - ${inr.format(d.amount)}, ${d.n} times`), ``);
   if(!noBill&&include.recon&&a.recon) asks.push(`The bill's printed total (${inr.format(a.recon.gross)}) differs from the sum of its own lines (${inr.format(a.recon.lineSum)}) by ${inr.format(Math.abs(a.recon.diff))}. Please explain the difference.`, ``);
   if(!noBill&&include.subsumed&&a.subsumed.length) asks.push(`These charges are items that IRDAI's 2019-2020 standardization guidelines treat as part of the room, procedure or treatment charge. Please confirm whether each was already included in another charge:`, ...a.subsumed.map(l=>`  - ${l.item} - ${inr.format(l.total)}`), ``);
+  if(!noBill&&include.room&&window.__room&&window.__room.over) asks.push(`My room was above the room-rent limit in my insurance policy. Please confirm which charges on my bill vary with the room category, and which are the same whatever the room.`);
   if(!noBill&&!asks.length) return '';
   const who=pname?`${pname}'s`:'the patient\'s';
   const L=[]; if(sender) L.push(sender);
@@ -3334,7 +3473,7 @@ function buildLetter(a,include,noScroll){
   // built straight from the checklist's checkboxes, so unchecking "3
   // duplicate charges" in the Letter tab removes exactly that paragraph
   // here, nothing more, nothing hidden.
-  include=include||{settlement:true,irdai:true,subsumed:true,nppa:true,dup:true,recon:true};
+  include=include||{settlement:true,irdai:true,subsumed:true,nppa:true,dup:true,recon:true,room:true};
   const s=settleOk(), H=a.header||{}, D=readLetterDetails();
   // The letter is English whatever the screen language, so its amounts use
   // English formatting too (not the screen language's).
@@ -3435,6 +3574,13 @@ function buildLetter(a,include,noScroll){
     }
   }
   if(a.recon&&include.recon) L.push(`The bill's printed total (${inr.format(a.recon.gross)}) differs from the sum of its own printed lines (${inr.format(a.recon.lineSum)}) by ${inr.format(Math.abs(a.recon.diff))}.`,``);
+  // R26: the room against the policy's room-rent limit. Asked, never asserted:
+  // the 2020 norms were withdrawn in May 2024 (see roomRentCheck).
+  const room=include.room&&window.__room&&window.__room.limit&&window.__room.rate?window.__room:null;
+  if(room&&room.over) L.push(`My room was charged at ${inr.format(room.rate)} a day${room.days?` for ${room.days} day${room.days==1?'':'s'}`:''}, above the room-rent limit of ${inr.format(room.limit)} a day in my policy${room.roomExcess?`; I understand that the room rent above the limit (${inr.format(room.roomExcess)}) is mine to pay`:''}.`,``,
+    `IRDAI's Master Circular on Protection of Policyholders' Interests (5 September 2024, Schedule-C, para 3.1(ix)) requires a health insurance policy to state "The sub-limits, Proportionate Deductions and the existence of Package rates if any, with cross reference to the concerned policy section". If a proportionate deduction was applied to my claim, please state the clause of my policy that provides for it, its definition of 'associated medical expenses', and the charges it was applied to, with the amount deducted from each.`,``,
+    `Policies filed under IRDAI's norms on proportionate deductions of 11 June 2020 could not include the cost of pharmacy and consumables, implants and medical devices, or diagnostics in 'associated medical expenses', and could not apply the deduction to ICU charges, or where the hospital does not charge different rates by room category. Please confirm whether my policy follows these terms.`,``);
+  else if(room) L.push(`My room was charged at ${inr.format(room.rate)} a day, within the room-rent limit of ${inr.format(room.limit)} a day in my policy, so no proportionate deduction for the room category should apply. If one was applied, please state the reason and the clause of my policy relied on.`,``);
   if(a.dups.length&&include.dup){ L.push(`The following charge(s) appear more than once at the same amount; please confirm whether each is a separate service or a duplicate entry:`); a.dups.forEach(d=>L.push(`  - ${d.item} - ${inr.format(d.amount)}, ${d.n} times`)); L.push(``); }
   if(a.similarDups.length&&include.dup){ L.push(`The following charges are identical apart from a reference number and are billed at the same amount; please confirm whether each is a separate service:`); a.similarDups.forEach(d=>L.push(`  - ${d.items.join(' / ')} - ${inr.format(d.amount)} each`)); L.push(``); }
   const reqs=[
@@ -3450,6 +3596,7 @@ function buildLetter(a,include,noScroll){
     if(hasVerified) reqs.push(`Refund of any implant charge above the confirmed NPPA ceiling plus applicable GST.`);
     if(hasUnverified) reqs.push(`Confirmation of the current NPPA ceiling for the implant(s) above, and refund of any excess once confirmed.`);
   }
+  if(room&&room.over) reqs.push(`The clause of my policy providing for any proportionate deduction for my room, its definition of 'associated medical expenses', and the charges it was applied to.`);
   if(a.subsumed.length&&include.subsumed) reqs.push(`Confirmation that each charge listed under IRDAI Lists II-IV was already included in the relevant room, procedure or treatment charge, and removal or refund of any that was billed separately in error.`);
   // R22. Quoted from IRDAI's texts (checked verbatim): Health Master Circular
   // 29 May 2024 para 17(c); Policyholders' Interests Master Circular 5 Sep
@@ -3484,6 +3631,7 @@ function buildLetter(a,include,noScroll){
     if(a.dups.length&&include.dup) sl.push(T_.ls_dup(a.dups.length));
     if(a.similarDups.length&&include.dup) sl.push(T_.ls_similar(a.similarDups.length));
     if(a.recon&&include.recon) sl.push(T_.ls_recon(inr.format(Math.abs(a.recon.diff))));
+    if(include.room&&window.__room&&window.__room.limit&&window.__room.rate) sl.push(window.__room.over?T_.ls_room:T_.ls_room_ok);
     if(D.docs) sl.push(T_.ls_docs);
     if(/^\d{4}-\d{2}-\d{2}$/.test(D.submitted||'')&&(!s||s.mode==='reimb')) sl.push(T_.ls_submitted);
     sl.push(T_.ls_asks);
@@ -4270,6 +4418,8 @@ function applyStaticI18n(){
   if($('backupNote')){ $('backupNote').classList.toggle('hide',!IS_BACKUP); $('backupNoteTxt').textContent=T_.backup_note; $('backupMainLink').textContent=T_.backup_main; }
   if($('gcStrip')&&IS_BACKUP) $('gcStrip').classList.add('hide');
   if($('backupAbout')){ $('backupAbout').classList.toggle('hide',IS_BACKUP||!BACKUP_URL); $('backupAboutTxt').textContent=T_.backup_about; $('backupAboutLink').href=BACKUP_URL; $('backupAboutLink').textContent=BACKUP_URL.replace(/^https:\/\/|\/$/g,''); }
+  [['rrHead','rr_head'],['rrIntro','rr_intro'],['rrLblLimit','rr_limit'],['rrRateHint','rr_rate_hint'],['rrLblDays','rr_days']].forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
+  if($('rrLblRate')&&$('rrRateHint')) $('rrLblRate').firstChild.textContent=T_.rr_rate+' ';
   [['ldLblGro','ld_gro'],['ldGroNone','ld_gro_none'],['ldLblDocs','ld_docs'],['ldLblSubmitted','ld_submitted']].forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
   [['rpHead','rp_head'],['rpIntro','rp_intro'],['rpLblSent','rp_sent'],['rpStatusLbl','rp_status_q'],['rpYesBtn','rp_yes'],['rpNoBtn','rp_no'],['rpLblText','rp_text'],['rpTextNote','rp_text_note'],
    ['rpPhotoBtn','rp_photo'],['rpLblDate','rp_date'],['rpLblRef','rp_ref'],['rpCheckBtn','rp_check'],['rpFHead','rp_follow_head'],['rpCHead','rp_c_head'],['rpCIntro','rp_c_intro'],
@@ -4422,8 +4572,35 @@ if($('skipToFindingsBtn')) $('skipToFindingsBtn').addEventListener('click',()=>s
 // items the user had removed went to the insurer (R20).
 // A letter needs either a checked bill or settlement figures that add up.
 // With figures alone it asks for the line-by-line breakdown (R21).
+function rrNum(el){ const v=parseAmount(el.value).n; return v!=null&&v>0?v:null; }
+function rrRender(){
+  const out=$('rrOut'); if(!out) return null;
+  const T_=S(), inr=makeInr(LANG), f=v=>inr.format(v);
+  const data=(window.__lastExtraction&&window.__lastExtraction.line_items&&window.__lastExtraction.line_items.length)?window.__lastExtraction:NO_BILL;
+  const r=roomRentCheck(analyseFor(data),{limit:rrNum(RR.limit),rate:rrNum(RR.rate),days:rrNum(RR.days)});
+  window.__room=r;
+  RR.rate.placeholder=r.detRate?String(r.detRate):'0'; RR.days.placeholder=r.detDays?String(r.detDays):'0';
+  let h='';
+  if(r.detRate) h+=`<p class="rrnote">${T_.rr_detected(f(r.detRate),r.detDays,r.rates.length>1?r.rates.map(f).join(', '):'')}</p>`;
+  if(!r.limit){ out.innerHTML=h; return r; }
+  if(!r.rate){ out.innerHTML=h+`<p>${T_.rr_need_rate}</p>`; return r; }
+  if(!r.over){ out.innerHTML=h+`<p>${T_.rr_within(f(r.rate),f(r.limit))}</p>`; return r; }
+  const pct=Math.round(r.ratio*100), s=settleOk();
+  h+=r.roomExcess!=null?`<p class="rrbig">${T_.rr_excess(f(r.roomExcess),f(r.rate),f(r.limit),r.days)}</p>`:`<p>${T_.rr_need_days}</p>`;
+  h+=`<p>${T_.rr_ratio(pct)}</p>`;
+  if(r.hasBill){
+    h+=`<p class="rrbig">${T_.rr_cut(f(r.cut2020),r.groups.other.n)}</p>`;
+    const kept=['pharmacy','implant','diagnostic','icu'].filter(k=>r.groups[k].n).map(k=>`<li>${T_['rr_g_'+k]}: ${f(r.groups[k].sum)}</li>`).join('');
+    if(kept) h+=`<p>${T_.rr_notcut}</p><ul>${kept}</ul>`;
+    if(s&&!s.copayUnknown&&s.deduction>0&&r.roomExcess!=null) h+=`<p class="rrbig">${T_.rr_explains(f(Math.min(s.deduction,money(r.roomExcess+r.cut2020))),f(s.deduction))}</p>`;
+    h+=`<details><summary>${T_.rr_lines}</summary><p class="rrnote">${T_.rr_lines_note}</p>`
+      +['other','pharmacy','implant','diagnostic','icu'].filter(k=>r.groups[k].n).map(k=>`<p><b>${T_['rr_g_'+k]}</b><br>${r.groups[k].items.map(esc).join(' &middot; ')}</p>`).join('')+`</details>`;
+  } else h+=`<p>${T_.rr_cut_nobill}</p>`;
+  h+=`<p class="rrnote">${T_.rr_rule}</p>`;
+  out.innerHTML=h; return r;
+}
 function renderLetterTab(){
-  const T_=S();
+  const T_=S(); const room=rrRender();
   const hasBill = !!(window.__lastExtraction && window.__lastExtraction.line_items && window.__lastExtraction.line_items.length>0);
   const data = hasBill ? window.__lastExtraction : NO_BILL;
   const s=settleOk(), canWrite = hasBill || !!s;
@@ -4441,6 +4618,7 @@ function renderLetterTab(){
   if(a.nppa.length) rows.push(['nppa', T_.letter_confirm_nppa(a.nppa.length), '✓']);
   if(a.dups.length||a.similarDups.length) rows.push(['dup', a.dups.length?T_.letter_confirm_dup(a.dups.length)+(a.similarDups.length?' + '+T_.letter_confirm_similar(a.similarDups.length):''):T_.letter_confirm_similar(a.similarDups.length), '✓']);
   if(a.recon) rows.push(['recon', T_.letter_confirm_recon, inr.format(Math.abs(a.recon.diff))]);
+  if(room&&room.limit&&room.rate) rows.push(['room', room.over?T_.letter_confirm_room:T_.letter_confirm_room_ok, room.over&&room.roomExcess?inr.format(room.roomExcess):'✓']);
   $('letterIncludes').innerHTML=
     rows.map(([key,k,v])=>`<label class="inclrow"><input type="checkbox" ${(key in _userIncl ? _userIncl[key] : !(key==='recon'&&a.partial))?'checked':''} data-inc="${key}"><span class="incltext">${k}</span><span class="v">${v}</span></label>`).join('')
     + `<div class="inclrow static"><span class="incltext">${T_.letter_confirm_sent_to}</span><span class="v">${T_.letter_confirm_sent_to_val}</span></div>`
@@ -4463,7 +4641,7 @@ $('clearYesBtn').addEventListener('click',()=>{
   try{ localStorage.removeItem(DRAFT_LS); localStorage.removeItem(LD_KEY); sessionStorage.removeItem(LD_KEY); localStorage.removeItem(KEY_LS); localStorage.removeItem(LOCAL_LS); }catch(e){}
   if(typeof renderLocalList==='function') renderLocalList();
   _openedLocalId=null; if(typeof rpRestore==='function') rpRestore(null);
-  Object.values(F).forEach(el=>{ el.value=''; }); markChips(-1); setSettleMode('cashless',true); $('apiKey').value='';
+  Object.values(F).forEach(el=>{ el.value=''; }); Object.values(RR).forEach(el=>{ el.value=''; }); markChips(-1); setSettleMode('cashless',true); $('apiKey').value='';
   LD_FIELDS.forEach(f=>{ $('ld_'+f).value=''; }); $('ld_asked').checked=false; $('ld_docs').checked=false; $('ld_remember').checked=false;
   if(typeof signOut==='function') signOut(); // the My Bills sign-in session is also "saved on this device"
   calc();
@@ -4727,7 +4905,7 @@ function buildLocalCheck(){
   return { v:1, id:newLocalId(), savedAt:new Date().toISOString(),
     name:p.hospitalName||null, billDate:p.billDate||null,
     explainedPct:typeof p.explainedPct==='number'?p.explainedPct:null, netPayable:typeof p.netPayable==='number'?p.netPayable:null,
-    settle:{mode:SETTLE_MODE,total:F.total.value,counter:F.counter.value,discount:F.discount.value,copay:F.copay.value,reimb:F.reimb.value},
+    settle:{mode:SETTLE_MODE,total:F.total.value,counter:F.counter.value,discount:F.discount.value,copay:F.copay.value,reimb:F.reimb.value,rrLimit:RR.limit.value,rrRate:RR.rate.value,rrDays:RR.days.value},
     extraction:data, letter:window.__lastLetterText||'', reply:rpState(), sentOn:okYmd($('rp_sent').value)?$('rp_sent').value:null };
 }
 function saveLocalCheck(){
@@ -4742,6 +4920,7 @@ function openLocalCheck(r){
   resetUploadState();
   const st=r.settle||{}, num=v=>(v===''||v==null||isNaN(+v))?'':String(+v);
   F.total.value=num(st.total); F.counter.value=num(st.counter); F.discount.value=num(st.discount); F.copay.value=num(st.copay); F.reimb.value=num(st.reimb);
+  RR.limit.value=num(st.rrLimit); RR.rate.value=num(st.rrRate); RR.days.value=num(st.rrDays); $('rrDet').open=!!RR.limit.value;
   setSettleMode(st.mode==='reimb'?'reimb':'cashless',true);
   markChips(F.copay.value); saveDraft();
   window.__lastExtraction=r.extraction.line_items.length?r.extraction:null;
@@ -4758,7 +4937,7 @@ function importLocalCheckText(text){
     savedAt:(typeof r.savedAt==='string'&&!isNaN(Date.parse(r.savedAt)))?new Date(Date.parse(r.savedAt)).toISOString():new Date().toISOString(),
     name:typeof r.name==='string'?r.name.slice(0,200):null, billDate:typeof r.billDate==='string'?r.billDate.slice(0,60):null,
     explainedPct:typeof r.explainedPct==='number'?r.explainedPct:null, netPayable:typeof r.netPayable==='number'?r.netPayable:null,
-    settle:(r.settle&&typeof r.settle==='object')?{mode:r.settle.mode==='reimb'?'reimb':'cashless',total:r.settle.total,counter:r.settle.counter,discount:r.settle.discount,copay:r.settle.copay,reimb:r.settle.reimb}:{},
+    settle:(r.settle&&typeof r.settle==='object')?{mode:r.settle.mode==='reimb'?'reimb':'cashless',total:r.settle.total,counter:r.settle.counter,discount:r.settle.discount,copay:r.settle.copay,reimb:r.settle.reimb,rrLimit:r.settle.rrLimit,rrRate:r.settle.rrRate,rrDays:r.settle.rrDays}:{},
     extraction:r.extraction, letter:typeof r.letter==='string'?r.letter:'', sentOn:validSentOn(r.sentOn)?r.sentOn:null, reply:rpClean(r.reply) };
   const list=readLocalChecks(); if(list.length>=LOCAL_MAX) return 'full';
   try{ writeLocalChecks([clean,...list]); }catch(e){ return 'err'; }

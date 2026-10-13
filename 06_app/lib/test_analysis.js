@@ -305,5 +305,25 @@ console.log('== R24: what an insurer\'s reply contains (signals the user confirm
   ok(R('Bima Bharosa portal').ombudsman !== null && R('see cioins.co.in').ombudsman !== null, 'Bima Bharosa or the CIO website count as escalation details');
 }
 
+console.log('== R26: room rent above the policy limit (figures that depend on the policy wording)');
+{
+  const RR = checks.roomRentCheck, K = checks.roomKind, src = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  const eg = JSON.parse(/const WORKED_EXAMPLE_BILL = (\{.*?\});\n/s.exec(src)[1]), a = checks.analyse(eg);
+  const r = RR(a, { limit: 3000 });
+  ok(r.detRate === 4500 && r.detDays === 1 && r.over && r.roomExcess === 1500 && Math.abs(r.ratio - 2 / 3) < 1e-9, 'worked example, limit Rs 3,000: the room (Rs 4,500 for 1 day) is read from the bill; Rs 1,500 above the limit; the policy covers two thirds');
+  ok(r.groups.other.n === 10 && r.cut2020 === 8770 && r.groups.pharmacy.n > 0 && r.groups.diagnostic.n === 5, 'a 2020-norms cut could reach only the 10 "other" charges, at most Rs 8,770; medicines, consumables and diagnostics are kept out: ' + r.cut2020);
+  const w = RR(a, { limit: 5000 });
+  ok(!w.over && w.roomExcess === 0 && w.cut2020 === 0, 'a room within the limit: nothing above it, no proportionate cut');
+  const nb = RR(checks.analyse({ header: {}, line_items: [] }), { limit: 4000, rate: 6000, days: 3 });
+  ok(!nb.hasBill && nb.over && nb.roomExcess === 6000 && nb.cut2020 === null, 'with no bill, typed figures give the room rent above the limit (Rs 6,000) and no cut figure');
+  ok(RR(checks.analyse({ header: {}, line_items: [] }), { limit: 4000, rate: 6000 }).roomExcess === null, 'without the days, the excess is not guessed');
+  const kinds = ['ICU CHARGES', 'BED SHEET', 'BED CHARGES - GENERAL WARD', 'OPERATION THEATRE CHARGES', 'TIBIAL TRAY POLY', 'CT SCAN BRAIN', 'INJ CEFTRIAXONE 1GM', 'DELUXE ROOM RENT', 'IV CANNULA 20G'].map(i => K({ item: i })).join(',');
+  ok(kinds === 'icu,pharmacy,room,other,implant,diagnostic,pharmacy,room,pharmacy', 'lines are grouped by their words: ICU, room (not a bed sheet), implants, diagnostics, medicines and consumables: ' + kinds);
+  const li = RR(checks.analyse({ header: {}, line_items: [{ item: 'MEDICAL RECORDS CHARGES', quantity: 1, total: 300 }, { item: 'DOCTOR VISIT', quantity: 1, total: 1000 }, { item: 'SINGLE ROOM', quantity: 2, rate: 5000, total: 10000 }] }), { limit: 2500 });
+  ok(li.groups.other.sum === 1000 && li.cut2020 === 500 && li.roomExcess === 5000, 'a charge already on IRDAI\'s List I is not counted again in the cut');
+  const mr = RR(checks.analyse({ header: {}, line_items: [{ item: 'TWIN SHARING ROOM', quantity: 1, rate: 4000, total: 4000 }, { item: 'SINGLE ROOM', quantity: 2, rate: 6000, total: 12000 }] }), { limit: 3000 });
+  ok(mr.detRate === 6000 && mr.detDays === 3 && mr.roomSum === 16000 && mr.roomExcess === 7000 && mr.rates.length === 2, 'two room rates: the highest is used for the ratio, and the excess is what was charged above the limit for each day (Rs 16,000 - 3 x Rs 3,000)');
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

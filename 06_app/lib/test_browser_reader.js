@@ -82,14 +82,15 @@ const STUB = `
   try {
     console.log('== double tap and snapshot');
     await fresh();
-    await ev(`window.__delay = 150; addFiles([__mk('a.jpg','image/jpeg',1), __mk('b.jpg','image/jpeg',2)]);`);
+    // 400 ms a page: wide enough that a slow machine is still mid-read at the checks below.
+    await ev(`window.__delay = 400; addFiles([__mk('a.jpg','image/jpeg',1), __mk('b.jpg','image/jpeg',2)]);`);
     await ev(`const b=document.getElementById('checkPhotosBtn'); b.click(); b.click(); b.click();`);
     await sleep(120);
     const midBtn = await btn();
     ok(midBtn.disabled && /Reading/.test(midBtn.text), 'while reading the button is disabled and says "Reading…"');
     await ev(`removeFile(0); addFiles([__mk('c.jpg','image/jpeg',3)]);`);
     ok(/wait/i.test(await status()), 'removing or adding a photo mid-read is refused with a plain message');
-    await sleep(700);
+    await sleep(1300);
     const calls1 = await ev(`return window.__calls.length`);
     ok(calls1 === 2, 'three taps on Check read the two pages once (' + calls1 + ' calls, not 6)');
     ok(await ev(`return _pendingFiles.length`) === 2, 'the queue was not changed during the read');
@@ -768,6 +769,36 @@ const STUB = `
     await ev(`switchTab('mybills'); renderLocalList(); document.querySelector('#localList .lopen').click();`); await sleep(500);
     const im = await ev(`return {x: !!window.__x25 || !!document.querySelector('#replyCard img'), out: RP.outcome, reasons: RP.ans.reasons, omb: RP.ans.omb, sent: document.getElementById('rp_sent').value, date: document.getElementById('rp_date').value, branch: document.getElementById('rp_branch').value, court: document.getElementById('rp_court').checked, text: /we regret/.test(document.getElementById('rp_text').value)}`);
     ok(!im.x && im.out === null && im.reasons === false && im.omb === true && im.sent === '' && im.date === '' && im.branch === '' && !im.court && im.text, 'its reply fields are checked again: text stays text, only true/false ticks, known decisions, real past dates');
+
+    console.log('== R26: room rent above the policy limit');
+    await fresh(); await ev(`setLang('en'); document.getElementById('egBtn').click();`); await sleep(500);
+    const rr0 = await ev(`return {open: document.getElementById('rrDet').open, out: document.getElementById('rrOut').textContent, ph: document.getElementById('rr_rate').placeholder+'/'+document.getElementById('rr_days').placeholder, rows: [...document.querySelectorAll('#letterIncludes input[data-inc]')].map(b=>b.dataset.inc).join(',')}`);
+    ok(!rr0.open && /Your bill shows a room at ₹4,500 a day for 1 day\./.test(rr0.out) && rr0.ph === '4500/1' && !/room/.test(rr0.rows), 'folded and optional; with no limit entered it only notes the room on the bill (₹4,500 a day for 1 day), and the letter has no room item');
+    await ev(`document.getElementById('rrDet').open=true; const e=document.getElementById('rr_limit'); e.value='3000'; e.dispatchEvent(new Event('input',{bubbles:true}));`); await sleep(200);
+    const rr1 = await ev(`return document.getElementById('rrOut').textContent`);
+    ok(/Room rent above your limit: ₹1,500 \(₹4,500 a day against ₹3,000, for 1 day\)\. This part is yours to pay\./.test(rr1) && /Your policy covers 67% of the room's daily rate/.test(rr1), 'limit ₹3,000: the room rent above the limit (₹1,500) and the share the policy covers (67%)');
+    ok(/If your policy's wording follows IRDAI's 2020 norms, that cut could apply only to 10 of your charges .* at most ₹8,770\./.test(rr1) && /Medicines and consumables: ₹/.test(rr1) && /Diagnostics \(tests and scans\): ₹6,265/.test(rr1), 'the most a 2020-norms cut could be (₹8,770, on 10 charges), and what such a wording could not cut');
+    ok(/could account for up to ₹5,962\.89 of the ₹5,962\.89 not itemised/.test(rr1) && /withdrawn in May 2024, so whether they apply depends on your policy's wording/.test(rr1), 'it says how much of the unexplained amount these could account for, and that the 2020 norms were withdrawn and depend on the policy wording');
+    await ev(`switchTab('letter');`); await sleep(100);
+    ok(await ev(`return /Room above your policy's limit: ask for the clause and the charges cut/.test(document.getElementById('letterIncludes').textContent)`), 'the letter checklist gains "Room above your policy\'s limit"');
+    await ev(`document.getElementById('genLetterTab').click();`); await sleep(300);
+    const rl26 = await ev(`return {l: document.querySelector('.letter').textContent, h: document.getElementById('hospNoteText') ? document.getElementById('hospNoteText').textContent : ''}`);
+    ok(/My room was charged at ₹4,500 a day for 1 day, above the room-rent limit of ₹3,000 a day in my policy; I understand that the room rent above the limit \(₹1,500\) is mine to pay\./.test(rl26.l), 'the letter states the room against the limit, and accepts the room rent above it');
+    ok(/Schedule-C, para 3\.1\(ix\)\) requires a health insurance policy to state "The sub-limits, Proportionate Deductions and the existence of Package rates if any, with cross reference to the concerned policy section"/.test(rl26.l) && /please state the clause of my policy that provides for it, its definition of 'associated medical expenses', and the charges it was applied to/.test(rl26.l), 'it quotes the 2024 rule word for word and asks for the clause, the definition and the charges');
+    ok(/Policies filed under IRDAI's norms on proportionate deductions of 11 June 2020 could not include .* Please confirm whether my policy follows these terms\./.test(rl26.l) && !/(prohibit|not permitted|illegal|IRDAI does not allow)/i.test(rl26.l), 'the 2020 norms are described as what policies filed under them say, and asked about, never claimed as current law');
+    ok(/vary with the room category, and which are the same whatever the room/.test(rl26.h), 'the hospital note asks which charges vary with the room category');
+    await ev(`switchTab('settlement'); const e=document.getElementById('rr_limit'); e.value='5000'; e.dispatchEvent(new Event('input',{bubbles:true}));`); await sleep(300);
+    const rw = await ev(`return {out: document.getElementById('rrOut').textContent, l: document.querySelector('.letter').textContent}`);
+    ok(/Your room \(₹4,500 a day\) is within your policy's limit \(₹5,000 a day\)/.test(rw.out) && /within the room-rent limit of ₹5,000 a day in my policy, so no proportionate deduction for the room category should apply/.test(rw.l), 'a room within the limit: the screen says so, and the letter (updated as you type) asks the reason for any proportionate deduction');
+    await send('Page.navigate', { url: `http://127.0.0.1:${port}/` }); await sleep(1200);
+    ok(await ev(`return document.getElementById('rr_limit').value==='5000' && document.getElementById('rrDet').open`), 'the limit is kept with the other figures on this device, and the section opens with it');
+    await ev(`setLang('hi'); calc();`); await sleep(200);
+    ok(await ev(`return /कमरे के किराए की सीमा/.test(document.getElementById('rrHead').textContent) && /अपनी सीमा से मिलाने के लिए कमरे का रोज़ का चार्ज डालें/.test(document.getElementById('rrOut').textContent)`), 'in Hindi (after a reload there is no bill, so it asks for the room rate)');
+    await fresh(); await ev(`setLang('en'); for(const [id,v] of [['total','120000'],['counter','18500'],['copay','10'],['rr_limit','4000'],['rr_rate','6000'],['rr_days','3']]){ const e=document.getElementById(id); e.value=v; e.dispatchEvent(new Event('input',{bubbles:true})); }`); await sleep(300);
+    const nb26 = await ev(`return document.getElementById('rrOut').textContent`);
+    ok(/Room rent above your limit: ₹6,000/.test(nb26) && /With the itemised bill checked, ClearBill can show which charges such a cut could apply to\./.test(nb26), 'with settlement figures only: the room rent above the limit from typed figures, and a note that the bill is needed for the rest');
+    await ev(`switchTab('mybills'); document.getElementById('saveLocalBtn').click();`); await sleep(200);
+    ok(await ev(`const r=readLocalChecks()[0]; return r.settle.rrLimit==='4000' && r.settle.rrRate==='6000' && r.settle.rrDays==='3'`), 'a check saved on this device keeps the room figures');
 
     console.log('== R22: grievance officer, documents and delay lines');
     await fresh(); await ev(`setLang('en'); document.getElementById('egBtn').click();`); await sleep(500);

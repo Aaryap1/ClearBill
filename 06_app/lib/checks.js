@@ -711,5 +711,62 @@ function checkReply(text){
   return { empty:flat.length<20, reasons, amountCount:amounts.size, breakupAt:breakup,
     breakdown:amounts.size>=4||!!breakup, ombudsman:first(RP_OMB), pay:first(RP_PAY), keep:first(RP_KEEP), docs:first(RP_DOCS) };
 }
+// R26: a room above the policy's room-rent limit. The user gives the limit
+// (from the policy schedule or Customer Information Sheet); the room's rate
+// and days are read from the bill unless typed. Worked out:
+//  - the room rent above the limit (the policy pays the limit for each day);
+//  - the share of the room's rate the policy covers (limit / rate);
+//  - the most a proportionate cut could come to if the policy follows IRDAI's
+//    2020 norms (IRDAI/HLT/REG/CIR/151/06/2020, 11 Jun 2020): those kept the
+//    cost of pharmacy and consumables, implants and medical devices, and
+//    diagnostics out of "associated medical expenses", and ICU charges out of
+//    the deduction. That circular was withdrawn by the 29 May 2024 Health
+//    Master Circular (Annexure-6, item 19) without restating it, so these
+//    figures depend on the policy's own wording and are never presented as
+//    current law. What is current: a policy must state "the sub-limits,
+//    Proportionate Deductions ... with cross reference to the concerned policy
+//    section" (Policyholders' Interests Master Circular, 5 Sep 2024,
+//    Schedule-C, 3.1(ix)), so the letter asks for the clause.
+// Lines are grouped by their words (and section, when the bill has one); a
+// line can land in the wrong group, which the screen says.
+const RR_ICU=/\b(?:icu|iccu|nicu|picu|micu|sicu|ccu|hdu|intensive care)\b/i;
+const RR_ROOM=/\b(?:room|ward|accommodation|boarding|bed (?:charges?|rent))\b/i;
+const RR_NOTROOM=/\b(?:operation|theatre|theater|recovery|labour|labor|procedure|emergency|freshener|spray|sheet|pan)\b/i;
+const RR_IMPLANT=/\b(?:implants?|stents?|prosthes[ie]s|prosthetic|valves?|iol|intra[\s-]?ocular lens|mesh|plates?|screws?|pacemaker|graft|k[\s-]?wire|femoral component|tibial (?:component|tray|insert)|acetabular|patellar? (?:component|button))\b/i;
+const RR_DIAG=/\b(?:x[\s-]?ray|ct|mri|usg|ultrasound|ultrasonography|sonography|ecg|ekg|2d echo|echo|doppler|cbc|hb|hba1c|lft|kft|rft|culture|biopsy|histopath\w*|serum|urine|blood (?:test|sugar|group\w*)|lipid|thyroid|tsh|crp|esr|inr|aptt|scan|test|profile|panel|creatinine|electrolytes?|bilirubin|sgot|sgpt|albumin|glucose|radiology|pathology|laboratory|lab|investigations?)\b/i;
+const RR_DRUG=/\b(?:tab|tabs|tablets?|cap|caps|capsules?|inj|injections?|syp|syrup|susp|suspension|ointment|oint|cream|gel|lotion|drops?|vial|amp|ampoule|infusion|nebul\w*|inhaler|respules?|sachet|cannula|syringes?|needles?|gloves?|glove|gauze|bandage|dressing|catheters?|swabs?|cotton|mask|tegaderm|plaster|tape|sutures?|blade|drape|kit|strips?|lancet|electrodes?|tubing|tube|iv set|set|bags?|sheets?|linen|gown|apron|sanitizer|alcorub|povidone|spirit|betadine|medicines?|drugs?|pharmacy)\b|\b\d+(?:\.\d+)?\s?(?:mg|ml|mcg|gm|iu)\b/i;
+const RR_SEC={icu:/\bicu\b|intensive/i, implant:/implant|prosthe|device/i, diagnostic:/lab|patholog|radiolog|investigat|diagnos|imaging|scan/i, pharmacy:/pharm|medicin|drug|consumab|disposab/i};
+function roomKind(l){
+  const t=String(l.item||''), s=String(l.section||'');
+  if(RR_ICU.test(t)||RR_SEC.icu.test(s)) return 'icu';
+  if(RR_ROOM.test(t)&&!RR_NOTROOM.test(t)) return 'room';
+  if(RR_IMPLANT.test(t)||RR_SEC.implant.test(s)) return 'implant';
+  if(RR_SEC.diagnostic.test(s)||RR_DIAG.test(t)) return 'diagnostic';
+  if(RR_SEC.pharmacy.test(s)||RR_DRUG.test(t)) return 'pharmacy';
+  return 'other';
+}
+function roomRentCheck(a,inp){
+  inp=inp||{};
+  const listI=new Set(((a&&a.exact)||[]).map(l=>l.item+'|'+l.total));
+  const lines=((a&&a.lines)||[]).filter(l=>l.total!=null&&l.total>0);
+  const byKind={room:[],icu:[],implant:[],diagnostic:[],pharmacy:[],other:[]};
+  lines.forEach(l=>byKind[roomKind(l)].push(l));
+  const per=l=>l.rate>0?l.rate:(l.quantity>0?l.total/l.quantity:l.total);
+  const rates=[...new Set(byKind.room.map(l=>money(per(l))))].sort((x,y)=>y-x);
+  const detRate=rates[0]||null;
+  const detDays=byKind.room.length?money(byKind.room.reduce((s,l)=>s+(l.quantity>0?l.quantity:l.total/per(l)),0)):null;
+  const roomSum=money(byKind.room.reduce((s,l)=>s+l.total,0));
+  const rate=inp.rate>0?money(inp.rate):detRate, days=inp.days>0?inp.days:detDays, limit=inp.limit>0?money(inp.limit):null;
+  const group=k=>{ const ls=byKind[k].filter(l=>k!=='other'||!listI.has(l.item+'|'+l.total)); return {n:ls.length,sum:money(ls.reduce((s,l)=>s+l.total,0)),items:ls.map(l=>l.item)}; };
+  const groups={}; ['other','pharmacy','implant','diagnostic','icu'].forEach(k=>{ groups[k]=group(k); });
+  const out={hasBill:lines.length>0,detRate,detDays,rates,roomSum,rate,days,limit,groups,over:false,ratio:null,roomExcess:null,cut2020:null};
+  if(!(limit>0&&rate>0)) return out;
+  out.over=rate>limit+0.005; out.ratio=Math.min(1,limit/rate);
+  if(!out.over){ out.roomExcess=0; out.cut2020=0; return out; }
+  const charged=inp.rate>0&&days>0?money(rate*days):(roomSum>0?roomSum:(days>0?money(rate*days):null));
+  out.roomExcess=charged!=null&&days>0?Math.max(0,money(charged-limit*days)):null;
+  out.cut2020=lines.length?money((1-out.ratio)*groups.other.sum):null;
+  return out;
+}
 
-module.exports = { NON_PAYABLE, SUBSUMED, NPPA, OMBUDSMAN, OMBUDSMAN_READ_ON, GRO, GRO_READ_ON, GRO_LIST_UPDATED, NPPA_KNEE_VALID_TO, NPPA_STENT_REVIEW_FROM, INDIA_STATES, checkReply, ombudsmanFor, IS19493_HEADER, GSTIN_RE, money, bestMatch, bestMatchIn, parseAmount, billDateRange, analyse, readingChecks };
+module.exports = { NON_PAYABLE, SUBSUMED, NPPA, OMBUDSMAN, OMBUDSMAN_READ_ON, GRO, GRO_READ_ON, GRO_LIST_UPDATED, NPPA_KNEE_VALID_TO, NPPA_STENT_REVIEW_FROM, INDIA_STATES, checkReply, roomRentCheck, roomKind, ombudsmanFor, IS19493_HEADER, GSTIN_RE, money, bestMatch, bestMatchIn, parseAmount, billDateRange, analyse, readingChecks };
