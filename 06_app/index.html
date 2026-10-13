@@ -683,7 +683,7 @@
       <div class="k" id="fbHead" style="margin:14px 0 4px">Something wrong?</div>
       <p id="fbIntro" style="margin:0;font-size:.88rem;line-height:1.5"></p>
       <div class="fbrow"><a class="link" id="fbGithub" target="_blank" rel="noopener">Report on GitHub</a><a class="link" id="fbEmail">Report by email</a></div>
-      <p class="ombsrc" id="backupAbout" style="margin-top:12px"><span id="backupAboutTxt">If this site is ever down, a backup copy runs free on GitHub:</span> <a class="link" href="https://aaryap1.github.io/ClearBill/" target="_blank" rel="noopener">aaryap1.github.io/ClearBill</a></p>
+      <p class="ombsrc hide" id="backupAbout" style="margin-top:12px"><span id="backupAboutTxt">If this site is ever down, a backup copy runs free on GitHub:</span> <a class="link" id="backupAboutLink" target="_blank" rel="noopener"></a></p>
     </div>
     <div class="card">
       <div class="k" id="scenariosHead" style="margin-bottom:6px">Who this is for</div>
@@ -1166,6 +1166,10 @@ const NO_BILL={header:{},line_items:[]};
 let _rcOpen=false;
 let _openedLocalId=null; // R25: the saved check now open, so reply work is saved back to it
 const IS_BACKUP=!!document.querySelector('meta[name="clearbill-backup"]'); // R25: the GitHub Pages copy
+// R25: the backup copy's address, shown on the About tab. Empty until GitHub
+// Pages is switched on for the repository and the copy is live, so the link is
+// never dead; then set it to 'https://aaryap1.github.io/ClearBill/'.
+const BACKUP_URL='';
 let RP={status:null,checked:false,err:false,res:null,ans:{},outcome:null,docs:false,show:null}; // R24: the reply card // R23: keep "Rows to check" open after a correction
 const _analyses=new WeakMap(); // analyseFor() cache (R20)
 let _myBills=[], BILLS_ON=false, GOOGLE_CLIENT_ID=null, ID_TOKEN=null, ID_TOKEN_NAME=null;
@@ -4265,7 +4269,7 @@ function applyStaticI18n(){
   // R25: on the backup copy, say so (and drop "Runs on Google Cloud"); on the main site, point to the copy.
   if($('backupNote')){ $('backupNote').classList.toggle('hide',!IS_BACKUP); $('backupNoteTxt').textContent=T_.backup_note; $('backupMainLink').textContent=T_.backup_main; }
   if($('gcStrip')&&IS_BACKUP) $('gcStrip').classList.add('hide');
-  if($('backupAbout')){ $('backupAbout').classList.toggle('hide',IS_BACKUP); $('backupAboutTxt').textContent=T_.backup_about; }
+  if($('backupAbout')){ $('backupAbout').classList.toggle('hide',IS_BACKUP||!BACKUP_URL); $('backupAboutTxt').textContent=T_.backup_about; $('backupAboutLink').href=BACKUP_URL; $('backupAboutLink').textContent=BACKUP_URL.replace(/^https:\/\/|\/$/g,''); }
   [['ldLblGro','ld_gro'],['ldGroNone','ld_gro_none'],['ldLblDocs','ld_docs'],['ldLblSubmitted','ld_submitted']].forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
   [['rpHead','rp_head'],['rpIntro','rp_intro'],['rpLblSent','rp_sent'],['rpStatusLbl','rp_status_q'],['rpYesBtn','rp_yes'],['rpNoBtn','rp_no'],['rpLblText','rp_text'],['rpTextNote','rp_text_note'],
    ['rpPhotoBtn','rp_photo'],['rpLblDate','rp_date'],['rpLblRef','rp_ref'],['rpCheckBtn','rp_check'],['rpFHead','rp_follow_head'],['rpCHead','rp_c_head'],['rpCIntro','rp_c_intro'],

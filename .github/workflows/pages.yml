@@ -2,7 +2,11 @@
 # repository, and it keeps the app usable if the Cloud Run site is down.
 # Built by 06_app/lib/build_static.js from the same index.html; photo reading
 # there uses the visitor's own free Gemini key (there is no server).
+#
 # Needs, once: Settings -> Pages -> Build and deployment -> Source: GitHub Actions.
+# Until then the "check" job finds Pages off and the deploy job is skipped
+# (not failed), so pushes stay green. After it is on, set BACKUP_URL in
+# 06_app/index.html so the About tab links to the copy.
 name: Backup copy on GitHub Pages
 
 on:
@@ -21,7 +25,27 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      on: ${{ steps.pages.outputs.on }}
+    steps:
+      - name: Is GitHub Pages switched on for this repository?
+        id: pages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh api "repos/${{ github.repository }}/pages" --silent 2>/dev/null; then
+            echo "on=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "on=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::GitHub Pages is off for this repository, so the backup copy was not published. Switch it on: Settings -> Pages -> Source: GitHub Actions."
+          fi
+
   deploy:
+    needs: check
+    if: needs.check.outputs.on == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:

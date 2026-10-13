@@ -75,8 +75,11 @@ const WATCH = `window.__csp = []; document.addEventListener('securitypolicyviola
     console.log('== the main page points to the copy');
     const mainSrv = http.createServer((q, r) => { q.resume(); if (q.url.split('?')[0] === '/') { r.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); r.end(orig); } else { r.writeHead(404); r.end(); } }).listen(0);
     await send('Page.navigate', { url: `http://127.0.0.1:${mainSrv.address().port}/` }); await sleep(2000);
-    const m = await ev(`return {backup: IS_BACKUP, note: document.getElementById('backupNote').classList.contains('hide'), about: document.getElementById('backupAbout').classList.contains('hide') ? '' : document.getElementById('backupAbout').textContent, href: document.querySelector('#backupAbout a').href}`);
-    ok(!m.backup && m.note && /If this site is ever down, a backup copy runs free on GitHub/.test(m.about) && m.href === 'https://aaryap1.github.io/ClearBill/', 'the main site\'s About tab gives the backup copy\'s address, and shows no backup note');
+    const m = await ev(`return {backup: IS_BACKUP, url: BACKUP_URL, note: document.getElementById('backupNote').classList.contains('hide'), hidden: document.getElementById('backupAbout').classList.contains('hide')}`);
+    // The About link stays hidden until BACKUP_URL is set (once GitHub Pages is on and the copy is live).
+    ok(!m.backup && m.note && (m.url ? !m.hidden : m.hidden), 'the main site shows no backup note, and gives the backup address only once it is set: ' + (m.url || 'not set yet, link hidden'));
+    const link = await ev(`const u='https://aaryap1.github.io/ClearBill/'; document.getElementById('backupAboutLink').href=u; document.getElementById('backupAboutLink').textContent=u.replace(/^https:\\/\\/|\\/$/g,''); return document.getElementById('backupAboutLink').textContent`);
+    ok(link === 'aaryap1.github.io/ClearBill', 'the link text drops the https:// and trailing slash');
     mainSrv.close();
   } catch (e) { fail++; console.log('  FAIL ' + e.message); }
   ws.close(); p.kill(); srv.close();
