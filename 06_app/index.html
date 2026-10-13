@@ -447,6 +447,7 @@
       <p class="tag" id="tagLine">Check a hospital bill and your insurance settlement against the published rules.</p>
       <p class="gcstrip" id="gcStrip">Runs on Google Cloud &mdash; <span>Gemini &middot; Cloud Run &middot; Document AI</span></p>
       <p class="impact hide" id="impactLine"></p>
+      <p class="notez hide" id="backupNote" role="note"><span id="backupNoteTxt">This is ClearBill's backup copy.</span> <a class="link" id="backupMainLink" href="https://clearbill-e7sodufiva-el.a.run.app/">Open the main site</a></p>
       <p class="notez langnote hide" id="langNote" role="note"><span id="langNoteTxt"></span> <button class="link" type="button" id="langNoteOk"></button></p>
       <p class="tag hide" id="iosHint" style="margin-top:6px">To install: tap <b>Share</b> &rarr; <b>Add to Home Screen</b>.</p>
     </div>
@@ -621,6 +622,11 @@
           <label class="chk"><input type="checkbox" id="rp_court"><span id="rpLblCourt">This matter is not before a court, consumer commission or arbitrator, and none of them has decided it</span></label>
           <div id="rpCOut"></div>
         </div>
+        <div class="rpbox hide" id="rpSaveRow">
+          <button class="btn sm ghost" type="button" id="rpSaveBtn">Save on this device</button>
+          <p class="ldnote" id="rpSaveNote" style="margin-left:0">Keeps the reply, your ticks and the complaint details with this check, on this device only. Nothing is sent.</p>
+          <p class="hide" id="rpSaveMsg" role="status" style="margin:6px 0 0"></p>
+        </div>
       </div>
     </details>
   </div>
@@ -677,6 +683,7 @@
       <div class="k" id="fbHead" style="margin:14px 0 4px">Something wrong?</div>
       <p id="fbIntro" style="margin:0;font-size:.88rem;line-height:1.5"></p>
       <div class="fbrow"><a class="link" id="fbGithub" target="_blank" rel="noopener">Report on GitHub</a><a class="link" id="fbEmail">Report by email</a></div>
+      <p class="ombsrc" id="backupAbout" style="margin-top:12px"><span id="backupAboutTxt">If this site is ever down, a backup copy runs free on GitHub:</span> <a class="link" href="https://aaryap1.github.io/ClearBill/" target="_blank" rel="noopener">aaryap1.github.io/ClearBill</a></p>
     </div>
     <div class="card">
       <div class="k" id="scenariosHead" style="margin-bottom:6px">Who this is for</div>
@@ -1157,6 +1164,8 @@ const LOCAL_LS='clearbill_local_checks', LOCAL_MAX=20; // R12: checks kept on th
 let _userIncl={}, _userInclFor=null;
 const NO_BILL={header:{},line_items:[]};
 let _rcOpen=false;
+let _openedLocalId=null; // R25: the saved check now open, so reply work is saved back to it
+const IS_BACKUP=!!document.querySelector('meta[name="clearbill-backup"]'); // R25: the GitHub Pages copy
 let RP={status:null,checked:false,err:false,res:null,ans:{},outcome:null,docs:false,show:null}; // R24: the reply card // R23: keep "Rows to check" open after a correction
 const _analyses=new WeakMap(); // analyseFor() cache (R20)
 let _myBills=[], BILLS_ON=false, GOOGLE_CLIENT_ID=null, ID_TOKEN=null, ID_TOKEN_NAME=null;
@@ -1265,6 +1274,10 @@ en: {
   rp_reading:(i,n)=>`Reading photo ${i} of ${n}…`, rp_read_done:n=>`Read ${n} photo${n>1?'s':''}. Check the text against the letter before going on.`,
   rp_read_notletter:n=>`${n} photo${n>1?'s':''} did not look like a letter from an insurer and ${n>1?'were':'was'} left out.`,
   rp_read_none:"No letter text could be read. Try a clearer photo, or paste the text.", rp_read_err:"A photo could not be read. Try again, or paste the text.",
+  backup_note:"This is ClearBill's backup copy. It works the same, except that reading photos needs your own free Gemini key, and saving to a Google account needs the main site.", backup_main:"Open the main site",
+  backup_about:"If this site is ever down, a backup copy runs free on GitHub:",
+  rp_save:"Save on this device", rp_save_note:"Keeps the reply, your ticks and the complaint details with this check, on this device only. Nothing is sent.",
+  rp_saved_upd:"Saved with the check you opened, on this device.", rp_saved_new:"Saved on this device as a new check, with your reply work. Open it again from My Bills.",
   dates_today:(today,reply,opens,deadline)=>`If you send it today (${today}): a reply is due around ${reply}, within 14 days. If none comes, you can go to the Ombudsman one month after the insurer receives your letter, so on or after ${opens}, and you have until ${deadline} (Insurance Ombudsman Rules 2017, rule 14(3)). If the insurer does reply, the year counts from its reply. Sending on another day? Enter that date under "Sent on" in My Bills and the dates follow it.`,
   dates_sent:(reply,opens,deadline)=>`Reply due around ${reply}. No reply: the Ombudsman route opens on or after ${opens}, until ${deadline}.`,
   upsum:n=>`${n} lines read`, upsum_example:n=>`Worked example &middot; ${n} lines read`,
@@ -1686,6 +1699,10 @@ hi: {
   rp_reading:(i,n)=>`${n} में से फ़ोटो ${i} पढ़ी जा रही है…`, rp_read_done:n=>`${n} फ़ोटो पढ़ी गई। आगे बढ़ने से पहले लिखे हुए को पत्र से मिला लें।`,
   rp_read_notletter:n=>`${n} फ़ोटो बीमा कंपनी के पत्र जैसी नहीं लगी और छोड़ दी गई।`,
   rp_read_none:"पत्र का कोई टेक्स्ट नहीं पढ़ा जा सका। साफ़ फ़ोटो लें, या टेक्स्ट चिपकाएँ।", rp_read_err:"एक फ़ोटो पढ़ी नहीं जा सकी। फिर कोशिश करें, या टेक्स्ट चिपकाएँ।",
+  backup_note:"यह ClearBill की बैकअप कॉपी है। यह वैसे ही काम करती है, सिवाय इसके कि फ़ोटो पढ़ने के लिए आपकी अपनी मुफ़्त Gemini key चाहिए, और Google खाते में सहेजने के लिए मुख्य साइट चाहिए।", backup_main:"मुख्य साइट खोलें",
+  backup_about:"अगर यह साइट कभी बंद हो, तो GitHub पर एक मुफ़्त बैकअप कॉपी चलती है:",
+  rp_save:"इस डिवाइस पर सहेजें", rp_save_note:"जवाब, आपके निशान और शिकायत का विवरण इस जाँच के साथ सिर्फ़ इसी डिवाइस पर रहते हैं। कुछ भी भेजा नहीं जाता।",
+  rp_saved_upd:"आपने जो जाँच खोली थी, उसके साथ इस डिवाइस पर सहेजा गया।", rp_saved_new:"आपके जवाब वाले काम के साथ, इस डिवाइस पर नई जाँच के रूप में सहेजा गया। इसे मेरे बिल से फिर खोलें।",
   dates_today:(today,reply,opens,deadline)=>`अगर आप इसे आज (${today}) भेजें: जवाब लगभग ${reply} तक, 14 दिनों में आना चाहिए। जवाब न आए तो बीमा कंपनी को पत्र मिलने के एक महीने बाद, यानी ${opens} या उसके बाद, आप लोकपाल के पास जा सकते हैं, और ${deadline} तक (बीमा लोकपाल नियम 2017, नियम 14(3))। अगर बीमा कंपनी जवाब दे, तो साल उसके जवाब से गिना जाता है। किसी और दिन भेज रहे हैं? My Bills में "भेजने की तारीख़" में वह तारीख़ डालें, तारीख़ें उसी से चलेंगी।`,
   dates_sent:(reply,opens,deadline)=>`जवाब लगभग ${reply} तक। जवाब न आए तो लोकपाल का रास्ता ${opens} या उसके बाद, ${deadline} तक।`,
   upsum:n=>`${n} लाइनें पढ़ी गईं`, upsum_example:n=>`उदाहरण बिल &middot; ${n} लाइनें पढ़ी गईं`,
@@ -2108,6 +2125,10 @@ mr: {
   rp_reading:(i,n)=>`${n} पैकी फोटो ${i} वाचला जात आहे…`, rp_read_done:n=>`${n} फोटो वाचले. पुढे जाण्याआधी मजकूर पत्राशी जुळवून पहा.`,
   rp_read_notletter:n=>`${n} फोटो विमा कंपनीच्या पत्रासारखे वाटले नाहीत आणि वगळले.`,
   rp_read_none:"पत्राचा कोणताही मजकूर वाचता आला नाही. स्पष्ट फोटो घ्या, किंवा मजकूर पेस्ट करा.", rp_read_err:"एक फोटो वाचता आला नाही. पुन्हा प्रयत्न करा, किंवा मजकूर पेस्ट करा.",
+  backup_note:"ही ClearBill ची बॅकअप प्रत आहे. ती तशीच चालते, फक्त फोटो वाचण्यासाठी तुमची स्वतःची मोफत Gemini key लागते, आणि Google खात्यात जतन करण्यासाठी मुख्य साइट लागते.", backup_main:"मुख्य साइट उघडा",
+  backup_about:"ही साइट कधी बंद पडली, तर GitHub वर एक मोफत बॅकअप प्रत चालते:",
+  rp_save:"या डिव्हाइसवर जतन करा", rp_save_note:"उत्तर, तुमच्या खुणा आणि तक्रारीचा तपशील या तपासणीसोबत फक्त याच डिव्हाइसवर राहतात. काहीही पाठवलं जात नाही.",
+  rp_saved_upd:"तुम्ही उघडलेल्या तपासणीसोबत या डिव्हाइसवर जतन केलं.", rp_saved_new:"तुमच्या उत्तराच्या कामासह, या डिव्हाइसवर नवी तपासणी म्हणून जतन केलं. माझी बिले मधून ती पुन्हा उघडा.",
   dates_today:(today,reply,opens,deadline)=>`तुम्ही हे आज (${today}) पाठवलं तर: उत्तर साधारण ${reply} पर्यंत, 14 दिवसांत यायला हवं. उत्तर आलं नाही तर विमा कंपनीला पत्र मिळाल्यानंतर एका महिन्याने, म्हणजे ${opens} किंवा त्यानंतर, तुम्ही लोकपालाकडे जाऊ शकता, आणि ${deadline} पर्यंत (विमा लोकपाल नियम 2017, नियम 14(3)). विमा कंपनीने उत्तर दिलं तर वर्ष त्या उत्तरापासून मोजलं जातं. दुसऱ्या दिवशी पाठवताय? My Bills मध्ये "पाठवल्याची तारीख" मध्ये ती तारीख टाका, तारखा त्यानुसार बदलतील.`,
   dates_sent:(reply,opens,deadline)=>`उत्तर साधारण ${reply} पर्यंत. उत्तर न आल्यास लोकपालाचा मार्ग ${opens} किंवा त्यानंतर, ${deadline} पर्यंत.`,
   upsum:n=>`${n} ओळी वाचल्या`, upsum_example:n=>`उदाहरण बिल &middot; ${n} ओळी वाचल्या`,
@@ -2583,7 +2604,7 @@ $('egUndoBtn').addEventListener('click',()=>{
 });
 // "Something wrong?" (R22): a pre-filled GitHub issue or email. Nothing from
 // the bill is ever put in it; only the screen language and the app version.
-const APP_VERSION='R22 (Oct 2026)', FEEDBACK_EMAIL='aaryap2024@gmail.com', FEEDBACK_REPO='https://github.com/Aaryap1/ClearBill';
+const APP_VERSION='R25 (Oct 2026)', FEEDBACK_EMAIL='aaryap2024@gmail.com', FEEDBACK_REPO='https://github.com/Aaryap1/ClearBill';
 function feedbackBody(){
   return ['What is wrong (keep the ones that apply):','- a line was read wrongly','- a check looks wrong','- a translation mistake','- a problem with the letter','',
     'Which tab:','What you expected:','','Please do not include your name, policy number or bill details.','','Screen language: '+LANG+' / app version: '+APP_VERSION].join('\n');
@@ -3627,6 +3648,7 @@ function buildComplaint(c,o){
 // The status part of the card: dates, the checklist, and what to do next.
 function rpRender(){
   const T_=S(), c=rpContext(), w=rpWindow(c), out=$('rpResult');
+  $('rpSaveRow').classList.toggle('hide',!RP.status);
   if(!RP.status){ out.innerHTML=''; return; }
   let h='';
   if(RP.status==='no'){
@@ -3721,6 +3743,44 @@ $('replyCard').addEventListener('click',e=>{
   const dl=e.target.closest('[data-rpdl]');
   if(dl){ downloadText($(dl.dataset.rpdl).textContent,dl.dataset.name,'text/plain;charset=utf-8'); return; }
   if(e.target.closest('#rpGoDetails')){ $('letterDetails').scrollIntoView({behavior:'smooth',block:'start'}); $('ld_name').focus({preventScroll:true}); }
+});
+// R25: the reply work (what was pasted, the ticks, the decision, the complaint
+// details) is kept with a check saved on this device, and comes back when it
+// is opened. A file is untrusted, so every field is checked again (rpClean).
+function rpClean(x){
+  if(!x||typeof x!=='object') return null;
+  const str=(v,n)=>typeof v==='string'?v.slice(0,n):'', b=v=>v===true;
+  const o={ status:x.status==='yes'||x.status==='no'?x.status:null, sent:okYmd(x.sent)?x.sent:'', text:str(x.text,20000),
+    date:okYmd(x.date)?x.date:'', ref:str(x.ref,80), checked:b(x.checked), outcome:x.outcome==='pay'||x.outcome==='keep'?x.outcome:null, docs:b(x.docs),
+    ans:{reasons:b(x.ans&&x.ans.reasons),breakdown:b(x.ans&&x.ans.breakdown),omb:b(x.ans&&x.ans.omb)},
+    branch:str(x.branch,160), amount:str(x.amount,20), court:b(x.court) };
+  return o.status||o.sent?o:null;
+}
+function rpState(){
+  const v=id=>$(id).value.trim();
+  return rpClean({status:RP.status,sent:v('rp_sent'),text:$('rp_text').value,date:v('rp_date'),ref:v('rp_ref'),checked:RP.checked&&!RP.err,
+    outcome:RP.outcome,docs:RP.docs,ans:RP.ans,branch:v('rp_branch'),amount:v('rp_amount'),court:$('rp_court').checked});
+}
+function rpRestore(x,sentOn){
+  const o=rpClean(x)||{status:null,sent:'',text:'',date:'',ref:'',checked:false,outcome:null,docs:false,ans:{},branch:'',amount:'',court:false};
+  $('rp_sent').value=o.sent||(validSentOn(sentOn)?sentOn:''); $('rp_text').value=o.text; $('rp_date').value=o.date; $('rp_ref').value=o.ref;
+  $('rp_branch').value=o.branch; $('rp_amount').value=o.amount; $('rp_court').checked=o.court; $('rpSaveMsg').classList.add('hide'); $('rpReadStatus').classList.add('hide');
+  const res=o.checked&&o.text?checkReply(o.text):null;
+  RP={status:o.status,checked:!!(res&&!res.empty),err:false,res,ans:o.ans,outcome:o.outcome,docs:o.docs,show:null};
+  document.querySelectorAll('#rpStatusSeg [data-rp]').forEach(x=>{ const on=x.dataset.rp===RP.status; x.classList.toggle('on',on); x.setAttribute('aria-pressed',String(on)); });
+  $('rpReplied').classList.toggle('hide',RP.status!=='yes'); rpRender(); rpRenderOut();
+  if(RP.status) $('replyCard').open=true;
+}
+$('rpSaveBtn').addEventListener('click',()=>{
+  const T_=S(), m=$('rpSaveMsg'), say=t=>{ m.textContent=t; m.classList.remove('hide'); }, st=rpState(), list=readLocalChecks();
+  if(_openedLocalId&&list.some(r=>r.id===_openedLocalId)){
+    try{ writeLocalChecks(list.map(r=>r.id===_openedLocalId?{...r,reply:st,sentOn:st&&st.sent?st.sent:(r.sentOn||null)}:r)); say(T_.rp_saved_upd); }catch(e){ say(T_.local_save_err); }
+  } else {
+    const rec=buildLocalCheck(); if(!rec) return say(T_.mybills_nothing_to_save);
+    if(list.length>=LOCAL_MAX) return say(T_.local_full(list.length));
+    try{ writeLocalChecks([rec,...list]); _openedLocalId=rec.id; say(T_.rp_saved_new); }catch(e){ say(T_.local_save_err); }
+  }
+  renderLocalList();
 });
 // A photo of the reply: read with the same reader, limits and own-key path as
 // bill pages, but through /api/read-reply, which only copies the text.
@@ -4202,10 +4262,14 @@ function applyStaticI18n(){
   if($('howWho')) $('howWho').innerHTML=T_.how_who;
   if($('howList')) $('howList').innerHTML=(Sv('how_items')||[]).map(([t,d])=>'<li><b>'+esc(t)+'</b>'+esc(d)+'</li>').join('');
   setFeedbackLinks(); renderLangNote();
+  // R25: on the backup copy, say so (and drop "Runs on Google Cloud"); on the main site, point to the copy.
+  if($('backupNote')){ $('backupNote').classList.toggle('hide',!IS_BACKUP); $('backupNoteTxt').textContent=T_.backup_note; $('backupMainLink').textContent=T_.backup_main; }
+  if($('gcStrip')&&IS_BACKUP) $('gcStrip').classList.add('hide');
+  if($('backupAbout')){ $('backupAbout').classList.toggle('hide',IS_BACKUP); $('backupAboutTxt').textContent=T_.backup_about; }
   [['ldLblGro','ld_gro'],['ldGroNone','ld_gro_none'],['ldLblDocs','ld_docs'],['ldLblSubmitted','ld_submitted']].forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
   [['rpHead','rp_head'],['rpIntro','rp_intro'],['rpLblSent','rp_sent'],['rpStatusLbl','rp_status_q'],['rpYesBtn','rp_yes'],['rpNoBtn','rp_no'],['rpLblText','rp_text'],['rpTextNote','rp_text_note'],
    ['rpPhotoBtn','rp_photo'],['rpLblDate','rp_date'],['rpLblRef','rp_ref'],['rpCheckBtn','rp_check'],['rpFHead','rp_follow_head'],['rpCHead','rp_c_head'],['rpCIntro','rp_c_intro'],
-   ['rpLblBranch','rp_branch'],['rpLblAmount','rp_amount'],['rpLblCourt','rp_court']].forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
+   ['rpLblBranch','rp_branch'],['rpLblAmount','rp_amount'],['rpLblCourt','rp_court'],['rpSaveBtn','rp_save'],['rpSaveNote','rp_save_note']].forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
   if(typeof rpRender==='function'&&RP.status){ rpRender(); if(RP.show) rpRenderOut(); }
   $('secSettlement').textContent=T_.sec_settlement;
   $('lblTotal').innerHTML=T_.lbl_total;
@@ -4394,6 +4458,7 @@ $('clearYesBtn').addEventListener('click',()=>{
   $('clearConfirm').classList.add('hide'); $('restoredNote').classList.add('hide'); $('egUndo').classList.add('hide');
   try{ localStorage.removeItem(DRAFT_LS); localStorage.removeItem(LD_KEY); sessionStorage.removeItem(LD_KEY); localStorage.removeItem(KEY_LS); localStorage.removeItem(LOCAL_LS); }catch(e){}
   if(typeof renderLocalList==='function') renderLocalList();
+  _openedLocalId=null; if(typeof rpRestore==='function') rpRestore(null);
   Object.values(F).forEach(el=>{ el.value=''; }); markChips(-1); setSettleMode('cashless',true); $('apiKey').value='';
   LD_FIELDS.forEach(f=>{ $('ld_'+f).value=''; }); $('ld_asked').checked=false; $('ld_docs').checked=false; $('ld_remember').checked=false;
   if(typeof signOut==='function') signOut(); // the My Bills sign-in session is also "saved on this device"
@@ -4659,13 +4724,13 @@ function buildLocalCheck(){
     name:p.hospitalName||null, billDate:p.billDate||null,
     explainedPct:typeof p.explainedPct==='number'?p.explainedPct:null, netPayable:typeof p.netPayable==='number'?p.netPayable:null,
     settle:{mode:SETTLE_MODE,total:F.total.value,counter:F.counter.value,discount:F.discount.value,copay:F.copay.value,reimb:F.reimb.value},
-    extraction:data, letter:window.__lastLetterText||'' };
+    extraction:data, letter:window.__lastLetterText||'', reply:rpState(), sentOn:okYmd($('rp_sent').value)?$('rp_sent').value:null };
 }
 function saveLocalCheck(){
   const T_=S(), msg=$('localSaveMsg'), show=t=>{ if(msg){ msg.textContent=t; msg.classList.remove('hide'); } };
   const rec=buildLocalCheck(); if(!rec) return show(T_.mybills_nothing_to_save);
   const list=readLocalChecks(); if(list.length>=LOCAL_MAX) return show(T_.local_full(list.length));
-  try{ writeLocalChecks([rec,...list]); }catch(e){ return show(T_.local_save_err); }
+  try{ writeLocalChecks([rec,...list]); _openedLocalId=rec.id; }catch(e){ return show(T_.local_save_err); }
   show(T_.local_saved); renderLocalList();
 }
 function openLocalCheck(r){
@@ -4677,7 +4742,7 @@ function openLocalCheck(r){
   markChips(F.copay.value); saveDraft();
   window.__lastExtraction=r.extraction.line_items.length?r.extraction:null;
   calc();                                  // renders the report from the restored extraction
-  if(validSentOn(r.sentOn)) $('rp_sent').value=r.sentOn;  // R24: the reply card's dates start from it
+  _openedLocalId=r.id; rpRestore(r.reply,r.sentOn);  // R24/R25: the reply card comes back as it was saved
   switchTab('findings');
   const d=r.savedAt?new Date(r.savedAt).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'}):'';
   setStatus(S().local_opened(d),false);
@@ -4690,7 +4755,7 @@ function importLocalCheckText(text){
     name:typeof r.name==='string'?r.name.slice(0,200):null, billDate:typeof r.billDate==='string'?r.billDate.slice(0,60):null,
     explainedPct:typeof r.explainedPct==='number'?r.explainedPct:null, netPayable:typeof r.netPayable==='number'?r.netPayable:null,
     settle:(r.settle&&typeof r.settle==='object')?{mode:r.settle.mode==='reimb'?'reimb':'cashless',total:r.settle.total,counter:r.settle.counter,discount:r.settle.discount,copay:r.settle.copay,reimb:r.settle.reimb}:{},
-    extraction:r.extraction, letter:typeof r.letter==='string'?r.letter:'', sentOn:validSentOn(r.sentOn)?r.sentOn:null };
+    extraction:r.extraction, letter:typeof r.letter==='string'?r.letter:'', sentOn:validSentOn(r.sentOn)?r.sentOn:null, reply:rpClean(r.reply) };
   const list=readLocalChecks(); if(list.length>=LOCAL_MAX) return 'full';
   try{ writeLocalChecks([clean,...list]); }catch(e){ return 'err'; }
   return 'ok';

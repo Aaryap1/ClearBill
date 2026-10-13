@@ -106,6 +106,7 @@ A signed-in user can optionally save a checked bill and its letter — "My Bills
 
 ## Still open
 
+- **A backup copy** runs free on GitHub Pages (https://aaryap1.github.io/ClearBill/), built from the same `index.html` by `06_app/lib/build_static.js` and deployed by `.github/workflows/pages.yml` on every push that touches `06_app`. With no server behind it, photo reading there uses the visitor's own free Gemini key, and My Bills (Google sign-in) needs the main site; everything else is the same. It carries the main site's security policy as a `<meta>` tag, minus Google sign-in (`06_app/lib/csp.js`), and is tested by `06_app/lib/test_static.js`.
 - **Live extraction and its limits** — the app runs on Cloud Run (asia-south1) with the Gemini key in Secret Manager. The server limits requests per IP and per day; when a limit is hit it says so and offers the user's own key. It is not a guaranteed-availability service.
 - **My Bills sign-in** is new (1 Oct 2026) and tested against a mocked Google/Firestore (see `06_app/lib/test_google_auth.js`, `test_firestore_rest.js`, and the `/api/bills` section of `test_server.js`) plus a live local smoke test; it has not yet been exercised through a real Google sign-in by an end user.
 - **User validation** at n=1.

@@ -742,6 +742,33 @@ const STUB = `
     await ev(`window.__mode='broken'; document.getElementById('rp_text').value=''; rpReadPhotos([__mk('r3.jpg','image/jpeg',93)]);`); await sleep(500);
     ok(/The free reading service is busy\. Paste the text instead/.test(await ev(`return document.getElementById('rpReadStatus').textContent`)), 'when the free reader is busy or broken, it says to paste the text (or use one\'s own key)');
 
+    console.log('== R25: the reply work is kept with a check saved on this device');
+    await fresh(); await ev(`setLang('en'); document.getElementById('egBtn').click();`); await sleep(500);
+    await ev(`switchTab('letter'); document.getElementById('replyCard').open=true; const s=document.getElementById('rp_sent'); s.value=addDaysYmd(todayYmd(),-40); s.dispatchEvent(new Event('input',{bubbles:true}));`);
+    ok(await ev(`return document.getElementById('rpSaveRow').classList.contains('hide')`), 'no save button until the card is in use');
+    await ev(`document.getElementById('rpYesBtn').click(); document.getElementById('rp_text').value='Dear Sir, we regret that the deduction of Rs. 5,962/- stands as per policy terms and conditions.'; document.getElementById('rp_date').value=addDaysYmd(todayYmd(),-20); document.getElementById('rp_ref').value='GRV-5';
+      document.getElementById('rpCheckBtn').click(); await new Promise(r=>setTimeout(r,150));
+      document.querySelector('#rpResult [data-rpo="keep"]').click(); document.querySelector('#rpActs [data-rpact="complaint"]').click();
+      const b=document.getElementById('rp_branch'); b.value='Pune branch'; b.dispatchEvent(new Event('input',{bubbles:true})); const k=document.getElementById('rp_court'); k.checked=true; k.dispatchEvent(new Event('change',{bubbles:true}));
+      document.getElementById('rpSaveBtn').click();`); await sleep(200);
+    const sv = await ev(`const l=readLocalChecks(); return {n: l.length, msg: document.getElementById('rpSaveMsg').textContent, r: l[0]&&l[0].reply, sentOn: l[0]&&l[0].sentOn, want: addDaysYmd(todayYmd(),-40)}`);
+    ok(sv.n === 1 && /Saved on this device as a new check, with your reply work/.test(sv.msg) && sv.r.status === 'yes' && /we regret/.test(sv.r.text) && sv.r.ref === 'GRV-5' && sv.r.outcome === 'keep' && sv.r.branch === 'Pune branch' && sv.r.court === true && sv.r.checked === true && sv.sentOn === sv.want, 'with no check open, "Save on this device" saves a new check with the reply, the decision, the complaint details and the sent-on date');
+    await send('Page.navigate', { url: `http://127.0.0.1:${port}/` }); await sleep(1200);
+    ok(await ev(`return document.getElementById('rp_text').value==='' && !RP.status`), 'after a reload the card starts empty');
+    await ev(`switchTab('mybills'); document.querySelector('#localList .lopen').click();`); await sleep(600);
+    const rs25 = await ev(`switchTab('letter'); return {open: document.getElementById('replyCard').open, text: document.getElementById('rp_text').value, sent: document.getElementById('rp_sent').value, ref: document.getElementById('rp_ref').value, keep: document.querySelector('#rpResult [data-rpo="keep"]').getAttribute('aria-pressed'), boxes: [...document.querySelectorAll('#rpChecks input[data-rpk]')].map(b=>b.checked).join(','), branch: document.getElementById('rp_branch').value, court: document.getElementById('rp_court').checked, yes: document.getElementById('rpYesBtn').getAttribute('aria-pressed')}`);
+    ok(rs25.open && /we regret/.test(rs25.text) && rs25.ref === 'GRV-5' && rs25.yes === 'true' && rs25.keep === 'true' && rs25.boxes === 'false,false,false' && rs25.branch === 'Pune branch' && rs25.court, 'opening the saved check brings the reply card back as it was: open, the reply, its checklist, the decision and the complaint details');
+    await ev(`const b=document.querySelector('#rpChecks input[data-rpk="omb"]'); b.checked=true; b.dispatchEvent(new Event('change',{bubbles:true})); document.getElementById('rpSaveBtn').click();`); await sleep(200);
+    const up = await ev(`const l=readLocalChecks(); return {n: l.length, omb: l[0].reply.ans.omb, msg: document.getElementById('rpSaveMsg').textContent}`);
+    ok(up.n === 1 && up.omb === true && /Saved with the check you opened/.test(up.msg), 'saving again updates the check that was opened, instead of adding another');
+    await ev(`switchTab('settlement'); document.getElementById('clearSavedBtn').click(); document.getElementById('clearYesBtn').click();`); await sleep(200);
+    ok(await ev(`return !RP.status && document.getElementById('rp_text').value==='' && document.getElementById('rp_branch').value==='' && readLocalChecks().length===0`), '"Clear what this app saved" clears the reply card too');
+    const bad25 = JSON.stringify({ v: 1, extraction: { line_items: [{ item: 'X', total: 5 }] }, reply: { status: 'yes', text: '<img src=x onerror="window.__x25=1"> we regret', checked: true, ans: { reasons: 'yes', omb: true }, outcome: 'evil', sent: '2099-01-01', date: 'not a date', branch: 123, court: 'true' } });
+    ok(await ev(`return importLocalCheckText(${JSON.stringify(bad25)})`) === 'ok', 'a file with odd reply fields is still opened (the bill is fine)');
+    await ev(`switchTab('mybills'); renderLocalList(); document.querySelector('#localList .lopen').click();`); await sleep(500);
+    const im = await ev(`return {x: !!window.__x25 || !!document.querySelector('#replyCard img'), out: RP.outcome, reasons: RP.ans.reasons, omb: RP.ans.omb, sent: document.getElementById('rp_sent').value, date: document.getElementById('rp_date').value, branch: document.getElementById('rp_branch').value, court: document.getElementById('rp_court').checked, text: /we regret/.test(document.getElementById('rp_text').value)}`);
+    ok(!im.x && im.out === null && im.reasons === false && im.omb === true && im.sent === '' && im.date === '' && im.branch === '' && !im.court && im.text, 'its reply fields are checked again: text stays text, only true/false ticks, known decisions, real past dates');
+
     console.log('== R22: grievance officer, documents and delay lines');
     await fresh(); await ev(`setLang('en'); document.getElementById('egBtn').click();`); await sleep(500);
     await ev(`switchTab('letter'); const g=document.getElementById('ld_gro'); g.value='Star Health and Allied'; g.dispatchEvent(new Event('input',{bubbles:true}));

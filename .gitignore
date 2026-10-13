@@ -35,3 +35,6 @@ node_modules/
 
 # Shareable poster/GIF builds and their tooling - local for now
 08_share/
+
+# Backup copy built by 06_app/lib/build_static.js (deployed by .github/workflows/pages.yml)
+_site/

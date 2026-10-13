@@ -515,29 +515,8 @@ async function readBill(req, res, kind = READ_BILL) {
   });
 }
 
-/* ---- Content Security Policy (R16) for the page. Only the page's own
-   inline script may run, identified by its SHA-256 hash (worked out here from
-   the exact file served, so it can never go stale after an edit), plus
-   Google's sign-in library. Anything injected into the page (say, through a
-   bill's text) cannot run. Other sources are those the page really uses:
-   Google Fonts, Google sign-in, and Gemini directly when a visitor uses their
-   own key. Inline style attributes are allowed: the page uses them, and they
-   cannot run code. */
-function cspFor(html) {
-  // Browsers hash the script as parsed, after CRLF line endings become LF.
-  const hashes = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)]
-    .map(m => `'sha256-${crypto.createHash('sha256').update(m[1].replace(/\r\n?/g, '\n'), 'utf8').digest('base64')}'`);
-  return [
-    "default-src 'self'",
-    `script-src ${hashes.join(' ')} https://accounts.google.com/gsi/client`,
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style",
-    'font-src https://fonts.gstatic.com',
-    "img-src 'self' data: blob:",
-    "connect-src 'self' https://generativelanguage.googleapis.com https://accounts.google.com/gsi/",
-    'frame-src https://accounts.google.com/gsi/',
-    "object-src 'none'", "base-uri 'none'", "form-action 'none'", "frame-ancestors 'none'",
-  ].join('; ');
-}
+/* ---- Content Security Policy (R16): lib/csp.js, shared with the backup copy (R25). */
+const { cspFor } = require('./lib/csp.js');
 
 /* ---- static files: allowlist, brotli/gzip, ETag, always revalidate ---- */
 const staticCache = new Map();
