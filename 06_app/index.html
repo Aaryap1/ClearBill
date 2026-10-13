@@ -299,6 +299,11 @@
   .bys ol{margin:8px 0 0 1.2rem;padding:0;font-size:.9rem;line-height:1.5} .bys li{margin:3px 0}
   .bys p{margin:0;font-size:.9rem;line-height:1.5}
   .bys .btn{margin-top:12px;width:100%}
+  .whlist{display:flex;flex-direction:column;gap:8px}
+  .whbtn{display:block;width:100%;text-align:left;min-height:46px;padding:11px 14px;border:1.5px solid var(--ctl);border-radius:9px;background:var(--field);color:var(--ink);font-family:"Archivo",sans-serif;font-size:.88rem;font-weight:600;line-height:1.3;cursor:pointer}
+  .whbtn::after{content:" \2192";color:var(--soft)}
+  .whbtn:hover{border-color:var(--ink)} .whbtn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .whnote{font-size:.84rem;color:var(--soft);margin:6px 0 0}
   .howlist{margin:6px 0 0;padding:0;list-style:none} .howlist li{margin:0 0 10px;font-size:.88rem;line-height:1.5}
   .howlist b{font-family:"Archivo",sans-serif;display:block;font-size:.84rem}
   .fbrow{display:flex;gap:14px;flex-wrap:wrap;margin-top:6px}
@@ -485,11 +490,19 @@
   <div class="tabpage on" id="page-settlement">
     <h2 class="sec-label" id="secSettlement">Settlement</h2>
     <div class="card bys" id="beforeStart">
-      <div class="k" id="bysHead" style="margin-bottom:6px">Before you start</div>
+      <div class="k" id="whHead" style="margin-bottom:8px">What happened?</div>
+      <div class="whlist" role="group" aria-labelledby="whHead">
+        <button class="whbtn" type="button" id="whHospital">Still in hospital, waiting for the insurer's approval</button>
+        <button class="whbtn" type="button" id="whCut">The insurer paid only part of the bill</button>
+        <button class="whbtn" type="button" id="bysRejectedBtn">The insurer rejected the whole claim</button>
+        <button class="whbtn" type="button" id="whReply">I wrote to the insurer, and it replied or hasn't</button>
+        <button class="whbtn" type="button" id="whBill">I only have the itemised bill</button>
+      </div>
+      <div class="k" id="bysHead" style="margin:16px 0 6px">Before you start</div>
       <p id="bysIntro">ClearBill checks a hospital bill and your insurance settlement against the published rules, and drafts a letter you can send. Keep these papers to hand:</p>
       <ol><li id="bys1">The hospital's final bill, and its itemised (detailed) bill</li><li id="bys2">Your insurer's or TPA's settlement letter</li><li id="bys3">Your payment receipt from the hospital</li></ol>
+      <p class="whnote" id="whNote">Any one of these is enough to start.</p>
       <button class="btn ghost sm" type="button" id="bysExampleBtn">No papers to hand? See the worked example</button>
-      <button class="link" type="button" id="bysRejectedBtn" style="display:block;margin-top:12px">Was your whole claim rejected? Start here &rarr;</button>
     </div>
     <details class="card gcdet hospcard" id="hospCard">
       <summary><span id="hsHead">Still in hospital? Time limits for cashless approval</span></summary>
@@ -744,6 +757,7 @@
       <div class="k" id="mybillsListHead" style="margin:18px 0 8px">Saved bills</div>
       <div class="card hide" id="mybillsEmpty"><p id="mybillsEmptyText" style="margin:0">No saved bills yet.</p></div>
       <div id="mybillsList"></div>
+      <button class="btn ghost sm" id="mybillsExportBtn" type="button" style="margin-top:14px;display:none">Download my saved bills</button>
       <button class="btn ghost sm" id="mybillsDeleteAllBtn" type="button" style="margin-top:14px;display:none">Delete all my saved bills</button>
       <button class="link" id="signOutBtnTab" type="button" style="margin-top:14px;display:block">Sign out</button>
     </div>
@@ -1247,7 +1261,8 @@ const LOCAL_LS='clearbill_local_checks', LOCAL_MAX=20; // R12: checks kept on th
 let _userIncl={}, _userInclFor=null;
 const NO_BILL={header:{},line_items:[]};
 let _rcOpen=false;
-let RJ={kind:null,suggested:null}; // R28: a rejected claim
+let RJ={kind:null,suggested:null};
+let _replyOpened=false; // R30: the reply card was asked for directly (#reply / "What happened?") // R28: a rejected claim
 const HS_LS='clearbill_hospital'; let HS={kind:null}, _hsTimer=null; // R27: "Still in hospital?"
 let _openedLocalId=null; // R25: the saved check now open, so reply work is saved back to it
 const IS_BACKUP=!!document.querySelector('meta[name="clearbill-backup"]'); // R25: the GitHub Pages copy
@@ -1276,6 +1291,8 @@ en: {
   bys_head:"Before you start", bys_intro:"ClearBill checks a hospital bill and your insurance settlement against the published rules, and drafts a letter you can send. Keep these papers to hand:",
   bys_1:"The hospital's final bill, and its itemised (detailed) bill", bys_2:"Your insurer's or TPA's settlement letter", bys_3:"Your payment receipt from the hospital",
   bys_try:"No papers to hand? See the worked example",
+  wh_head:"What happened?", wh_hospital:"Still in hospital, waiting for the insurer's approval", wh_cut:"The insurer paid only part of the bill", wh_rejected:"The insurer rejected the whole claim",
+  wh_reply:"I wrote to the insurer, and it replied or hasn't", wh_bill:"I only have the itemised bill", wh_note:"Any one of these is enough to start.", mybills_export_btn:"Download my saved bills",
   know_head:"How we know",
   how_items:[
     ["IRDAI List I and Lists II–IV","From IRDAI's 2019–2020 standardization guidelines. The 68 List I items were checked against IRDAI's own page on 25 September 2026. IRDAI's Master Circular of 29 May 2024 superseded that circular and does not restate the lists, so the letter asks your insurer to confirm they still apply."],
@@ -1757,6 +1774,8 @@ hi: {
   bys_head:"शुरू करने से पहले", bys_intro:"ClearBill अस्पताल के बिल और आपके बीमा सेटलमेंट को प्रकाशित नियमों से जाँचता है, और एक पत्र तैयार करता है जिसे आप भेज सकते हैं। ये काग़ज़ पास रखें:",
   bys_1:"अस्पताल का अंतिम बिल, और उसका विस्तृत (आइटमवार) बिल", bys_2:"बीमा कंपनी या TPA का सेटलमेंट पत्र", bys_3:"अस्पताल को किए भुगतान की रसीद",
   bys_try:"काग़ज़ पास नहीं हैं? उदाहरण देखें",
+  wh_head:"क्या हुआ?", wh_hospital:"अभी अस्पताल में हैं, बीमा कंपनी की मंज़ूरी का इंतज़ार है", wh_cut:"बीमा कंपनी ने बिल का सिर्फ़ कुछ हिस्सा दिया", wh_rejected:"बीमा कंपनी ने पूरा दावा ठुकरा दिया",
+  wh_reply:"मैंने बीमा कंपनी को लिखा, और जवाब आया या नहीं आया", wh_bill:"मेरे पास सिर्फ़ आइटमवार बिल है", wh_note:"इनमें से कोई एक काग़ज़ शुरू करने के लिए काफ़ी है।", mybills_export_btn:"मेरे सहेजे गए बिल डाउनलोड करें",
   know_head:"हम कैसे जानते हैं",
   how_items:[
     ["IRDAI सूची I और सूची II–IV","IRDAI के 2019–2020 के मानकीकरण दिशानिर्देशों से। सूची I की 68 मदें 25 सितंबर 2026 को IRDAI के अपने पेज से मिलाई गईं। 29 मई 2024 के IRDAI मास्टर परिपत्र ने उस परिपत्र की जगह ले ली है और ये सूचियाँ दोहराता नहीं, इसलिए पत्र बीमा कंपनी से पुष्टि करने को कहता है कि ये अब भी लागू हैं।"],
@@ -2239,6 +2258,8 @@ mr: {
   bys_head:"सुरू करण्यापूर्वी", bys_intro:"ClearBill रुग्णालयाचं बिल आणि तुमचं विमा सेटलमेंट प्रकाशित नियमांशी तपासतं, आणि तुम्ही पाठवू शकाल असं पत्र तयार करतं. ही कागदपत्रं जवळ ठेवा:",
   bys_1:"रुग्णालयाचं अंतिम बिल, आणि त्याचं तपशीलवार (आयटमनिहाय) बिल", bys_2:"विमा कंपनीचं किंवा TPA चं सेटलमेंट पत्र", bys_3:"रुग्णालयाला केलेल्या पेमेंटची पावती",
   bys_try:"कागदपत्रं जवळ नाहीत? उदाहरण पहा",
+  wh_head:"काय झालं?", wh_hospital:"अजून रुग्णालयात आहे, विमा कंपनीच्या मंजुरीची वाट पाहत आहे", wh_cut:"विमा कंपनीने बिलाचा फक्त काही भाग दिला", wh_rejected:"विमा कंपनीने संपूर्ण दावा नाकारला",
+  wh_reply:"मी विमा कंपनीला लिहिलं, आणि उत्तर आलं किंवा आलं नाही", wh_bill:"माझ्याकडे फक्त आयटमनिहाय बिल आहे", wh_note:"यापैकी कोणताही एक कागद सुरुवातीसाठी पुरेसा आहे.", mybills_export_btn:"माझी जतन केलेली बिले डाउनलोड करा",
   know_head:"आम्हाला कसं माहीत आहे",
   how_items:[
     ["IRDAI यादी I आणि याद्या II–IV","IRDAI च्या 2019–2020 च्या प्रमाणीकरण मार्गदर्शक तत्त्वांमधून. यादी I च्या 68 बाबी 25 सप्टेंबर 2026 रोजी IRDAI च्या स्वतःच्या पानाशी पडताळल्या. 29 मे 2024 च्या IRDAI मास्टर परिपत्रकाने त्या परिपत्रकाची जागा घेतली आहे आणि या याद्या पुन्हा दिलेल्या नाहीत, म्हणून पत्र विमा कंपनीला त्या अजूनही लागू आहेत का याची खात्री करायला सांगतं."],
@@ -2865,7 +2886,7 @@ $('egUndoBtn').addEventListener('click',()=>{
 });
 // "Something wrong?" (R22): a pre-filled GitHub issue or email. Nothing from
 // the bill is ever put in it; only the screen language and the app version.
-const APP_VERSION='R29 (Oct 2026)', FEEDBACK_EMAIL='aaryap2024@gmail.com', FEEDBACK_REPO='https://github.com/Aaryap1/ClearBill';
+const APP_VERSION='R30 (Oct 2026)', FEEDBACK_EMAIL='aaryap2024@gmail.com', FEEDBACK_REPO='https://github.com/Aaryap1/ClearBill';
 function feedbackBody(){
   return ['What is wrong (keep the ones that apply):','- a line was read wrongly','- a check looks wrong','- a translation mistake','- a problem with the letter','',
     'Which tab:','What you expected:','','Please do not include your name, policy number or bill details.','','Screen language: '+LANG+' / app version: '+APP_VERSION].join('\n');
@@ -3645,6 +3666,12 @@ function copyText(text){
 // lists, never as law (whether a state has adopted it varies). With a bill
 // it asks only about what the hospital can explain: repeats, its own total,
 // and Lists II-IV items. Returns '' when there is nothing to ask.
+// The insurer's grievance officer, from IRDAI's list (R22; shared by the letter and the rejection card since R30).
+function groBoxHtml(gro,btnId,msgId){
+  const T_=S();
+  return `<div class="omb grobox"><div class="ombh">${esc(T_.gro_head(gro.name))}</div><a href="mailto:${esc(gro.email)}">${esc(gro.email)}</a>${gro.tel?` &middot; ${esc(T_.gro_tel)} ${esc(gro.tel)}`:''}${gro.web?` &middot; <a href="${esc(gro.web)}" target="_blank" rel="noopener">${esc(T_.gro_web)}</a>`:''}
+    <p class="ombsrc">${T_.gro_src(fmtYmd(GRO_LIST_UPDATED),fmtYmd(GRO_READ_ON))}</p><button class="btn sm" type="button" id="${btnId}">${T_.gro_copy_mail}</button><p class="hide" id="${msgId}" role="status" style="margin:6px 0 0"></p></div>`;
+}
 // R29: each document gives the two circulars' reference numbers at their first
 // mention (checked in the texts: IRDAI/HLT/CIR/PRO/84/5/2024 and
 // IRDAI/PP&GR/CIR/MISC/117/9/2024).
@@ -3851,8 +3878,7 @@ function buildLetter(a,include,noScroll){
     : `<div class="omb" id="ombBlock"><div class="ombh">${T_.omb_head(esc(D.state))}</div>${offices.length>1?`<p style="margin:4px 0 6px">${T_.omb_split}</p>`:''}<p style="margin:4px 0 6px">${T_.omb_branch}</p>${offices.map(o=>ombCard(o,offices.length>1)).join('')}<p class="ombsrc">${T_.omb_src(readOn)}</p></div>`;
   const od=ombDates(todayYmd());
   const gro=GRO.find(g=>g.name===D.gro);
-  const groHtml=!gro?'':`<div class="omb grobox"><div class="ombh">${esc(T_.gro_head(gro.name))}</div><a href="mailto:${esc(gro.email)}">${esc(gro.email)}</a>${gro.tel?` &middot; ${esc(T_.gro_tel)} ${esc(gro.tel)}`:''}${gro.web?` &middot; <a href="${esc(gro.web)}" target="_blank" rel="noopener">${esc(T_.gro_web)}</a>`:''}
-    <p class="ombsrc">${T_.gro_src(fmtYmd(GRO_LIST_UPDATED),fmtYmd(GRO_READ_ON))}</p><button class="btn sm" type="button" id="groMailBtn">${T_.gro_copy_mail}</button><p class="hide" id="groMailMsg" role="status" style="margin:6px 0 0"></p></div>`;
+  const groHtml=!gro?'':groBoxHtml(gro,'groMailBtn','groMailMsg');
   const note=buildHospitalNote(a,include,D,H,pname,sender,today);
   const hospHtml=!note?'':`<details class="hospnote"><summary><span>${T_.hosp_head}</span></summary><div class="db"><p class="plain" style="margin-top:0">${T_.hosp_intro}</p></div><div class="letter" id="hospNoteText">${esc(note)}</div><button class="btn sm ghost" type="button" id="hospCopyBtn" style="margin-top:8px">${T_.hosp_copy}</button></details>`;
   const afterSend=`<div class="aftersend"><h4>${T_.as_head}</h4><ol><li>${T_.as_1}${groHtml}</li><li>${T_.as_2}</li><li>${T_.as_3}<p class="asdates">${T_.dates_today(fmtYmd(todayYmd()),fmtYmd(od.reply),fmtYmd(od.opens),fmtYmd(od.deadline))}</p></li></ol>${ombHtml}<p style="margin:8px 0 0;color:var(--soft)">${T_.as_4}</p></div>${hospHtml}`;
@@ -4159,7 +4185,8 @@ async function rpReadPhotos(files){
     const key=$('apiKey').value.trim();
     if(!USE_PROXY&&!key){ say(T_.rp_need_key,true); return; }
     say(T_.rp_reading(1,files.length));
-    const toSend=await Promise.all(files.map(downscaleImage));
+    // One at a time (R30): decoding every photo at once can exhaust a cheap phone's memory.
+    const toSend=[]; for(const f of files) toSend.push(await downscaleImage(f));
     const results=await readPages(toSend,{key,useProxy:USE_PROXY,proxyState:_proxyState,fetchFn:(u,o)=>fetch(u,o),toB64,stripFence,
       directRequest:directReplyRequest,endpoint:'api/read-reply',timeoutMs:READ_TIMEOUT_MS,onProgress:(i,n)=>say(T_.rp_reading(i+1,n))});
     const texts=[]; let notLetter=0, failKind=null;
@@ -4520,7 +4547,8 @@ async function processQueuedFiles(){
     // index below (thumbnails, results[i], fileKey-based caching) still lines
     // up with _pendingFiles exactly as before. _pendingFiles itself keeps the
     // originals, so the on-screen thumbnails stay full quality.
-    const toSend=await Promise.all(files.map(downscaleImage));
+    // One at a time (R30): decoding every photo at once can exhaust a cheap phone's memory.
+    const toSend=[]; for(const f of files) toSend.push(await downscaleImage(f));
     const results=await readPages(toSend,{
       key,useProxy:USE_PROXY,proxyState:_proxyState,fetchFn:(u,o)=>fetch(u,o),toB64,stripFence,directRequest,
       cache:_pageCache,signal:_readAbort.signal,timeoutMs:READ_TIMEOUT_MS,
@@ -4632,7 +4660,8 @@ function applyStaticI18n(){
   if($('backupAbout')){ $('backupAbout').classList.toggle('hide',IS_BACKUP||!BACKUP_URL); $('backupAboutTxt').textContent=T_.backup_about; $('backupAboutLink').href=BACKUP_URL; $('backupAboutLink').textContent=BACKUP_URL.replace(/^https:\/\/|\/$/g,''); }
   [['rjHead','rj_head'],['rjIntro','rj_intro'],['rjLblText','rj_text'],['rjTextNote','rj_text_note'],['rjReasonLbl','rj_reason_q'],['rjRped','rj_r_ped'],['rjRwaiting','rj_r_waiting'],['rjRexcl','rj_r_excl'],
    ['rjRdocs','rj_r_docs'],['rjRneed','rj_r_need'],['rjRgroup','rj_r_group'],['rjRother','rj_r_other'],['rjLblCashless','rj_cashless'],['rjLblDate','rj_date'],['rjLblRef','rp_ref'],['rjLblAmount','rj_amount'],
-   ['rjLblSince','rj_since'],['rjLblAdmit','rj_admit'],['rjRnone','rj_r_none'],['rjSaveBtn','rp_save'],['bysRejectedBtn','rj_start']].forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
+   ['rjLblSince','rj_since'],['rjLblAdmit','rj_admit'],['rjRnone','rj_r_none'],['rjSaveBtn','rp_save'],
+   ['whHead','wh_head'],['whHospital','wh_hospital'],['whCut','wh_cut'],['bysRejectedBtn','wh_rejected'],['whReply','wh_reply'],['whBill','wh_bill'],['whNote','wh_note']].forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
   if(window.__rjReady) rjRender();
   [['hsHead','hs_head'],['hsIntro','hs_intro'],['hsWhichLbl','hs_which'],['hsAdmitBtn','hs_admit'],['hsDischargeBtn','hs_discharge'],['hsDeathBtn','hs_death'],['hsLblWhen','hs_when'],['hsNowBtn','hs_now'],
    ['hsLblPatient','hs_patient'],['hsLblHospital','hs_hospital'],['hsLblRef','hs_ref'],['hsLblIns','hs_ins'],['hsInsNone','hs_ins_none']].forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
@@ -4716,6 +4745,7 @@ function applyStaticI18n(){
   if($('mybillsListHead')) $('mybillsListHead').textContent=T_.mybills_list_head;
   if($('mybillsEmptyText')) $('mybillsEmptyText').textContent=T_.mybills_empty_text;
   if($('mybillsDeleteAllBtn')) $('mybillsDeleteAllBtn').textContent=T_.mybills_delete_all_btn;
+  if($('mybillsExportBtn')) $('mybillsExportBtn').textContent=T_.mybills_export_btn;
   if($('signOutBtnHeader')) $('signOutBtnHeader').textContent=T_.mybills_signout_btn;
   if($('signOutBtnTab')) $('signOutBtnTab').textContent=T_.mybills_signout_btn;
   if(typeof renderMyBillsList==='function') renderMyBillsList(_myBills);
@@ -4824,10 +4854,10 @@ function renderLetterTab(){
   const data = hasBill ? window.__lastExtraction : NO_BILL;
   const s=settleOk(), canWrite = hasBill || !!s;
   const rj=!!RJ.kind; // R28: a rejected claim needs "Your details" and the reply card, with no bill
-  $('letterEmpty').classList.toggle('hide', canWrite||rj);
-  $('letterConfirm').classList.toggle('hide', !canWrite&&!rj);
+  $('letterEmpty').classList.toggle('hide', canWrite||rj||_replyOpened);
+  $('letterConfirm').classList.toggle('hide', !canWrite&&!rj&&!_replyOpened);
   $('letterInclCard').classList.toggle('hide', !canWrite); $('genLetterTab').classList.toggle('hide', !canWrite);
-  $('replyCard').classList.toggle('hide', !canWrite&&!rj);
+  $('replyCard').classList.toggle('hide', !canWrite&&!rj&&!_replyOpened);
   if(!canWrite) return;
   // The ticks belong to the bill, not to one copy of it: correcting a row makes a new
   // copy, and used to bring back items the user had removed (R29; E36 regression).
@@ -4863,7 +4893,7 @@ $('clearYesBtn').addEventListener('click',()=>{
   $('clearConfirm').classList.add('hide'); $('restoredNote').classList.add('hide'); $('egUndo').classList.add('hide');
   try{ localStorage.removeItem(DRAFT_LS); localStorage.removeItem(LD_KEY); sessionStorage.removeItem(LD_KEY); localStorage.removeItem(KEY_LS); localStorage.removeItem(LOCAL_LS); }catch(e){}
   if(typeof renderLocalList==='function') renderLocalList();
-  _openedLocalId=null; if(typeof rpRestore==='function') rpRestore(null);
+  _openedLocalId=null; _replyOpened=false; if(typeof rpRestore==='function') rpRestore(null);
   try{ sessionStorage.removeItem(HS_LS); sessionStorage.removeItem('clearbill_rejection'); }catch(e){} RJ.kind=null; RJ.suggested=null; ['rj_text','rj_date','rj_ref','rj_amount','rj_since','rj_admit'].forEach(id=>{ $(id).value=''; }); $('rj_cashless').checked=false; if(typeof rjRender==='function') rjRender(); HS.kind=null; ['hs_when','hs_patient','hs_hospital','hs_ref','hs_ins'].forEach(id=>{ $(id).value=''; }); hsRender();
   Object.values(F).forEach(el=>{ el.value=''; }); Object.values(RR).forEach(el=>{ el.value=''; }); markChips(-1); setSettleMode('cashless',true); $('apiKey').value='';
   LD_FIELDS.forEach(f=>{ $('ld_'+f).value=''; }); $('ld_asked').checked=false; $('ld_docs').checked=false; $('ld_remember').checked=false;
@@ -5047,6 +5077,7 @@ function renderMyBillsList(bills){
   if(!list) return;
   if(empty) empty.classList.toggle('hide', bills.length>0);
   if(delAll) delAll.style.display = bills.length>0 ? '' : 'none';
+  if($('mybillsExportBtn')) $('mybillsExportBtn').style.display = bills.length>0 ? '' : 'none';
   list.innerHTML = bills.map(b=>{
     const date=b.savedAt?new Date(b.savedAt).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'';
     const pct = b.explainedPct!=null ? b.explainedPct+'%' : T_.notapplicable_word;
@@ -5087,6 +5118,12 @@ async function deleteMyBill(id){
 // confirmed. It used to ignore every answer and clear the list regardless, so
 // an expired sign-in showed "all deleted" while every bill was still saved
 // (R15). A bill already gone (404) is gone either way.
+// R30: a copy of the saved bills (their letters included) as a file, so nothing
+// is lost if the free service stops. Made from the list already loaded.
+if($('mybillsExportBtn')) $('mybillsExportBtn').addEventListener('click',()=>{
+  if(!_myBills.length) return;
+  downloadText(JSON.stringify({exported:new Date().toISOString(),source:'ClearBill My Bills',bills:_myBills},null,1),'clearbill-my-bills-'+todayYmd()+'.json','application/json');
+});
 if($('mybillsDeleteAllBtn')) $('mybillsDeleteAllBtn').addEventListener('click',async()=>{
   const T_=S(), btn=$('mybillsDeleteAllBtn'), msg=$('mybillsDelMsg');
   const ids=_myBills.map(b=>b.id); if(!ids.length) return;
@@ -5453,6 +5490,7 @@ function rjRender(){
   if(miss.length) h+=`<p class="rpnote">${T_.rj_missing(miss.join(', '))} <button class="link" type="button" id="rjGoDetails">${T_.rp_go_details}</button></p>`;
   h+=`<div class="k" style="margin:14px 0 6px">${T_.rj_letter_head}</div>${LANG!=='en'?`<p class="ldnote" style="margin-left:0">${T_.rp_note_en}</p>`:''}<div class="letter" id="rjLetter">${esc(buildRejectionLetter())}</div>`
     +`<div class="rpbtns"><button class="btn sm" type="button" id="rjCopyBtn">${T_.rj_copy}</button><button class="btn sm ghost" type="button" id="rjDlBtn">${T_.rp_download}</button></div>`
+    +(GRO.find(g=>g.name===c.D.gro)?groBoxHtml(GRO.find(g=>g.name===c.D.gro),'rjMailBtn','rjMailMsg'):'')
     +`<p class="rpnote">${T_.rj_next}</p><p class="ldnote" style="margin-left:0">${T_.rp_not_legal}</p>`;
   out.innerHTML=h;
 }
@@ -5499,6 +5537,9 @@ $('rejCard').addEventListener('click',e=>{
   if(e.target.closest('#rjDlBtn')) downloadText($('rjLetter').textContent,'clearbill-rejection-letter.txt','text/plain;charset=utf-8');
   if(e.target.closest('#rjUseBtn')){ RJ.kind=RJ.suggested; RJ.suggested=null; if(RJ.kind==='ped') rjPrefillAdmit(); rjChanged(); const b=$('rjR'+RJ.kind); if(b) b.focus(); }
   if(e.target.closest('#rjSaveBtn')) saveCaseOnDevice($('rjSaveMsg'));
+  if(e.target.closest('#rjMailBtn')){ const gro=GRO.find(g=>g.name===readLetterDetails().gro); if(!gro) return;
+    copyText($('rjLetter').textContent).then(done=>{ const m=$('rjMailMsg'); m.textContent=done?T_.gro_copied:T_.copy_failed_btn; m.classList.remove('hide'); announce(m.textContent);
+      location.href='mailto:'+gro.email+'?subject='+encodeURIComponent('Request to review the rejection of my claim'+(readLetterDetails().claim?' - Claim no. '+readLetterDetails().claim:'')); }); }
   if(e.target.closest('#rjGoDetails')){ $('letterDetails').scrollIntoView({behavior:'smooth',block:'start'}); $('ld_name').focus({preventScroll:true}); }
 });
 // A detail typed in "Your details" updates the letter here too.
@@ -5517,6 +5558,17 @@ const openExampleFromHash=()=>{ if(location.hash==='#example'){ loadWorkedExampl
 openExampleFromHash(); window.addEventListener('hashchange',openExampleFromHash);
 openHospitalFromHash(); window.addEventListener('hashchange',openHospitalFromHash);
 openRejectedFromHash(); window.addEventListener('hashchange',openRejectedFromHash);
+// R30: "What happened?" sends each situation to the part of the app that serves it.
+function openReplyCard(){
+  _replyOpened=true; switchTab('letter'); renderLetterTab();
+  const c=$('replyCard'); c.open=true; c.scrollIntoView({behavior:'smooth',block:'start'}); const sm=c.querySelector('summary'); if(sm) sm.focus({preventScroll:true});
+}
+const openReplyFromHash=()=>{ if(location.hash==='#reply') openReplyCard(); };
+openReplyFromHash(); window.addEventListener('hashchange',openReplyFromHash);
+$('whHospital').addEventListener('click',()=>{ switchTab('settlement'); const c=$('hospCard'); c.open=true; c.scrollIntoView({behavior:'smooth',block:'start'}); const sm=c.querySelector('summary'); if(sm) sm.focus({preventScroll:true}); });
+$('whCut').addEventListener('click',()=>{ $('settleMode').scrollIntoView({behavior:'smooth',block:'start'}); F.total.focus({preventScroll:true}); });
+$('whReply').addEventListener('click',openReplyCard);
+$('whBill').addEventListener('click',()=>$('skipToFindingsBtn').click());
 renderBeforeStart();
 </script>
 </body>

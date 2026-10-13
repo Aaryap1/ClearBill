@@ -64,8 +64,13 @@ gcloud run deploy clearbill \
   --source . \
   --region asia-south1 \
   --allow-unauthenticated \
+  --max-instances=2 \
   --set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest
 ```
+
+`--max-instances=2` keeps the free daily reading cap real: `DAILY_CAP` is counted
+per instance, so without a cap on instances it is not a hard limit (R30). The
+setting stays on the service for later deploys that leave it out.
 
 `gcloud run services describe clearbill --region asia-south1 --format='value(status.url)'`
 gives the public URL. Open it on your phone → the bill upload works with no key

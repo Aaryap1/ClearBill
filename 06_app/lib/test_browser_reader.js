@@ -835,7 +835,7 @@ const STUB = `
 
     console.log('== R28: the whole claim was rejected');
     await fresh(); await ev(`setLang('en');`);
-    ok(await ev(`return /Was your whole claim rejected\\? Start here/.test(document.getElementById('bysRejectedBtn').textContent)`), 'the first screen has a way in: "Was your whole claim rejected? Start here"');
+    ok(await ev(`return /The insurer rejected the whole claim/.test(document.getElementById('bysRejectedBtn').textContent)`), 'the first screen has a way in: "The insurer rejected the whole claim" (R30: in "What happened?")');
     await ev(`document.getElementById('bysRejectedBtn').click();`); await sleep(300);
     const r0 = await ev(`return {tab: document.getElementById('page-letter').classList.contains('on'), open: document.getElementById('rejCard').open, empty: !document.getElementById('letterEmpty').classList.contains('hide'), reply: document.getElementById('replyCard').classList.contains('hide')}`);
     ok(r0.tab && r0.open && r0.empty && r0.reply, 'it opens the card on the Letter tab, with no bill or figures needed');
@@ -935,6 +935,32 @@ const STUB = `
     console.log('== R29: honest wording');
     ok(await ev(`setLang('en'); return /Saved with your Google sign-in/.test(document.getElementById('accountHead').textContent) && /ClearBill's server \\(Google Firestore\\)/.test(S().mybills_signin_prompt) && /except a photo you choose to read, which goes to Google's Gemini/.test(S().rp_intro)`), 'My Bills says where saved bills really are, and the reply card says a photo goes to Gemini');
     ok(await ev(`return /दावे की प्रक्रिया तुरंत करनी चाहिए/.test(STRINGS.hi.hs_death_note) && /दाव्याची प्रक्रिया तात्काळ करायला हवी/.test(STRINGS.mr.hs_death_note)`), 'the Hindi and Marathi death note says "process", as para 16(c) does');
+
+    console.log('== R30: "What happened?" - the ways in');
+    await fresh(); await ev(`setLang('en');`);
+    const w0 = await ev(`return {head: document.getElementById('whHead').textContent, btns: [...document.querySelectorAll('#beforeStart .whbtn')].map(b=>b.textContent).join(' | '), note: document.getElementById('whNote').textContent}`);
+    ok(w0.head === 'What happened?' && w0.btns === "Still in hospital, waiting for the insurer's approval | The insurer paid only part of the bill | The insurer rejected the whole claim | I wrote to the insurer, and it replied or hasn't | I only have the itemised bill" && /Any one of these is enough to start/.test(w0.note), 'the first screen asks "What happened?" with five plain choices');
+    await ev(`document.getElementById('whHospital').click();`); await sleep(300);
+    ok(await ev(`return document.getElementById('hospCard').open && document.activeElement===document.querySelector('#hospCard summary')`), '"Still in hospital" opens the hospital card and moves to it');
+    await ev(`document.getElementById('whCut').click();`); await sleep(300);
+    ok(await ev(`return document.activeElement===document.getElementById('total')`), '"The insurer paid only part" goes to the settlement figures');
+    await ev(`document.getElementById('whReply').click();`); await sleep(300);
+    const w1 = await ev(`return {tab: document.getElementById('page-letter').classList.contains('on'), card: !document.getElementById('replyCard').classList.contains('hide') && document.getElementById('replyCard').open, details: !document.getElementById('letterConfirm').classList.contains('hide'), incl: document.getElementById('letterInclCard').classList.contains('hide'), empty: document.getElementById('letterEmpty').classList.contains('hide')}`);
+    ok(w1.tab && w1.card && w1.details && w1.incl && w1.empty, '"I wrote to the insurer" opens the reply card on its own, with "Your details", even with no bill or figures');
+    await fresh(); await send('Page.navigate', { url: `http://127.0.0.1:${port}/#reply` }); await sleep(1300);
+    ok(await ev(`return document.getElementById('page-letter').classList.contains('on') && !document.getElementById('replyCard').classList.contains('hide') && document.getElementById('replyCard').open`), 'a link ending in #reply opens it directly');
+    await fresh(); await ev(`setLang('en'); document.getElementById('whBill').click();`); await sleep(300);
+    ok(await ev(`return document.getElementById('page-findings').classList.contains('on')`), '"I only have the itemised bill" goes to the bill check');
+    await ev(`setLang('hi');`); await sleep(100);
+    ok(await ev(`return document.getElementById('whHead').textContent==='क्या हुआ?' && /पूरा दावा ठुकरा दिया/.test(document.getElementById('bysRejectedBtn').textContent)`), 'in Hindi');
+
+    console.log('== R30: the grievance officer in the rejection card; a copy of My Bills');
+    await fresh(); await ev(`setLang('en'); switchTab('letter'); document.getElementById('rejCard').open=true; document.getElementById('rjRexcl').click(); const g=document.getElementById('ld_gro'); g.value='Star Health and Allied'; g.dispatchEvent(new Event('input',{bubbles:true}));`); await sleep(200);
+    ok(await ev(`const o=document.getElementById('rjOut'); return /gro@starhealth\\.in/.test(o.textContent) && !!document.getElementById('rjMailBtn') && /Copy the letter and open email/.test(o.textContent)`), 'choosing the insurer shows its grievance officer\'s email in the rejection card, as the card promises, with "copy and open email"');
+    await ev(`window.__dl=null; window.downloadText=(t,n,ty)=>{ window.__dl={t,n,ty}; }; _myBills=[{id:'b1',hospitalName:'City Hospital',savedAt:'2026-10-01T10:00:00Z',status:'sent',note:'',letter:'Dear Sir'}]; renderMyBillsList(_myBills);`); await sleep(100);
+    const ex = await ev(`const b=document.getElementById('mybillsExportBtn'); const vis=b.style.display!=='none'; b.click(); return {vis, label: b.textContent, dl: window.__dl}`);
+    ok(ex.vis && ex.label === 'Download my saved bills' && ex.dl && /^clearbill-my-bills-\d{4}-\d{2}-\d{2}\.json$/.test(ex.dl.n) && JSON.parse(ex.dl.t).bills[0].hospitalName === 'City Hospital' && /Dear Sir/.test(ex.dl.t), 'signed-in users can download all their saved bills, letters included, as a file');
+    ok(await ev(`renderMyBillsList([]); return document.getElementById('mybillsExportBtn').style.display==='none'`), 'with nothing saved, there is nothing to download');
 
     console.log('== R22: grievance officer, documents and delay lines');
     await fresh(); await ev(`setLang('en'); document.getElementById('egBtn').click();`); await sleep(500);

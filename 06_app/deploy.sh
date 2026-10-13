@@ -30,11 +30,14 @@ gcloud secrets add-iam-policy-binding GEMINI_API_KEY \
   --member="serviceAccount:${NUM}-compute@developer.gserviceaccount.com" \
   --role="roles/secretmanager.secretAccessor" >/dev/null
 
+# --max-instances=2 (R30): the per-day reading cap (DAILY_CAP) is counted per
+# instance, so capping instances is what keeps the free daily total real.
 echo "== deploying =="
 gcloud run deploy "$SERVICE" \
   --source . \
   --region "$REGION" \
   --allow-unauthenticated \
+  --max-instances=2 \
   --set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest
 
 echo
