@@ -173,6 +173,27 @@ ok(/^\d{4}-\d{2}-\d{2}$/.test(c.GRO_READ_ON) && /^\d{4}-\d{2}-\d{2}$/.test(c.GRO
   ok(c.GRO.every(g => bl.gro.includes(g.email.toLowerCase())) && c.OMBUDSMAN.every(o => bl.ombudsman.includes(o.email.toLowerCase())), 'the saved baseline has every address the app shows (so a first run reports nothing false)');
 }
 ok(c.GRO.some(g => g.name === 'Star Health and Allied' && g.email === 'gro@starhealth.in') && c.GRO.some(g => g.name === 'The New India Assurance' && g.email === 'gro@newindia.co.in'), 'spot check against the published list: Star Health and New India Assurance');
+{
+  console.log('== R31: only models the reading bench has scored may read bills');
+  const fs = require('fs'), path = require('path');
+  for (const [name, good] of require('./bill_score.js').selftest()) ok(good, 'the bench scorer (a port of evaluate.py): ' + name);
+  const scoresPath = path.join(__dirname, '..', '..', '05_synthetic_corpus', 'bench', 'scores.json');
+  const scores = fs.existsSync(scoresPath) ? JSON.parse(fs.readFileSync(scoresPath, 'utf8')) : { models: {} };
+  const page = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  const direct = JSON.parse(((/const DIRECT_MODELS=(\[[^\]]*\]);/.exec(page) || [])[1] || '[]').replace(/'/g, '"'));
+  const server = require('./reader_quota.js').chainFromEnv({});
+  ok(direct.length >= 1 && JSON.stringify(direct) === JSON.stringify(server), 'the own-key route and the server read with the same models, in the same order: ' + direct.join(' > '));
+  // The main model read bills before the bench existed. It may stay as the main model
+  // while it is listed under "grandfathered" (with the reason), until the bench scores it;
+  // every other model in either chain must have passed.
+  const gf = scores.grandfathered || {};
+  for (const m of new Set([...direct, ...server])) {
+    const s = scores.models[m], main = m === server[0] && m === direct[0];
+    if (s && s.pass === true) ok(true, `${m} passed the bench on both tiers (photo ${(s.photo.line_accuracy * 100).toFixed(1)}%, harsh ${(s.harsh.line_accuracy * 100).toFixed(1)}%)`);
+    else ok(main && !!gf[m], `${m} ` + (main ? 'is the main model and is listed as reading before the bench existed (' + (gf[m] ? gf[m].why : 'NOT listed') + ')' : 'is a backup model, so it must have passed the bench' + (s ? ' (it did not)' : ' (not scored)')));
+  }
+  ok(Array.isArray(require('./reader_quota.js').BACKUP_MODELS) && require('./reader_quota.js').BACKUP_MODELS.every(m => scores.models[m] && scores.models[m].pass === true), 'every backup model in lib/reader_quota.js passed the bench (' + (require('./reader_quota.js').BACKUP_MODELS.join() || 'none yet') + ')');
+}
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

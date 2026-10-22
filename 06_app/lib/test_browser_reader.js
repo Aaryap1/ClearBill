@@ -25,7 +25,7 @@ const STUB = `
   const GOOD = JSON.stringify({ is_hospital_bill: true, header: {}, line_items: [{ item: 'BED CHARGES', quantity: 1, rate: 100, total: 100 }] });
   window.fetch = async (u, o) => {
     u = String(u);
-    if (u.includes('api/config')) { await wait(window.__cfgDelay); let rd = 'ok'; try { rd = localStorage.getItem('__test_reader') || 'ok'; } catch (e) {} return new Response(JSON.stringify({ proxy: true, reader: rd }), { status: 200 }); }
+    if (u.includes('api/config')) { await wait(window.__cfgDelay); let rd = 'ok', rl = null; try { rd = localStorage.getItem('__test_reader') || 'ok'; rl = localStorage.getItem('__test_readsleft'); } catch (e) {} return new Response(JSON.stringify({ proxy: true, reader: rd, ...(rl != null ? { readsLeft: Number(rl) } : {}) }), { status: 200 }); }
     if (u.includes('api/impact')) { let b = '{"enabled":false}'; try { b = localStorage.getItem('__test_impact') || b; } catch (e) {} return new Response(b, { status: 200 }); }
     if (u.includes('api/read-reply')) { // R24: photo 1 is the insurer's letter, photo 2 is not a letter
       window.__replyCalls = (window.__replyCalls || 0) + 1;
@@ -40,6 +40,7 @@ const STUB = `
       if (window.__mode === 'hang') return new Promise((_, rej) => o.signal.addEventListener('abort', () => rej(Object.assign(new Error('aborted'), { name: 'AbortError' }))));
       if (window.__mode === '504') return new Response(JSON.stringify({ error: 'timeout' }), { status: 504 });
       if (window.__mode === 'broken') return new Response(JSON.stringify({ error: 'broken' }), { status: 502 });
+      if (window.__mode === 'backup') return new Response(JSON.stringify({ is_hospital_bill: true, header: { gross_amount: 500 }, line_items: [{ item: 'BED CHARGES', quantity: 1, rate: 100, total: 100 }, { item: 'GLOVES EXAMINATION', quantity: 1, rate: 50, total: 50 }] }), { status: 200, headers: { 'X-ClearBill-Reader': 'backup' } });
       // Each photo reads as a different page (two identical pages are now read once, R15);
       // __mode 'same' returns the identical page every time, to test exactly that.
       if (window.__mode === 'same') return new Response(GOOD, { status: 200 });
@@ -961,6 +962,33 @@ const STUB = `
     const ex = await ev(`const b=document.getElementById('mybillsExportBtn'); const vis=b.style.display!=='none'; b.click(); return {vis, label: b.textContent, dl: window.__dl}`);
     ok(ex.vis && ex.label === 'Download my saved bills' && ex.dl && /^clearbill-my-bills-\d{4}-\d{2}-\d{2}\.json$/.test(ex.dl.n) && JSON.parse(ex.dl.t).bills[0].hospitalName === 'City Hospital' && /Dear Sir/.test(ex.dl.t), 'signed-in users can download all their saved bills, letters included, as a file');
     ok(await ev(`renderMyBillsList([]); return document.getElementById('mybillsExportBtn').style.display==='none'`), 'with nothing saved, there is nothing to download');
+
+    console.log('== R31: the reader tells the truth about its limits');
+    await fresh(); await ev(`localStorage.setItem('__test_reader','backup'); localStorage.setItem('__test_readsleft','480');`);
+    await send('Page.reload'); await sleep(1300);
+    const rn1 = await ev(`return {t: document.getElementById('readerNote').textContent, hidden: document.getElementById('readerNote').classList.contains('hide'), key: !document.getElementById('keyRow').classList.contains('hide')}`);
+    ok(!rn1.hidden && /lighter backup reader will read your bill/.test(rn1.t) && /check the rows it reads/.test(rn1.t) && /About 480 free page reads left today\./.test(rn1.t) && !rn1.key, 'on the backup, the upload area says so before anyone tries, with about how many reads are left, and does NOT push the own-key box', rn1.t);
+    await ev(`localStorage.setItem('__test_reader','ok'); localStorage.setItem('__test_readsleft','6');`); await send('Page.reload'); await sleep(1300);
+    ok(await ev(`return /^About 6 free page reads left today\\.$/.test(document.getElementById('readerNote').textContent)`), 'with few reads left on the main reader, the count is shown on its own');
+    await ev(`localStorage.setItem('__test_readsleft','300');`); await send('Page.reload'); await sleep(1300);
+    ok(await ev(`return document.getElementById('readerNote').classList.contains('hide')`), 'with plenty left and the main reader working, nothing is shown (no noise)');
+    await ev(`localStorage.removeItem('__test_reader'); localStorage.removeItem('__test_readsleft');`);
+
+    await fresh(); await ev(`setLang('en'); window.__mode='backup'; addFiles([__mk('b1.jpg','image/jpeg',31)]); document.getElementById('checkPhotosBtn').click();`); await sleep(900);
+    const bk = await ev(`const n=document.getElementById('backupReadNote'); return {st: document.getElementById('status').textContent, note: n?n.textContent:'', first: n&&n.parentElement.firstElementChild!==n&&document.querySelector('#report .slip .notez')===n, recon: document.getElementById('report').textContent}`);
+    ok(/Read 2 line items\. 1 page was read by the backup reader: check its rows\./.test(bk.st), 'after the read, the status line says the backup read a page: "' + bk.st + '"');
+    ok(/Page 1 was read by the backup reader, a lighter model that makes more mistakes\. Check its rows against your paper bill before you send anything\./.test(bk.note) && bk.first, 'the report opens with that note, before any finding');
+    ok(/may also be a backup-reader mistake/.test(bk.recon) && !/may be the hospital's arithmetic/.test(bk.recon), "the bill's total not matching its lines is no longer put down to the hospital's arithmetic: it may be the backup's misreading");
+    ok(/backup reader read this bill: check its rows against your paper bill first/.test(bk.recon) && !/The bill's total is off by/.test(bk.recon) && /may be its misreading, not the hospital/.test(bk.recon) && !/This is the hospital.s own arithmetic/.test(bk.recon), '"Start here" and "What this means" say to check the rows first, not to ask the hospital about its arithmetic');
+    const bkl = await ev(`switchTab('letter'); const cb=document.querySelector('#letterIncludes input[data-inc="recon"]'); return cb?{has:true,checked:cb.checked}:{has:false};`);
+    ok(bkl.has && bkl.checked === false, 'in the letter that gap starts unticked: a backup misreading never goes into a letter by default (the user can still tick it)');
+    await ev(`setLang('hi'); switchTab('findings');`); await sleep(150);
+    ok(await ev(`return /पेज़ 1 बैकअप रीडर ने पढ़ा/.test(document.getElementById('backupReadNote').textContent)`), 'in Hindi');
+    await ev(`setLang('mr');`); await sleep(150);
+    ok(await ev(`return /पान 1 बॅकअप रीडरने वाचलं/.test(document.getElementById('backupReadNote').textContent)`), 'in Marathi');
+    await fresh(); await ev(`setLang('en'); window.__mode='ok'; addFiles([__mk('m1.jpg','image/jpeg',32)]); document.getElementById('checkPhotosBtn').click();`); await sleep(900);
+    ok(await ev(`return !document.getElementById('backupReadNote') && !/backup/.test(document.getElementById('status').textContent)`), 'a page read by the main model carries no such note');
+    ok(await ev(`return /^R31/.test(APP_VERSION) && DIRECT_MODELS[0]==='gemini-3.6-flash'`), 'the version is R31, and the own-key route starts with the main model');
 
     console.log('== R22: grievance officer, documents and delay lines');
     await fresh(); await ev(`setLang('en'); document.getElementById('egBtn').click();`); await sleep(500);

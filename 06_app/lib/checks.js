@@ -646,7 +646,7 @@ function analyse(data,now){
   // page rejected as not-a-bill. Set by the upload flow on the merged object.
   const partial=data._pageCount===1||(data._rejected||0)>0;
   const subtotals = data.printed_subtotals && Object.keys(data.printed_subtotals).length ? data.printed_subtotals : null;
-  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,similarDups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nppaDated,nppaKneeDated,nppaUnmatched,nonLatin,subtotals,unreadable,unreadableRows,reconCompared,reconBlocked,partial,subsumed,subsumedSum,rejected:data._rejected||0,pageCount:data._pageCount||null};
+  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,similarDups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nppaDated,nppaKneeDated,nppaUnmatched,nonLatin,subtotals,unreadable,unreadableRows,reconCompared,reconBlocked,partial,subsumed,subsumedSum,rejected:data._rejected||0,pageCount:data._pageCount||null,backup:Array.isArray(data._backupPages)?data._backupPages.slice():[]};
 }
 // Rows to check against the paper bill (R21). Possible READING mistakes,
 // never findings about the hospital, never in the letter:

@@ -13,6 +13,9 @@ let upstreamCalls = 0, upstreamClosed = false, lastPrompt = '';
 // R16: the key check (GET models/<model>) answers modelsStatus; reads of
 // "slow..." images take 400 ms and record how many ran at the same time.
 let modelsStatus = 200, modelsCalls = 0, active = 0, maxActive = 0;
+// R31: per-model behaviour. limitFor[model] = 'day' | 'minute1s' answers 429 with that quota;
+// goneModels answers 404. modelLog records which model each read went to.
+const limitFor = {}, goneModels = new Set(), modelLog = []; let lastGenCfg = null;
 const mock = http.createServer((req, res) => {
   const c = []; req.on('data', d => c.push(d));
   req.on('end', () => {
@@ -23,6 +26,11 @@ const mock = http.createServer((req, res) => {
     upstreamCalls++;
     const j = JSON.parse(Buffer.concat(c).toString());
     lastPrompt = j.contents[0].parts[0].text;
+    const model = (/\/models\/([^:]+):generateContent/.exec(req.url) || [])[1] || '';
+    modelLog.push(model); lastGenCfg = j.generationConfig;
+    if (goneModels.has(model)) { res.writeHead(404); return res.end('{"error":{"status":"NOT_FOUND"}}'); }
+    const lim = limitFor[model];
+    if (lim) { res.writeHead(429); return res.end(JSON.stringify({ error: { status: 'RESOURCE_EXHAUSTED', details: [{ violations: [{ quotaId: lim === 'day' ? 'GenerateRequestsPerDayPerProjectPerModel-FreeTier' : 'GenerateRequestsPerMinutePerProjectPerModel-FreeTier' }] }, ...(lim === 'minute1s' ? [{ '@type': 'type.googleapis.com/google.rpc.RetryInfo', retryDelay: '1s' }] : [])] } })); }
     const img = Buffer.from(j.contents[0].parts[1].inline_data.data, 'base64').toString();
     if (img.startsWith('slow')) {
       active++; maxActive = Math.max(maxActive, active);
@@ -39,6 +47,7 @@ const mock = http.createServer((req, res) => {
     }
     if (img === 'secret') { res.writeHead(500); return res.end('SECRET_UPSTREAM_DETAIL key=AIzaFAKE'); }
     if (img === 'quota') { res.writeHead(429); return res.end('{"error":{"status":"RESOURCE_EXHAUSTED"}}'); }
+    if (img === 'prepaid') { res.writeHead(402); return res.end('{"error":{"code":402,"message":"Your prepayment credits are depleted.","status":"RESOURCE_EXHAUSTED"}}'); }
     if (img === 'overload') { res.writeHead(503); return res.end('{"error":"high demand"}'); }
     // R14 impact-counter pages: one List I item (Rs 200) + one Lists II-IV item (Rs 410); an implausible page; a non-bill
     const PAGES = {
@@ -131,7 +140,6 @@ async function start(port, env) {
     console.log('== proxy: upstream failures are sanitised');
     r = await post(P, 'secret');
     ok(r.status === 502 && !/SECRET_UPSTREAM|AIzaFAKE/.test(text(r)), "Google's raw error body (and any key in it) is never forwarded");
-    r = await post(P, 'quota'); ok(r.status === 429 && JSON.parse(text(r)).error === 'busy', 'upstream quota exhaustion becomes an honest 429 "busy"');
     r = await post(P, 'overload'); ok(r.status === 503, 'upstream 503 stays a 503 with a plain message');
     r = await post(P, 'empty'); ok(r.status === 502 && JSON.parse(text(r)).error === 'empty', 'an empty model answer is a clear 502, not a 200 with an empty body');
     const t0 = Date.now(); r = await post(P, 'hang');
@@ -492,16 +500,108 @@ async function start(port, env) {
     r = await post(P + 16, 'badkey'); r = await req(P + 16, 'GET', '/api/config');
     ok(JSON.parse(text(r)).reader === 'broken', 'a 400 that names an invalid API key also counts as broken');
 
+
+    console.log('== R31: the reader knows its limits (lib/reader_quota.js, pure)');
+    const Q = require('./reader_quota');
+    ok(Q.quotaDay(Date.parse('2026-10-22T06:30:00Z')) === '2026-10-21' && Q.quotaDay(Date.parse('2026-10-22T07:30:00Z')) === '2026-10-22', "Google's quota day turns over at midnight Pacific time (07:00 UTC in October, daylight saving)");
+    ok(Q.quotaDay(Date.parse('2026-12-01T07:30:00Z')) === '2026-11-30' && Q.quotaDay(Date.parse('2026-12-01T08:30:00Z')) === '2026-12-01', '... and at 08:00 UTC in winter');
+    ok(JSON.stringify(Q.chainFromEnv({})) === JSON.stringify(['gemini-3.6-flash', ...Q.BACKUP_MODELS]) && JSON.stringify(Q.chainFromEnv({ GEMINI_MODEL: 'gemini-x' })) === JSON.stringify(['gemini-x', ...Q.BACKUP_MODELS]) && JSON.stringify(Q.chainFromEnv({ GEMINI_MODELS: 'a, b' })) === '["a","b"]', 'the chain: the main model, then the scored backups (' + (Q.BACKUP_MODELS.join() || 'none yet') + '); the live GEMINI_MODEL names the main one; GEMINI_MODELS replaces it');
+    ok(Q.readQuotaAnswer('{"quotaId":"GenerateRequestsPerDayPerProjectPerModel-FreeTier"}').perDay === true && Q.readQuotaAnswer('{"quotaId":"GenerateRequestsPerMinutePerProjectPerModel"}').perDay === false && Q.readQuotaAnswer('"retryDelay": "41s"').retryMs === 41000, "a 429 is read for which limit it is, and Google's retry delay");
+    let clock = Date.parse('2026-10-22T10:00:00Z');
+    const q = Q.createQuota({ chain: ['main', 'lite'], caps: { main: 2, lite: 3 }, now: () => clock });
+    ok(q.state() === 'ok' && q.left() === 5 && q.pick() === 'main', 'a fresh day: the main model reads, 2 + 3 reads left');
+    q.count('main'); q.count('main');
+    ok(q.pick() === 'lite' && q.state() === 'backup' && q.left() === 3, "once the main model's own allowance is used, the backup reads ('backup'), 3 left");
+    q.refused('lite', 'PerMinute');
+    ok(q.pick() === null && q.state() === 'busy', 'a per-minute 429 on the backup too: none can read right now ("busy")');
+    clock += 61 * 1000;
+    ok(q.pick() === 'lite', '... a minute later the backup reads again (a per-minute limit rests a model for a minute, not a day)');
+    q.refused('lite', 'PerDay');
+    ok(q.pick() === null && q.left() === 0, "a per-day 429 puts it aside for the rest of Google's day");
+    clock = Date.parse('2026-10-23T07:05:00Z');
+    ok(q.state() === 'ok' && q.left() === 5, 'after midnight Pacific both are back, counts reset');
+    q.gone('main');
+    ok(q.state() === 'backup' && q.isGone('main'), 'a model Google no longer knows (404) is skipped, and the backup reads');
+    q.gone('lite'); ok(q.state() === 'gone', 'every model gone: "gone" (shown as broken)');
+
+    console.log('== R31: main model, then backup, through the real server');
+    await start(P + 19, { ...common, RATE_MAX_PER_IP: '1000', DAILY_CAP: '100000', GEMINI_MODELS: 'gemini-3.6-flash,gemini-3.5-flash-lite' });
+    r = await req(P + 19, 'GET', '/api/config'); let cf = JSON.parse(text(r));
+    ok(cf.reader === 'ok' && cf.readsLeft === 520, 'a fresh server: "ok", and about 520 reads left today (20 on gemini-3.6-flash + 500 on gemini-3.5-flash-lite)', JSON.stringify(cf));
+    modelLog.length = 0;
+    r = await post(P + 19, 'a photo');
+    ok(r.status === 200 && r.headers['x-clearbill-reader'] === 'main' && r.headers['x-clearbill-model'] === 'gemini-3.6-flash' && modelLog.join() === 'gemini-3.6-flash', 'a read goes to the main model, and the answer says so');
+    limitFor['gemini-3.6-flash'] = 'day'; modelLog.length = 0;
+    r = await post(P + 19, 'a photo');
+    ok(r.status === 200 && JSON.parse(text(r)).is_hospital_bill === true && r.headers['x-clearbill-reader'] === 'backup' && r.headers['x-clearbill-model'] === 'gemini-3.5-flash-lite', "Google says the main model's free day is spent: the SAME photo is read by the backup, and the answer is marked 'backup'");
+    ok(modelLog.join() === 'gemini-3.6-flash,gemini-3.5-flash-lite', 'one call refused, one read (' + modelLog.join() + ')');
+    r = await req(P + 19, 'GET', '/api/config'); cf = JSON.parse(text(r));
+    ok(cf.reader === 'backup' && cf.readsLeft === 499, '/api/config now says "backup", with about 499 reads left (the main model is not counted any more)', JSON.stringify(cf));
+    modelLog.length = 0; r = await post(P + 19, 'a photo');
+    ok(r.status === 200 && modelLog.join() === 'gemini-3.5-flash-lite', 'later photos go straight to the backup: the main model is not asked again today');
+    limitFor['gemini-3.5-flash-lite'] = 'day';
+    r = await post(P + 19, 'quota');
+    ok(r.status === 429 && JSON.parse(text(r)).error === 'busy', 'both spent for the day: an honest 429 "busy"');
+    r = await req(P + 19, 'GET', '/api/config'); cf = JSON.parse(text(r));
+    ok(cf.reader === 'busy' && cf.readsLeft === 0, '... and /api/config says "busy", 0 left, before anyone else tries');
+    delete limitFor['gemini-3.6-flash']; delete limitFor['gemini-3.5-flash-lite'];
+
+    await start(P + 20, { ...common, RATE_MAX_PER_IP: '1000', DAILY_CAP: '100000', GEMINI_MODELS: 'gemini-3.6-flash,gemini-3.5-flash-lite' });
+    limitFor['gemini-3.6-flash'] = 'minute1s'; modelLog.length = 0;
+    r = await post(P + 20, 'a photo');
+    ok(r.status === 200 && r.headers['x-clearbill-reader'] === 'backup', 'a per-minute 429 on the main model: this photo is read by the backup ...');
+    delete limitFor['gemini-3.6-flash']; await sleep(1200); modelLog.length = 0;
+    r = await post(P + 20, 'a photo');
+    ok(r.status === 200 && r.headers['x-clearbill-reader'] === 'main' && modelLog.join() === 'gemini-3.6-flash', "... and after Google's retry delay the main model reads again (not switched off for the day)");
+
+    await start(P + 21, { ...common, RATE_MAX_PER_IP: '1000', DAILY_CAP: '100000', GEMINI_MODEL_CAPS: 'gemini-3.6-flash:2', GEMINI_MODELS: 'gemini-3.6-flash,gemini-3.5-flash-lite' });
+    modelLog.length = 0;
+    for (let i = 0; i < 3; i++) r = await post(P + 21, 'a photo');
+    ok(r.headers['x-clearbill-reader'] === 'backup' && modelLog.join() === 'gemini-3.6-flash,gemini-3.6-flash,gemini-3.5-flash-lite', "the server's own count of each model's allowance switches before Google has to refuse (" + modelLog.join() + ')');
+
+    await start(P + 22, { ...common, RATE_MAX_PER_IP: '1000', DAILY_CAP: '100000', GEMINI_MODELS: 'gemini-test-main,gemini-3.5-flash-lite' });
+    goneModels.add('gemini-test-main'); modelLog.length = 0;
+    r = await post(P + 22, 'a photo');
+    ok(r.status === 200 && r.headers['x-clearbill-reader'] === 'backup' && modelLog.join() === 'gemini-test-main,gemini-3.5-flash-lite', 'if Google no longer knows the main model (404), the backup reads the photo');
+    goneModels.clear();
+
+    await start(P + 23, { ...common, RATE_MAX_PER_IP: '1000', DAILY_CAP: '100000', GEMINI_MODELS: 'gemma-test' });
+    r = await post(P + 23, 'a photo');
+    ok(r.status === 200 && lastGenCfg && lastGenCfg.response_mime_type === undefined && lastGenCfg.temperature === 0, 'a Gemma model is asked without JSON mode (it has none); the answer is still checked as JSON');
+    r = await post(P + 23, 'badjson'); ok(r.status === 502, '... and a broken answer from it is still a plain 502');
+
+    await start(P + 26, { ...common, RATE_MAX_PER_IP: '1000', DAILY_CAP: '100000' });
+    r = await req(P + 26, 'GET', '/api/config'); cf = JSON.parse(text(r));
+    ok(cf.reader === 'ok' && cf.readsLeft === 20 + Q.BACKUP_MODELS.reduce((n, m) => n + (Q.FREE_PER_DAY[m] || 20), 0), 'the default service: about ' + cf.readsLeft + " reads left today — gemini-3.6-flash's own 20 a day, not the old 600");
+    for (let i = 0; i < 20; i++) await post(P + 26, 'a photo');
+    r = await req(P + 26, 'GET', '/api/config'); cf = JSON.parse(text(r));
+    if (!Q.BACKUP_MODELS.length) ok(cf.reader === 'busy' && cf.readsLeft === 0, 'after 20 reads the page is told "busy" before anyone tries (it used to say "ok" until 600)');
+    console.log('== R31: a key whose project has no credit (402) is "broken", and the owner is told');
+    await start(P + 25, { ...common, RATE_MAX_PER_IP: '1000', DAILY_CAP: '100000', GEMINI_MODELS: 'gemini-3.6-flash,gemini-3.5-flash-lite' });
+    modelLog.length = 0; r = await post(P + 25, 'prepaid');
+    ok(r.status === 502 && JSON.parse(text(r)).error === 'broken' && !/prepayment/.test(text(r)), 'Google answers 402 ("prepayment credits are depleted"): "broken", so the page offers the own-key route; Google\'s text is not passed on');
+    ok(modelLog.length === 1, 'a 402 is about the whole key, so the backup is not tried (' + modelLog.join() + ')');
+    modelsStatus = 200; r = await req(P + 25, 'GET', '/api/health');
+    ok(r.status === 503 && JSON.parse(text(r)).reader === 'broken', 'health answers 503 even though the key check (model metadata) still succeeds, so the uptime alert fires');
+    r = await post(P + 25, 'a photo'); r = await req(P + 25, 'GET', '/api/config');
+    ok(JSON.parse(text(r)).reader === 'ok', 'a photo actually read clears it');
+    await start(P + 24, { ...common, RATE_MAX_PER_IP: '1000', DAILY_CAP: '3' });
+    r = await req(P + 24, 'GET', '/api/config'); ok(JSON.parse(text(r)).readsLeft === 3, "reads left never shows more than this server's own DAILY_CAP ceiling");
+
     console.log('== R16: /api/health for the uptime check');
     modelsStatus = 200; const m0 = modelsCalls;
     r = await req(P + 9, 'GET', '/api/health'); const r2h = await req(P + 9, 'GET', '/api/health');
     ok(r.status === 200 && JSON.parse(text(r)).ok === true && JSON.parse(text(r)).reader === 'ok', 'a working reader: 200 {"ok":true}');
     ok(modelsCalls - m0 === 1 && r2h.status === 200, 'the key check is made once and then reused for 5 minutes (one free metadata call, no photo, no generation quota)');
-    await start(P + 17, { ...common });
+    await start(P + 17, { ...common, GEMINI_MODELS: 'gemini-3.6-flash' });
     modelsStatus = 404;
     r = await req(P + 17, 'GET', '/api/health');
-    ok(r.status === 503 && JSON.parse(text(r)).reader === 'broken', 'if Google says the model does not exist (retired), health answers 503 "broken", so the uptime alert fires');
+    ok(r.status === 503 && JSON.parse(text(r)).reader === 'broken', 'with a single model: if Google says it does not exist (retired), health answers 503 "broken", so the uptime alert fires');
     r = await req(P + 17, 'GET', '/api/config'); ok(JSON.parse(text(r)).reader === 'broken', '...and the page is told too');
+    await start(P + 18, { ...common, GEMINI_MODELS: 'gemini-3.6-flash,gemini-3.5-flash-lite' });
+    r = await req(P + 18, 'GET', '/api/health');
+    ok(r.status === 503 && JSON.parse(text(r)).ok === false, 'R31: with the default chain, a retired main model still makes health answer 503, so the owner is told ...');
+    r = await req(P + 18, 'GET', '/api/config'); ok(JSON.parse(text(r)).reader === 'backup', '... while the page is told the backup reader is reading ("backup"), not that reading is broken');
     modelsStatus = 200;
     r = await req(P + 3, 'GET', '/api/health'); ok(r.status === 503 && JSON.parse(text(r)).reader === 'off', 'with no server key, health answers 503 "off"');
     ok(/no-store/.test(r.headers['cache-control'] || ''), 'health answers are never cached');

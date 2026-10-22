@@ -1274,6 +1274,7 @@ let RP={status:null,checked:false,err:false,res:null,ans:{},outcome:null,docs:fa
 const _analyses=new WeakMap(); // analyseFor() cache (R20)
 let _myBills=[], BILLS_ON=false, GOOGLE_CLIENT_ID=null, ID_TOKEN=null, ID_TOKEN_NAME=null;
 let READER_STATE='ok', _impact=null; // R14: from /api/config and /api/impact
+let READS_LEFT=null; // R31: about how many free page reads are left today (/api/config)
 let inr = makeInr(LANG);
 try{ const saved=localStorage.getItem('clearbill_lang'); if(saved && LOCALE_TAG[saved]) LANG=saved; }catch(e){}
 document.documentElement.lang=LANG;
@@ -1604,6 +1605,7 @@ en: {
   sh_head:"Start here", sh_hospital:"Ask the hospital", sh_insurer:"Ask your insurer",
   sh_dups:n=>`${n} charge${n>1?'s appear':' appears'} more than once. Ask whether each is a separate service.`,
   sh_recon:d=>`The bill's total is off by ${d}. Ask the billing desk to explain it.`,
+  sh_recon_backup:d=>`The bill's total looks off by ${d}, but the backup reader read this bill: check its rows against your paper bill first. If they match, ask the billing desk to explain it.`,
   sh_nppa:n=>`${n} implant${n>1?'s are':' is'} priced above the NPPA ceiling plus GST. Ask the hospital to justify the price.`,
   sh_gst:n=>`${n} implant price${n>1?'s are':' is'} just above the NPPA ceiling. Check whether the price includes GST.`,
   sh_review:(n,sum)=>`${n} charge${n>1?'s are':' is'} commonly deducted but not on the list (${sum}). Ask your insurer to confirm.`,
@@ -1627,6 +1629,7 @@ en: {
   detail_nppa_src:(ref,ceiling,gst)=>`NPPA ceiling for ${ref}: ${ceiling} (${gst})`,
   detail_recon:"Reconciliation",
   detail_recon_body:(gross,lineSum,diff)=>`The bill's printed total (${gross}) differs from the sum of its own lines (${lineSum}) by <strong>${diff}</strong>. This may be the hospital's arithmetic, not a reading error.`,
+  detail_recon_body_backup:(gross,lineSum,diff)=>`The bill's printed total (${gross}) differs from the sum of its own lines (${lineSum}) by <strong>${diff}</strong>. Some pages were read by the backup reader, so this may be a reading mistake. Check the rows against your paper bill before you ask the hospital about it.`,
   detail_dup:"Appears more than once",
   detail_dup_src:n=>`appears ${n}&times; at the same amount`,
   detail_similar:"Look alike apart from a reference number",
@@ -1699,6 +1702,10 @@ en: {
   reader_busy:"The free reading service has reached today's limit. You can still read your bill with your own free Gemini key (paste it in the box below), or try again tomorrow.",
   reader_overloaded:"Google's reading service has been overloaded in the last few minutes, so reading a photo may fail right now. If it does, try again a little later.",
   reader_broken:"The free reading service is not working right now (the problem is on our side, not with your photo). You can still read your bill with your own free Gemini key: paste it in the box below.",
+  reader_backup:"Today's free main reader is used up, so a lighter backup reader will read your bill. It makes more mistakes: check the rows it reads against your paper bill.",
+  reads_left:n=>`About ${n} free page read${n===1?'':'s'} left today.`,
+  read_backup_suffix:n=>n>1?`${n} pages were read by the backup reader: check their rows.`:`1 page was read by the backup reader: check its rows.`,
+  backup_read_note:(list,n)=>`${n>1?'Pages':'Page'} ${list} ${n>1?'were':'was'} read by the backup reader, a lighter model that makes more mistakes. Check ${n>1?'their':'its'} rows against your paper bill before you send anything.`,
   broken_byo:"The free reading service is not working right now. Paste your own free Gemini key below and tap Check again.",
   mybills_limit:n=>`You have ${n} saved bills, the most an account can keep. Delete some you no longer need, then save again.`,
   share_findings_btn:"Share findings",
@@ -1742,6 +1749,8 @@ en: {
       doText:"Ask the hospital to justify the price against the NPPA notification, or request a refund of the difference.",
       doTextUnverified:"Ask the hospital to justify the price against the NPPA notification, and confirm the ceiling is still current before requesting a refund." },
     recon: { label:"Check sum",
+      money_backup:()=>"The backup reader read this bill, so this gap may be its misreading, not the hospital&rsquo;s arithmetic. It doesn&rsquo;t change what you owe.", doText_backup:"Check the rows against your paper bill first (correct any it misread above). If the gap is still there, ask the billing desk to explain it.",
+      sub_backup:(gross,lineSum)=>`printed ${gross} vs lines ${lineSum} &mdash; may also be a backup-reader mistake`,
       found:diff=>`Bill total off by ${diff}`, sub:(gross,lineSum)=>`printed ${gross} vs lines ${lineSum} &mdash; may be the hospital's arithmetic`,
       foundClear:"Bill reconciles", subClear:"sum of lines matches the printed total",
       foundNotCompared:"Bill total not compared", subNotCompared:"no printed total could be read from this bill", subNotComparedUnreadable:"some amounts on this bill could not be read, so its printed total was not compared with the lines",
@@ -2087,6 +2096,7 @@ hi: {
   sh_head:"यहाँ से शुरू करें", sh_hospital:"अस्पताल से पूछें", sh_insurer:"अपनी बीमा कंपनी से पूछें",
   sh_dups:n=>`${n} चार्ज एक से ज़्यादा बार दिखते हैं। पूछें कि क्या हर एक अलग सेवा है।`,
   sh_recon:d=>`बिल का कुल योग ${d} से मेल नहीं खाता। बिलिंग डेस्क से समझाने को कहें।`,
+  sh_recon_backup:d=>`बिल का कुल योग ${d} से गड़बड़ लगता है, पर यह बिल बैकअप रीडर ने पढ़ा है: पहले इसकी लाइनें अपने काग़ज़ी बिल से मिलाएँ। अगर वे मेल खाती हैं, तो बिलिंग डेस्क से समझाने को कहें।`,
   sh_nppa:n=>`${n} इम्प्लांट NPPA सीमा और GST से ऊपर की क़ीमत पर है। अस्पताल से क़ीमत का औचित्य पूछें।`,
   sh_gst:n=>`${n} इम्प्लांट की क़ीमत NPPA सीमा से थोड़ी ऊपर है। देखें कि क़ीमत में GST शामिल है या नहीं।`,
   sh_review:(n,sum)=>`${n} चार्ज अक्सर काटे जाते हैं पर सूची में नहीं हैं (${sum})। बीमा कंपनी से पुष्टि करने को कहें।`,
@@ -2110,6 +2120,7 @@ hi: {
   detail_nppa_src:(ref,ceiling,gst)=>`${ref} के लिए NPPA सीमा: ${ceiling} (${gst})`,
   detail_recon:"मिलान",
   detail_recon_body:(gross,lineSum,diff)=>`बिल की छपी कुल राशि (${gross}) उसकी अपनी लाइनों के योग (${lineSum}) से <strong>${diff}</strong> अलग है। यह अस्पताल की अपनी गणना हो सकती है, पढ़ने की ग़लती नहीं।`,
+  detail_recon_body_backup:(gross,lineSum,diff)=>`बिल की छपी कुल राशि (${gross}) उसकी अपनी लाइनों के योग (${lineSum}) से <strong>${diff}</strong> अलग है। कुछ पेज़ बैकअप रीडर ने पढ़े हैं, इसलिए यह पढ़ने की ग़लती भी हो सकती है। अस्पताल से पूछने से पहले लाइनें अपने काग़ज़ी बिल से मिलाकर देखें।`,
   detail_dup:"एक से ज़्यादा बार दिखता है",
   detail_dup_src:n=>`${n} बार एक ही राशि पर दिखता है`,
   detail_similar:"सिर्फ़ रेफ़रेंस नंबर अलग, बाकी एक जैसे",
@@ -2182,6 +2193,10 @@ hi: {
   reader_busy:"मुफ़्त रीडिंग सेवा आज की सीमा तक पहुँच गई है। आप अपनी मुफ़्त Gemini key से अब भी बिल पढ़ सकते हैं (नीचे दिए बॉक्स में डालें), या कल फिर कोशिश करें।",
   reader_overloaded:"पिछले कुछ मिनटों से Google की रीडिंग सेवा पर बहुत ज़्यादा भार है, इसलिए अभी फ़ोटो पढ़ना नाकाम हो सकता है। ऐसा हो तो थोड़ी देर बाद फिर कोशिश करें।",
   reader_broken:"मुफ़्त रीडिंग सेवा अभी काम नहीं कर रही है (समस्या हमारी तरफ़ है, आपकी फ़ोटो में नहीं)। आप अपनी मुफ़्त Gemini key से अब भी बिल पढ़ सकते हैं (नीचे दिए बॉक्स में डालें)।",
+  reader_backup:"आज की मुफ़्त मुख्य रीडिंग सेवा की सीमा पूरी हो गई है, इसलिए एक हल्का बैकअप रीडर आपका बिल पढ़ेगा। इससे ग़लतियाँ ज़्यादा होती हैं: इसकी पढ़ी लाइनें अपने काग़ज़ी बिल से मिलाकर देखें।",
+  reads_left:n=>`आज लगभग ${n} मुफ़्त पेज़ और पढ़े जा सकते हैं।`,
+  read_backup_suffix:n=>n>1?`${n} पेज़ बैकअप रीडर ने पढ़े: उनकी लाइनें जाँच लें।`:`1 पेज़ बैकअप रीडर ने पढ़ा: उसकी लाइनें जाँच लें।`,
+  backup_read_note:(list,n)=>`पेज़ ${list} बैकअप रीडर ने पढ़${n>1?'े':'ा'}, जो एक हल्का मॉडल है और ज़्यादा ग़लतियाँ करता है। कुछ भी भेजने से पहले ${n>1?'इन पेज़ों':'इस पेज़'} की लाइनें अपने काग़ज़ी बिल से मिलाकर देखें।`,
   broken_byo:"मुफ़्त पढ़ने की सेवा अभी काम नहीं कर रही है। नीचे अपनी मुफ़्त Gemini key डालकर फिर से Check दबाएँ।",
   mybills_limit:n=>`आपके ${n} सहेजे गए बिल हैं, जो एक खाते की सीमा है। जिनकी अब ज़रूरत नहीं है उन्हें मिटाएँ, फिर दोबारा सहेजें।`,
   share_findings_btn:"जाँचें शेयर करें",
@@ -2226,6 +2241,8 @@ hi: {
       doText:"अस्पताल से NPPA अधिसूचना के मुक़ाबले क़ीमत का औचित्य पूछें, या अंतर की वापसी माँगें।",
       doTextUnverified:"अस्पताल से NPPA अधिसूचना के मुक़ाबले क़ीमत का औचित्य पूछें, और वापसी माँगने से पहले सीमा की पुष्टि करें।" },
     recon: { label:"योग जाँच",
+      money_backup:()=>"यह बिल बैकअप रीडर ने पढ़ा है, इसलिए यह अंतर उसकी पढ़ने की ग़लती हो सकती है, अस्पताल की गणना नहीं। इससे आपकी देय राशि नहीं बदलती।", doText_backup:"पहले लाइनें अपने काग़ज़ी बिल से मिलाएँ (ग़लत पढ़ी लाइनें ऊपर सुधारें)। अगर अंतर फिर भी है, तो बिलिंग डेस्क से समझाने को कहें।",
+      sub_backup:(gross,lineSum)=>`छपा ${gross} बनाम लाइनों का योग ${lineSum} &mdash; बैकअप रीडर की ग़लती भी हो सकती है`,
       found:diff=>`बिल का योग ${diff} से गड़बड़ है`, sub:(gross,lineSum)=>`छपा ${gross} बनाम लाइनों का योग ${lineSum} &mdash; शायद अस्पताल की अपनी गणना`,
       foundClear:"बिल का मिलान सही है", subClear:"लाइनों का योग छपी कुल राशि से मेल खाता है",
       foundNotCompared:"बिल का कुल योग मिलाया नहीं गया", subNotCompared:"इस बिल से छपी कुल राशि पढ़ी नहीं जा सकी", subNotComparedUnreadable:"इस बिल की कुछ राशियाँ पढ़ी नहीं जा सकीं, इसलिए छपी कुल राशि को लाइनों के जोड़ से नहीं मिलाया गया",
@@ -2571,6 +2588,7 @@ mr: {
   sh_head:"इथून सुरुवात करा", sh_hospital:"रुग्णालयाला विचारा", sh_insurer:"तुमच्या विमा कंपनीला विचारा",
   sh_dups:n=>`${n} चार्जेस एकापेक्षा जास्त वेळा दिसतात. प्रत्येक वेगळी सेवा आहे का ते विचारा.`,
   sh_recon:d=>`बिलाची एकूण रक्कम ${d} ने जुळत नाही. बिलिंग डेस्कला स्पष्टीकरण मागा.`,
+  sh_recon_backup:d=>`बिलाची एकूण रक्कम ${d} ने जुळत नाही असं दिसतं, पण हे बिल बॅकअप रीडरने वाचलं आहे: आधी त्याच्या ओळी तुमच्या कागदी बिलाशी पडताळून पहा. त्या जुळल्या तर बिलिंग डेस्कला स्पष्टीकरण मागा.`,
   sh_nppa:n=>`${n} इम्प्लांट NPPA मर्यादा आणि GST पेक्षा जास्त किमतीत आहे. रुग्णालयाकडून किमतीचं समर्थन मागा.`,
   sh_gst:n=>`${n} इम्प्लांटची किंमत NPPA मर्यादेपेक्षा थोडी जास्त आहे. किमतीत GST समाविष्ट आहे का ते पहा.`,
   sh_review:(n,sum)=>`${n} चार्जेस वारंवार कापले जातात पण यादीत नाहीत (${sum}). विमा कंपनीला खात्री करून द्यायला सांगा.`,
@@ -2594,6 +2612,7 @@ mr: {
   detail_nppa_src:(ref,ceiling,gst)=>`${ref} साठी NPPA मर्यादा: ${ceiling} (${gst})`,
   detail_recon:"ताळमेळ",
   detail_recon_body:(gross,lineSum,diff)=>`बिलाची छापील एकूण रक्कम (${gross}) त्याच्या स्वतःच्या ओळींच्या बेरजेपेक्षा (${lineSum}) <strong>${diff}</strong> ने वेगळी आहे. ही रुग्णालयाची स्वतःची गणना असू शकते, वाचण्यातली चूक नाही.`,
+  detail_recon_body_backup:(gross,lineSum,diff)=>`बिलाची छापील एकूण रक्कम (${gross}) त्याच्या स्वतःच्या ओळींच्या बेरजेपेक्षा (${lineSum}) <strong>${diff}</strong> ने वेगळी आहे. काही पानं बॅकअप रीडरने वाचली आहेत, म्हणून ही वाचण्यातली चूकही असू शकते. रुग्णालयाला विचारण्यापूर्वी ओळी तुमच्या कागदी बिलाशी पडताळून पहा.`,
   detail_dup:"एकापेक्षा जास्त वेळा दिसतं",
   detail_dup_src:n=>`तेवढ्याच रकमेला ${n} वेळा दिसतं`,
   detail_similar:"फक्त संदर्भ क्रमांक वेगळा, बाकी सारखे",
@@ -2666,6 +2685,10 @@ mr: {
   reader_busy:"मोफत वाचन सेवेने आजची मर्यादा गाठली आहे. तुम्ही तुमच्या मोफत Gemini key ने अजूनही बिल वाचू शकता (खालच्या बॉक्समध्ये टाका), किंवा उद्या पुन्हा प्रयत्न करा.",
   reader_overloaded:"गेल्या काही मिनिटांपासून Google च्या वाचन सेवेवर खूप भार आहे, त्यामुळे आत्ता फोटो वाचणं अयशस्वी होऊ शकतं. तसं झालं तर थोड्या वेळाने पुन्हा प्रयत्न करा.",
   reader_broken:"मोफत वाचन सेवा सध्या काम करत नाही (अडचण आमच्या बाजूला आहे, तुमच्या फोटोमध्ये नाही). तुम्ही तुमच्या मोफत Gemini key ने अजूनही बिल वाचू शकता (खालच्या बॉक्समध्ये टाका).",
+  reader_backup:"आजची मोफत मुख्य वाचन सेवा मर्यादेपर्यंत पोहोचली आहे, म्हणून एक हलका बॅकअप रीडर तुमचं बिल वाचेल. त्याच्याकडून चुका जास्त होतात: त्याने वाचलेल्या ओळी तुमच्या कागदी बिलाशी पडताळून पहा.",
+  reads_left:n=>`आज अंदाजे ${n} मोफत पानं अजून वाचता येतील.`,
+  read_backup_suffix:n=>n>1?`${n} पानं बॅकअप रीडरने वाचली: त्यांच्या ओळी तपासा.`:`1 पान बॅकअप रीडरने वाचलं: त्याच्या ओळी तपासा.`,
+  backup_read_note:(list,n)=>`${n>1?'पानं':'पान'} ${list} बॅकअप रीडरने ${n>1?'वाचली':'वाचलं'}, जो एक हलका मॉडेल आहे आणि जास्त चुका करतो. काहीही पाठवण्यापूर्वी ${n>1?'या पानांच्या':'या पानाच्या'} ओळी तुमच्या कागदी बिलाशी पडताळून पहा.`,
   broken_byo:"मोफत वाचन सेवा सध्या काम करत नाही. खाली तुमची स्वतःची मोफत Gemini key टाकून पुन्हा Check दाबा.",
   mybills_limit:n=>`तुमची ${n} बिले जतन आहेत, ही एका खात्याची मर्यादा आहे. ज्यांची आता गरज नाही ती पुसा, मग पुन्हा जतन करा.`,
   share_findings_btn:"तपासण्या शेअर करा",
@@ -2710,6 +2733,8 @@ mr: {
       doText:"रुग्णालयाला NPPA अधिसूचनेच्या तुलनेत किमतीचं समर्थन विचारा, किंवा फरकाचा परतावा मागा.",
       doTextUnverified:"रुग्णालयाला NPPA अधिसूचनेच्या तुलनेत किमतीचं समर्थन विचारा, आणि परतावा मागण्याआधी मर्यादेची पुष्टी करा." },
     recon: { label:"बेरीज तपासा",
+      money_backup:()=>"हे बिल बॅकअप रीडरने वाचलं आहे, म्हणून हा फरक त्याची वाचण्यातली चूक असू शकते, रुग्णालयाची गणना नाही. यामुळे तुमची देय रक्कम बदलत नाही.", doText_backup:"आधी ओळी तुमच्या कागदी बिलाशी पडताळून पहा (चुकीच्या वाचलेल्या ओळी वर दुरुस्त करा). फरक तरीही राहिला तर बिलिंग डेस्कला स्पष्टीकरण मागा.",
+      sub_backup:(gross,lineSum)=>`छापील ${gross} विरुद्ध ओळींची बेरीज ${lineSum} &mdash; बॅकअप रीडरची चूकही असू शकते`,
       found:diff=>`बिलाची बेरीज ${diff} ने चुकीची आहे`, sub:(gross,lineSum)=>`छापील ${gross} विरुद्ध ओळींची बेरीज ${lineSum} &mdash; कदाचित रुग्णालयाची स्वतःची गणना`,
       foundClear:"बिलाचा ताळमेळ बरोबर आहे", subClear:"ओळींची बेरीज छापील एकूण रकमेशी जुळते",
       foundNotCompared:"बिलाची एकूण रक्कम जुळवली नाही", subNotCompared:"या बिलावरील छापील एकूण रक्कम वाचता आली नाही", subNotComparedUnreadable:"या बिलातील काही रकमा वाचता आल्या नाहीत, त्यामुळे छापील एकूण रक्कम ओळींच्या बेरजेशी जुळवली नाही",
@@ -2886,7 +2911,7 @@ $('egUndoBtn').addEventListener('click',()=>{
 });
 // "Something wrong?" (R22): a pre-filled GitHub issue or email. Nothing from
 // the bill is ever put in it; only the screen language and the app version.
-const APP_VERSION='R30 (Oct 2026)', FEEDBACK_EMAIL='aaryap2024@gmail.com', FEEDBACK_REPO='https://github.com/Aaryap1/ClearBill';
+const APP_VERSION='R31 (Oct 2026)', FEEDBACK_EMAIL='aaryap2024@gmail.com', FEEDBACK_REPO='https://github.com/Aaryap1/ClearBill';
 function feedbackBody(){
   return ['What is wrong (keep the ones that apply):','- a line was read wrongly','- a check looks wrong','- a translation mistake','- a problem with the letter','',
     'Which tab:','What you expected:','','Please do not include your name, policy number or bill details.','','Screen language: '+LANG+' / app version: '+APP_VERSION].join('\n');
@@ -3187,7 +3212,7 @@ function analyse(data,now){
   // page rejected as not-a-bill. Set by the upload flow on the merged object.
   const partial=data._pageCount===1||(data._rejected||0)>0;
   const subtotals = data.printed_subtotals && Object.keys(data.printed_subtotals).length ? data.printed_subtotals : null;
-  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,similarDups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nppaDated,nppaKneeDated,nppaUnmatched,nonLatin,subtotals,unreadable,unreadableRows,reconCompared,reconBlocked,partial,subsumed,subsumedSum,rejected:data._rejected||0,pageCount:data._pageCount||null};
+  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,similarDups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nppaDated,nppaKneeDated,nppaUnmatched,nonLatin,subtotals,unreadable,unreadableRows,reconCompared,reconBlocked,partial,subsumed,subsumedSum,rejected:data._rejected||0,pageCount:data._pageCount||null,backup:Array.isArray(data._backupPages)?data._backupPages.slice():[]};
 }
 // Rows to check against the paper bill (R21). Possible READING mistakes,
 // never findings about the hospital, never in the letter:
@@ -3392,6 +3417,8 @@ function renderReport(data){
   h+=`<div class="mast"><div class="co">${esc(co)}</div></div><hr class="rdash">`;
   if(window.__settle&&window.__settle.warn) h+=`<div class="notez" role="note" style="margin-bottom:10px">${T_.settle_inconsistent_note}</div>`;
   else if(s&&s.copayUnknown) h+=`<div class="notez" role="note" style="margin-bottom:10px">${T_.copay_unknown_note}</div>`;
+  // R31: pages the lighter backup model read. Said before anything else, so the rows are checked first.
+  if(a.backup.length) h+=`<div class="notez" role="note" id="backupReadNote" style="margin-bottom:10px">${T_.backup_read_note(a.backup.join(', '),a.backup.length)}</div>`;
 
   /* verdict */
   if(ded>0){
@@ -3480,7 +3507,7 @@ function renderReport(data){
     const sh=[[],[]];
     if(a.dups.length) sh[0].push(T_.sh_dups(a.dups.length));
     if(a.similarDups.length) sh[0].push(T_.sh_similar(a.similarDups.length));
-    if(a.recon) sh[0].push(T_.sh_recon(inr.format(Math.abs(a.recon.diff))));
+    if(a.recon) sh[0].push((a.backup.length?T_.sh_recon_backup:T_.sh_recon)(inr.format(Math.abs(a.recon.diff))));
     if(a.nppa.length) sh[0].push(T_.sh_nppa(a.nppa.length));
     if(a.nppaGst.length) sh[0].push(T_.sh_gst(a.nppaGst.length));
     if(a.subsumed.length) sh[0].push(T_.sh_subsumed(a.subsumed.length,inr.format(a.subsumedSum)));
@@ -3530,8 +3557,8 @@ function renderReport(data){
   if(a.nppaGst.length) h+=chk('ochre',C.nppa.labelGst,C.nppa.foundGst(a.nppaGst.length),C.nppa.subGst(),
         {money:C.nppa.moneyGst(), doText:C.nppa.doTextGst});
   h+= a.recon
-    ? chk('ochre',C.recon.label,C.recon.found(inr.format(Math.abs(a.recon.diff))),C.recon.sub(inr.format(a.recon.gross),inr.format(a.recon.lineSum)),
-        {money:C.recon.money(), doText:C.recon.doText, goto:'det-recon'})
+    ? chk('ochre',C.recon.label,C.recon.found(inr.format(Math.abs(a.recon.diff))),(a.backup.length?C.recon.sub_backup:C.recon.sub)(inr.format(a.recon.gross),inr.format(a.recon.lineSum)),
+        {money:a.backup.length?C.recon.money_backup():C.recon.money(), doText:a.backup.length?C.recon.doText_backup:C.recon.doText, goto:'det-recon'})
     : (a.reconCompared
         ? chk('green',T_.clear_word,C.recon.foundClear,C.recon.subClear)
         : chk('grey',T_.notcompared_word,C.recon.foundNotCompared,a.reconBlocked?C.recon.subNotComparedUnreadable:C.recon.subNotCompared));
@@ -3577,7 +3604,7 @@ function renderReport(data){
     `<div class="plain">${T_.detail_nppa_plain}</div>`+
     a.nppa.map(n=>`<div class="li"><div>${esc(n.item)}<span class="src">${T_.detail_nppa_src(esc(n.ref),inr.format(n.ceiling),esc(n.gst))}</span>${n.grade!=='verified'?`<span class="gradebadge">${T_.nppa_unverified_badge}</span>`:''}</div><div class="n">${inr.format(n.price)}</div></div>`).join(''), true);
   if(a.recon) h+=(nextDetId='det-recon',det)(T_.detail_recon,'',
-    `<div class="notez">${T_.detail_recon_body(inr.format(a.recon.gross),inr.format(a.recon.lineSum),inr.format(Math.abs(a.recon.diff)))}</div>`);
+    `<div class="notez">${(a.backup.length?T_.detail_recon_body_backup:T_.detail_recon_body)(inr.format(a.recon.gross),inr.format(a.recon.lineSum),inr.format(Math.abs(a.recon.diff)))}</div>`);
   if(a.dups.length) h+=(nextDetId='det-dup',det)(T_.detail_dup,`<span class="tag">${a.dups.length}</span>`,
     a.dups.map(d=>`<div class="li"><div>${esc(d.item)}<span class="src">${T_.detail_dup_src(d.n)}</span></div><div class="n">${inr.format(d.amount)}</div></div>`).join(''));
   if(a.similarDups.length) h+=(nextDetId='det-similar',det)(T_.detail_similar,`<span class="tag">${a.similarDups.length}</span>`,
@@ -3604,7 +3631,7 @@ function renderReport(data){
   const ls=$('letterShortcut'); if(ls) ls.addEventListener('click',()=>switchTab('letter'));
   const sfb=$('shareFindingsBtn');
   if(sfb) sfb.addEventListener('click',()=>{
-    const reconTxt = a.recon ? T_.share_findings_recon(inr.format(Math.abs(a.recon.diff))) : '';
+    const reconTxt = a.recon && !a.backup.length ? T_.share_findings_recon(inr.format(Math.abs(a.recon.diff))) : ''; // R31: not shared until the rows are checked
     const summary = T_.share_findings_text(a.exact.length, inr.format(a.exactSum), a.nppa.length, a.dups.length, reconTxt, location.origin+location.pathname, s&&s.deduction>0?inr.format(s.deduction):'');
     shareText(summary,'ClearBill');
   });
@@ -4188,7 +4215,7 @@ async function rpReadPhotos(files){
     // One at a time (R30): decoding every photo at once can exhaust a cheap phone's memory.
     const toSend=[]; for(const f of files) toSend.push(await downscaleImage(f));
     const results=await readPages(toSend,{key,useProxy:USE_PROXY,proxyState:_proxyState,fetchFn:(u,o)=>fetch(u,o),toB64,stripFence,
-      directRequest:directReplyRequest,endpoint:'api/read-reply',timeoutMs:READ_TIMEOUT_MS,onProgress:(i,n)=>say(T_.rp_reading(i+1,n))});
+      directRequest:directReplyRequest,directModels:DIRECT_MODELS,endpoint:'api/read-reply',timeoutMs:READ_TIMEOUT_MS,onProgress:(i,n)=>say(T_.rp_reading(i+1,n))});
     const texts=[]; let notLetter=0, failKind=null;
     results.forEach(r=>{
       if(r.status==='ok'){ const p=r.page;
@@ -4219,7 +4246,7 @@ const configReady=(async()=>{
     try{
       const ctl=new AbortController(), t=setTimeout(()=>ctl.abort(),4000);
       const r=await fetch('api/config',{signal:ctl.signal}); clearTimeout(t);
-      if(r.ok){ const c=await r.json(); if(c&&c.proxy) USE_PROXY=true; if(c&&c.bills){ BILLS_ON=true; GOOGLE_CLIENT_ID=c.googleClientId||null; } if(c&&typeof c.reader==='string') READER_STATE=c.reader; return; }
+      if(r.ok){ const c=await r.json(); if(c&&c.proxy) USE_PROXY=true; if(c&&c.bills){ BILLS_ON=true; GOOGLE_CLIENT_ID=c.googleClientId||null; } if(c&&typeof c.reader==='string') READER_STATE=c.reader; if(c&&typeof c.readsLeft==='number') READS_LEFT=c.readsLeft; return; }
     }catch(e){}
   }
 })();
@@ -4259,7 +4286,7 @@ function mkErr(kind,status){ const e=new Error(kind); e.kind=kind; if(status) e.
 // plain sentence in the user's language. code = the proxy's error code, if any.
 function kindForStatus(status,direct,code){
   if(status===429) return direct?'quota':'busy';
-  if(direct){ if(status===400||status===401||status===403) return 'key'; return status>=500?'server':'unreadable'; }
+  if(direct){ if(status===400||status===401||status===402||status===403) return 'key'; return status>=500?'server':'unreadable'; } // 402: the key's project has no credit (R31)
   if(code==='broken') return 'broken';   // the free service's own key or model was refused (R16)
   if(status===413) return 'toolarge';
   if(status===415) return 'unsupported';
@@ -4268,7 +4295,8 @@ function kindForStatus(status,direct,code){
   return 'server';
 }
 // One page in, one structured object out; a failure is an Error with .kind.
-// o: {key,useProxy,proxyState,fetchFn,toB64,stripFence,directRequest,signal,timeoutMs,isOffline,endpoint}
+// o: {key,useProxy,proxyState,fetchFn,toB64,stripFence,directRequest,directModels,signal,timeoutMs,isOffline,endpoint}
+// A page read by a backup model (R31) comes back with page._reader='backup'.
 // endpoint (R24): the server route; 'api/read-bill' unless a caller names another.
 async function readOnePage(file,o){
   const mime=fileMime(file);
@@ -4278,7 +4306,7 @@ async function readOnePage(file,o){
   if(o.signal){ if(o.signal.aborted) throw mkErr('cancelled'); o.signal.addEventListener('abort',onAbort); }
   const t=setTimeout(()=>{ timedOut=true; ac.abort(); },o.timeoutMs||100000);
   try{
-    let txt;
+    let txt, backup=false;
     // If the free service says it is busy (429), the user can paste their own
     // free Gemini key and continue — then this page goes direct to Google.
     if(o.useProxy && !(o.proxyState.busy && o.key)){
@@ -4286,14 +4314,25 @@ async function readOnePage(file,o){
       txt=await res.text();
       if(!res.ok){ let code=''; try{ code=JSON.parse(txt).error||''; }catch(e){}
         const kind=kindForStatus(res.status,false,code); if(kind==='busy'||kind==='broken') o.proxyState.busy=true; throw mkErr(kind,res.status); }
+      // R31: the server says when its backup model read the page.
+      backup=!!(res.headers&&res.headers.get&&res.headers.get('X-ClearBill-Reader')==='backup');
     } else {
-      const dr=o.directRequest(o.key,mime,b64);
-      const res=await o.fetchFn(dr.url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dr.body),signal:ac.signal});
+      // R31: with the user's own key too, the main model first; if Google says
+      // its free allowance is spent (429), the same page goes to the backup.
+      const models=(o.directModels&&o.directModels.length)?o.directModels:[undefined];
+      let res=null;
+      for(let m=0;m<models.length;m++){
+        const dr=o.directRequest(o.key,mime,b64,models[m]);
+        res=await o.fetchFn(dr.url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dr.body),signal:ac.signal});
+        backup=m>0;
+        if(res.status!==429) break;
+      }
       if(!res.ok) throw mkErr(kindForStatus(res.status,true),res.status);
       const j=await res.json(); txt=j&&j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts&&j.candidates[0].content.parts[0]&&j.candidates[0].content.parts[0].text||'';
     }
     let page; try{ page=JSON.parse(o.stripFence(txt)); }catch(e){ throw mkErr('unreadable'); }
     if(!page||typeof page!=='object'||Array.isArray(page)) throw mkErr('unreadable');
+    if(backup) page._reader='backup';
     return page;
   }catch(e){
     if(e&&e.kind) throw e;
@@ -4497,20 +4536,26 @@ function markThumbFailed(i){
 let _reading=false, _readAbort=null, _readTimer=null, _failedNow=0;
 const _pageCache=new Map(), _proxyState={busy:false};
 const READ_TIMEOUT_MS=100000;   // a little over the server's 90 s, so the server answers first
-function directRequest(key,mime,b64){
-  // gemini-3.6-flash — confirmed working 9 Sep 2026 by an actual end-to-end
-  // upload through the deployed Cloud Run proxy (real image, real key, real
-  // response). The previous "gemini-3.5-flash" was never a real model id and
-  // 404'd silently; "gemini-flash-latest" (a floating alias, tried next) hit
-  // a real model but a transient 503 "high demand". Google's own 404 message
-  // when testing "gemini-2.5-flash" named this exact model as its
-  // replacement, and it's the one that actually returned real bill data.
+// The models a page is read with when it goes straight to Google with the
+// user's own key (R31), in order: the main one, then a backup used only when
+// Google says the main one's free allowance is spent. The server's default
+// chain (lib/reader_quota.js) is the same. A model may be listed here only
+// after lib/photo_bench.js has scored it (lib/test_reference.js checks).
+// gemini-3.6-flash — confirmed working 9 Sep 2026 by an actual end-to-end
+// upload through the deployed Cloud Run proxy (real image, real key, real
+// response). The previous "gemini-3.5-flash" was never a real model id and
+// 404'd silently; "gemini-flash-latest" (a floating alias, tried next) hit
+// a real model but a transient 503 "high demand". Google's own 404 message
+// when testing "gemini-2.5-flash" named this exact model as its
+// replacement, and it's the one that actually returned real bill data.
+const DIRECT_MODELS=['gemini-3.6-flash']; // + 'gemini-3.5-flash-lite' once the bench passes it (see lib/reader_quota.js BACKUP_MODELS)
+function directRequest(key,mime,b64,model){
   return {
-    url:`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(key)}`,
+    url:`https://generativelanguage.googleapis.com/v1beta/models/${model||DIRECT_MODELS[0]}:generateContent?key=${encodeURIComponent(key)}`,
     body:{contents:[{parts:[{text:EXTRACT_PROMPT},{inline_data:{mime_type:mime,data:b64}}]}],generationConfig:{temperature:0,response_mime_type:"application/json"}}
   };
 }
-function directReplyRequest(key,mime,b64){ const r=directRequest(key,mime,b64); r.body.contents[0].parts[0].text=REPLY_PROMPT; return r; }
+function directReplyRequest(key,mime,b64,model){ const r=directRequest(key,mime,b64,model); r.body.contents[0].parts[0].text=REPLY_PROMPT; return r; }
 function setReadingUi(on){
   document.body.classList.toggle('is-reading',on);
   $('cancelReadBtn').classList.toggle('hide',!on);
@@ -4550,14 +4595,15 @@ async function processQueuedFiles(){
     // One at a time (R30): decoding every photo at once can exhaust a cheap phone's memory.
     const toSend=[]; for(const f of files) toSend.push(await downscaleImage(f));
     const results=await readPages(toSend,{
-      key,useProxy:USE_PROXY,proxyState:_proxyState,fetchFn:(u,o)=>fetch(u,o),toB64,stripFence,directRequest,
+      key,useProxy:USE_PROXY,proxyState:_proxyState,fetchFn:(u,o)=>fetch(u,o),toB64,stripFence,directRequest,directModels:DIRECT_MODELS,
       cache:_pageCache,signal:_readAbort.signal,timeoutMs:READ_TIMEOUT_MS,
       onProgress:(i,n)=>{ pos={i,n,t:Date.now()}; setStatus(S().reading_page(i+1,n)); }
     });
     const T2=S();
-    const okPages=[], rejected=[], failed=[]; let skippedKind=null, readCount=0;
+    const okPages=[], rejected=[], failed=[], backupPages=[]; let skippedKind=null, readCount=0;
     results.forEach((r,i)=>{
       if(r.status==='ok'){ readCount++;
+        if(r.page._reader==='backup'&&r.page.is_hospital_bill!==false) backupPages.push(i+1); // R31
         // is_hospital_bill===false is an explicit "no" from the model. Treat a
         // missing/undefined flag as accepted — an older prompt or a proxy that
         // hasn't picked up this change yet must not start rejecting bills it
@@ -4580,10 +4626,11 @@ async function processQueuedFiles(){
     if(!okPages.length){ setStatus(T2.no_bill_pages,true); if(!hadReport) report.innerHTML=''; return; }
     const merged=mergePages(okPages);
     merged._rejected=rejected.length;
+    merged._backupPages=backupPages;
     if(!merged.line_items.length){ setStatus(T2.no_lines_found,true); if(!hadReport) report.innerHTML=''; return; }
-    setStatus(rejected.length
+    setStatus((rejected.length
       ? T2.read_lines_partial(merged.line_items.length,files.length,rejected.length)
-      : T2.read_lines(merged.line_items.length,files.length));
+      : T2.read_lines(merged.line_items.length,files.length))+(backupPages.length?' '+T2.read_backup_suffix(backupPages.length):''));
     report.classList.remove('stale');
     startCase();
     renderReport(merged);
@@ -4873,7 +4920,7 @@ function renderLetterTab(){
   if(a.recon) rows.push(['recon', T_.letter_confirm_recon, inr.format(Math.abs(a.recon.diff))]);
   if(room&&room.limit&&room.rate) rows.push(['room', room.over?T_.letter_confirm_room:T_.letter_confirm_room_ok, room.over&&room.roomExcess?inr.format(room.roomExcess):'✓']);
   $('letterIncludes').innerHTML=
-    rows.map(([key,k,v])=>`<label class="inclrow"><input type="checkbox" ${(key in _userIncl ? _userIncl[key] : !(key==='recon'&&a.partial))?'checked':''} data-inc="${key}"><span class="incltext">${k}</span><span class="v">${v}</span></label>`).join('')
+    rows.map(([key,k,v])=>`<label class="inclrow"><input type="checkbox" ${(key in _userIncl ? _userIncl[key] : !(key==='recon'&&(a.partial||a.backup.length)))?'checked':''} data-inc="${key}"><span class="incltext">${k}</span><span class="v">${v}</span></label>`).join('')
     + `<div class="inclrow static"><span class="incltext">${T_.letter_confirm_sent_to}</span><span class="v">${T_.letter_confirm_sent_to_val}</span></div>`
     + (hasBill?'':`<p class="notez" style="margin-top:10px">${T_.letter_no_bill}</p>`);
 }
@@ -5319,7 +5366,10 @@ function renderImpact(){
 }
 function renderReaderNote(){
   const el=$('readerNote'); if(!el) return;
-  const T_=S(), msg=!USE_PROXY?'':READER_STATE==='busy'?T_.reader_busy:READER_STATE==='broken'?T_.reader_broken:READER_STATE==='overloaded'?T_.reader_overloaded:'';
+  const T_=S(), base=!USE_PROXY?'':READER_STATE==='busy'?T_.reader_busy:READER_STATE==='broken'?T_.reader_broken:READER_STATE==='overloaded'?T_.reader_overloaded:READER_STATE==='backup'?T_.reader_backup:'';
+  // R31: say how many free reads are left when it matters: on the backup, or when few are left.
+  const few=USE_PROXY&&READS_LEFT!=null&&(READER_STATE==='backup'||(READER_STATE==='ok'&&READS_LEFT<=10))&&READS_LEFT>0;
+  const msg=base+(few?(base?' ':'')+T_.reads_left(READS_LEFT):'');
   el.textContent=msg; el.classList.toggle('hide',!msg);
   // Out of free reads today, or the free reader is broken (R16): open the
   // own-key box now and send a pasted key straight to Google, instead of a
