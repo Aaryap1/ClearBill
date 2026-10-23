@@ -65,6 +65,7 @@ const STUB = `
 
 (async () => {
   const port = srv.address().port;
+  try { fs.rmSync(path.join(os.tmpdir(), 'reader_test_profile'), { recursive: true, force: true, maxRetries: 5, retryDelay: 300 }); } catch (e) {} // a leftover from an earlier, interrupted run
   const p = spawn(chrome, ['--headless=new', '--disable-gpu', '--remote-debugging-port=9341', '--user-data-dir=' + path.join(os.tmpdir(), 'reader_test_profile'), 'about:blank'], { stdio: 'ignore' });
   await sleep(3000);
   const tabs = await (await fetch('http://127.0.0.1:9341/json')).json();
@@ -75,6 +76,8 @@ const STUB = `
   const send = (method, params = {}) => new Promise(r => { const i = ++id; pend[i] = r; ws.send(JSON.stringify({ id: i, method, params })); });
   const ev = async js => { const r = await send('Runtime.evaluate', { expression: '(async()=>{' + js + '})()', awaitPromise: true, returnByValue: true }); if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description || r.exceptionDetails.text); return r.result?.value; };
   await send('Page.enable'); await send('Runtime.enable');
+  // Buttons like "Add a reminder" save a real file; never into the owner's Downloads folder.
+  await send('Page.setDownloadBehavior', { behavior: 'deny' });
   await send('Page.addScriptToEvaluateOnNewDocument', { source: STUB });
   const fresh = async () => { await send('Page.navigate', { url: `http://127.0.0.1:${port}/` }); await sleep(1200); await ev(`localStorage.clear(); sessionStorage.clear();`); };
   const status = () => ev(`return document.getElementById('status').textContent`);
@@ -1023,7 +1026,12 @@ const STUB = `
     await ev(`setLang('hi'); window.__mode='504'; addFiles([__mk('k1.jpg','image/jpeg',41)]); document.getElementById('checkPhotosBtn').click();`); await sleep(700);
     const hi = await status(); ok(/[\u0900-\u097F]/.test(hi) && !/Failed to fetch|Server 5|took too long/.test(hi), 'in Hindi the error is Hindi, never a raw English message: "' + hi.slice(0, 60) + '"');
     ok(errs.length === 0, 'no uncaught page errors during any of this', errs.join(' | ').slice(0, 200));
-  } finally { ws.close(); p.kill(); srv.close(); }
+  } finally {
+    ws.close(); p.kill(); srv.close();
+    // The test browser's profile is ~50 MB: remove it once Chrome has exited.
+    await new Promise(r => { p.once('exit', r); setTimeout(r, 3000); });
+    try { fs.rmSync(path.join(os.tmpdir(), 'reader_test_profile'), { recursive: true, force: true, maxRetries: 10, retryDelay: 500 }); } catch (e) {}
+  }
   console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(2); });

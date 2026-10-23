@@ -44,6 +44,7 @@ const arg = (k, d) => { const i = process.argv.indexOf('--' + k); return i > 0 ?
 const ids = () => fs.readdirSync(path.join(CORPUS, 'truth')).filter(f => /^SYN-\d+\.json$/.test(f)).map(f => f.slice(0, -5)).sort();
 
 async function openChrome(port, url) {
+  try { fs.rmSync(path.join(os.tmpdir(), 'clearbill_bench_profile'), { recursive: true, force: true, maxRetries: 5, retryDelay: 300 }); } catch (e) {} // a leftover from an earlier, interrupted run
   const p = spawn(chrome, ['--headless=new', '--disable-gpu', '--remote-debugging-port=' + port, '--user-data-dir=' + path.join(os.tmpdir(), 'clearbill_bench_profile'), url], { stdio: 'ignore' });
   let tabs;
   for (let i = 0; i < 40 && !tabs; i++) { await sleep(300); try { tabs = await (await fetch(`http://127.0.0.1:${port}/json`)).json(); } catch (e) {} }
@@ -54,7 +55,9 @@ async function openChrome(port, url) {
   const send = (method, params = {}) => new Promise(r => { const i = ++id; pend[i] = r; ws.send(JSON.stringify({ id: i, method, params })); });
   const ev = async js => { const r = await send('Runtime.evaluate', { expression: '(async()=>{' + js + '})()', awaitPromise: true, returnByValue: true }); if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description || r.exceptionDetails.text); return r.result?.value; };
   await send('Runtime.enable');
-  return { ev, send, close: () => { try { ws.close(); } catch (e) {} p.kill(); } };
+  await send('Page.setDownloadBehavior', { behavior: 'deny' }); // never into the owner's Downloads folder
+  // close() also removes the test browser's profile once Chrome has exited.
+  return { ev, send, close: async () => { try { ws.close(); } catch (e) {} p.kill(); await new Promise(r => { p.once('exit', r); setTimeout(r, 3000); }); try { fs.rmSync(path.join(os.tmpdir(), 'clearbill_bench_profile'), { recursive: true, force: true, maxRetries: 10, retryDelay: 500 }); } catch (e) {} } };
 }
 
 // A seeded, repeatable degradation drawn on a canvas (no image library needed).
@@ -83,7 +86,7 @@ async function makeHarsh() {
       fs.writeFileSync(path.join(CORPUS, 'pages', id + '_harsh.jpg'), Buffer.from(out, 'base64'));
       console.log('wrote pages/' + id + '_harsh.jpg');
     }
-  } finally { b.close(); }
+  } finally { await b.close(); }
 }
 
 async function run() {
@@ -128,7 +131,7 @@ async function run() {
       }
       if (k < list.length - 1) await sleep(pace);
     }
-  } finally { b.close(); srv.kill(); }
+  } finally { await b.close(); srv.kill(); }
   if (aborted) { console.log('no score written'); process.exitCode = 1; return; }
   const agg = aggregate(results);
   const errBills = results.filter(r => r.correct < r.truth_lines);

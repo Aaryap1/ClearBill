@@ -36,6 +36,7 @@ const GSI_STAND_IN = `window.google = { accounts: { id: { initialize(o) { window
   await startServer(ON, { GEMINI_API_KEY: 'k', GEMINI_BASE: `http://127.0.0.1:${gemini.address().port}`, RATE_MAX_PER_IP: '1000', DAILY_CAP: '1000',
     GOOGLE_CLIENT_ID: 'csp-test.apps.googleusercontent.com', FIRESTORE_PROJECT_ID: 'csp-test', FIRESTORE_BASE: 'http://127.0.0.1:9', GOOGLE_ACCESS_TOKEN: 'fake' });
   await startServer(OFF, { GEMINI_API_KEY: '' });
+  try { fs.rmSync(path.join(os.tmpdir(), 'csp_test_profile'), { recursive: true, force: true, maxRetries: 5, retryDelay: 300 }); } catch (e) {} // a leftover from an earlier, interrupted run
   const p = spawn(chrome, ['--headless=new', '--disable-gpu', '--remote-debugging-port=9348', '--user-data-dir=' + path.join(os.tmpdir(), 'csp_test_profile'), 'about:blank'], { stdio: 'ignore' });
   let tabs;
   for (let i = 0; i < 30 && !tabs; i++) { await sleep(300); try { tabs = await (await fetch('http://127.0.0.1:9348/json')).json(); } catch (e) {} }
@@ -55,6 +56,7 @@ const GSI_STAND_IN = `window.google = { accounts: { id: { initialize(o) { window
   };
   const ev = async js => { const r = await send('Runtime.evaluate', { expression: '(async()=>{' + js + '})()', awaitPromise: true, returnByValue: true }); if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description || r.exceptionDetails.text); return r.result?.value; };
   await send('Page.enable'); await send('Runtime.enable'); await send('Network.enable');
+  await send('Page.setDownloadBehavior', { behavior: 'deny' }); // never into the owner's Downloads folder
   await send('Fetch.enable', { patterns: [{ urlPattern: 'https://accounts.google.com/gsi/client*' }] });
   await send('Page.addScriptToEvaluateOnNewDocument', { source: WATCH });
   const violations = () => ev('return window.__csp');
@@ -103,7 +105,11 @@ const GSI_STAND_IN = `window.google = { accounts: { id: { initialize(o) { window
     ok((await violations()).length === 0, 'and the page loads with no CSP violation');
     console.log(`  info: ${fonts.size} font files requested from fonts.gstatic.com`);
     if (process.env.FONT_LIST) fs.writeFileSync(process.env.FONT_LIST, [...fonts].join('\n'));
-  } finally { ws.close(); p.kill(); servers.forEach(s => s.kill()); gemini.close(); }
+  } finally {
+    ws.close(); p.kill(); servers.forEach(s => s.kill()); gemini.close();
+    await new Promise(r => { p.once('exit', r); setTimeout(r, 3000); }); // then remove the test browser's profile
+    try { fs.rmSync(path.join(os.tmpdir(), 'csp_test_profile'), { recursive: true, force: true, maxRetries: 10, retryDelay: 500 }); } catch (e) {}
+  }
   console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 })().catch(e => { console.error(e); servers.forEach(s => s.kill()); process.exit(2); });
