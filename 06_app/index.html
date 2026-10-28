@@ -151,6 +151,11 @@
   .impact{margin:6px 0 0;font-size:.78rem;color:var(--soft);max-width:34ch}
   .impact b{color:var(--ink);font-weight:600}
   #readerNote{margin:0 0 10px}
+  #cuts_text,#pb_text{width:100%;box-sizing:border-box;margin:6px 0 10px;font:inherit;font-size:.9rem;padding:8px;border:1.5px solid var(--ctl);border-radius:8px;background:var(--field);color:var(--ink);resize:vertical}
+  .cutgrp{margin:12px 0 4px} .cutgrp ul{margin:4px 0 0 1.1rem;padding:0} .cutgrp li{margin:6px 0;line-height:1.5}
+  .cutamt{width:7.5rem;font:inherit;padding:2px 6px;border:1.5px solid var(--ctl);border-radius:6px;background:var(--field);color:var(--ink)}
+  .cuttag{font-size:.78rem;border:1px solid var(--ochre);color:var(--ochre);border-radius:4px;padding:0 4px;white-space:nowrap}
+  .cutsbad{color:var(--red);font-weight:600}
 
   /* the slip */
   .slip{background:var(--card);border:1px solid var(--rule);border-radius:12px;box-shadow:var(--sh);
@@ -572,6 +577,16 @@
           <div id="rrOut" class="rrout" aria-live="polite"></div>
         </div>
       </details>
+      <details class="findnums rrdet" id="cutsDet">
+        <summary id="cutsHead">Your insurer's list of deductions (optional)</summary>
+        <div class="db2">
+          <p id="cutsIntro">The settlement letter or email from your insurer or TPA usually has a table of what was deducted and why. Copy that table and paste it here: the app sorts each cut by the reason given, and your letter asks about each one by its amount. Nothing is sent anywhere; it stays on this device.</p>
+          <label for="cuts_text" id="cutsLblText">Paste the list of deductions</label>
+          <textarea id="cuts_text" rows="6" spellcheck="false"></textarea>
+          <button type="button" class="btn ghost sm" id="cutsReadBtn">Sort these deductions</button>
+          <div id="cutsOut" class="rrout" aria-live="polite"></div>
+        </div>
+      </details>
       <div style="margin-top:14px"><button class="link" id="egBtn">Load the worked example</button>
         <div class="inlineconfirm hide" id="egConfirm" role="group" aria-labelledby="egConfirmQ"><p id="egConfirmQ"></p><button class="btn sm" type="button" id="egYesBtn"></button><button class="link" type="button" id="egKeepBtn"></button></div>
         <p class="hide" id="egUndo" role="status" style="font-size:.84rem;margin:6px 0 0"><span id="egUndoTxt"></span> <button class="link" type="button" id="egUndoBtn"></button></p></div>
@@ -612,6 +627,15 @@
       <details class="findnums" id="photoGuide" style="margin-top:12px">
         <summary id="photoGuideSum">How to photograph your bill</summary>
         <div class="db2"><ul id="photoGuideList" style="margin:8px 0 0 1.1rem;padding:0"></ul></div>
+      </details>
+      <details class="findnums" id="pasteBill">
+        <summary id="pbHead">No photo? Paste the bill's lines instead</summary>
+        <div class="db2">
+          <p id="pbIntro">If your itemised bill came as an email or a PDF you can select text in, copy its lines and paste them here. Each line needs the item and its amount; quantity and rate are read too if they are there. Nothing is sent anywhere: the checks run on this device.</p>
+          <label for="pb_text" id="pbLbl">Paste the bill's lines</label>
+          <textarea id="pb_text" rows="6" spellcheck="false"></textarea>
+          <button type="button" class="btn ghost sm" id="pbBtn">Check these lines</button>
+        </div>
       </details>
       <div class="filePreview hide" id="filePreview"></div>
       <button class="btn sm hide" id="checkPhotosBtn" style="margin-top:10px">Check these photos</button>
@@ -1425,6 +1449,35 @@ en: {
   hs_not_legal:"This helps you ask; it is not legal advice.",
   rr_intro:"Many policies pay room rent only up to a limit per day, stated in the policy schedule or Customer Information Sheet as an amount or a share of the sum insured (1% of ₹3,00,000 is ₹3,000). Above it, you pay the difference, and some policies also cut other charges in the same proportion.",
   rr_limit:"Room rent your policy allows per day", rr_rate:"Room charged per day", rr_rate_hint:"— leave blank to use the bill", rr_days:"Days in the room",
+  cuts_head:"Your insurer's list of deductions (optional)",
+  cuts_intro:"The settlement letter or email from your insurer or TPA usually has a table of what was deducted and why. Copy that table and paste it here: the app sorts each cut by the reason given, and your letter asks about each one by its amount. Nothing is sent anywhere; it stays on this device.",
+  cuts_lbl:"Paste the list of deductions", cuts_btn:"Sort these deductions",
+  cuts_ph:"For example:\nGloves        160      Non-payable item\nRoom rent difference     4,500    Proportionate deduction\nTotal         4,660",
+  cuts_none:"No amounts were found in what you pasted. Paste the table of deductions as text (from the email, or from a PDF you can select text in).",
+  cuts_summary:(n,t)=>`${n} deduction${n>1?'s':''}, ${t} in all.`,
+  cuts_total_ok:t=>`They add up to the list's own total of ${t}.`,
+  cuts_total_bad:(s,t)=>`These rows add up to ${s}, but the list's total is ${t}. Correct the amounts below (or the total) until they match: a letter cannot ask about amounts that don't add up.`,
+  cuts_total_lbl:"Total deducted, as printed on the list",
+  cuts_confirm:s=>`No total was found in what you pasted. I have checked that these rows add up to the total deducted on my settlement letter (${s}).`,
+  cuts_vs_settle:(s,d)=>`These deductions total ${s}; your settlement figures above leave ${d} not explained. The difference may be co-pay, a discount, or a cut that is not in this list: ask about it too.`,
+  cuts_g_rc:"Reasonable and customary, excess, or above a benchmark", cuts_gx_rc:"Ask which clause, what amount was considered reasonable, and which benchmark was used. There is no current IRDAI definition to check these against, so the letter asks rather than disputes.",
+  cuts_g_room:"Room rent, or cut in proportion to it", cuts_gx_room:"Ask for the clause, its definition of associated expenses, and the charges it was applied to.",
+  cuts_g_copay:"Co-pay, deductible or sub-limit", cuts_gx_copay:"Ask for the clause and the calculation.",
+  cuts_g_list1:"On IRDAI's List I (Optional Items)", cuts_gx_list1:"Insurers may decline these unless your policy covers them. Ask whether your policy offers cover for any of them.",
+  cuts_g_lists24:"Listed by IRDAI (2019–2020) as part of another charge", cuts_gx_lists24:"Ask whether each was paid within the room, procedure or treatment charge.",
+  cuts_g_nonpay:"Called non-payable or excluded", cuts_gx_nonpay:"Ask for the clause of your policy that excludes each one.",
+  cuts_g_other:"Other reasons", cuts_gx_other:"Ask for the clause relied on for each one.",
+  cuts_noclause:"no clause named", cuts_guess:"check this amount", cuts_remove:"Remove",
+  cuts_letter_note:"These go into your letter on the Letter tab, each with its amount.",
+  cuts_letter_blocked:"These will go into your letter once the amounts add up.",
+  letter_confirm_cuts:n=>`The insurer's ${n} deduction${n>1?'s':''}, each asked about by its amount`,
+  pb_head:"No photo? Paste the bill's lines instead",
+  pb_intro:"If your itemised bill came as an email or a PDF you can select text in, copy its lines and paste them here. Each line needs the item and its amount; quantity and rate are read too if they are there. Nothing is sent anywhere: the checks run on this device.",
+  pb_lbl:"Paste the bill's lines", pb_btn:"Check these lines",
+  pb_ph:"For example:\nCBC COMPLETE BLOOD COUNT    1    430.00    430.00\nGLOVES EXAMINATION    20    8.00    160.00",
+  pb_none:"No lines with amounts were found. Each line needs the item's name and its amount.",
+  pb_done:n=>`Read ${n} line item${n>1?'s':''} from the pasted text.`,
+  pb_note:"These rows come from text you pasted. Check them against your bill before you send anything.",
   rr_detected:(rate,days,rates)=>`Your bill shows a room at ${rate} a day${days?` for ${days} day${days==1?'':'s'}`:''}${rates?` (more than one rate: ${rates}; the highest is used)`:''}.`,
   rr_need_rate:"Enter the room charged per day (on the bill or the hospital's tariff) to compare it with your limit.",
   rr_need_days:"Enter the days in the room to work out the room rent above your limit.",
@@ -1916,6 +1969,35 @@ hi: {
   hs_not_legal:"यह पूछने में मदद करता है; यह क़ानूनी सलाह नहीं है।",
   rr_intro:"कई पॉलिसियाँ कमरे का किराया रोज़ की एक सीमा तक ही देती हैं, जो पॉलिसी शेड्यूल या कस्टमर इन्फ़ॉर्मेशन शीट में रकम या बीमा राशि के हिस्से के रूप में लिखी होती है (₹3,00,000 का 1% यानी ₹3,000)। इससे ऊपर का अंतर आप देते हैं, और कुछ पॉलिसियाँ दूसरे चार्ज भी उसी अनुपात में काटती हैं।",
   rr_limit:"आपकी पॉलिसी रोज़ कितना कमरे का किराया देती है", rr_rate:"कमरे का रोज़ का चार्ज", rr_rate_hint:"— बिल से लेने के लिए ख़ाली छोड़ें", rr_days:"कमरे में कितने दिन",
+  cuts_head:"आपकी बीमा कंपनी की कटौतियों की सूची (वैकल्पिक)",
+  cuts_intro:"बीमा कंपनी या TPA के सेटलमेंट पत्र या ईमेल में आमतौर पर एक तालिका होती है कि क्या काटा गया और क्यों। वह तालिका कॉपी करके यहाँ पेस्ट करें: ऐप हर कटौती को बताए गए कारण के हिसाब से छाँटता है, और आपका पत्र हर कटौती के बारे में उसकी राशि के साथ पूछता है। कुछ भी कहीं भेजा नहीं जाता; यह इसी डिवाइस पर रहता है।",
+  cuts_lbl:"कटौतियों की सूची पेस्ट करें", cuts_btn:"इन कटौतियों को छाँटें",
+  cuts_ph:"उदाहरण:\nGloves        160      Non-payable item\nRoom rent difference     4,500    Proportionate deduction\nTotal         4,660",
+  cuts_none:"पेस्ट किए गए टेक्स्ट में कोई राशि नहीं मिली। कटौतियों की तालिका टेक्स्ट के रूप में पेस्ट करें (ईमेल से, या ऐसी PDF से जिसमें टेक्स्ट चुना जा सके)।",
+  cuts_summary:(n,t)=>`${n} कटौती, कुल ${t}।`,
+  cuts_total_ok:t=>`इनका योग सूची के अपने कुल योग ${t} से मेल खाता है।`,
+  cuts_total_bad:(s,t)=>`इन पंक्तियों का योग ${s} है, पर सूची का कुल योग ${t} है। नीचे की राशियाँ (या कुल योग) तब तक सुधारें जब तक वे मेल न खाएँ: पत्र ऐसी राशियों के बारे में नहीं पूछ सकता जिनका योग न मिले।`,
+  cuts_total_lbl:"कुल कटौती, जैसी सूची पर छपी है",
+  cuts_confirm:s=>`पेस्ट किए गए टेक्स्ट में कुल योग नहीं मिला। मैंने जाँच लिया है कि इन पंक्तियों का योग मेरे सेटलमेंट पत्र में लिखी कुल कटौती (${s}) से मेल खाता है।`,
+  cuts_vs_settle:(s,d)=>`ये कटौतियाँ कुल ${s} हैं; ऊपर के सेटलमेंट आँकड़ों के हिसाब से ${d} का हिसाब नहीं मिलता। यह अंतर को-पे, छूट, या इस सूची से बाहर की कोई कटौती हो सकता है: इसके बारे में भी पूछें।`,
+  cuts_g_rc:"उचित और प्रचलित (reasonable and customary), ज़्यादा, या किसी बेंचमार्क से ऊपर", cuts_gx_rc:"पूछें कि कौन-सी शर्त लागू की गई, कितनी राशि उचित मानी गई, और कौन-सा बेंचमार्क इस्तेमाल हुआ। इनकी जाँच के लिए IRDAI की कोई मौजूदा परिभाषा नहीं है, इसलिए पत्र विवाद नहीं करता, पूछता है।",
+  cuts_g_room:"कमरे का किराया, या उसके अनुपात में कटौती", cuts_gx_room:"शर्त, associated expenses की उसकी परिभाषा, और जिन चार्जों पर यह लगाई गई, वे पूछें।",
+  cuts_g_copay:"को-पे, डिडक्टिबल या सब-लिमिट", cuts_gx_copay:"शर्त और हिसाब पूछें।",
+  cuts_g_list1:"IRDAI की List I (Optional Items) में", cuts_gx_list1:"बीमा कंपनियाँ इन्हें तब तक मना कर सकती हैं जब तक आपकी पॉलिसी इन्हें कवर न करे। पूछें कि क्या आपकी पॉलिसी इनमें से किसी के लिए कवर देती है।",
+  cuts_g_lists24:"IRDAI (2019–2020) ने किसी दूसरे चार्ज का हिस्सा बताया", cuts_gx_lists24:"पूछें कि क्या हर एक का भुगतान कमरे, प्रक्रिया या इलाज के चार्ज में ही किया गया।",
+  cuts_g_nonpay:"नॉन-पेएबल या बाहर रखी गई (excluded) बताई गई", cuts_gx_nonpay:"हर एक के लिए आपकी पॉलिसी की वह शर्त पूछें जो उसे बाहर रखती है।",
+  cuts_g_other:"दूसरे कारण", cuts_gx_other:"हर एक के लिए लागू की गई शर्त पूछें।",
+  cuts_noclause:"कोई शर्त नहीं बताई", cuts_guess:"यह राशि जाँचें", cuts_remove:"हटाएँ",
+  cuts_letter_note:"ये लेटर टैब पर आपके पत्र में जाती हैं, हर एक अपनी राशि के साथ।",
+  cuts_letter_blocked:"राशियों का योग मिलने के बाद ये आपके पत्र में जाएँगी।",
+  letter_confirm_cuts:n=>`बीमा कंपनी की ${n} कटौती, हर एक के बारे में उसकी राशि के साथ सवाल`,
+  pb_head:"फ़ोटो नहीं है? बिल की लाइनें पेस्ट करें",
+  pb_intro:"अगर आपका आइटम-वार बिल ईमेल में या ऐसी PDF में आया है जिसमें टेक्स्ट चुना जा सके, तो उसकी लाइनें कॉपी करके यहाँ पेस्ट करें। हर लाइन में आइटम और उसकी राशि होनी चाहिए; मात्रा और दर हों तो वे भी पढ़ी जाती हैं। कुछ भी कहीं भेजा नहीं जाता: जाँच इसी डिवाइस पर होती है।",
+  pb_lbl:"बिल की लाइनें पेस्ट करें", pb_btn:"इन लाइनों की जाँच करें",
+  pb_ph:"उदाहरण:\nCBC COMPLETE BLOOD COUNT    1    430.00    430.00\nGLOVES EXAMINATION    20    8.00    160.00",
+  pb_none:"राशि वाली कोई लाइन नहीं मिली। हर लाइन में आइटम का नाम और उसकी राशि होनी चाहिए।",
+  pb_done:n=>`पेस्ट किए गए टेक्स्ट से ${n} लाइन आइटम पढ़े गए।`,
+  pb_note:"ये पंक्तियाँ आपके पेस्ट किए टेक्स्ट से हैं। कुछ भी भेजने से पहले इन्हें अपने बिल से मिलाकर देखें।",
   rr_detected:(rate,days,rates)=>`आपके बिल में कमरा ${rate} प्रति दिन${days?`, ${days} दिन के लिए`:''} दिखता है${rates?` (एक से ज़्यादा दरें: ${rates}; सबसे ऊँची ली गई है)`:''}।`,
   rr_need_rate:"अपनी सीमा से मिलाने के लिए कमरे का रोज़ का चार्ज डालें (बिल या अस्पताल की दर-सूची से)।",
   rr_need_days:"सीमा से ऊपर का किराया निकालने के लिए कमरे में बिताए दिन डालें।",
@@ -2408,6 +2490,35 @@ mr: {
   hs_not_legal:"हे विचारायला मदत करतं; हा कायदेशीर सल्ला नाही.",
   rr_intro:"अनेक पॉलिसी खोलीभाडं दररोजच्या एका मर्यादेपर्यंतच देतात, जी पॉलिसी शेड्यूल किंवा कस्टमर इन्फॉर्मेशन शीटमध्ये रक्कम किंवा विमा रकमेचा हिस्सा म्हणून लिहिलेली असते (₹3,00,000 चा 1% म्हणजे ₹3,000). त्यापेक्षा जास्तीचा फरक तुम्ही भरता, आणि काही पॉलिसी इतर चार्जेसही त्याच प्रमाणात कापतात.",
   rr_limit:"तुमची पॉलिसी दररोज किती खोलीभाडं देते", rr_rate:"खोलीचा दररोजचा चार्ज", rr_rate_hint:"— बिलातून घेण्यासाठी रिकामं ठेवा", rr_days:"खोलीत किती दिवस",
+  cuts_head:"तुमच्या विमा कंपनीची वजावटींची यादी (ऐच्छिक)",
+  cuts_intro:"विमा कंपनी किंवा TPA च्या सेटलमेंट पत्रात किंवा ईमेलमध्ये सहसा काय कापलं आणि का, याचा तक्ता असतो. तो तक्ता कॉपी करून इथे पेस्ट करा: ॲप प्रत्येक वजावट दिलेल्या कारणानुसार वर्गीकृत करतं, आणि तुमचं पत्र प्रत्येक वजावटीबद्दल तिच्या रकमेसह विचारतं. काहीही कुठेही पाठवलं जात नाही; ते याच डिव्हाइसवर राहतं.",
+  cuts_lbl:"वजावटींची यादी पेस्ट करा", cuts_btn:"या वजावटी वर्गीकृत करा",
+  cuts_ph:"उदाहरण:\nGloves        160      Non-payable item\nRoom rent difference     4,500    Proportionate deduction\nTotal         4,660",
+  cuts_none:"पेस्ट केलेल्या मजकुरात कोणतीही रक्कम सापडली नाही. वजावटींचा तक्ता मजकूर म्हणून पेस्ट करा (ईमेलमधून, किंवा ज्यातला मजकूर निवडता येतो अशा PDF मधून).",
+  cuts_summary:(n,t)=>`${n} वजावट${n>1?'ी':''}, एकूण ${t}.`,
+  cuts_total_ok:t=>`त्यांची बेरीज यादीच्या स्वतःच्या एकूण ${t} शी जुळते.`,
+  cuts_total_bad:(s,t)=>`या ओळींची बेरीज ${s} आहे, पण यादीची एकूण रक्कम ${t} आहे. खालच्या रकमा (किंवा एकूण) जुळेपर्यंत दुरुस्त करा: न जुळणाऱ्या रकमांबद्दल पत्र विचारू शकत नाही.`,
+  cuts_total_lbl:"एकूण वजावट, यादीवर छापल्याप्रमाणे",
+  cuts_confirm:s=>`पेस्ट केलेल्या मजकुरात एकूण रक्कम सापडली नाही. या ओळींची बेरीज माझ्या सेटलमेंट पत्रातल्या एकूण वजावटीशी (${s}) जुळते, हे मी तपासलं आहे.`,
+  cuts_vs_settle:(s,d)=>`या वजावटी एकूण ${s} आहेत; वरच्या सेटलमेंट आकड्यांनुसार ${d} चा हिशोब लागत नाही. हा फरक को-पे, सवलत, किंवा या यादीबाहेरची वजावट असू शकतो: त्याबद्दलही विचारा.`,
+  cuts_g_rc:"वाजवी आणि प्रचलित (reasonable and customary), जास्त, किंवा बेंचमार्कपेक्षा जास्त", cuts_gx_rc:"कोणती अट लावली, कोणती रक्कम वाजवी मानली, आणि कोणता बेंचमार्क वापरला ते विचारा. यांची तपासणी करण्यासाठी IRDAI ची सध्याची कोणतीही व्याख्या नाही, म्हणून पत्र वाद घालत नाही, विचारतं.",
+  cuts_g_room:"खोलीभाडं, किंवा त्याच्या प्रमाणात वजावट", cuts_gx_room:"अट, associated expenses ची तिची व्याख्या, आणि ती कोणत्या चार्जेसवर लावली ते विचारा.",
+  cuts_g_copay:"को-पे, डिडक्टिबल किंवा सब-लिमिट", cuts_gx_copay:"अट आणि हिशोब विचारा.",
+  cuts_g_list1:"IRDAI च्या List I (Optional Items) मध्ये", cuts_gx_list1:"तुमची पॉलिसी कव्हर करत नसेल तर विमा कंपन्या हे नाकारू शकतात. यांपैकी कशासाठी तुमची पॉलिसी कव्हर देते का, ते विचारा.",
+  cuts_g_lists24:"IRDAI (2019–2020) ने दुसऱ्या चार्जचा भाग म्हणून दिलेले", cuts_gx_lists24:"प्रत्येकाचे पैसे खोली, प्रक्रिया किंवा उपचाराच्या चार्जमध्येच दिले गेले का, ते विचारा.",
+  cuts_g_nonpay:"नॉन-पेएबल किंवा वगळलेले (excluded) म्हटलेले", cuts_gx_nonpay:"प्रत्येकासाठी तुमच्या पॉलिसीतली ती अट विचारा जी त्याला वगळते.",
+  cuts_g_other:"इतर कारणं", cuts_gx_other:"प्रत्येकासाठी लावलेली अट विचारा.",
+  cuts_noclause:"कोणतीही अट सांगितली नाही", cuts_guess:"ही रक्कम तपासा", cuts_remove:"काढा",
+  cuts_letter_note:"या वजावटी लेटर टॅबवरच्या तुमच्या पत्रात जातात, प्रत्येकी तिच्या रकमेसह.",
+  cuts_letter_blocked:"रकमांची बेरीज जुळल्यावर या तुमच्या पत्रात जातील.",
+  letter_confirm_cuts:n=>`विमा कंपनीच्या ${n} वजावटी, प्रत्येकीबद्दल तिच्या रकमेसह प्रश्न`,
+  pb_head:"फोटो नाही? बिलाच्या ओळी पेस्ट करा",
+  pb_intro:"तुमचं आयटमवार बिल ईमेलमध्ये किंवा ज्यातला मजकूर निवडता येतो अशा PDF मध्ये आलं असेल, तर त्याच्या ओळी कॉपी करून इथे पेस्ट करा. प्रत्येक ओळीत आयटम आणि त्याची रक्कम हवी; प्रमाण आणि दर असल्यास तेही वाचले जातात. काहीही कुठेही पाठवलं जात नाही: तपासणी याच डिव्हाइसवर होते.",
+  pb_lbl:"बिलाच्या ओळी पेस्ट करा", pb_btn:"या ओळी तपासा",
+  pb_ph:"उदाहरण:\nCBC COMPLETE BLOOD COUNT    1    430.00    430.00\nGLOVES EXAMINATION    20    8.00    160.00",
+  pb_none:"रक्कम असलेली कोणतीही ओळ सापडली नाही. प्रत्येक ओळीत आयटमचं नाव आणि त्याची रक्कम हवी.",
+  pb_done:n=>`पेस्ट केलेल्या मजकुरातून ${n} लाइन आयटम वाचले.`,
+  pb_note:"या ओळी तुम्ही पेस्ट केलेल्या मजकुरातून आहेत. काहीही पाठवण्यापूर्वी त्या तुमच्या बिलाशी पडताळून पहा.",
   rr_detected:(rate,days,rates)=>`तुमच्या बिलात खोली ${rate} प्रतिदिन${days?`, ${days} दिवसांसाठी`:''} दिसते${rates?` (एकापेक्षा जास्त दर: ${rates}; सर्वात जास्त वापरला आहे)`:''}.`,
   rr_need_rate:"तुमच्या मर्यादेशी तुलना करण्यासाठी खोलीचा दररोजचा चार्ज टाका (बिल किंवा रुग्णालयाच्या दरपत्रकातून).",
   rr_need_days:"मर्यादेपेक्षा जास्तीचं भाडं काढण्यासाठी खोलीत राहिलेले दिवस टाका.",
@@ -2782,7 +2893,9 @@ let SETTLE_MODE='cashless';
 // real draft).
 const RR={limit:$('rr_limit'),rate:$('rr_rate'),days:$('rr_days')}; // R26: room-rent limit
 const DRAFT_LS='clearbill_settlement_draft';
-function saveDraft(){ try{ localStorage.setItem(DRAFT_LS, JSON.stringify({mode:SETTLE_MODE,total:F.total.value,counter:F.counter.value,discount:F.discount.value,copay:F.copay.value,reimb:F.reimb.value,rrLimit:RR.limit.value,rrRate:RR.rate.value,rrDays:RR.days.value})); }catch(e){} }
+// R32: the insurer's list of deductions, as sorted rows (never the raw pasted text).
+let CUTS={rows:[],total:null,confirmed:false,tried:false}, _cutsInit=false; // _cutsInit: the sorting code below is defined (see cutsRender)
+function saveDraft(){ try{ localStorage.setItem(DRAFT_LS, JSON.stringify({mode:SETTLE_MODE,total:F.total.value,counter:F.counter.value,discount:F.discount.value,copay:F.copay.value,reimb:F.reimb.value,rrLimit:RR.limit.value,rrRate:RR.rate.value,rrDays:RR.days.value,cuts:CUTS.rows.length?{rows:CUTS.rows.map(r=>({desc:r.desc,amount:r.amount,reason:r.reason,guess:!!r.guess})),total:CUTS.total,confirmed:!!CUTS.confirmed}:null})); }catch(e){} }
 function restoreDraft(){
   try{
     const raw=localStorage.getItem(DRAFT_LS); if(!raw) return;
@@ -2794,12 +2907,15 @@ function restoreDraft(){
     if(d.copay){ F.copay.value=d.copay; markChips(d.copay); }
     const rn=v=>(v===''||v==null||isNaN(+v)||+v<0)?'':String(+v);
     RR.limit.value=rn(d.rrLimit); RR.rate.value=rn(d.rrRate); RR.days.value=rn(d.rrDays); if(RR.limit.value) $('rrDet').open=true;
+    if(d.cuts&&Array.isArray(d.cuts.rows)){ const rows=d.cuts.rows.filter(r=>r&&typeof r.desc==='string'&&+r.amount>0).slice(0,200).map(r=>({desc:r.desc.slice(0,200),amount:money(+r.amount),reason:String(r.reason||'').slice(0,300),guess:!!r.guess}));
+      if(rows.length){ CUTS={rows,total:+d.cuts.total>0?money(+d.cuts.total):null,confirmed:!!d.cuts.confirmed,tried:true}; $('cutsDet').open=true; } }
     setSettleMode(d.mode==='reimb'?'reimb':'cashless',true);
     if([d.total,d.counter,d.discount,d.copay,d.reimb].some(Boolean)) $('restoredNote').classList.remove('hide');
   }catch(e){}
 }
 $('restoredClearBtn').addEventListener('click',()=>{
   Object.values(F).forEach(el=>{ el.value=''; }); Object.values(RR).forEach(el=>{ el.value=''; }); markChips(-1); setSettleMode('cashless',true);
+  CUTS={rows:[],total:null,confirmed:false,tried:false}; $('cuts_text').value=''; if(typeof cutsRender==='function') cutsRender(); // R32
   try{ localStorage.removeItem(DRAFT_LS); }catch(e){}
   $('restoredNote').classList.add('hide'); calc(); F.total.focus();
 });
@@ -2911,7 +3027,7 @@ $('egUndoBtn').addEventListener('click',()=>{
 });
 // "Something wrong?" (R22): a pre-filled GitHub issue or email. Nothing from
 // the bill is ever put in it; only the screen language and the app version.
-const APP_VERSION='R31 (Oct 2026)', FEEDBACK_EMAIL='aaryap2024@gmail.com', FEEDBACK_REPO='https://github.com/Aaryap1/ClearBill';
+const APP_VERSION='R32 (Oct 2026)', FEEDBACK_EMAIL='aaryap2024@gmail.com', FEEDBACK_REPO='https://github.com/Aaryap1/ClearBill';
 function feedbackBody(){
   return ['What is wrong (keep the ones that apply):','- a line was read wrongly','- a check looks wrong','- a translation mistake','- a problem with the letter','',
     'Which tab:','What you expected:','','Please do not include your name, policy number or bill details.','','Screen language: '+LANG+' / app version: '+APP_VERSION].join('\n');
@@ -3311,6 +3427,133 @@ function roomKind(l){
   if(RR_SEC.pharmacy.test(s)||RR_DRUG.test(t)) return 'pharmacy';
   return 'other';
 }
+// R32: text pasted by the user, read with no model at all (works while the
+// photo reader is down, and on the backup copy). An amount is a cell or a
+// word that is only a number: "1,200", "₹1,200.00", "Rs. 500", "500/-".
+const CUT_AMT=/^(?:₹|rs\.?|inr)?\s*-?(?:\d{1,3}(?:,\d{2,3})+|\d+)(?:\.\d{1,2})?\s*(?:\/-)?$/i;
+function cutAmount(cell){
+  const t=String(cell==null?'':cell).trim();
+  if(!CUT_AMT.test(t)) return null;
+  return parseAmount(t.replace(/\/-$/,'').trim()).n;
+}
+const DATE_TOKEN=/\b\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}\b/g;
+// A pasted table keeps its columns (tabs, two or more spaces, or "|");
+// text flattened to single spaces is split into runs of words and numbers.
+function cutCells(line){
+  const cells=line.split(/\t|\s{2,}|\|/).map(c=>c.trim()).filter(Boolean);
+  if(cells.length>1&&cells.some(c=>cutAmount(c)!=null)) return cells;
+  // A header row (no numbers at all) keeps its columns, so their names can be read.
+  if(cells.length>1&&!cells.some(c=>c.split(/\s+/).some(t=>cutAmount(t)!=null))) return cells;
+  const out=[]; let buf=[];
+  for(const tk of line.trim().split(/\s+/)){
+    if(/^(?:₹|rs\.?|inr)$/i.test(tk)) continue;
+    if(cutAmount(tk)!=null){ if(buf.length){ out.push(buf.join(' ')); buf=[]; } out.push(tk); } else buf.push(tk);
+  }
+  if(buf.length) out.push(buf.join(' '));
+  return out;
+}
+// An insurer's or TPA's list of deductions -> {rows:[{desc,amount,reason,guess}], total}.
+// Which number is the deduction: the column headed "deducted" / "disallowed" /
+// "non-payable" when a header line names the columns; a lone amount, or two
+// equal ones; otherwise the middle one, marked "check this amount".
+function parseCuts(text){
+  const rows=[]; let total=null, kinds=null;
+  const DED=/deduct|disallow|non[\s-]?pay|not\s+pay|short|cut/i, CLM=/claim|bill|gross|request/i, APR=/approv|admiss|allow|payable|paid|settl|sanction/i;
+  for(const raw of String(text||'').split(/\r?\n/)){
+    const line=raw.replace(DATE_TOKEN,' ').trim(); if(!line) continue;
+    let cells=cutCells(line);
+    if(cells.length>2&&/^\d{1,3}\.?$/.test(cells[0])&&cutAmount(cells[1])==null) cells=cells.slice(1); // a serial number
+    const idx=cells.map((c,i)=>cutAmount(c)!=null?i:-1).filter(i=>i>=0);
+    if(!idx.length){
+      // A header line naming the amount columns sets the order for the rows below it.
+      const k=cells.map(c=>DED.test(c)?'ded':CLM.test(c)?'claimed':APR.test(c)?'appr':null).filter(Boolean);
+      if(k.includes('ded')) kinds=k;
+      else if(rows.length&&!rows[rows.length-1].reason&&cells.join(' ').length<=120) rows[rows.length-1].reason=cells.join(' '); // a reason on the next line
+      continue;
+    }
+    const first=idx[0], last=idx[idx.length-1];
+    const desc=cells.slice(0,first).join(' ').replace(/\s+/g,' ').replace(/[:\-–]+$/,'').trim();
+    const amounts=idx.map(i=>Math.abs(cutAmount(cells[i])));
+    const reason=cells.filter((c,i)=>i>first&&!idx.includes(i)).join(' ').replace(/\s+/g,' ').trim();
+    let amount, guess=false;
+    if(kinds&&kinds.length===amounts.length) amount=amounts[kinds.indexOf('ded')];
+    else if(amounts.length===1) amount=amounts[0];
+    else if(amounts.length===2&&amounts[0]===amounts[1]) amount=amounts[0]; // all of it was cut
+    // Three amounts with no header: claimed - deducted = approved also means
+    // claimed - approved = deducted, so the arithmetic cannot say which column
+    // is the cut. The middle one is taken (the usual order) and marked to check.
+    else { amount=amounts[Math.min(1,amounts.length-1)]; guess=true; }
+    if(/\btotal\b/i.test(desc)){ if(amount>0) total=amount; continue; }
+    if(!desc||/^(?:net|claim(?:ed)?|approved|settled|amount|balance|payable)\b/i.test(desc)&&!reason) continue;
+    if(!(amount>0)) continue; // nothing was cut on this line
+    rows.push({desc,amount:money(amount),reason,guess});
+  }
+  return {rows,total:total!=null?money(total):null};
+}
+// Which kind of cut each row is, from its description and the reason given.
+// Asked about, never judged: the letter asks for the clause and the working.
+const CUT_GROUP_ORDER=['rc','room','copay','list1','lists24','nonpay','other'];
+function cutGroup(r){
+  const t=r.desc+' '+(r.reason||'');
+  if(/co-?pay|deductible/i.test(t)) return 'copay';
+  // Before "capped": a room-rent cap is about the room.
+  if(/\broom\b|proportion|ratabl|pro[\s-]?rata|associated\s+(?:medical\s+)?expenses|eligible\s+(?:room|category)/i.test(t)) return 'room';
+  if(/sub-?limit|capping|capped|\bcap\b|limit(?:ed)?\s+(?:to|as per)|maximum\s+(?:payable|limit)/i.test(t)) return 'copay';
+  if(/reasonable|customary|\br\s*&\s*c\b|excess(?:ive)?\b|benchmark|tariff|higher than|over and above|exceed|prevailing/i.test(t)) return 'rc';
+  const a=analyse({line_items:[{item:r.desc,quantity:1,total:r.amount}]});
+  if(a.exact.length) return a.exact[0].basis==='policy_exclusion'?'nonpay':'list1';
+  if(a.subsumed.length) return 'lists24';
+  if(/non[\s-]?payable|not payable|inadmissible|not admissible|not covered|excluded|exclusion/i.test(t)) return 'nonpay';
+  return 'other';
+}
+function groupCuts(rows){
+  const groups={}; CUT_GROUP_ORDER.forEach(k=>groups[k]=[]);
+  let sum=0, noClause=0;
+  const clauseRe=new RegExp(RP_CLAUSE.source,'i');
+  rows.forEach((r,i)=>{
+    const g=cutGroup(r), clause=clauseRe.test(r.reason||'')||clauseRe.test(r.desc);
+    if(!clause) noClause++;
+    groups[g].push({...r,i,group:g,clause});
+    sum+=r.amount;
+  });
+  return {groups,sum:money(sum),noClause};
+}
+// Lines of an itemised bill pasted as text -> the same shape a photo read gives.
+// The last one to three numbers on a line are its quantity, rate and total;
+// a line with no number is a section heading.
+function parseBillText(text){
+  const items=[], sub={}; let section=null, gross=null;
+  for(const raw of String(text||'').split(/\r?\n/)){
+    const line=raw.replace(DATE_TOKEN,' ').trim(); if(!line) continue;
+    const toks=line.split(/\s+/).filter(Boolean), nums=[], numToks=[];
+    while(toks.length&&nums.length<3){
+      const t=toks[toks.length-1];
+      if(/^(?:₹|rs\.?|inr)$/i.test(t)){ toks.pop(); continue; }
+      const v=cutAmount(t); if(v==null) break;
+      nums.unshift(v); numToks.unshift(toks.pop());
+    }
+    if(!nums.length){ const h=toks.join(' ').replace(/[:\-–|]+$/,'').trim(); if(h&&!/\d/.test(h)&&!/:\s*\S/.test(h)&&h.split(' ').length<=5) section=h; continue; }
+    const tot=nums[nums.length-1];
+    // Which leading numbers are quantity and rate: only if the arithmetic says so.
+    // Any other number belongs to the item's name ("ROOM 101", "CBC 10449").
+    let quantity=1, rate=tot, used=1;
+    const cents=x=>Math.abs(x*100-Math.round(x*100))<1e-6;
+    if(nums.length===3&&nums[0]!==0&&Math.abs(nums[0]*nums[1]-tot)<=Math.max(1,Math.abs(tot)*0.005)){ quantity=nums[0]; rate=nums[1]; used=3; }
+    else if(nums.length>=2){
+      const a0=nums[nums.length-2];
+      if(Math.abs(a0-tot)<0.005) used=2; // rate = amount: one of it
+      else if(Number.isInteger(a0)&&a0>0&&a0<=999&&cents(tot/a0)){ quantity=a0; rate=money(tot/a0); used=2; }
+    }
+    const name=toks.concat(numToks.slice(0,numToks.length-used)).join(' ').replace(/[:\-–|]+$/,'').trim();
+    if(!name) continue;
+    const m=/^total\s+(?:for\s+)?(.+)$/i.exec(name);
+    if(m&&!/^(?:bill|amount)$/i.test(m[1])){ sub[section&&m[1].toLowerCase()===section.toLowerCase()?section:m[1]]=tot; continue; }
+    if(/^(?:grand\s+total|gross(?:\s+amount)?|total(?:\s+bill)?(?:\s+amount)?|bill\s+total)$/i.test(name)){ gross=tot; continue; }
+    if(/^(?:net\s+(?:payable|amount)|amount\s+payable|discount|advance|paid|balance|tax|gst)\b/i.test(name)) continue;
+    items.push({item:name,unit:null,quantity,rate,total:tot,section});
+  }
+  return {is_hospital_bill:true,header:{gross_amount:gross},line_items:items,printed_subtotals:sub};
+}
 function roomRentCheck(a,inp){
   inp=inp||{};
   const listI=new Set(((a&&a.exact)||[]).map(l=>l.item+'|'+l.total));
@@ -3418,6 +3661,7 @@ function renderReport(data){
   if(window.__settle&&window.__settle.warn) h+=`<div class="notez" role="note" style="margin-bottom:10px">${T_.settle_inconsistent_note}</div>`;
   else if(s&&s.copayUnknown) h+=`<div class="notez" role="note" style="margin-bottom:10px">${T_.copay_unknown_note}</div>`;
   // R31: pages the lighter backup model read. Said before anything else, so the rows are checked first.
+  if(data._pasted) h+=`<div class="notez" role="note" id="pastedNote" style="margin-bottom:10px">${T_.pb_note}</div>`; // R32
   if(a.backup.length) h+=`<div class="notez" role="note" id="backupReadNote" style="margin-bottom:10px">${T_.backup_read_note(a.backup.join(', '),a.backup.length)}</div>`;
 
   /* verdict */
@@ -3732,6 +3976,8 @@ function buildLetter(a,include,noScroll){
   // here, nothing more, nothing hidden.
   include=include||{settlement:true,irdai:true,subsumed:true,nppa:true,dup:true,recon:true,room:true};
   const s=settleOk(), H=a.header||{}, D=readLetterDetails();
+  // R32: the insurer's own list of deductions, only once its rows add up (cutsRender).
+  const cuts=include.cuts&&window.__cuts&&window.__cuts.ready?window.__cuts:null;
   // The letter is English whatever the screen language, so its amounts use
   // English formatting too (not the screen language's).
   const inr=makeInr('en');
@@ -3768,9 +4014,29 @@ function buildLetter(a,include,noScroll){
       `I do not know how much of the ${inr.format(s.counter)} ${reimb?'not reimbursed':'I paid'} was co-payment under my policy. Please show how much of it was co-payment and how much was deducted, line by line.`+(D.asked?` I have asked for this before and have not received it.`:``),``]
       : [`      of which co-pay          ${inr.format(s.copayAmt)}`,
       `      of which not itemised    ${inr.format(s.deduction)}`,``,
-      D.asked
+      cuts
+        ? `Your list of deductions is set out below, with my questions on each.`
+        : D.asked
         ? `A breakdown of the ${inr.format(s.deduction)} that I calculate as non-payable has not been provided despite my earlier request.`
         : `I would like a breakdown of the ${inr.format(s.deduction)} that I calculate as non-payable.`,``]));
+  }
+  if(cuts){
+    // R32: each cut by its amount and the reason the insurer gave, then what to
+    // ask about each kind. Nothing here says a cut is wrong: it asks for the
+    // clause and the working (para 17(b), quoted in the requests below).
+    const G=cuts.groups, all=CUT_GROUP_ORDER.flatMap(k=>G[k]);
+    const sumOf=k=>inr.format(money(G[k].reduce((n,r)=>n+r.amount,0))), names=k=>G[k].map(r=>r.desc).join('; ');
+    L.push(`Your settlement letter lists the following deductions, totalling ${inr.format(cuts.sum)}:`,``);
+    all.slice().sort((x,y)=>y.amount-x.amount).forEach(r=>L.push(`  - ${r.desc} - ${inr.format(r.amount)}`+(r.reason?`  (reason given: "${r.reason}")`:`  (no reason given)`)));
+    L.push(``);
+    if(cuts.noClause) L.push(cuts.noClause===all.length?`None of these deductions names a clause of my policy.`:`${cuts.noClause} of these deductions name${cuts.noClause===1?'s':''} no clause of my policy.`,``);
+    if(G.rc.length) L.push(`For the deductions described as reasonable and customary, excess, or above a benchmark or tariff (${names('rc')}; ${sumOf('rc')} in all), please state the clause of my policy relied on, the amount you considered reasonable for each, and the benchmark or tariff used to arrive at it.`,``);
+    if(G.room.length) L.push(`For the deductions linked to the room or applied in proportion to the room rent (${names('room')}; ${sumOf('room')} in all), please state the clause of my policy that provides for them, its definition of 'associated medical expenses', and the charges each was applied to.`
+      +(include.room&&window.__room&&window.__room.over?``:` IRDAI's Master Circular on Protection of Policyholders' Interests (5 September 2024, Schedule-C, para 3.1(ix)) requires a policy to state its sub-limits and proportionate deductions "with cross reference to the concerned policy section".`),``);
+    if(G.copay.length) L.push(`For the co-payment, deductible or sub-limit deductions (${names('copay')}; ${sumOf('copay')} in all), please state the clause of my policy and show how each amount was calculated.`,``);
+    if(G.list1.length) L.push(`The following deducted items appear in List I ("Optional Items") of IRDAI's standardization guidelines (issued in 2019 and consolidated in IRDAI's Master Circular on Standardization of Health Insurance Products of 22 July 2020): ${names('list1')}. As IRDAI's Master Circular on Health Insurance Business of 29 May 2024 superseded the 2020 circular, please confirm whether my policy still applies this list, and whether it offers cover for any of these items.`,``);
+    if(G.lists24.length) L.push(`The following deducted items are among those Lists II-IV of the same guidelines treat as part of the room, procedure or treatment charge rather than a separate line: ${names('lists24')}. Please confirm whether each was paid as part of that charge and, if not, the clause of my policy under which it was deducted.`,``);
+    if(G.nonpay.length||G.other.length) L.push(`For the other deductions (${[names('nonpay'),names('other')].filter(Boolean).join('; ')}), please state the clause of my policy relied on for each.`,``);
   }
   if(a.exact.length&&include.irdai){
     // Two different documents, two different citations — collapsing them into
@@ -3843,7 +4109,7 @@ function buildLetter(a,include,noScroll){
   const reqs=[
     // R18: the rule in force today. Verified verbatim from the English PDF of
     // IRDAI/HLT/CIR/PRO/84/5/2024, para 17 (Settlement of Claims), clause (b).
-    `A line-by-line statement of every amount deducted or treated as non-payable, with the policy clause relied on for each. IRDAI's Master Circular on Health Insurance Business (29 May 2024, para 17(b)) requires that where a claim is disallowed partially, details are conveyed to the claimant "along with full details giving reference to the specific terms and conditions of the policy document"; IRDAI's Master Circular on Protection of Policyholders' Interests (5 September 2024, Part B, V.3(iii)(5)) says the same.`,
+    (cuts?`For each deduction listed above, the policy clause relied on and how the amount was worked out.`:`A line-by-line statement of every amount deducted or treated as non-payable, with the policy clause relied on for each.`)+` IRDAI's Master Circular on Health Insurance Business (29 May 2024, para 17(b)) requires that where a claim is disallowed partially, details are conveyed to the claimant "along with full details giving reference to the specific terms and conditions of the policy document"; IRDAI's Master Circular on Protection of Policyholders' Interests (5 September 2024, Part B, V.3(iii)(5)) says the same.`,
     a.exact.length&&include.irdai
       ? `Confirmation of which of the items listed above were actually declined, whether my policy offers optional cover for any of them, and reconsideration of any amount that is not covered by an exclusion in my policy.`
       : `Reconsideration of any amount that is not covered by an exclusion in my policy.`
@@ -4714,6 +4980,9 @@ function applyStaticI18n(){
    ['hsLblPatient','hs_patient'],['hsLblHospital','hs_hospital'],['hsLblRef','hs_ref'],['hsLblIns','hs_ins'],['hsInsNone','hs_ins_none']].forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
   if(typeof hsRender==='function') hsRender();
   [['rrHead','rr_head'],['rrIntro','rr_intro'],['rrLblLimit','rr_limit'],['rrRateHint','rr_rate_hint'],['rrLblDays','rr_days']].forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
+  // R32: the pasted-text cards
+  [['cutsHead','cuts_head'],['cutsIntro','cuts_intro'],['cutsLblText','cuts_lbl'],['cutsReadBtn','cuts_btn'],['pbHead','pb_head'],['pbIntro','pb_intro'],['pbLbl','pb_lbl'],['pbBtn','pb_btn']].forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
+  $('cuts_text').placeholder=T_.cuts_ph; $('pb_text').placeholder=T_.pb_ph; cutsRender();
   if($('rrLblRate')&&$('rrRateHint')) $('rrLblRate').firstChild.textContent=T_.rr_rate+' ';
   [['ldLblGro','ld_gro'],['ldGroNone','ld_gro_none'],['ldLblDocs','ld_docs'],['ldLblSubmitted','ld_submitted']].forEach(([id,k])=>{ if($(id)) $(id).textContent=T_[k]; });
   [['rpHead','rp_head'],['rpIntro','rp_intro'],['rpLblSent','rp_sent'],['rpStatusLbl','rp_status_q'],['rpYesBtn','rp_yes'],['rpNoBtn','rp_no'],['rpLblText','rp_text'],['rpTextNote','rp_text_note'],
@@ -4868,6 +5137,64 @@ if($('skipToFindingsBtn')) $('skipToFindingsBtn').addEventListener('click',()=>s
 // items the user had removed went to the insurer (R20).
 // A letter needs either a checked bill or settlement figures that add up.
 // With figures alone it asks for the line-by-line breakdown (R21).
+// R32: the insurer's list of deductions, sorted by the reason given. It goes
+// into the letter only once its rows add up to the list's own total (or, with
+// no total in what was pasted, once the user says they checked).
+function cutsRender(){
+  const out=$('cutsOut'); if(!out) return null;
+  // During start-up the figures are restored and calc() runs before the code that
+  // sorts the cuts is defined; touching it then would stop the whole page.
+  if(!_cutsInit) return null;
+  const T_=S(), inr=makeInr(LANG), f=v=>inr.format(v);
+  if(!CUTS.rows.length){ window.__cuts=null; out.innerHTML=CUTS.tried?`<p>${T_.cuts_none}</p>`:''; return null; }
+  const g=groupCuts(CUTS.rows), tot=CUTS.total;
+  const match=tot!=null?Math.abs(g.sum-tot)<1:null, ready=match===true||(match===null&&CUTS.confirmed);
+  window.__cuts={rows:CUTS.rows,groups:g.groups,sum:g.sum,total:tot,ready,noClause:g.noClause};
+  let h=`<p class="rrbig">${T_.cuts_summary(CUTS.rows.length,f(g.sum))}</p>`;
+  if(match===true) h+=`<p>${T_.cuts_total_ok(f(tot))}</p>`;
+  else if(match===false) h+=`<p class="cutsbad" role="alert">${T_.cuts_total_bad(f(g.sum),f(tot))}</p>`;
+  else h+=`<label class="inclrow"><input type="checkbox" id="cutsConfirm"${CUTS.confirmed?' checked':''}><span class="incltext">${T_.cuts_confirm(f(g.sum))}</span></label>`;
+  h+=`<label for="cuts_total">${T_.cuts_total_lbl}</label><div class="fin"><span class="pfx">&#8377;</span><input type="number" id="cuts_total" step="any" min="0" value="${tot!=null?tot:''}"></div>`;
+  const s=settleOk();
+  if(s&&!s.copayUnknown&&s.deduction>0&&Math.abs(s.deduction-g.sum)>=1) h+=`<p class="rrnote">${T_.cuts_vs_settle(f(g.sum),f(s.deduction))}</p>`;
+  CUT_GROUP_ORDER.forEach(k=>{ const rs=g.groups[k]; if(!rs.length) return;
+    h+=`<div class="cutgrp" data-group="${k}"><b>${T_['cuts_g_'+k]}</b><div class="rrnote">${T_['cuts_gx_'+k]}</div><ul>`
+      +rs.map(r=>`<li><span class="cutdesc">${esc(r.desc)}</span> <input type="number" class="cutamt" step="any" min="0" data-i="${r.i}" value="${r.amount}" aria-label="${esc(r.desc)}">`
+        +(r.reason?` <i>${esc(r.reason)}</i>`:'')+(r.clause?'':` <span class="cuttag">${T_.cuts_noclause}</span>`)+(r.guess?` <span class="cuttag">${T_.cuts_guess}</span>`:'')
+        +` <button type="button" class="link cutdel" data-i="${r.i}">${T_.cuts_remove}</button></li>`).join('')+`</ul></div>`; });
+  h+=`<p class="rrnote">${ready?T_.cuts_letter_note:T_.cuts_letter_blocked}</p>`;
+  out.innerHTML=h; return window.__cuts;
+}
+function cutsChanged(){ saveDraft(); renderLetterTab(); if(_letterGenerated && window.__letterA) buildLetter(window.__letterA,_lastLetterInclude,true); }
+$('cutsReadBtn').addEventListener('click',()=>{
+  const p=parseCuts($('cuts_text').value);
+  CUTS={rows:p.rows,total:p.total,confirmed:false,tried:true};
+  cutsChanged(); cutsRender();
+});
+$('cutsOut').addEventListener('change',e=>{
+  const t=e.target;
+  if(t.classList.contains('cutamt')){ const v=parseAmount(t.value).n, r=CUTS.rows[+t.dataset.i]; if(r&&v!=null&&v>0){ r.amount=money(v); r.guess=false; } }
+  else if(t.id==='cuts_total'){ const v=parseAmount(t.value).n; CUTS.total=v!=null&&v>0?money(v):null; }
+  else if(t.id==='cutsConfirm') CUTS.confirmed=t.checked;
+  else return;
+  cutsChanged(); cutsRender();
+});
+$('cutsOut').addEventListener('click',e=>{
+  const b=e.target.closest('.cutdel'); if(!b) return;
+  CUTS.rows.splice(+b.dataset.i,1); if(!CUTS.rows.length) CUTS.tried=false;
+  cutsChanged(); cutsRender(); $('cuts_text').focus();
+});
+_cutsInit=true; cutsRender(); // a list restored with the figures (restoreDraft runs before this code is defined)
+// R32: an itemised bill pasted as text is checked exactly like a photo read,
+// with no model involved.
+$('pbBtn').addEventListener('click',()=>{
+  const T_=S(), d=parseBillText($('pb_text').value);
+  if(!d.line_items.length){ setStatus(T_.pb_none,true); return; }
+  d._pasted=true; _usingWorkedExample=false;
+  $('report').classList.remove('stale');
+  startCase(); renderReport(d);
+  setStatus(T_.pb_done(d.line_items.length));
+});
 function rrNum(el){ const v=parseAmount(el.value).n; return v!=null&&v>0?v:null; }
 function rrRender(){
   const out=$('rrOut'); if(!out) return null;
@@ -4896,16 +5223,17 @@ function rrRender(){
   out.innerHTML=h; return r;
 }
 function renderLetterTab(){
-  const T_=S(); const room=rrRender();
+  const T_=S(); const room=rrRender(), cuts=cutsRender();
   const hasBill = !!(window.__lastExtraction && window.__lastExtraction.line_items && window.__lastExtraction.line_items.length>0);
   const data = hasBill ? window.__lastExtraction : NO_BILL;
-  const s=settleOk(), canWrite = hasBill || !!s;
+  // R32: the insurer's own list of deductions is enough for a letter.
+  const s=settleOk(), canWrite = hasBill || !!s || !!(cuts&&cuts.ready);
   const rj=!!RJ.kind; // R28: a rejected claim needs "Your details" and the reply card, with no bill
   $('letterEmpty').classList.toggle('hide', canWrite||rj||_replyOpened);
   $('letterConfirm').classList.toggle('hide', !canWrite&&!rj&&!_replyOpened);
   $('letterInclCard').classList.toggle('hide', !canWrite); $('genLetterTab').classList.toggle('hide', !canWrite);
   $('replyCard').classList.toggle('hide', !canWrite&&!rj&&!_replyOpened);
-  if(!canWrite) return;
+  if(!canWrite){ $('letterIncludes').innerHTML=''; return; } // no stale rows (R32: a list that stopped adding up)
   // The ticks belong to the bill, not to one copy of it: correcting a row makes a new
   // copy, and used to bring back items the user had removed (R29; E36 regression).
   const inclKey=data._orig||data.line_items; if(_userInclFor!==inclKey){ _userIncl={}; _userInclFor=inclKey; }
@@ -4913,6 +5241,7 @@ function renderLetterTab(){
   window.__letterA=a; // so Generate reads the exact same analysis this checklist was built from
   const rows=[];
   if(s) rows.push(['settlement', T_.letter_confirm_settlement, '✓']);
+  if(cuts&&cuts.ready) rows.push(['cuts', T_.letter_confirm_cuts(cuts.rows.length), inr.format(cuts.sum)]);
   if(a.exact.length) rows.push(['irdai', T_.letter_confirm_irdai(a.exact.length), inr.format(a.exactSum)]);
   if(a.subsumed.length) rows.push(['subsumed', T_.letter_confirm_subsumed(a.subsumed.length), inr.format(a.subsumedSum)]);
   if(a.nppa.length) rows.push(['nppa', T_.letter_confirm_nppa(a.nppa.length), '✓']);
@@ -4943,13 +5272,14 @@ $('clearYesBtn').addEventListener('click',()=>{
   _openedLocalId=null; _replyOpened=false; if(typeof rpRestore==='function') rpRestore(null);
   try{ sessionStorage.removeItem(HS_LS); sessionStorage.removeItem('clearbill_rejection'); }catch(e){} RJ.kind=null; RJ.suggested=null; ['rj_text','rj_date','rj_ref','rj_amount','rj_since','rj_admit'].forEach(id=>{ $(id).value=''; }); $('rj_cashless').checked=false; if(typeof rjRender==='function') rjRender(); HS.kind=null; ['hs_when','hs_patient','hs_hospital','hs_ref','hs_ins'].forEach(id=>{ $(id).value=''; }); hsRender();
   Object.values(F).forEach(el=>{ el.value=''; }); Object.values(RR).forEach(el=>{ el.value=''; }); markChips(-1); setSettleMode('cashless',true); $('apiKey').value='';
+  CUTS={rows:[],total:null,confirmed:false,tried:false}; $('cuts_text').value=''; $('pb_text').value=''; // R32
   LD_FIELDS.forEach(f=>{ $('ld_'+f).value=''; }); $('ld_asked').checked=false; $('ld_docs').checked=false; $('ld_remember').checked=false;
   if(typeof signOut==='function') signOut(); // the My Bills sign-in session is also "saved on this device"
   calc();
   const n=$('clearedNote'); n.textContent=S().cleared_note; n.classList.remove('hide');
 });
 $('genLetterTab').addEventListener('click',()=>{
-  if(!window.__lastExtraction && !settleOk()) return;
+  if(!window.__lastExtraction && !settleOk() && !(window.__cuts&&window.__cuts.ready)) return;
   const a=window.__letterA || analyseFor(window.__lastExtraction||NO_BILL);
   const include={};
   document.querySelectorAll('#letterIncludes input[type=checkbox]').forEach(cb=>{ include[cb.dataset.inc]=cb.checked; });
