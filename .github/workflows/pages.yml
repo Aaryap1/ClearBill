@@ -3,10 +3,10 @@
 # Built by 06_app/lib/build_static.js from the same index.html; photo reading
 # there uses the visitor's own free Gemini key (there is no server).
 #
-# Needs, once: Settings -> Pages -> Build and deployment -> Source: GitHub Actions.
-# Until then the "check" job finds Pages off and the deploy job is skipped
-# (not failed), so pushes stay green. After it is on, set BACKUP_URL in
-# 06_app/index.html so the About tab links to the copy.
+# Pages is on (Settings -> Pages -> Source: GitHub Actions, since 10 Nov 2026)
+# and the copy is live at https://aaryap1.github.io/ClearBill/, which BACKUP_URL
+# in 06_app/index.html links to. If Pages is ever switched off, the "check" job
+# finds it off and the deploy job is skipped (not failed), so pushes stay green.
 name: Backup copy on GitHub Pages
 
 on:
@@ -52,15 +52,15 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - name: Build the backup copy
         run: node 06_app/lib/build_static.js _site
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

@@ -1290,10 +1290,10 @@ let _replyOpened=false; // R30: the reply card was asked for directly (#reply / 
 const HS_LS='clearbill_hospital'; let HS={kind:null}, _hsTimer=null; // R27: "Still in hospital?"
 let _openedLocalId=null; // R25: the saved check now open, so reply work is saved back to it
 const IS_BACKUP=!!document.querySelector('meta[name="clearbill-backup"]'); // R25: the GitHub Pages copy
-// R25: the backup copy's address, shown on the About tab. Empty until GitHub
-// Pages is switched on for the repository and the copy is live, so the link is
-// never dead; then set it to 'https://aaryap1.github.io/ClearBill/'.
-const BACKUP_URL='';
+// R25: the backup copy's address, shown on the About tab. Live since GitHub
+// Pages was switched on (10 Nov 2026). Set it back to '' if Pages is ever
+// switched off, so the link is never dead.
+const BACKUP_URL='https://aaryap1.github.io/ClearBill/';
 let RP={status:null,checked:false,err:false,res:null,ans:{},outcome:null,docs:false,show:null}; // R24: the reply card // R23: keep "Rows to check" open after a correction
 const _analyses=new WeakMap(); // analyseFor() cache (R20)
 let _myBills=[], BILLS_ON=false, GOOGLE_CLIENT_ID=null, ID_TOKEN=null, ID_TOKEN_NAME=null;
