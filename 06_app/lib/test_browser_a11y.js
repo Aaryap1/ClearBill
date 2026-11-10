@@ -21,6 +21,7 @@ const PORT = 18621;
 (async () => {
   const srv = spawn(process.execPath, [path.join(__dirname, '..', 'server.js')], { env: { ...process.env, PORT: String(PORT), GEMINI_API_KEY: '' }, stdio: 'ignore' });
   for (let i = 0; i < 60; i++) { try { await fetch(`http://127.0.0.1:${PORT}/api/config`); break; } catch (e) { await sleep(100); } }
+  try { fs.rmSync(path.join(os.tmpdir(), 'a11y_test_profile'), { recursive: true, force: true, maxRetries: 5, retryDelay: 300 }); } catch (e) {} // a leftover from an earlier, interrupted run
   const p = spawn(chrome, ['--headless=new', '--disable-gpu', '--remote-debugging-port=9353', '--user-data-dir=' + path.join(os.tmpdir(), 'a11y_test_profile'), 'about:blank'], { stdio: 'ignore' });
   let tabs; for (let i = 0; i < 30 && !tabs; i++) { await sleep(300); try { tabs = await (await fetch('http://127.0.0.1:9353/json')).json(); } catch (e) {} }
   const ws = new WebSocket(tabs.find(t => t.type === 'page').webSocketDebuggerUrl); await new Promise(r => ws.onopen = r);
@@ -33,6 +34,7 @@ const PORT = 18621;
   const load = async () => { await send('Page.navigate', { url: `http://127.0.0.1:${PORT}/` }); await sleep(1800); await ev(`localStorage.clear(); sessionStorage.clear(); setLang('en');`); };
   const tab = async () => { await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 }); await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 }); };
   await send('Page.enable'); await send('Runtime.enable');
+  await send('Page.setDownloadBehavior', { behavior: 'deny' }); // never into the owner's Downloads folder
 
   try {
     await size(390, 844); await theme('light'); await load();
@@ -131,7 +133,11 @@ const PORT = 18621;
     await ev(`document.getElementById('changePhotosBtn').click();`); await sleep(100);
     ok(await ev(`return !document.getElementById('uploadCard').classList.contains('compact') && document.activeElement.id==='drop'`), '"Change photos" opens the upload card again, with focus on the photo picker');
     ok(errs.length === 0, 'no page errors', errs.join(' | ').slice(0, 300));
-  } finally { ws.close(); p.kill(); srv.kill(); }
+  } finally {
+    ws.close(); p.kill(); srv.kill();
+    await new Promise(r => { p.once('exit', r); setTimeout(r, 3000); }); // then remove the test browser's profile
+    try { fs.rmSync(path.join(os.tmpdir(), 'a11y_test_profile'), { recursive: true, force: true, maxRetries: 10, retryDelay: 500 }); } catch (e) {}
+  }
   console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(2); });

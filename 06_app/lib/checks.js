@@ -646,7 +646,7 @@ function analyse(data,now){
   // page rejected as not-a-bill. Set by the upload flow on the merged object.
   const partial=data._pageCount===1||(data._rejected||0)>0;
   const subtotals = data.printed_subtotals && Object.keys(data.printed_subtotals).length ? data.printed_subtotals : null;
-  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,similarDups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nppaDated,nppaKneeDated,nppaUnmatched,nonLatin,subtotals,unreadable,unreadableRows,reconCompared,reconBlocked,partial,subsumed,subsumedSum,rejected:data._rejected||0,pageCount:data._pageCount||null};
+  return {lines,header:H,exact,review,exactSum:sum(exact),reviewSum:sum(review),lineSum,recon,dups,similarDups,missing,malformed,redacted,noUnit,nppa,nppaGst,nppaStale,nppaCompared,nppaSkipped,nppaDated,nppaKneeDated,nppaUnmatched,nonLatin,subtotals,unreadable,unreadableRows,reconCompared,reconBlocked,partial,subsumed,subsumedSum,rejected:data._rejected||0,pageCount:data._pageCount||null,backup:Array.isArray(data._backupPages)?data._backupPages.slice():[]};
 }
 // Rows to check against the paper bill (R21). Possible READING mistakes,
 // never findings about the hospital, never in the letter:
@@ -745,6 +745,133 @@ function roomKind(l){
   if(RR_SEC.pharmacy.test(s)||RR_DRUG.test(t)) return 'pharmacy';
   return 'other';
 }
+// R32: text pasted by the user, read with no model at all (works while the
+// photo reader is down, and on the backup copy). An amount is a cell or a
+// word that is only a number: "1,200", "₹1,200.00", "Rs. 500", "500/-".
+const CUT_AMT=/^(?:₹|rs\.?|inr)?\s*-?(?:\d{1,3}(?:,\d{2,3})+|\d+)(?:\.\d{1,2})?\s*(?:\/-)?$/i;
+function cutAmount(cell){
+  const t=String(cell==null?'':cell).trim();
+  if(!CUT_AMT.test(t)) return null;
+  return parseAmount(t.replace(/\/-$/,'').trim()).n;
+}
+const DATE_TOKEN=/\b\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}\b/g;
+// A pasted table keeps its columns (tabs, two or more spaces, or "|");
+// text flattened to single spaces is split into runs of words and numbers.
+function cutCells(line){
+  const cells=line.split(/\t|\s{2,}|\|/).map(c=>c.trim()).filter(Boolean);
+  if(cells.length>1&&cells.some(c=>cutAmount(c)!=null)) return cells;
+  // A header row (no numbers at all) keeps its columns, so their names can be read.
+  if(cells.length>1&&!cells.some(c=>c.split(/\s+/).some(t=>cutAmount(t)!=null))) return cells;
+  const out=[]; let buf=[];
+  for(const tk of line.trim().split(/\s+/)){
+    if(/^(?:₹|rs\.?|inr)$/i.test(tk)) continue;
+    if(cutAmount(tk)!=null){ if(buf.length){ out.push(buf.join(' ')); buf=[]; } out.push(tk); } else buf.push(tk);
+  }
+  if(buf.length) out.push(buf.join(' '));
+  return out;
+}
+// An insurer's or TPA's list of deductions -> {rows:[{desc,amount,reason,guess}], total}.
+// Which number is the deduction: the column headed "deducted" / "disallowed" /
+// "non-payable" when a header line names the columns; a lone amount, or two
+// equal ones; otherwise the middle one, marked "check this amount".
+function parseCuts(text){
+  const rows=[]; let total=null, kinds=null;
+  const DED=/deduct|disallow|non[\s-]?pay|not\s+pay|short|cut/i, CLM=/claim|bill|gross|request/i, APR=/approv|admiss|allow|payable|paid|settl|sanction/i;
+  for(const raw of String(text||'').split(/\r?\n/)){
+    const line=raw.replace(DATE_TOKEN,' ').trim(); if(!line) continue;
+    let cells=cutCells(line);
+    if(cells.length>2&&/^\d{1,3}\.?$/.test(cells[0])&&cutAmount(cells[1])==null) cells=cells.slice(1); // a serial number
+    const idx=cells.map((c,i)=>cutAmount(c)!=null?i:-1).filter(i=>i>=0);
+    if(!idx.length){
+      // A header line naming the amount columns sets the order for the rows below it.
+      const k=cells.map(c=>DED.test(c)?'ded':CLM.test(c)?'claimed':APR.test(c)?'appr':null).filter(Boolean);
+      if(k.includes('ded')) kinds=k;
+      else if(rows.length&&!rows[rows.length-1].reason&&cells.join(' ').length<=120) rows[rows.length-1].reason=cells.join(' '); // a reason on the next line
+      continue;
+    }
+    const first=idx[0], last=idx[idx.length-1];
+    const desc=cells.slice(0,first).join(' ').replace(/\s+/g,' ').replace(/[:\-–]+$/,'').trim();
+    const amounts=idx.map(i=>Math.abs(cutAmount(cells[i])));
+    const reason=cells.filter((c,i)=>i>first&&!idx.includes(i)).join(' ').replace(/\s+/g,' ').trim();
+    let amount, guess=false;
+    if(kinds&&kinds.length===amounts.length) amount=amounts[kinds.indexOf('ded')];
+    else if(amounts.length===1) amount=amounts[0];
+    else if(amounts.length===2&&amounts[0]===amounts[1]) amount=amounts[0]; // all of it was cut
+    // Three amounts with no header: claimed - deducted = approved also means
+    // claimed - approved = deducted, so the arithmetic cannot say which column
+    // is the cut. The middle one is taken (the usual order) and marked to check.
+    else { amount=amounts[Math.min(1,amounts.length-1)]; guess=true; }
+    if(/\btotal\b/i.test(desc)){ if(amount>0) total=amount; continue; }
+    if(!desc||/^(?:net|claim(?:ed)?|approved|settled|amount|balance|payable)\b/i.test(desc)&&!reason) continue;
+    if(!(amount>0)) continue; // nothing was cut on this line
+    rows.push({desc,amount:money(amount),reason,guess});
+  }
+  return {rows,total:total!=null?money(total):null};
+}
+// Which kind of cut each row is, from its description and the reason given.
+// Asked about, never judged: the letter asks for the clause and the working.
+const CUT_GROUP_ORDER=['rc','room','copay','list1','lists24','nonpay','other'];
+function cutGroup(r){
+  const t=r.desc+' '+(r.reason||'');
+  if(/co-?pay|deductible/i.test(t)) return 'copay';
+  // Before "capped": a room-rent cap is about the room.
+  if(/\broom\b|proportion|ratabl|pro[\s-]?rata|associated\s+(?:medical\s+)?expenses|eligible\s+(?:room|category)/i.test(t)) return 'room';
+  if(/sub-?limit|capping|capped|\bcap\b|limit(?:ed)?\s+(?:to|as per)|maximum\s+(?:payable|limit)/i.test(t)) return 'copay';
+  if(/reasonable|customary|\br\s*&\s*c\b|excess(?:ive)?\b|benchmark|tariff|higher than|over and above|exceed|prevailing/i.test(t)) return 'rc';
+  const a=analyse({line_items:[{item:r.desc,quantity:1,total:r.amount}]});
+  if(a.exact.length) return a.exact[0].basis==='policy_exclusion'?'nonpay':'list1';
+  if(a.subsumed.length) return 'lists24';
+  if(/non[\s-]?payable|not payable|inadmissible|not admissible|not covered|excluded|exclusion/i.test(t)) return 'nonpay';
+  return 'other';
+}
+function groupCuts(rows){
+  const groups={}; CUT_GROUP_ORDER.forEach(k=>groups[k]=[]);
+  let sum=0, noClause=0;
+  const clauseRe=new RegExp(RP_CLAUSE.source,'i');
+  rows.forEach((r,i)=>{
+    const g=cutGroup(r), clause=clauseRe.test(r.reason||'')||clauseRe.test(r.desc);
+    if(!clause) noClause++;
+    groups[g].push({...r,i,group:g,clause});
+    sum+=r.amount;
+  });
+  return {groups,sum:money(sum),noClause};
+}
+// Lines of an itemised bill pasted as text -> the same shape a photo read gives.
+// The last one to three numbers on a line are its quantity, rate and total;
+// a line with no number is a section heading.
+function parseBillText(text){
+  const items=[], sub={}; let section=null, gross=null;
+  for(const raw of String(text||'').split(/\r?\n/)){
+    const line=raw.replace(DATE_TOKEN,' ').trim(); if(!line) continue;
+    const toks=line.split(/\s+/).filter(Boolean), nums=[], numToks=[];
+    while(toks.length&&nums.length<3){
+      const t=toks[toks.length-1];
+      if(/^(?:₹|rs\.?|inr)$/i.test(t)){ toks.pop(); continue; }
+      const v=cutAmount(t); if(v==null) break;
+      nums.unshift(v); numToks.unshift(toks.pop());
+    }
+    if(!nums.length){ const h=toks.join(' ').replace(/[:\-–|]+$/,'').trim(); if(h&&!/\d/.test(h)&&!/:\s*\S/.test(h)&&h.split(' ').length<=5) section=h; continue; }
+    const tot=nums[nums.length-1];
+    // Which leading numbers are quantity and rate: only if the arithmetic says so.
+    // Any other number belongs to the item's name ("ROOM 101", "CBC 10449").
+    let quantity=1, rate=tot, used=1;
+    const cents=x=>Math.abs(x*100-Math.round(x*100))<1e-6;
+    if(nums.length===3&&nums[0]!==0&&Math.abs(nums[0]*nums[1]-tot)<=Math.max(1,Math.abs(tot)*0.005)){ quantity=nums[0]; rate=nums[1]; used=3; }
+    else if(nums.length>=2){
+      const a0=nums[nums.length-2];
+      if(Math.abs(a0-tot)<0.005) used=2; // rate = amount: one of it
+      else if(Number.isInteger(a0)&&a0>0&&a0<=999&&cents(tot/a0)){ quantity=a0; rate=money(tot/a0); used=2; }
+    }
+    const name=toks.concat(numToks.slice(0,numToks.length-used)).join(' ').replace(/[:\-–|]+$/,'').trim();
+    if(!name) continue;
+    const m=/^total\s+(?:for\s+)?(.+)$/i.exec(name);
+    if(m&&!/^(?:bill|amount)$/i.test(m[1])){ sub[section&&m[1].toLowerCase()===section.toLowerCase()?section:m[1]]=tot; continue; }
+    if(/^(?:grand\s+total|gross(?:\s+amount)?|total(?:\s+bill)?(?:\s+amount)?|bill\s+total)$/i.test(name)){ gross=tot; continue; }
+    if(/^(?:net\s+(?:payable|amount)|amount\s+payable|discount|advance|paid|balance|tax|gst)\b/i.test(name)) continue;
+    items.push({item:name,unit:null,quantity,rate,total:tot,section});
+  }
+  return {is_hospital_bill:true,header:{gross_amount:gross},line_items:items,printed_subtotals:sub};
+}
 function roomRentCheck(a,inp){
   inp=inp||{};
   const listI=new Set(((a&&a.exact)||[]).map(l=>l.item+'|'+l.total));
@@ -788,4 +915,4 @@ function coverMonths(since,to){
   let m=(b[0]-a[0])*12+(b[1]-a[1]); if(b[2]<a[2]) m--; return m;
 }
 
-module.exports = { NON_PAYABLE, SUBSUMED, NPPA, OMBUDSMAN, OMBUDSMAN_READ_ON, GRO, GRO_READ_ON, GRO_LIST_UPDATED, NPPA_KNEE_VALID_TO, NPPA_STENT_REVIEW_FROM, INDIA_STATES, checkReply, roomRentCheck, roomKind, rejectionReason, coverMonths, ombudsmanFor, IS19493_HEADER, GSTIN_RE, money, bestMatch, bestMatchIn, parseAmount, billDateRange, analyse, readingChecks };
+module.exports = { parseCuts, groupCuts, cutGroup, parseBillText, cutAmount, NON_PAYABLE, SUBSUMED, NPPA, OMBUDSMAN, OMBUDSMAN_READ_ON, GRO, GRO_READ_ON, GRO_LIST_UPDATED, NPPA_KNEE_VALID_TO, NPPA_STENT_REVIEW_FROM, INDIA_STATES, checkReply, roomRentCheck, roomKind, rejectionReason, coverMonths, ombudsmanFor, IS19493_HEADER, GSTIN_RE, money, bestMatch, bestMatchIn, parseAmount, billDateRange, analyse, readingChecks };

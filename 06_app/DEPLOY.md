@@ -180,6 +180,19 @@ Since R16 it also:
 - reads at most `READ_INFLIGHT_MAX` photos at once per instance (4). Others wait in a queue of `READ_QUEUE_MAX` (16) for up to `READ_QUEUE_WAIT_MS` (45 s), with their upload not yet read.
 - My Bills: limits a request to 40 KB (`BILLS_MAX_BODY_BYTES`), an account to `BILLS_MAX_PER_USER` saved bills (100), and saves plus edits to `BILLS_WRITES_PER_USER` per 10 minutes (60), and checks the type and length of every field.
 
+**Reading limits, honestly (R31).** Google's free tier gives each model its own allowance, per project. On 22 Oct 2026, gemini-3.6-flash allowed 20 requests a day and 5 a minute; gemini-3.5-flash-lite allowed 500 a day. `lib/reader_quota.js` counts each model separately, and its day turns over when Google's does (midnight Pacific time). A 429 from Google is believed over the server's own count. A per-minute 429 rests the model for a minute; a per-day 429 puts it aside until tomorrow. `/api/config` reports `readsLeft`, and the upload area shows it when it matters.
+- A backup model reads only when the main one's allowance is spent. It must pass the reading bench first (below), and it is listed in `BACKUP_MODELS` in `lib/reader_quota.js` and `DIRECT_MODELS` in `index.html`. Pages it reads are labelled "read by the backup reader: check these rows".
+- **A 402 from Google ("prepayment credits are depleted")** means the key's project has billing linked. AI Studio then treats it as paid, with no credit, and every model refuses. The page says the free reader is not working (and offers the own-key box), and `/api/health` answers 503 so you are told.
+- **The fix for a 402.** In AI Studio, create a key in a project with **no billing account**, and store it as a new secret version (`printf '%s' 'NEW_KEY' | gcloud secrets versions add GEMINI_API_KEY --data-file=-`). Then deploy again, so a new revision reads it. Never link billing to the key's project.
+
+**The reading bench (R31).** `lib/photo_bench.js` sends the synthetic bills (`05_synthetic_corpus`) through the real app path (headless Chrome, `downscaleImage`, `readPages`, `server.js`, Google) with one named model. It scores the result against the known truth and writes `05_synthetic_corpus/bench/scores.json`.
+- Two tiers: `photo` (the old degraded renders) and `harsh` (`make-harsh`: smaller, tilted, shadowed, noisy).
+- It uses one free call per bill, so gemini-3.6-flash's 20 a day go quickly. Use synthetic bills only, never a real patient's.
+
+```
+GEMINI_API_KEY=... node --experimental-websocket lib/photo_bench.js run --model gemini-3.5-flash-lite --tier photo
+```
+
 **Health and alerts.** `GET /api/health` answers 200 `{"ok":true}` while photos can be read. It answers 503 when there is no server key, or when Google refuses the key or the model. It checks this with Google's model-metadata call: no photo, no generation quota, at most once per 5 minutes per instance. Point the Cloud Monitoring uptime check at `/api/health` with the content check `"ok":true`, and the "site is down" alert then also fires for a revoked key or a retired model.
 
 **After every deploy** run the smoke test against the live URL. It reads no photo and saves nothing:

@@ -41,7 +41,18 @@ const { analyse } = require('./lib/checks'); // the app's own rules, generated f
 
 const PORT = process.env.PORT || 8080;
 const KEY = process.env.GEMINI_API_KEY || '';
-const MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash'; // confirmed working 9 Sep 2026 — see 06_app/index.html for the full story
+// R31: the models that read photos, in order — the main one (gemini-3.6-flash,
+// confirmed working 9 Sep 2026; see index.html for the full story), then a
+// backup used only when Google says the main one's free allowance is spent.
+// GEMINI_MODELS overrides the whole list; the live service's GEMINI_MODEL
+// still names the main one. Each model's free daily allowance is counted in
+// lib/reader_quota.js; GEMINI_MODEL_CAPS ("model:n,...") overrides it.
+// A model may join this chain only after lib/photo_bench.js has scored it
+// (lib/test_reference.js checks 05_synthetic_corpus/bench/scores.json).
+const { createQuota, chainFromEnv, parseCaps, quotaDay } = require('./lib/reader_quota');
+const MODELS = chainFromEnv(process.env);
+const MODEL = MODELS[0];
+const quota = createQuota({ chain: MODELS, caps: parseCaps(process.env.GEMINI_MODEL_CAPS) });
 const GEMINI_BASE = process.env.GEMINI_BASE || 'https://generativelanguage.googleapis.com';
 const ROOT = __dirname;
 
@@ -73,7 +84,7 @@ const ATTEMPT_MAX = Number(process.env.ATTEMPT_MAX_PER_IP) || 120;   // every PO
 const READ_INFLIGHT_MAX = Number(process.env.READ_INFLIGHT_MAX) || 4; // photos read at the same time, per instance
 const READ_QUEUE_MAX = Number(process.env.READ_QUEUE_MAX) || 16;     // photos waiting for a turn
 const READ_QUEUE_WAIT_MS = Number(process.env.READ_QUEUE_WAIT_MS) || 45 * 1000;
-const DAILY_CAP = Number(process.env.DAILY_CAP) || 600;              // calls per UTC day, per instance
+const DAILY_CAP = Number(process.env.DAILY_CAP) || 600;              // pages per Google quota day (midnight Pacific), per instance — a ceiling over all models; each model's own free allowance is in lib/reader_quota.js
 const UPSTREAM_TIMEOUT_MS = Number(process.env.UPSTREAM_TIMEOUT_MS) || 90 * 1000;
 
 const TYPES = {
@@ -118,7 +129,7 @@ function sendJson(res, code, obj, extra) { send(res, code, JSON.stringify(obj), 
 
 /* ---- abuse limits (in-memory; see header comment for what that means) ---- */
 const ipHits = new Map();
-let day = new Date().toISOString().slice(0, 10), dayCount = 0;
+let day = quotaDay(Date.now()), dayCount = 0;
 // Cloud Run appends the real client address to the END of X-Forwarded-For, so
 // the right-most entry is the one a caller cannot spoof by sending the header.
 function clientIp(req) {
@@ -133,9 +144,10 @@ function clientIp(req) {
 // together, so the cap can be overshot by at most the number of concurrent
 // requests; the recheck at count time keeps that bounded.
 function admit(req, count) {
-  const now = Date.now(), today = new Date(now).toISOString().slice(0, 10);
+  const now = Date.now(), today = quotaDay(now);
   if (today !== day) { day = today; dayCount = 0; }
   if (dayCount >= DAILY_CAP) return { ok: false, why: 'daily' };
+  if (!quota.pick()) return { ok: false, why: 'models' }; // every model's allowance is spent for now (R31)
   const ip = clientIp(req);
   const recent = (ipHits.get(ip) || []).filter(t => now - t < IP_WINDOW_MS);
   if (recent.length >= IP_MAX) { ipHits.set(ip, recent); return { ok: false, why: 'ip' }; }
@@ -196,6 +208,12 @@ const OVERLOAD_WINDOW_MS = 15 * 60 * 1000;
 // 400 too, so a 400 counts only when Google names the key as the reason.
 // It stays 'broken' until a read or the key check below succeeds again.
 let lastUpstreamBrokenAt = 0, lastKeyOkAt = 0;
+// R31: Google answered 402 ("prepayment credits are depleted"): the key's
+// project has billing linked, so it is on the paid tier with no credit, and
+// EVERY model refuses. The model-metadata check below still succeeds, so this
+// is cleared only by a photo actually read, never by that check. Before R31 a
+// 402 looked like a bad photo and nobody was told (found 22 Oct 2026).
+let lastBillingRefusedAt = 0;
 function isBrokenAnswer(status, bodyText) {
   if (status === 401 || status === 403 || status === 404) return true;
   return status === 400 && /API_KEY_INVALID|API_KEY_EXPIRED|API key (not valid|expired)/i.test(bodyText || '');
@@ -215,6 +233,9 @@ function probeGemini() {
       const r = await fetch(`${GEMINI_BASE}/v1beta/models/${MODEL}?key=${KEY}`, { signal: ac.signal });
       if (r.ok) { lastKeyOkAt = Date.now(); return; }
       const b = r.status === 400 ? await r.text().catch(() => '') : '';
+      // R31: a missing main model is not a refused key. The backup can still
+      // read, but /api/health answers 503 so the owner is told.
+      if (r.status === 404 && MODELS.length > 1) { quota.gone(MODEL); console.log('[probe] main model not found; backup in use'); return; }
       if (isBrokenAnswer(r.status, b)) { lastUpstreamBrokenAt = Date.now(); console.log('[probe] key/model refused', r.status); }
       else console.log('[probe] status', r.status);
     } catch (e) { console.log('[probe] network', e && e.name); } // Google unreachable is not proof of a broken key
@@ -222,20 +243,34 @@ function probeGemini() {
   })();
   return probe.p;
 }
+// R31: 'backup' = the main model's free allowance is spent (or the model is
+// gone), and a lighter backup model is reading instead.
 function readerState() {
   if (!KEY) return 'off';
   if (lastUpstreamBrokenAt > Math.max(lastUpstreamOkAt, lastKeyOkAt)) return 'broken';
-  const today = new Date().toISOString().slice(0, 10);
-  if (today === day && dayCount >= DAILY_CAP) return 'busy';
+  if (lastBillingRefusedAt > lastUpstreamOkAt) return 'broken';
+  const q = quota.state();
+  if (q === 'gone') return 'broken';
+  const today = quotaDay(Date.now());
+  if ((today === day && dayCount >= DAILY_CAP) || q === 'busy') return 'busy';
   if (lastUpstreamOverloadAt > lastUpstreamOkAt && Date.now() - lastUpstreamOverloadAt < OVERLOAD_WINDOW_MS) return 'overloaded';
-  return 'ok';
+  return q; // 'ok' or 'backup'
+}
+// Page reads left today, for the upload area (R31): the smaller of what the
+// models have left and this instance's own ceiling. An estimate (per instance).
+function readsLeft() {
+  if (!KEY) return 0;
+  const today = quotaDay(Date.now());
+  const ceiling = Math.max(0, DAILY_CAP - (today === day ? dayCount : 0));
+  return Math.min(ceiling, quota.left());
 }
 // For the uptime check (R16): 200 while photos can be read (including 'busy'
 // and 'overloaded', which pass on their own), 503 when the free reader is off
-// or broken, so the owner gets the "site is down" email for those too.
+// or broken, so the owner gets the "site is down" email for those too — and
+// (R31) when the main model is gone, even though the backup still reads.
 async function healthHandler(req, res) {
   await probeGemini();
-  const reader = readerState(), ok = reader !== 'off' && reader !== 'broken';
+  const reader = readerState(), ok = reader !== 'off' && reader !== 'broken' && !quota.isGone(MODEL);
   sendJson(res, ok ? 200 : 503, { ok, reader }, { 'Cache-Control': 'no-store' });
 }
 
@@ -453,34 +488,61 @@ async function readBill(req, res, kind = READ_BILL) {
       const mime = mime_type ? String(mime_type) : 'image/jpeg';
       if (!IMAGE_MIME.test(mime)) return sendJson(res, 415, { error: 'unsupported', message: 'Only photos (JPG, PNG, WebP) can be read.' });
 
-      const body = {
+      // Gemma models (R31: only once the bench has scored them) take no JSON
+      // mode; the prompt already asks for JSON only, and the answer is checked below.
+      const bodyFor = model => ({
         contents: [{ parts: [{ text: kind.prompt }, { inline_data: { mime_type: mime, data } }] }],
-        generationConfig: { temperature: 0, response_mime_type: 'application/json' }
-      };
+        generationConfig: /^gemma/i.test(model) ? { temperature: 0 } : { temperature: 0, response_mime_type: 'application/json' }
+      });
       // The request is valid: count it now (see admit()).
       const paid = admit(req, true);
       if (!paid.ok) { console.log('[limit]', paid.why); return sendJson(res, 429, BUSY, { 'Retry-After': '300' }); }
 
       // Stop the upstream call if the phone goes away (dropped signal, Cancel
       // pressed) or the timeout passes, so an abandoned read does not keep an
-      // instance busy for the full timeout.
+      // instance busy for the full timeout. One timeout covers every model tried.
       const ac = new AbortController();
       const timer = setTimeout(() => ac.abort(), UPSTREAM_TIMEOUT_MS);
       let clientGone = false;
       res.on('close', () => { clearTimeout(timer); if (!res.writableEnded) { clientGone = true; ac.abort(); } });
-      let r;
-      try {
-        r = await fetch(`${GEMINI_BASE}/v1beta/models/${MODEL}:generateContent?key=${KEY}`,
-          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: ac.signal });
-      } catch (e) {
-        if (clientGone) { console.log('[upstream] client left, call aborted'); return; }
-        console.log('[upstream] timeout/network', e && e.name);
-        return sendJson(res, 504, { error: 'timeout', message: 'Reading the photo took too long. Please try again.' });
+      // R31: try the main model; if Google says its free allowance is spent
+      // (429) or it no longer exists (404), the same photo goes to the next
+      // model in the chain. Any other answer is final.
+      let r, model = quota.pick();
+      while (true) {
+        if (!model) return sendJson(res, 429, BUSY, { 'Retry-After': '300' });
+        quota.count(model);
+        try {
+          r = await fetch(`${GEMINI_BASE}/v1beta/models/${model}:generateContent?key=${KEY}`,
+            { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(bodyFor(model)), signal: ac.signal });
+        } catch (e) {
+          if (clientGone) { console.log('[upstream] client left, call aborted'); return; }
+          console.log('[upstream] timeout/network', e && e.name);
+          return sendJson(res, 504, { error: 'timeout', message: 'Reading the photo took too long. Please try again.' });
+        }
+        if (r.status === 429) {
+          // Read only to tell the per-minute limit from the per-day one; never logged or forwarded.
+          quota.refused(model, await r.text().catch(() => ''));
+          console.log('[upstream] 429 from', model);
+        } else if (r.status === 404 && MODELS.length > 1) {
+          quota.gone(model); console.log('[upstream] model not found:', model);
+        } else break;
+        const next = quota.pick();
+        if (!next || next === model) break;
+        model = next;
       }
       if (!r.ok) {
         console.log('[upstream] status', r.status); // status only — never log or forward Google's body
         // Google's answer is read here only to tell a refused key from a bad photo.
         const b = r.status === 400 ? await r.text().catch(() => '') : '';
+        if (r.status === 402) {
+          lastBillingRefusedAt = Date.now(); console.log('[upstream] 402: no credit on the key project (billing linked?)');
+          return sendJson(res, 502, { error: 'broken', message: 'The free reading service is not working right now. You can still read your bill with your own free Gemini key.' });
+        }
+        if (r.status === 404 && quota.state() === 'gone') {
+          lastUpstreamBrokenAt = Date.now(); console.log('[upstream] every model gone');
+          return sendJson(res, 502, { error: 'broken', message: 'The free reading service is not working right now. You can still read your bill with your own free Gemini key.' });
+        }
         if (isBrokenAnswer(r.status, b)) {
           lastUpstreamBrokenAt = Date.now(); console.log('[upstream] key/model refused');
           return sendJson(res, 502, { error: 'broken', message: 'The free reading service is not working right now. You can still read your bill with your own free Gemini key.' });
@@ -506,7 +568,8 @@ async function readBill(req, res, kind = READ_BILL) {
       try { const v = JSON.parse(cleaned); ok = !!v && typeof v === 'object' && !Array.isArray(v); } catch (e) { ok = false; }
       if (!ok) return sendJson(res, 502, { error: 'unreadable', message: 'The photo could not be read (unreadable answer). Try a clearer photo.' });
       lastUpstreamOkAt = Date.now();
-      send(res, 200, cleaned, TYPES['.json']);
+      // R31: which model read it. 'backup' tells the page to ask the user to check those rows.
+      send(res, 200, cleaned, TYPES['.json'], { 'X-ClearBill-Reader': model === MODEL ? 'main' : 'backup', 'X-ClearBill-Model': model });
       if (kind.count) countImpact(cleaned); // after the answer is sent: counting can never slow down or break a read
     } catch (e) {
       console.log('[error]', String(e.message || e));
@@ -551,7 +614,7 @@ http.createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
   if (req.method === 'POST' && url.pathname === '/api/read-bill') return readBill(req, res);
   if (req.method === 'POST' && url.pathname === '/api/read-reply') return readBill(req, res, READ_REPLY);
-  if (url.pathname === '/api/config') return sendJson(res, 200, { proxy: !!KEY, reader: readerState(), bills: BILLS_ON, googleClientId: BILLS_ON ? GOOGLE_CLIENT_ID : null });
+  if (url.pathname === '/api/config') return sendJson(res, 200, { proxy: !!KEY, reader: readerState(), readsLeft: readsLeft(), bills: BILLS_ON, googleClientId: BILLS_ON ? GOOGLE_CLIENT_ID : null });
   if (req.method === 'GET' && url.pathname === '/api/impact') return impactHandler(req, res);
   if (req.method === 'GET' && url.pathname === '/api/health') return healthHandler(req, res);
   if (req.method === 'GET' && url.pathname === '/api/bills') return listBillsHandler(req, res);

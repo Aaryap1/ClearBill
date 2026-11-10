@@ -42,6 +42,7 @@ const WATCH = `window.__csp = []; document.addEventListener('securitypolicyviola
 
 (async () => {
   const port = srv.address().port;
+  try { fs.rmSync(path.join(os.tmpdir(), 'static_test_profile'), { recursive: true, force: true, maxRetries: 5, retryDelay: 300 }); } catch (e) {} // a leftover from an earlier, interrupted run
   const p = spawn(chrome, ['--headless=new', '--disable-gpu', '--remote-debugging-port=9363', '--user-data-dir=' + path.join(os.tmpdir(), 'static_test_profile'), 'about:blank'], { stdio: 'ignore' });
   let tabs; for (let i = 0; i < 40 && !tabs; i++) { await sleep(300); try { tabs = await (await fetch('http://127.0.0.1:9363/json')).json(); } catch (e) {} }
   const ws = new WebSocket(tabs.find(t => t.type === 'page').webSocketDebuggerUrl); await new Promise(r => ws.onopen = r);
@@ -51,6 +52,7 @@ const WATCH = `window.__csp = []; document.addEventListener('securitypolicyviola
   const ev = async js => { const r = await send('Runtime.evaluate', { expression: '(async()=>{' + js + '})()', awaitPromise: true, returnByValue: true }); if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description || r.exceptionDetails.text); return r.result?.value; };
   try {
     await send('Page.enable'); await send('Runtime.enable');
+    await send('Page.setDownloadBehavior', { behavior: 'deny' }); // never into the owner's Downloads folder
     await send('Page.addScriptToEvaluateOnNewDocument', { source: WATCH });
     await send('Page.navigate', { url: `http://127.0.0.1:${port}/` }); await sleep(2500);
 
@@ -83,6 +85,8 @@ const WATCH = `window.__csp = []; document.addEventListener('securitypolicyviola
     mainSrv.close();
   } catch (e) { fail++; console.log('  FAIL ' + e.message); }
   ws.close(); p.kill(); srv.close();
+  await new Promise(r => { p.once('exit', r); setTimeout(r, 3000); }); // then remove the test browser's profile
+  try { fs.rmSync(path.join(os.tmpdir(), 'static_test_profile'), { recursive: true, force: true, maxRetries: 10, retryDelay: 500 }); } catch (e) {}
   console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 })();

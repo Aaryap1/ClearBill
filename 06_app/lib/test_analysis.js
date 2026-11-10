@@ -347,5 +347,48 @@ console.log('== R28: a rejected claim - the suggested reason, and months of cove
   ok(M('2020-01-15', '2025-01-15') === 60 && M('2020-01-15', '2025-01-14') === 59 && M('2021-03-31', '2026-03-30') === 59 && M('bad', '2026-01-01') === null, 'months of continuous cover count whole months (60 on the day, 59 the day before), and a bad date gives none');
 }
 
+{
+  console.log('== R32: text pasted by the user, read with no model');
+  const { parseBillText, parseCuts, groupCuts, cutGroup } = checks;
+  const { scoreBill } = require('./bill_score.js');
+  // Every synthetic bill, written out as plain lines (date, item, qty, rate, amount;
+  // section headings; "Total for" lines; the gross), reads back exactly.
+  const corpus = path.join(__dirname, '..', '..', '05_synthetic_corpus', 'truth');
+  let right = 0, all = 0, invented = 0, grossOk = 0, subsOk = 0, bills = 0;
+  for (const f of fs.readdirSync(corpus).filter(f => /^SYN-\d+\.json$/.test(f))) {
+    const t = JSON.parse(fs.readFileSync(path.join(corpus, f), 'utf8')); const L = []; let sec = null;
+    for (const l of t.line_items) {
+      if (l.section !== sec) { if (sec) L.push('Total for ' + sec + '    ' + t.printed_subtotals[sec].toLocaleString('en-IN', { minimumFractionDigits: 2 })); sec = l.section; L.push(sec); }
+      L.push('05/08/2026    ' + l.item + '    ' + l.quantity + '    ' + l.rate.toFixed(2) + '    ' + l.total.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+    }
+    L.push('Total for ' + sec + '    ' + t.printed_subtotals[sec].toFixed(2), 'Gross Amount    ' + t.header.gross_amount.toLocaleString('en-IN', { minimumFractionDigits: 2 }), 'NET PAYABLE    ' + t.header.net_payable.toFixed(2));
+    const d = parseBillText(L.join('\n')), sc = scoreBill(t, d);
+    right += sc.correct; all += sc.truth_lines; invented += sc.hallucinations; bills++;
+    if (Math.abs(d.header.gross_amount - t.header.gross_amount) < 0.01) grossOk++;
+    if (Object.keys(d.printed_subtotals).length === Object.keys(t.printed_subtotals).length) subsOk++;
+  }
+  ok(right === all && invented === 0, `all ${bills} synthetic bills pasted as text read back line for line: ${right}/${all} lines, ${invented} invented (amounts with Indian commas, dates, credit lines)`);
+  ok(grossOk === bills && subsOk === bills, 'the gross amount and every "Total for" subtotal are read as totals, not as charges');
+  const b = parseBillText('ROOM 101 3500\nCBC 10449 430 430\nGLOVES EXAMINATION 20 160\nNS 100ML 2 22.03 44.06\nAdvance paid 10000');
+  ok(b.line_items.map(x => `${x.item}|${x.quantity}|${x.rate}|${x.total}`).join(' ; ') === 'ROOM 101|1|3500|3500 ; CBC 10449|1|430|430 ; GLOVES EXAMINATION|20|8|160 ; NS 100ML|2|22.03|44.06', 'a number that does not fit the arithmetic stays in the name ("ROOM 101", "CBC 10449"); quantity and rate only when they multiply out; an advance is not a charge');
+  ok(parseBillText('Patient Name: A\nBill date 05/08/2026').line_items.length === 0, 'header lines with no amount are not charges');
+
+  const table = 'Sl No\tParticulars\tClaimed Amt\tDeducted Amt\tApproved Amt\tRemarks\n1\tRoom Rent\t24,000.00\t6,000.00\t18,000.00\tRoom rent capped at 1% of SI\n2\tGloves\t160.00\t160.00\t0.00\tNon payable item\n3\tSurgeon Fees\t1,12,230.00\t30,000.00\t82,230.00\tReasonable and customary charges\n4\tPharmacy\t9,000\t1,350\t7,650\tExcl 02 - non medical items\n5\tConsultation\t3,600\t0\t3,600\t\n\tTotal\t1,45,390.00\t37,510.00\t1,07,880.00';
+  const p = parseCuts(table);
+  ok(p.rows.map(r => r.desc + '=' + r.amount).join(', ') === 'Room Rent=6000, Gloves=160, Surgeon Fees=30000, Pharmacy=1350' && p.total === 37510 && p.rows.every(r => !r.guess), 'a TPA table with a header row: the "Deducted" column is the cut, serial numbers are dropped, a line with nothing cut is left out, and the "Total" line is the printed total');
+  ok(p.rows[0].reason === 'Room rent capped at 1% of SI' && p.rows[3].reason === 'Excl 02 - non medical items', 'the remarks column is kept as the reason given');
+  const g = groupCuts(p.rows);
+  ok(g.groups.room.length === 1 && g.groups.rc.length === 1 && g.groups.nonpay.length === 1 && g.groups.other.length === 1 && g.sum === 37510, 'each cut is grouped by its reason: room-rent cap, reasonable and customary, non-payable, other');
+  ok(g.noClause === 3 && g.groups.other[0].clause === true, '"Excl 02" counts as a named clause; the three others name none');
+  const flat = parseCuts('Deductions:\nGloves Rs 160 non-payable\nAdmission kit 450\nexcess charges as per hospital tariff\nTotal deduction 610');
+  ok(flat.rows.length === 2 && flat.rows[1].reason === 'excess charges as per hospital tariff' && flat.total === 610, 'text flattened to single spaces still reads; a reason on the next line joins its row');
+  const noHead = parseCuts('Surgery 1,12,230 30,000 82,230 benchmark rates\nImplant 50,000 45,000 5,000');
+  ok(noHead.rows[0].amount === 30000 && noHead.rows[0].guess && noHead.rows[1].amount === 45000 && noHead.rows[1].guess, 'with no header, three amounts cannot be told apart by arithmetic (claimed - deducted = approved means claimed - approved = deducted): the middle one is taken and marked "check this amount"');
+  const two = parseCuts('Dressing 900 300 not justified');
+  ok(two.rows[0].guess === true, 'two amounts that the arithmetic cannot place are marked "check this amount"');
+  ok(cutGroup({ desc: 'Cataract surgery', amount: 5000, reason: 'Sub-limit applied' }) === 'copay' && cutGroup({ desc: 'Misc', amount: 500, reason: '10% co-payment' }) === 'copay' && cutGroup({ desc: 'Nursing', amount: 900, reason: 'proportionate deduction' }) === 'room' && cutGroup({ desc: 'GLOVES EXAMINATION', amount: 160, reason: '' }) === 'list1' && cutGroup({ desc: 'Admission Kit', amount: 450, reason: '' }) === 'lists24', 'sub-limit and co-pay, proportionate, a List I item and a Lists II-IV item each land in their own group (the item lists are the app\'s own matcher)');
+  ok(parseCuts('Thank you for your claim. Please find enclosed.').rows.length === 0, 'text with no amounts gives no rows');
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

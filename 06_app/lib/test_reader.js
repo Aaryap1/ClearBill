@@ -9,7 +9,7 @@ const ok = (c, m, extra) => { if (c) { pass++; console.log('  ok   ' + m); } els
 
 const file = (name, size = 100, lm = 1, type = 'image/jpeg') => ({ name, size, lastModified: lm, type });
 const GOOD = JSON.stringify({ is_hospital_bill: true, header: {}, line_items: [{ item: 'X', total: 1 }] });
-const resp = (status, body) => ({ ok: status >= 200 && status < 300, status, text: async () => body, json: async () => JSON.parse(body) });
+const resp = (status, body, hdrs) => ({ ok: status >= 200 && status < 300, status, text: async () => body, json: async () => JSON.parse(body), ...(hdrs ? { headers: { get: k => hdrs[k.toLowerCase()] || null } } : {}) });
 const geminiBody = t => JSON.stringify({ candidates: [{ content: { parts: [{ text: t }] } }] });
 
 // A scripted fetch: each entry is a [status, body] pair, 'throw', or 'hang'.
@@ -20,7 +20,7 @@ function mockFetch(script) {
     const step = script[Math.min(i++, script.length - 1)];
     if (step === 'throw') return Promise.reject(new TypeError('Failed to fetch'));
     if (step === 'hang') return new Promise((_, rej) => opts.signal.addEventListener('abort', () => rej(Object.assign(new Error('aborted'), { name: 'AbortError' }))));
-    return Promise.resolve(resp(step[0], step[1]));
+    return Promise.resolve(resp(step[0], step[1], step[2]));
   };
   fn.calls = calls; return fn;
 }
@@ -122,6 +122,27 @@ const base = (fetchFn, over = {}) => ({
   ok(f.calls[0].url === 'api/read-reply' && res[0].page.is_insurer_letter === true, 'with endpoint set, the photo goes to that route');
   f = mockFetch([[200, GOOD]]); await R.readPages([file('p9')], base(f));
   ok(f.calls[0].url === 'api/read-bill', 'without it, bills still go to api/read-bill');
+
+  console.log('== R31: a page read by the backup model is marked');
+  f = mockFetch([[200, GOOD, { 'x-clearbill-reader': 'backup' }], [200, GOOD, { 'x-clearbill-reader': 'main' }], [200, GOOD]]);
+  res = await R.readPages([file('a'), file('b'), file('c')], base(f));
+  ok(res[0].page._reader === 'backup' && res[1].page._reader === undefined && res[2].page._reader === undefined, 'the server says the backup read page 1: that page is marked, the others are not (and an older server without the header marks nothing)');
+  const dm = (key, mime, b64, model) => ({ url: 'https://google/' + (model || 'default'), body: {} });
+  f = mockFetch([[429, '{}'], [200, geminiBody(GOOD)]]);
+  res = await R.readPages([file('a')], base(f, { useProxy: false, key: 'K', directRequest: dm, directModels: ['main-m', 'lite-m'] }));
+  ok(res[0].status === 'ok' && res[0].page._reader === 'backup' && f.calls.map(c => c.url).join() === 'https://google/main-m,https://google/lite-m', "with the user's own key: Google says the main model's free allowance is spent (429), the same page goes to the backup and is marked");
+  f = mockFetch([[200, geminiBody(GOOD)]]);
+  res = await R.readPages([file('a')], base(f, { useProxy: false, key: 'K', directRequest: dm, directModels: ['main-m', 'lite-m'] }));
+  ok(f.calls.length === 1 && f.calls[0].url === 'https://google/main-m' && res[0].page._reader === undefined, '... and when the main model answers, the backup is never asked');
+  f = mockFetch([[429, '{}']]);
+  res = await R.readPages([file('a'), file('b')], base(f, { useProxy: false, key: 'K', directRequest: dm, directModels: ['main-m', 'lite-m'] }));
+  ok(res[0].kind === 'quota' && f.calls.length === 2 && res[1].status === 'skipped', 'both refuse: "quota" as before, and the run stops');
+  f = mockFetch([[403, '{}']]);
+  res = await R.readPages([file('a')], base(f, { useProxy: false, key: 'BAD', directRequest: dm, directModels: ['main-m', 'lite-m'] }));
+  ok(res[0].kind === 'key' && f.calls.length === 1, 'a refused key is not retried on the backup (only a 429 moves on)');
+  f = mockFetch([[402, '{}']]);
+  res = await R.readPages([file('a')], base(f, { useProxy: false, key: 'K', directRequest: dm, directModels: ['main-m', 'lite-m'] }));
+  ok(res[0].kind === 'key' && f.calls.length === 1, "with the own key, Google's 402 (that key's project has no credit) is a problem with the key, said as such, and not retried");
 
   console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);

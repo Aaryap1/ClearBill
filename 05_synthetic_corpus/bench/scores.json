@@ -1,0 +1,20 @@
+{
+ "note": "Written by 06_app/lib/photo_bench.js. A model may read bills for ClearBill only if it passed (lib/test_reference.js checks).",
+ "pass_rule": {
+  "photo": {
+   "line_accuracy": 0.95,
+   "hallucinations": 2
+  },
+  "harsh": {
+   "line_accuracy": 0.85,
+   "hallucinations": 5
+  }
+ },
+ "grandfathered": {
+  "gemini-3.6-flash": {
+   "since": "2026-09-09",
+   "why": "the live reader since 9 Sep 2026, before the bench existed; to be scored as soon as the key works (on 22 Oct 2026 Google refused every call: 402, prepayment credits depleted)"
+  }
+ },
+ "models": {}
+}

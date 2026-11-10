@@ -25,7 +25,7 @@ const STUB = `
   const GOOD = JSON.stringify({ is_hospital_bill: true, header: {}, line_items: [{ item: 'BED CHARGES', quantity: 1, rate: 100, total: 100 }] });
   window.fetch = async (u, o) => {
     u = String(u);
-    if (u.includes('api/config')) { await wait(window.__cfgDelay); let rd = 'ok'; try { rd = localStorage.getItem('__test_reader') || 'ok'; } catch (e) {} return new Response(JSON.stringify({ proxy: true, reader: rd }), { status: 200 }); }
+    if (u.includes('api/config')) { await wait(window.__cfgDelay); let rd = 'ok', rl = null; try { rd = localStorage.getItem('__test_reader') || 'ok'; rl = localStorage.getItem('__test_readsleft'); } catch (e) {} return new Response(JSON.stringify({ proxy: true, reader: rd, ...(rl != null ? { readsLeft: Number(rl) } : {}) }), { status: 200 }); }
     if (u.includes('api/impact')) { let b = '{"enabled":false}'; try { b = localStorage.getItem('__test_impact') || b; } catch (e) {} return new Response(b, { status: 200 }); }
     if (u.includes('api/read-reply')) { // R24: photo 1 is the insurer's letter, photo 2 is not a letter
       window.__replyCalls = (window.__replyCalls || 0) + 1;
@@ -40,6 +40,7 @@ const STUB = `
       if (window.__mode === 'hang') return new Promise((_, rej) => o.signal.addEventListener('abort', () => rej(Object.assign(new Error('aborted'), { name: 'AbortError' }))));
       if (window.__mode === '504') return new Response(JSON.stringify({ error: 'timeout' }), { status: 504 });
       if (window.__mode === 'broken') return new Response(JSON.stringify({ error: 'broken' }), { status: 502 });
+      if (window.__mode === 'backup') return new Response(JSON.stringify({ is_hospital_bill: true, header: { gross_amount: 500 }, line_items: [{ item: 'BED CHARGES', quantity: 1, rate: 100, total: 100 }, { item: 'GLOVES EXAMINATION', quantity: 1, rate: 50, total: 50 }] }), { status: 200, headers: { 'X-ClearBill-Reader': 'backup' } });
       // Each photo reads as a different page (two identical pages are now read once, R15);
       // __mode 'same' returns the identical page every time, to test exactly that.
       if (window.__mode === 'same') return new Response(GOOD, { status: 200 });
@@ -64,6 +65,7 @@ const STUB = `
 
 (async () => {
   const port = srv.address().port;
+  try { fs.rmSync(path.join(os.tmpdir(), 'reader_test_profile'), { recursive: true, force: true, maxRetries: 5, retryDelay: 300 }); } catch (e) {} // a leftover from an earlier, interrupted run
   const p = spawn(chrome, ['--headless=new', '--disable-gpu', '--remote-debugging-port=9341', '--user-data-dir=' + path.join(os.tmpdir(), 'reader_test_profile'), 'about:blank'], { stdio: 'ignore' });
   await sleep(3000);
   const tabs = await (await fetch('http://127.0.0.1:9341/json')).json();
@@ -74,6 +76,8 @@ const STUB = `
   const send = (method, params = {}) => new Promise(r => { const i = ++id; pend[i] = r; ws.send(JSON.stringify({ id: i, method, params })); });
   const ev = async js => { const r = await send('Runtime.evaluate', { expression: '(async()=>{' + js + '})()', awaitPromise: true, returnByValue: true }); if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description || r.exceptionDetails.text); return r.result?.value; };
   await send('Page.enable'); await send('Runtime.enable');
+  // Buttons like "Add a reminder" save a real file; never into the owner's Downloads folder.
+  await send('Page.setDownloadBehavior', { behavior: 'deny' });
   await send('Page.addScriptToEvaluateOnNewDocument', { source: STUB });
   const fresh = async () => { await send('Page.navigate', { url: `http://127.0.0.1:${port}/` }); await sleep(1200); await ev(`localStorage.clear(); sessionStorage.clear();`); };
   const status = () => ev(`return document.getElementById('status').textContent`);
@@ -962,6 +966,76 @@ const STUB = `
     ok(ex.vis && ex.label === 'Download my saved bills' && ex.dl && /^clearbill-my-bills-\d{4}-\d{2}-\d{2}\.json$/.test(ex.dl.n) && JSON.parse(ex.dl.t).bills[0].hospitalName === 'City Hospital' && /Dear Sir/.test(ex.dl.t), 'signed-in users can download all their saved bills, letters included, as a file');
     ok(await ev(`renderMyBillsList([]); return document.getElementById('mybillsExportBtn').style.display==='none'`), 'with nothing saved, there is nothing to download');
 
+    console.log('== R31: the reader tells the truth about its limits');
+    await fresh(); await ev(`localStorage.setItem('__test_reader','backup'); localStorage.setItem('__test_readsleft','480');`);
+    await send('Page.reload'); await sleep(1300);
+    const rn1 = await ev(`return {t: document.getElementById('readerNote').textContent, hidden: document.getElementById('readerNote').classList.contains('hide'), key: !document.getElementById('keyRow').classList.contains('hide')}`);
+    ok(!rn1.hidden && /lighter backup reader will read your bill/.test(rn1.t) && /check the rows it reads/.test(rn1.t) && /About 480 free page reads left today\./.test(rn1.t) && !rn1.key, 'on the backup, the upload area says so before anyone tries, with about how many reads are left, and does NOT push the own-key box', rn1.t);
+    await ev(`localStorage.setItem('__test_reader','ok'); localStorage.setItem('__test_readsleft','6');`); await send('Page.reload'); await sleep(1300);
+    ok(await ev(`return /^About 6 free page reads left today\\.$/.test(document.getElementById('readerNote').textContent)`), 'with few reads left on the main reader, the count is shown on its own');
+    await ev(`localStorage.setItem('__test_readsleft','300');`); await send('Page.reload'); await sleep(1300);
+    ok(await ev(`return document.getElementById('readerNote').classList.contains('hide')`), 'with plenty left and the main reader working, nothing is shown (no noise)');
+    await ev(`localStorage.removeItem('__test_reader'); localStorage.removeItem('__test_readsleft');`);
+
+    await fresh(); await ev(`setLang('en'); window.__mode='backup'; addFiles([__mk('b1.jpg','image/jpeg',31)]); document.getElementById('checkPhotosBtn').click();`); await sleep(900);
+    const bk = await ev(`const n=document.getElementById('backupReadNote'); return {st: document.getElementById('status').textContent, note: n?n.textContent:'', first: n&&n.parentElement.firstElementChild!==n&&document.querySelector('#report .slip .notez')===n, recon: document.getElementById('report').textContent}`);
+    ok(/Read 2 line items\. 1 page was read by the backup reader: check its rows\./.test(bk.st), 'after the read, the status line says the backup read a page: "' + bk.st + '"');
+    ok(/Page 1 was read by the backup reader, a lighter model that makes more mistakes\. Check its rows against your paper bill before you send anything\./.test(bk.note) && bk.first, 'the report opens with that note, before any finding');
+    ok(/may also be a backup-reader mistake/.test(bk.recon) && !/may be the hospital's arithmetic/.test(bk.recon), "the bill's total not matching its lines is no longer put down to the hospital's arithmetic: it may be the backup's misreading");
+    ok(/backup reader read this bill: check its rows against your paper bill first/.test(bk.recon) && !/The bill's total is off by/.test(bk.recon) && /may be its misreading, not the hospital/.test(bk.recon) && !/This is the hospital.s own arithmetic/.test(bk.recon), '"Start here" and "What this means" say to check the rows first, not to ask the hospital about its arithmetic');
+    const bkl = await ev(`switchTab('letter'); const cb=document.querySelector('#letterIncludes input[data-inc="recon"]'); return cb?{has:true,checked:cb.checked}:{has:false};`);
+    ok(bkl.has && bkl.checked === false, 'in the letter that gap starts unticked: a backup misreading never goes into a letter by default (the user can still tick it)');
+    await ev(`setLang('hi'); switchTab('findings');`); await sleep(150);
+    ok(await ev(`return /पेज़ 1 बैकअप रीडर ने पढ़ा/.test(document.getElementById('backupReadNote').textContent)`), 'in Hindi');
+    await ev(`setLang('mr');`); await sleep(150);
+    ok(await ev(`return /पान 1 बॅकअप रीडरने वाचलं/.test(document.getElementById('backupReadNote').textContent)`), 'in Marathi');
+    await fresh(); await ev(`setLang('en'); window.__mode='ok'; addFiles([__mk('m1.jpg','image/jpeg',32)]); document.getElementById('checkPhotosBtn').click();`); await sleep(900);
+    ok(await ev(`return !document.getElementById('backupReadNote') && !/backup/.test(document.getElementById('status').textContent)`), 'a page read by the main model carries no such note');
+    ok(await ev(`return DIRECT_MODELS[0]==='gemini-3.6-flash'`), 'the own-key route starts with the main model');
+
+    console.log("== R32: the insurer's list of deductions, pasted");
+    const CUTS_TABLE = 'Sl No\tParticulars\tClaimed Amt\tDeducted Amt\tApproved Amt\tRemarks\n1\tRoom Rent\t24,000.00\t6,000.00\t18,000.00\tRoom rent capped at 1% of SI\n2\tGloves\t160.00\t160.00\t0.00\tNon payable item\n3\tSurgeon Fees\t1,12,230.00\t30,000.00\t82,230.00\tReasonable and customary charges\n4\tPharmacy\t9,000\t1,350\t7,650\tExcl 02 - non medical items\n\tTotal\t1,45,390.00\t37,510.00\t1,07,880.00';
+    await fresh(); await ev(`setLang('en'); document.getElementById('cutsDet').open=true; document.getElementById('cuts_text').value=${JSON.stringify(CUTS_TABLE)}; document.getElementById('cutsReadBtn').click();`); await sleep(200);
+    const c1 = await ev(`const o=document.getElementById('cutsOut'); return {t:o.textContent, groups:[...o.querySelectorAll('.cutgrp')].map(g=>g.dataset.group).join(','), tags:o.querySelectorAll('.cuttag').length, bad:!!o.querySelector('.cutsbad')}`);
+    ok(/4 deductions, ₹37,510 in all\./.test(c1.t) && /They add up to the list's own total of ₹37,510\./.test(c1.t) && !c1.bad, 'a pasted TPA table: 4 cuts, ₹37,510, matching the list\'s own total');
+    ok(c1.groups === 'rc,room,nonpay,other' && c1.tags === 3 && /no clause named/.test(c1.t) && /no current IRDAI definition/.test(c1.t), 'grouped by the reason given (R&C, room, non-payable, other), with "no clause named" on the three that cite none');
+    const c2 = await ev(`switchTab('letter'); const rows=[...document.querySelectorAll('#letterIncludes [data-inc]')].map(x=>x.dataset.inc).join(','); document.getElementById('genLetterTab').click(); await new Promise(r=>setTimeout(r,300)); return {rows, text: document.querySelector('.letter')?document.querySelector('.letter').innerText:''};`);
+    ok(c2.rows === 'cuts' && /Your settlement letter lists the following deductions, totalling ₹37,510:/.test(c2.text), 'with only the insurer\'s list (no bill, no figures), the Letter tab offers a letter built from it');
+    ok(/Surgeon Fees - ₹30,000\s+\(reason given: "Reasonable and customary charges"\)/.test(c2.text) && /the amount you considered reasonable for each, and the benchmark or tariff used to arrive at it/.test(c2.text) && /3 of these deductions name no clause of my policy/.test(c2.text), 'the letter lists each cut with the reason given, asks for the benchmark behind the R&C cut, and notes that 3 name no clause');
+    ok(/Room Rent; ₹6,000 in all/.test(c2.text) && /Schedule-C, para 3\.1\(ix\)\) requires a policy to state its sub-limits and proportionate deductions "with cross reference to the concerned policy section"/.test(c2.text) && /For each deduction listed above, the policy clause relied on and how the amount was worked out\./.test(c2.text) && !/is mine to pay|unlawful|illegal/.test(c2.text), 'the room cut cites Schedule-C 3.1(ix); the first request asks for the clause and working for each; nothing is called unlawful');
+    await ev(`switchTab('settlement'); const i=document.querySelector('#cutsOut .cutamt[data-i="0"]'); i.value='5000'; i.dispatchEvent(new Event('change',{bubbles:true}));`); await sleep(200);
+    const c3 = await ev(`return {bad: (document.querySelector('#cutsOut .cutsbad')||{}).textContent||'', rows:[...document.querySelectorAll('#letterIncludes [data-inc]')].map(x=>x.dataset.inc).join(',')}`);
+    ok(/These rows add up to ₹36,510, but the list's total is ₹37,510/.test(c3.bad) && c3.rows === '', 'a row corrected so the amounts no longer add up: said plainly, and the list leaves the letter until they do');
+    await ev(`const i=document.querySelector('#cutsOut .cutamt[data-i="0"]'); i.value='6000'; i.dispatchEvent(new Event('change',{bubbles:true}));`); await sleep(150);
+    const draft = await ev(`return localStorage.getItem('clearbill_settlement_draft')`);
+    ok(/"desc":"Surgeon Fees"/.test(draft) && !/Sl No|Claimed Amt/.test(draft), 'the sorted rows are saved on the device with the figures; the pasted text itself is not');
+    await send('Page.reload'); await sleep(1300);
+    ok(await ev(`return document.getElementById('cutsDet').open && /4 deductions/.test(document.getElementById('cutsOut').textContent) && document.getElementById('cuts_text').value===''`), 'after a reload the list comes back, sorted');
+    await ev(`document.querySelector('#cutsOut .cutdel[data-i="1"]').click();`); await sleep(150);
+    ok(await ev(`return /3 deductions, ₹37,350/.test(document.getElementById('cutsOut').textContent) && !!document.querySelector('#cutsOut .cutsbad')`), 'removing a row recounts, and the total no longer matches');
+    await fresh(); await ev(`setLang('en'); document.getElementById('cuts_text').value='Gloves Rs 160 non-payable\\nAdmission kit 450 excess charges'; document.getElementById('cutsReadBtn').click();`); await sleep(200);
+    const c4 = await ev(`return {cb: !!document.getElementById('cutsConfirm'), rows:(switchTab('letter'),[...document.querySelectorAll('#letterIncludes [data-inc]')].map(x=>x.dataset.inc).join(','))}`);
+    ok(c4.cb && c4.rows === '', 'no total in what was pasted: the user is asked to confirm the rows match their letter before it can be used');
+    await ev(`switchTab('settlement'); const cb=document.getElementById('cutsConfirm'); cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true}));`); await sleep(150);
+    ok(await ev(`switchTab('letter'); return [...document.querySelectorAll('#letterIncludes [data-inc]')].map(x=>x.dataset.inc).join(',')==='cuts'`), '... and once they confirm, it is offered');
+    await ev(`setLang('hi');`); await sleep(150);
+    ok(await ev(`return document.getElementById('cutsHead').textContent==='आपकी बीमा कंपनी की कटौतियों की सूची (वैकल्पिक)' && /^2 कटौती, कुल ₹/.test(document.querySelector('#cutsOut .rrbig').textContent)`), 'in Hindi');
+    await send('Page.reload'); await sleep(1300);
+    ok(await ev(`return typeof rjRender==='function' && /^R32/.test(APP_VERSION) && !!document.querySelector('#cutsOut .rrbig')`), 'with a saved list, a reload loads the whole page (a start-up error once stopped it) and shows the list');
+    await ev(`setLang('mr');`); await sleep(150);
+    ok(await ev(`return document.getElementById('pbHead').textContent==='फोटो नाही? बिलाच्या ओळी पेस्ट करा'`), 'in Marathi');
+    await ev(`setLang('en'); document.getElementById('cuts_text').value='Thank you for your claim.'; document.getElementById('cutsReadBtn').click();`); await sleep(150);
+    ok(await ev(`return /No amounts were found in what you pasted/.test(document.getElementById('cutsOut').textContent)`), 'pasting text with no amounts says so');
+
+    console.log("== R32: the bill's lines, pasted (no photo, no model)");
+    await fresh(); await ev(`setLang('en'); switchTab('findings'); document.getElementById('pasteBill').open=true; document.getElementById('pb_text').value='CONSUMABLES\\nGLOVES EXAMINATION   20   8.00   160.00\\nADMISSION KIT   1   450.00   450.00\\nBED CHARGES   2   3,000.00   6,000.00\\nGross Amount   6,610.00'; document.getElementById('pbBtn').click();`); await sleep(400);
+    const pb = await ev(`return {st: document.getElementById('status').textContent, note: (document.getElementById('pastedNote')||{}).textContent||'', rep: document.getElementById('report').textContent, calls: window.__calls.length}`);
+    ok(/Read 3 line items from the pasted text\./.test(pb.st) && pb.calls === 0, 'three pasted lines are read with no photo and no call to any reader');
+    ok(/These rows come from text you pasted/.test(pb.note) && /IRDAI's List I/.test(pb.rep) && /Bill reconciles/.test(pb.rep), 'the report says the rows were pasted, finds the List I item, and checks the total against the printed gross');
+    await ev(`document.getElementById('pb_text').value='Patient name: A'; document.getElementById('pbBtn').click();`); await sleep(150);
+    ok(/No lines with amounts were found/.test(await status()), 'text with no amounts says so');
+    ok(await ev(`return /^R32/.test(APP_VERSION)`), 'the version is R32');
+
     console.log('== R22: grievance officer, documents and delay lines');
     await fresh(); await ev(`setLang('en'); document.getElementById('egBtn').click();`); await sleep(500);
     await ev(`switchTab('letter'); const g=document.getElementById('ld_gro'); g.value='Star Health and Allied'; g.dispatchEvent(new Event('input',{bubbles:true}));
@@ -995,7 +1069,12 @@ const STUB = `
     await ev(`setLang('hi'); window.__mode='504'; addFiles([__mk('k1.jpg','image/jpeg',41)]); document.getElementById('checkPhotosBtn').click();`); await sleep(700);
     const hi = await status(); ok(/[\u0900-\u097F]/.test(hi) && !/Failed to fetch|Server 5|took too long/.test(hi), 'in Hindi the error is Hindi, never a raw English message: "' + hi.slice(0, 60) + '"');
     ok(errs.length === 0, 'no uncaught page errors during any of this', errs.join(' | ').slice(0, 200));
-  } finally { ws.close(); p.kill(); srv.close(); }
+  } finally {
+    ws.close(); p.kill(); srv.close();
+    // The test browser's profile is ~50 MB: remove it once Chrome has exited.
+    await new Promise(r => { p.once('exit', r); setTimeout(r, 3000); });
+    try { fs.rmSync(path.join(os.tmpdir(), 'reader_test_profile'), { recursive: true, force: true, maxRetries: 10, retryDelay: 500 }); } catch (e) {}
+  }
   console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(2); });

@@ -24,7 +24,7 @@ function mkErr(kind,status){ const e=new Error(kind); e.kind=kind; if(status) e.
 // plain sentence in the user's language. code = the proxy's error code, if any.
 function kindForStatus(status,direct,code){
   if(status===429) return direct?'quota':'busy';
-  if(direct){ if(status===400||status===401||status===403) return 'key'; return status>=500?'server':'unreadable'; }
+  if(direct){ if(status===400||status===401||status===402||status===403) return 'key'; return status>=500?'server':'unreadable'; } // 402: the key's project has no credit (R31)
   if(code==='broken') return 'broken';   // the free service's own key or model was refused (R16)
   if(status===413) return 'toolarge';
   if(status===415) return 'unsupported';
@@ -33,7 +33,8 @@ function kindForStatus(status,direct,code){
   return 'server';
 }
 // One page in, one structured object out; a failure is an Error with .kind.
-// o: {key,useProxy,proxyState,fetchFn,toB64,stripFence,directRequest,signal,timeoutMs,isOffline,endpoint}
+// o: {key,useProxy,proxyState,fetchFn,toB64,stripFence,directRequest,directModels,signal,timeoutMs,isOffline,endpoint}
+// A page read by a backup model (R31) comes back with page._reader='backup'.
 // endpoint (R24): the server route; 'api/read-bill' unless a caller names another.
 async function readOnePage(file,o){
   const mime=fileMime(file);
@@ -43,7 +44,7 @@ async function readOnePage(file,o){
   if(o.signal){ if(o.signal.aborted) throw mkErr('cancelled'); o.signal.addEventListener('abort',onAbort); }
   const t=setTimeout(()=>{ timedOut=true; ac.abort(); },o.timeoutMs||100000);
   try{
-    let txt;
+    let txt, backup=false;
     // If the free service says it is busy (429), the user can paste their own
     // free Gemini key and continue — then this page goes direct to Google.
     if(o.useProxy && !(o.proxyState.busy && o.key)){
@@ -51,14 +52,25 @@ async function readOnePage(file,o){
       txt=await res.text();
       if(!res.ok){ let code=''; try{ code=JSON.parse(txt).error||''; }catch(e){}
         const kind=kindForStatus(res.status,false,code); if(kind==='busy'||kind==='broken') o.proxyState.busy=true; throw mkErr(kind,res.status); }
+      // R31: the server says when its backup model read the page.
+      backup=!!(res.headers&&res.headers.get&&res.headers.get('X-ClearBill-Reader')==='backup');
     } else {
-      const dr=o.directRequest(o.key,mime,b64);
-      const res=await o.fetchFn(dr.url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dr.body),signal:ac.signal});
+      // R31: with the user's own key too, the main model first; if Google says
+      // its free allowance is spent (429), the same page goes to the backup.
+      const models=(o.directModels&&o.directModels.length)?o.directModels:[undefined];
+      let res=null;
+      for(let m=0;m<models.length;m++){
+        const dr=o.directRequest(o.key,mime,b64,models[m]);
+        res=await o.fetchFn(dr.url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dr.body),signal:ac.signal});
+        backup=m>0;
+        if(res.status!==429) break;
+      }
       if(!res.ok) throw mkErr(kindForStatus(res.status,true),res.status);
       const j=await res.json(); txt=j&&j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts&&j.candidates[0].content.parts[0]&&j.candidates[0].content.parts[0].text||'';
     }
     let page; try{ page=JSON.parse(o.stripFence(txt)); }catch(e){ throw mkErr('unreadable'); }
     if(!page||typeof page!=='object'||Array.isArray(page)) throw mkErr('unreadable');
+    if(backup) page._reader='backup';
     return page;
   }catch(e){
     if(e&&e.kind) throw e;
